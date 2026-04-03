@@ -1,0 +1,101 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Stores user profile information and fitness goals",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user" },
+        "name": { "type": "string", "description": "The user's display name" },
+        "email": { "type": "string", "format": "email", "description": "The user's email address" },
+        "avatarUrl": { "type": "string", "description": "The URL of the user's avatar" },
+        "height": { "type": "number", "description": "The user's height in cm" },
+        "currentWeight": { "type": "number", "description": "The user's current weight in kg" },
+        "targetWeight": { "type": "number", "description": "The user's target weight in kg" },
+        "stepGoal": { "type": "number", "description": "The user's daily step goal" },
+        "maxPullUps": { "type": "number", "description": "The user's maximum pull-up count" },
+        "oneRMWeighted": { "type": "number", "description": "The user's 1RM for weighted pull-ups in kg" },
+        "shortTermGoal": { "type": "string", "description": "The user's short-term goal" },
+        "longTermGoal": { "type": "string", "description": "The user's long-term goal" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "The user's role in the application" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Workout": {
+      "title": "Workout",
+      "description": "Stores a single workout session",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The ID of the user who performed the workout" },
+        "name": { "type": "string", "description": "The name of the workout" },
+        "date": { "type": "string", "format": "date-time", "description": "The date and time of the workout" },
+        "exercises": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "number" },
+              "name": { "type": "string" },
+              "sets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "reps": { "type": "number" },
+                    "weight": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": ["uid", "name", "date", "exercises"]
+    },
+    "WeeklyPlan": {
+      "title": "WeeklyPlan",
+      "description": "Stores the user's weekly workout plan",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The ID of the user who owns the plan" },
+        "plan": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": { "type": "string" },
+              "type": { "type": "string" },
+              "exercises": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "number" },
+                    "name": { "type": "string" },
+                    "details": { "type": "string" },
+                    "completed": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": ["uid", "plan"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile collection"
+    },
+    "/workouts/{workoutId}": {
+      "schema": "Workout",
+      "description": "Workout history collection"
+    },
+    "/plans/{planId}": {
+      "schema": "WeeklyPlan",
+      "description": "Weekly plan collection"
+    }
+  }
+}

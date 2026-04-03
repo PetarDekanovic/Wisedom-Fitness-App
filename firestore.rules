@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (from auth.uid)
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - name: string (required)
+    //   - email: string (required, format: email)
+    //   - avatarUrl: string (optional)
+    //   - height: number (optional)
+    //   - currentWeight: number (optional)
+    //   - targetWeight: number (optional)
+    //   - stepGoal: number (optional)
+    //   - maxPullUps: number (optional)
+    //   - oneRMWeighted: number (optional)
+    //   - shortTermGoal: string (optional)
+    //   - longTermGoal: string (optional)
+    //   - role: string (required, enum: ['user', 'admin'])
+    //
+    // Collection: workouts
+    // Document ID: auto-generated
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - name: string (required)
+    //   - date: string (required, format: date-time)
+    //   - exercises: list (required)
+    //
+    // Collection: plans
+    // Document ID: auto-generated
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - plan: list (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "petar.dekanovic@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role']) &&
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['user', 'admin'];
+    }
+
+    function isValidWorkout(data) {
+      return data.keys().hasAll(['uid', 'name', 'date', 'exercises']) &&
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.date is string &&
+             data.exercises is list;
+    }
+
+    function isValidPlan(data) {
+      return data.keys().hasAll(['uid', 'plan']) &&
+             data.uid == request.auth.uid &&
+             data.plan is list;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /workouts/{workoutId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidWorkout(request.resource.data);
+      allow update: if isDocOwner() && isValidWorkout(request.resource.data) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /plans/{planId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidPlan(request.resource.data);
+      allow update: if isDocOwner() && isValidPlan(request.resource.data) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+  }
+}
