@@ -25,7 +25,7 @@ service cloud.firestore {
     // Collection: workouts
     // Document ID: auto-generated
     // Fields:
-    //   - uid: string (required, immutable)
+    //   - userId: string (required, immutable)
     //   - name: string (required)
     //   - date: string (required, format: date-time)
     //   - exercises: list (required)
@@ -33,7 +33,7 @@ service cloud.firestore {
     // Collection: plans
     // Document ID: auto-generated
     // Fields:
-    //   - uid: string (required, immutable)
+    //   - userId: string (required, immutable)
     //   - plan: list (required)
     //
     // ===============================================================
@@ -51,13 +51,14 @@ service cloud.firestore {
     }
 
     function isDocOwner() {
-      return isAuthenticated() && request.auth.uid == resource.data.uid;
+      return isAuthenticated() && (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.uid);
     }
 
     function isAdmin() {
       return isAuthenticated() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         (request.auth.token.email == "petar.dekanovic@gmail.com" && request.auth.token.email_verified == true));
+        (request.auth.token.email == "petar.dekanovic@gmail.com" ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
     function isValidEmail(email) {
@@ -73,17 +74,24 @@ service cloud.firestore {
     }
 
     function isValidWorkout(data) {
-      return data.keys().hasAll(['uid', 'name', 'date', 'exercises']) &&
-             data.uid == request.auth.uid &&
+      return data.keys().hasAll(['userId', 'name', 'date', 'exercises']) &&
+             data.userId == request.auth.uid &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.date is string &&
              data.exercises is list;
     }
 
     function isValidPlan(data) {
-      return data.keys().hasAll(['uid', 'plan']) &&
-             data.uid == request.auth.uid &&
-             data.plan is list;
+      return (data.keys().hasAll(['userId', 'plan']) && data.userId == request.auth.uid && data.plan is list) ||
+             (data.keys().hasAll(['uid', 'plan']) && data.uid == request.auth.uid && data.plan is list);
+    }
+
+    function isValidQuote(data) {
+      return data.keys().hasAll(['text', 'author', 'source', 'randomId']) &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 1000 &&
+             data.author is string && data.author.size() > 0 && data.author.size() < 100 &&
+             data.source is string && data.source.size() > 0 && data.source.size() < 100 &&
+             data.randomId is number;
     }
 
     // ===============================================================
@@ -99,14 +107,26 @@ service cloud.firestore {
     match /workouts/{workoutId} {
       allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidWorkout(request.resource.data);
-      allow update: if isDocOwner() && isValidWorkout(request.resource.data) && request.resource.data.uid == resource.data.uid;
+      allow update: if isDocOwner() && isValidWorkout(request.resource.data) && (request.resource.data.userId == resource.data.userId || request.resource.data.uid == resource.data.uid);
       allow delete: if isDocOwner() || isAdmin();
     }
 
     match /plans/{planId} {
       allow read: if isDocOwner() || isAdmin();
       allow create: if isAuthenticated() && isValidPlan(request.resource.data);
-      allow update: if isDocOwner() && isValidPlan(request.resource.data) && request.resource.data.uid == resource.data.uid;
+      allow update: if isDocOwner() && isValidPlan(request.resource.data) && (request.resource.data.userId == resource.data.userId || request.resource.data.uid == resource.data.uid);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /quotes/{quoteId} {
+      allow read: if true; // Publicly readable
+      allow write: if isAdmin(); // Only admins can add/edit quotes
+    }
+
+    match /customQuotes/{quoteId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isDocOwner() && request.resource.data.userId == resource.data.userId;
       allow delete: if isDocOwner() || isAdmin();
     }
   }

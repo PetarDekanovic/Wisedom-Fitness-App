@@ -82,6 +82,18 @@
         }
       },
       "required": ["uid", "plan"]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "Stores a wise quote",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "The text of the quote" },
+        "author": { "type": "string", "description": "The author of the quote" },
+        "source": { "type": "string", "description": "The source or tradition of the quote" },
+        "randomId": { "type": "number", "description": "A random number for efficient random fetching" }
+      },
+      "required": ["text", "author", "source", "randomId"]
     }
   },
   "firestore": {
@@ -96,6 +108,10 @@
     "/plans/{planId}": {
       "schema": "WeeklyPlan",
       "description": "Weekly plan collection"
+    },
+    "/quotes/{quoteId}": {
+      "schema": "Quote",
+      "description": "Wise quotes collection"
     }
   }
 }
