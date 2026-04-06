@@ -74,7 +74,7 @@ export interface UserProfile {
   oneRMWeighted: number;
   avatarUrl: string;
   seenQuoteIds?: string[];
-  markedQuotes?: { id: string; date: string; wisdomGrade?: string }[];
+  markedQuotes?: { id: string; date: string; wisdomGrade?: string; comment?: string }[];
   dailyExercises?: { id: string; name: string; completed: boolean }[];
   dailyExerciseHistory?: { date: string; completedCount: number; totalCount: number }[];
   role?: 'user' | 'admin';
@@ -102,4 +102,5 @@ export interface Quote {
   userId?: string;
   markedDate?: string;
   wisdomGrade?: string;
+  comment?: string;
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Activity, 
@@ -347,16 +347,21 @@ export default function App() {
   const [isGeneratingQuotes, setIsGeneratingQuotes] = useState(false);
   const [libraryQuotes, setLibraryQuotes] = useState<(Quote & { markedDate?: string })[]>([]);
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [editGrade, setEditGrade] = useState('');
+  const [editComment, setEditComment] = useState('');
   const [isAddingQuote, setIsAddingQuote] = useState(false);
   const [newQuote, setNewQuote] = useState({ 
     text: '', 
     author: '', 
     source: 'Philosophy',
-    wisdomGrade: 'A daily reminder'
+    wisdomGrade: 'A daily reminder',
+    comment: 'This quote changed my life'
   });
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [dashboardWisdomGrade, setDashboardWisdomGrade] = useState('A daily reminder');
+  const [dashboardComment, setDashboardComment] = useState('This quote changed my life');
   
   const [currentQuote, setCurrentQuote] = useState<Quote>({
     text: "The happiness of your life depends upon the quality of your thoughts.",
@@ -379,32 +384,24 @@ export default function App() {
   const fetchRandomQuote = async (excludeIds: string[] = []) => {
     try {
       const quotesRef = collection(db, 'quotes');
-      let attempts = 0;
-      let found = false;
-      let quoteData: Quote | null = null;
-
-      // Combine with marked quotes to be absolutely sure
       const markedIds = (userProfile.markedQuotes || []).map(q => q.id);
       const allExcluded = Array.from(new Set([...excludeIds, ...markedIds]));
 
-      while (attempts < 15 && !found) {
-        attempts++;
-        const randomNum = Math.random();
-        let q = query(quotesRef, where('randomId', '>=', randomNum), limit(1));
-        let snapshot = await getDocs(q);
-        
-        if (snapshot.empty) {
-          q = query(quotesRef, where('randomId', '<=', randomNum), limit(1));
-          snapshot = await getDocs(q);
-        }
-        
-        if (!snapshot.empty) {
-          const data = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Quote;
-          if (!allExcluded.includes(data.id || '')) {
-            quoteData = data;
-            found = true;
-          }
-        }
+      // Fetch a small batch of quotes and pick one that isn't excluded
+      // This is much more efficient than multiple random attempts
+      const randomNum = Math.random();
+      const q = query(quotesRef, where('randomId', '>=', randomNum), limit(10));
+      const snapshot = await getDocs(q);
+      
+      let candidates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
+      let quoteData = candidates.find(q => !allExcluded.includes(q.id || ''));
+
+      if (!quoteData) {
+        // Try the other direction if no results or all excluded
+        const q2 = query(quotesRef, where('randomId', '<=', randomNum), limit(10));
+        const snapshot2 = await getDocs(q2);
+        candidates = snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
+        quoteData = candidates.find(q => !allExcluded.includes(q.id || ''));
       }
 
       if (quoteData) {
@@ -422,7 +419,8 @@ export default function App() {
     const newMarkedQuotes = [...(userProfile.markedQuotes || []), { 
       id: currentQuote.id, 
       date: new Date().toISOString(),
-      wisdomGrade: dashboardWisdomGrade
+      wisdomGrade: dashboardWisdomGrade,
+      comment: dashboardComment
     }];
     
     try {
@@ -434,20 +432,21 @@ export default function App() {
       // Fetch next quote immediately
       fetchRandomQuote(newSeenIds);
       setDashboardWisdomGrade('A daily reminder');
+      setDashboardComment('This quote changed my life');
     } catch (error) {
       console.error('Error marking quote as seen:', error);
     }
   };
 
   useEffect(() => {
-    if (!isAuthReady) return;
+    if (!isAuthReady || !user) return;
 
     const seedQuotes = async () => {
       try {
         const quotesRef = collection(db, 'quotes');
         const snapshot = await getDocs(query(quotesRef, limit(1)));
         
-        if (snapshot.empty && user) {
+        if (snapshot.empty) {
           console.log('Seeding initial quotes...');
           for (const q of INITIAL_QUOTES) {
             await addDoc(quotesRef, {
@@ -471,21 +470,19 @@ export default function App() {
       }
     };
 
+    // Initial setup
     seedQuotes().then(() => {
-      const markedIds = (userProfile.markedQuotes || []).map(q => q.id);
-      const initialExcluded = Array.from(new Set([...(userProfile.seenQuoteIds || []), ...markedIds]));
-      fetchRandomQuote(initialExcluded);
+      fetchRandomQuote();
       fetchCount();
     });
 
-    // Loop quotes every 60 seconds
+    // Rotate quotes every 60 seconds
     const interval = setInterval(() => {
-      const markedIds = (userProfile.markedQuotes || []).map(q => q.id);
-      const currentExcluded = Array.from(new Set([...(userProfile.seenQuoteIds || []), ...markedIds]));
-      fetchRandomQuote(currentExcluded);
+      fetchRandomQuote();
     }, 60000);
+
     return () => clearInterval(interval);
-  }, [isAuthReady, user, userProfile.seenQuoteIds, userProfile.markedQuotes]);
+  }, [isAuthReady, user?.uid]); // Only depend on auth readiness and user ID
 
   // Safety check: If current quote is marked, fetch a new one
   useEffect(() => {
@@ -936,48 +933,94 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (activeView === 'library' && user) {
-      const fetchLibraryQuotes = async () => {
-        setIsLibraryLoading(true);
-        try {
-          // Fetch global quotes
-          const quotesRef = collection(db, 'quotes');
-          const snapshot = await getDocs(quotesRef);
-          const allQuotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
-          
-          const marked = userProfile.markedQuotes || [];
-          const seenIds = userProfile.seenQuoteIds || [];
-          
-          // Filter and combine with date
-          const filtered = allQuotes
-            .filter(q => seenIds.includes(q.id!))
-            .map(q => {
-              const markInfo = marked.find(m => m.id === q.id);
-              return { ...q, markedDate: markInfo?.date, wisdomGrade: markInfo?.wisdomGrade };
-            });
+  const fetchLibraryQuotes = useCallback(async () => {
+    if (!user) return;
+    setIsLibraryLoading(true);
+    try {
+      const seenIds = userProfile.seenQuoteIds || [];
+      const marked = userProfile.markedQuotes || [];
+      
+      let allFetchedQuotes: Quote[] = [];
 
-          // Fetch custom quotes
-          const customQuotesRef = collection(db, 'customQuotes');
-          const qCustom = query(customQuotesRef, where('userId', '==', user.uid));
-          const customSnapshot = await getDocs(qCustom);
-          const customQuotes = customSnapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data(),
-            isCustom: true,
-            markedDate: doc.data().date || new Date().toISOString()
-          } as Quote));
-            
-          setLibraryQuotes([...filtered, ...customQuotes]);
-        } catch (error) {
-          console.error('Error fetching library quotes:', error);
-        } finally {
-          setIsLibraryLoading(false);
+      // Fetch global quotes in batches of 30 (Firestore 'in' query limit)
+      if (seenIds.length > 0) {
+        const quotesRef = collection(db, 'quotes');
+        const batches = [];
+        for (let i = 0; i < seenIds.length; i += 30) {
+          batches.push(seenIds.slice(i, i + 30));
         }
-      };
+
+        const batchPromises = batches.map(batch => 
+          getDocs(query(quotesRef, where(documentId(), 'in', batch)))
+        );
+        
+        const snapshots = await Promise.all(batchPromises);
+        allFetchedQuotes = snapshots.flatMap(snapshot => 
+          snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote))
+        );
+      }
+      
+      // Filter and combine with metadata
+      const filtered = allFetchedQuotes.map(q => {
+        const markInfo = marked.find(m => m.id === q.id);
+        return { 
+          ...q, 
+          markedDate: markInfo?.date, 
+          wisdomGrade: markInfo?.wisdomGrade,
+          comment: markInfo?.comment 
+        };
+      });
+
+      // Fetch custom quotes
+      const customQuotesRef = collection(db, 'customQuotes');
+      const qCustom = query(customQuotesRef, where('userId', '==', user.uid));
+      const customSnapshot = await getDocs(qCustom);
+      const customQuotes = customSnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(),
+        isCustom: true,
+        markedDate: doc.data().date || new Date().toISOString()
+      } as Quote));
+        
+      setLibraryQuotes([...filtered, ...customQuotes]);
+    } catch (error) {
+      console.error('Error fetching library quotes:', error);
+    } finally {
+      setIsLibraryLoading(false);
+    }
+  }, [user, userProfile.seenQuoteIds, userProfile.markedQuotes]);
+
+  useEffect(() => {
+    if (activeView === 'library') {
       fetchLibraryQuotes();
     }
-  }, [activeView, user, userProfile.seenQuoteIds, userProfile.markedQuotes]);
+  }, [activeView, fetchLibraryQuotes]);
+
+  const handleUpdateWisdomData = async (quoteId: string, isCustom: boolean) => {
+    if (!user) return;
+    
+    try {
+      if (isCustom) {
+        await setDoc(doc(db, 'customQuotes', quoteId), { 
+          wisdomGrade: editGrade,
+          comment: editComment
+        }, { merge: true });
+      } else {
+        const newMarkedQuotes = (userProfile.markedQuotes || []).map(m => 
+          m.id === quoteId ? { ...m, wisdomGrade: editGrade, comment: editComment } : m
+        );
+        
+        await setDoc(doc(db, 'users', user.uid), { 
+          markedQuotes: newMarkedQuotes
+        }, { merge: true });
+      }
+      
+      setEditingQuoteId(null);
+      fetchLibraryQuotes();
+    } catch (error) {
+      console.error('Error updating wisdom data:', error);
+    }
+  };
 
   const handleAddCustomQuote = async () => {
     if (!user || !newQuote.text.trim()) return;
@@ -992,19 +1035,17 @@ export default function App() {
       };
       
       await addDoc(collection(db, 'customQuotes'), quoteData);
-      setNewQuote({ text: '', author: '', source: 'Philosophy', wisdomGrade: 'A daily reminder' });
+      setNewQuote({ 
+        text: '', 
+        author: '', 
+        source: 'Philosophy', 
+        wisdomGrade: 'A daily reminder',
+        comment: 'This quote changed my life'
+      });
       setIsAddingQuote(false);
       
-      // Re-fetch library quotes
-      const quotesRef = collection(db, 'quotes');
-      const snapshot = await getDocs(quotesRef);
-      const allQuotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
-      const marked = userProfile.markedQuotes || [];
-      const seenIds = userProfile.seenQuoteIds || [];
-      const filtered = allQuotes.filter(q => seenIds.includes(q.id!)).map(q => ({ ...q, markedDate: marked.find(m => m.id === q.id)?.date }));
-      const customSnapshot = await getDocs(query(collection(db, 'customQuotes'), where('userId', '==', user.uid)));
-      const customQuotes = customSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), isCustom: true, markedDate: doc.data().date } as Quote));
-      setLibraryQuotes([...filtered, ...customQuotes]);
+      // Re-fetch library quotes using optimized function
+      fetchLibraryQuotes();
     } catch (error) {
       console.error('Error adding custom quote:', error);
     }
@@ -1049,8 +1090,14 @@ export default function App() {
       if (!snapshot.empty) {
         setWeeklyPlan(snapshot.docs[0].data().plan as DayPlan[]);
       } else {
-        // Create initial plan if none exists
-        addDoc(collection(db, 'plans'), { uid: user.uid, plan: INITIAL_WEEKLY_PLAN });
+        // Use a one-time check to prevent infinite loops in onSnapshot
+        const checkAndSeed = async () => {
+          const checkSnapshot = await getDocs(qPlans);
+          if (checkSnapshot.empty) {
+            await addDoc(collection(db, 'plans'), { uid: user.uid, plan: INITIAL_WEEKLY_PLAN });
+          }
+        };
+        checkAndSeed();
       }
     }, (error) => handleFirestoreError(error, 'list', 'plans'));
 
@@ -1253,17 +1300,26 @@ export default function App() {
         "sticky top-0 z-40 backdrop-blur-xl border-b px-6 py-4 flex items-center justify-between transition-colors duration-500",
         isDarkMode ? "bg-zinc-950/60 border-zinc-800/50" : "bg-white/60 border-zinc-200"
       )}>
-        <div>
-          <h1 className={cn(
-            "text-xl font-bold tracking-tight transition-colors",
-            isDarkMode ? "text-emerald-400" : "text-emerald-600"
-          )}>WiseFit</h1>
-          <p className={cn(
-            "text-xs font-medium uppercase tracking-widest transition-colors",
-            isDarkMode ? "text-zinc-500" : "text-zinc-400"
-          )}>
-            {format(new Date(), 'EEEE, MMM d')}
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center overflow-hidden border border-emerald-500/20">
+            <img 
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 80 Q50 95 80 80 Q90 40 50 20 Q10 40 20 80' fill='%23064e3b'/%3E%3Ccircle cx='35' cy='50' r='12' fill='white'/%3E%3Ccircle cx='65' cy='50' r='12' fill='white'/%3E%3Ccircle cx='35' cy='50' r='5' fill='%23064e3b'/%3E%3Ccircle cx='65' cy='50' r='5' fill='%23064e3b'/%3E%3Cpath d='M46 60 L54 60 L50 70 Z' fill='%23fbbf24'/%3E%3Cpath d='M50 15 Q55 25 50 35 Q45 25 50 15' fill='%23f59e0b'/%3E%3Cpath d='M25 35 L15 20 L35 30' fill='%23064e3b'/%3E%3Cpath d='M75 35 L85 20 L65 30' fill='%23064e3b'/%3E%3C/svg%3E" 
+              alt="WiseFit Logo" 
+              className="w-8 h-8"
+            />
+          </div>
+          <div>
+            <h1 className={cn(
+              "text-xl font-bold tracking-tight transition-colors",
+              isDarkMode ? "text-emerald-400" : "text-emerald-600"
+            )}>WiseFit</h1>
+            <p className={cn(
+              "text-xs font-medium uppercase tracking-widest transition-colors",
+              isDarkMode ? "text-zinc-500" : "text-zinc-400"
+            )}>
+              {format(new Date(), 'EEEE, MMM d')}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <button 
@@ -1368,67 +1424,84 @@ export default function App() {
                       transition={{ duration: 0.5 }}
                       className="space-y-3"
                     >
-                      <p className={cn(
-                        "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                        isDarkMode ? "text-emerald-500/70" : "text-emerald-600/70"
-                      )}>{currentQuote.source} Wisdom</p>
-                      <p className={cn(
-                        "text-lg font-serif italic leading-relaxed transition-colors",
-                        isDarkMode ? "text-zinc-100" : "text-zinc-900"
-                      )}>
-                        "{currentQuote.text}"
-                      </p>
-                      <div className="flex items-center justify-between pt-2">
+                      <div className="space-y-1">
                         <p className={cn(
-                          "text-sm font-medium transition-colors",
-                          isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                        )}>— {currentQuote.author}</p>
-                        
-                        <div className="flex flex-col gap-3">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={handleCopyQuote}
-                              className={cn(
-                                "p-2 rounded-lg transition-all active:scale-95",
-                                isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
-                              )}
-                              title="Copy Quote"
-                            >
-                              {copiedQuote ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                            </button>
-                            <button
-                              onClick={handleShareQuote}
-                              className={cn(
-                                "p-2 rounded-lg transition-all active:scale-95",
-                                isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
-                              )}
-                              title="Share Quote"
-                            >
-                              <Share2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={markQuoteAsSeen}
-                              className={cn(
-                                "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95",
-                                isDarkMode ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                              )}
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              Mark as Wise
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 whitespace-nowrap">Grade:</label>
-                            <select
-                              value={dashboardWisdomGrade}
-                              onChange={(e) => setDashboardWisdomGrade(e.target.value)}
-                              className={cn(
-                                "flex-1 p-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider focus:outline-none focus:ring-1 transition-all cursor-pointer",
-                                isDarkMode 
-                                  ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-emerald-500/50" 
-                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20"
-                              )}
-                            >
+                          "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
+                          isDarkMode ? "text-emerald-500/70" : "text-emerald-600/70"
+                        )}>{currentQuote.source} Wisdom</p>
+                        <p className={cn(
+                          "text-lg font-serif italic leading-relaxed transition-colors",
+                          isDarkMode ? "text-zinc-100" : "text-zinc-900"
+                        )}>
+                          "{currentQuote.text}"
+                        </p>
+                        <p className={cn(
+                          "text-[11px] font-bold transition-colors",
+                          isDarkMode ? "text-blue-400" : "text-blue-600"
+                        )}>{currentQuote.author}</p>
+                      </div>
+
+                      <div className="space-y-4 pt-2">
+                        <div className="space-y-2">
+                          <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block text-center">Comment:</label>
+                          <textarea
+                            value={dashboardComment}
+                            onChange={(e) => setDashboardComment(e.target.value)}
+                            placeholder="Add a personal reflection..."
+                            className={cn(
+                              "w-full p-2 rounded-lg border text-[10px] focus:outline-none focus:ring-1 transition-all resize-none h-10 text-center",
+                              isDarkMode 
+                                ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-emerald-500/50" 
+                                : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20"
+                            )}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={handleCopyQuote}
+                            className={cn(
+                              "p-2 rounded-lg transition-all active:scale-95",
+                              isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                            )}
+                            title="Copy Quote"
+                          >
+                            {copiedQuote ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            onClick={handleShareQuote}
+                            className={cn(
+                              "p-2 rounded-lg transition-all active:scale-95",
+                              isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                            )}
+                            title="Share Quote"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={markQuoteAsSeen}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95",
+                              isDarkMode ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                            )}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Mark as Wise
+                          </button>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block text-center">Grade:</label>
+                          <select
+                            value={dashboardWisdomGrade}
+                            onChange={(e) => setDashboardWisdomGrade(e.target.value)}
+                            className={cn(
+                              "w-full p-2 rounded-lg border text-[9px] font-bold uppercase tracking-wider focus:outline-none focus:ring-1 transition-all cursor-pointer text-center appearance-none",
+                              isDarkMode 
+                                ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-emerald-500/50" 
+                                : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20"
+                            )}
+                          >
                               <option value="The wisest quote ever" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>The wisest quote ever</option>
                               <option value="My favourite" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>My favourite</option>
                               <option value="This one changed my life for better" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>This one changed my life for better</option>
@@ -1455,11 +1528,10 @@ export default function App() {
                             </select>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-              </motion.div>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
 
               {/* Wisdom Scoreboard */}
               <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
@@ -2429,6 +2501,20 @@ export default function App() {
                           <option value="Echoes of the ancients" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Echoes of the ancients</option>
                         </select>
                       </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-purple-500 px-1">Personal Comment</label>
+                        <textarea
+                          value={newQuote.comment}
+                          onChange={(e) => setNewQuote({ ...newQuote, comment: e.target.value })}
+                          placeholder="Add a personal reflection..."
+                          className={cn(
+                            "w-full p-3 rounded-xl border text-xs focus:outline-none focus:ring-2 transition-all resize-none h-20",
+                            isDarkMode 
+                              ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
+                              : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
+                          )}
+                        />
+                      </div>
                       <button
                         onClick={handleAddCustomQuote}
                         disabled={!newQuote.text.trim()}
@@ -2520,26 +2606,117 @@ export default function App() {
                                 )}>
                                   "{quote.text}"
                                 </p>
-                                {quote.wisdomGrade && (
-                                  <p className={cn(
-                                    "text-[9px] font-bold uppercase tracking-wider mb-3",
-                                    quote.isCustom ? "text-purple-400" : "text-yellow-500"
-                                  )}>
-                                    {quote.wisdomGrade}
-                                  </p>
-                                )}
-                                <div className="flex items-center justify-between">
-                                  <p className={cn(
-                                    "text-xs",
-                                    quote.isCustom ? "text-purple-500" : quote.wisdomGrade ? "text-yellow-500" : "text-zinc-500"
-                                  )}>— {quote.author}</p>
-                                  {quote.markedDate && (
-                                    <p className={cn(
-                                      "text-[10px] font-medium",
-                                      quote.isCustom ? "text-purple-400/70" : quote.wisdomGrade ? "text-yellow-500/70" : "text-zinc-600"
+                                  <div className="mt-4 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className={cn("h-[1px] flex-1", quote.isCustom ? "bg-purple-500/20" : "bg-yellow-500/20")} />
+                                      <span className={cn(
+                                        "text-[8px] font-black uppercase tracking-[0.2em]",
+                                        quote.isCustom ? "text-purple-400/70" : "text-yellow-500/70"
+                                      )}>Wisdom Data</span>
+                                      <div className={cn("h-[1px] flex-1", quote.isCustom ? "bg-purple-500/20" : "bg-yellow-500/20")} />
+                                    </div>
+                                    
+                                    {editingQuoteId === quote.id ? (
+                                      <div className="space-y-3 p-3 rounded-2xl bg-zinc-900/40 border border-zinc-800/50">
+                                        <div className="grid grid-cols-2 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-[7px] font-bold uppercase tracking-widest text-zinc-500">Grade:</label>
+                                            <select
+                                              value={editGrade}
+                                              onChange={(e) => setEditGrade(e.target.value)}
+                                              className={cn(
+                                                "w-full p-1.5 rounded-lg border text-[10px] focus:outline-none focus:ring-1 transition-all",
+                                                isDarkMode 
+                                                  ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-emerald-500/50" 
+                                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20"
+                                              )}
+                                            >
+                                              <option value="A daily reminder" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>A daily reminder</option>
+                                              <option value="The wisest quote ever" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>The wisest quote ever</option>
+                                              <option value="My favourite" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>My favourite</option>
+                                              <option value="This one changed my life for better" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>This one changed my life for better</option>
+                                              <option value="I realised this quote is so true in my own experience" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>I realised this quote is so true in my own experience</option>
+                                              <option value="Pure gold" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Pure gold</option>
+                                              <option value="Timeless truth" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Timeless truth</option>
+                                              <option value="Echoes of the ancients" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Echoes of the ancients</option>
+                                            </select>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-[7px] font-bold uppercase tracking-widest text-zinc-500">Reflection:</label>
+                                            <textarea
+                                              value={editComment}
+                                              onChange={(e) => setEditComment(e.target.value)}
+                                              className={cn(
+                                                "w-full p-1.5 rounded-lg border text-[10px] focus:outline-none focus:ring-1 transition-all resize-none h-8",
+                                                isDarkMode 
+                                                  ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-emerald-500/50" 
+                                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20"
+                                              )}
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-2 pt-1">
+                                          <button
+                                            onClick={() => handleUpdateWisdomData(quote.id!, quote.isCustom || false)}
+                                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider hover:bg-emerald-500 transition-colors"
+                                          >
+                                            Save Changes
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingQuoteId(null)}
+                                            className="px-3 py-2 bg-zinc-800 text-zinc-400 rounded-lg text-[9px] font-bold uppercase tracking-wider hover:bg-zinc-700 transition-colors"
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-2 group/data relative">
+                                        <button
+                                          onClick={() => {
+                                            setEditingQuoteId(quote.id!);
+                                            setEditGrade(quote.wisdomGrade || 'A daily reminder');
+                                            setEditComment(quote.comment || '');
+                                          }}
+                                          className="absolute -top-6 right-0 transition-opacity text-[8px] font-bold uppercase tracking-wider text-emerald-500 hover:text-emerald-400"
+                                        >
+                                          COMMENT
+                                        </button>
+                                        {quote.wisdomGrade && (
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[7px] font-bold uppercase tracking-widest text-zinc-500">Grade:</span>
+                                            <p className={cn(
+                                              "text-[9px] font-bold uppercase tracking-wider",
+                                              quote.isCustom ? "text-purple-400" : "text-yellow-500"
+                                            )}>
+                                              {quote.wisdomGrade}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                <div className="mt-3 pt-3 border-t border-zinc-800/10 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-[16px] font-bold text-blue-500">{quote.author}</p>
+                                    {quote.markedDate && (
+                                      <p className={cn(
+                                        "text-[9px] font-medium",
+                                        isDarkMode ? "text-zinc-600" : "text-zinc-400"
+                                      )}>
+                                        {format(new Date(quote.markedDate), 'MMM d, yyyy')}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {quote.comment && !editingQuoteId && (
+                                    <div className={cn(
+                                      "p-2 rounded-xl text-[10px] leading-relaxed italic border-l-2",
+                                      quote.isCustom 
+                                        ? "bg-purple-500/5 border-purple-500/30 text-purple-300/70" 
+                                        : "bg-yellow-500/5 border-yellow-500/30 text-yellow-300/70"
                                     )}>
-                                      {format(new Date(quote.markedDate), 'MMM d, yyyy')}
-                                    </p>
+                                      "{quote.comment}"
+                                    </div>
                                   )}
                                 </div>
                               </motion.div>
