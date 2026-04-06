@@ -385,13 +385,45 @@ export default function App() {
   const fetchRandomQuote = async (excludeIds: string[] = []) => {
     try {
       const quotesRef = collection(db, 'quotes');
-      const markedIds = (userProfile.markedQuotes || []).map(q => q.id);
-      const allExcluded = Array.from(new Set([...excludeIds, ...markedIds]));
+      const markedQuotes = userProfile.markedQuotes || [];
+      const markedIds = markedQuotes.map(q => q.id);
+      const seenIds = userProfile.seenQuoteIds || [];
+      
+      // 10% chance to show an "old" quote (already marked as wise)
+      const showOldQuote = Math.random() < 0.1 && markedQuotes.length > 0;
+
+      if (showOldQuote) {
+        // Pick a random marked quote
+        const randomIndex = Math.floor(Math.random() * markedQuotes.length);
+        const selectedMarked = markedQuotes[randomIndex];
+        
+        // We need to fetch the full quote data if it's not fully stored in markedQuotes
+        // or just use what we have. Let's try to fetch it to be sure.
+        if (selectedMarked.id && selectedMarked.id !== 'default-stoic-quote') {
+          const qDoc = await getDoc(doc(db, 'quotes', selectedMarked.id));
+          if (qDoc.exists()) {
+            setCurrentQuote({ id: qDoc.id, ...qDoc.data() } as Quote);
+            return;
+          }
+        }
+        
+        // Fallback to the stored data in markedQuotes if fetch fails or it's the default
+        setCurrentQuote({
+          id: selectedMarked.id,
+          text: (selectedMarked as any).text || "Wisdom is the reward you get for a lifetime of listening.",
+          author: (selectedMarked as any).author || "Unknown",
+          source: "Stoic",
+          randomId: 0
+        });
+        return;
+      }
+
+      // 90% chance (or fallback) to show a "new" quote
+      const allExcluded = Array.from(new Set([...excludeIds, ...markedIds, ...seenIds]));
 
       // Fetch a small batch of quotes and pick one that isn't excluded
-      // This is much more efficient than multiple random attempts
       const randomNum = Math.random();
-      const q = query(quotesRef, where('randomId', '>=', randomNum), limit(10));
+      const q = query(quotesRef, where('randomId', '>=', randomNum), limit(20));
       const snapshot = await getDocs(q);
       
       let candidates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
@@ -399,10 +431,16 @@ export default function App() {
 
       if (!quoteData) {
         // Try the other direction if no results or all excluded
-        const q2 = query(quotesRef, where('randomId', '<=', randomNum), limit(10));
+        const q2 = query(quotesRef, where('randomId', '<=', randomNum), limit(20));
         const snapshot2 = await getDocs(q2);
         candidates = snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
         quoteData = candidates.find(q => !allExcluded.includes(q.id || ''));
+      }
+
+      // Final fallback: if we still don't have a quote (maybe all are seen), 
+      // just pick any random one from the first batch
+      if (!quoteData && candidates.length > 0) {
+        quoteData = candidates[Math.floor(Math.random() * candidates.length)];
       }
 
       if (quoteData) {
@@ -530,6 +568,40 @@ export default function App() {
     } catch (error) {
       console.error('Error generating quotes:', error);
       alert('Failed to generate quotes. Please try again.');
+    } finally {
+      setIsGeneratingQuotes(false);
+    }
+  };
+
+  const generateLatinQuotes = async () => {
+    if (isGeneratingQuotes) return;
+    setIsGeneratingQuotes(true);
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: "Generate 50 unique, powerful Latin expressions and philosophical quotes with their English translations. Format as JSON array: [{text, author, source}]. The 'text' field should contain the Latin expression followed by the English translation in parentheses. The 'author' should be the historical figure or 'Ancient Proverb'. The 'source' should be 'Latin'. No markdown formatting, just the raw JSON array.",
+        config: {
+          responseMimeType: "application/json"
+        }
+      });
+
+      const newQuotes = JSON.parse(response.text || '[]');
+      const quotesRef = collection(db, 'quotes');
+      
+      for (const q of newQuotes) {
+        await addDoc(quotesRef, {
+          ...q,
+          randomId: Math.random()
+        });
+      }
+      
+      const snapshot = await getCountFromServer(quotesRef);
+      const newCount = snapshot.data().count;
+      setQuoteCount(newCount);
+      alert(`Successfully added ${newQuotes.length} new Latin expressions! Total: ${newCount}`);
+    } catch (error) {
+      console.error('Error generating Latin quotes:', error);
+      alert('Failed to generate Latin quotes. Please try again.');
     } finally {
       setIsGeneratingQuotes(false);
     }
@@ -2266,6 +2338,31 @@ export default function App() {
                     </>
                   )}
                 </button>
+
+                {isAdminUser && (
+                  <button 
+                    onClick={generateLatinQuotes}
+                    disabled={isGeneratingQuotes}
+                    className={cn(
+                      "w-full py-3 rounded-2xl font-bold active:scale-95 transition-all flex items-center justify-center gap-2",
+                      isGeneratingQuotes
+                        ? (isDarkMode ? "bg-zinc-800 text-zinc-600" : "bg-zinc-100 text-zinc-400")
+                        : "bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20"
+                    )}
+                  >
+                    {isGeneratingQuotes ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Generating Latin...
+                      </>
+                    ) : (
+                      <>
+                        <BookOpen className="w-5 h-5" />
+                        Generate 50 Latin Expressions
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
               <button 
