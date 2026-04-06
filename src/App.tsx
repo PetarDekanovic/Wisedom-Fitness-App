@@ -84,7 +84,8 @@ import {
   serverTimestamp,
   getDocFromServer,
   limit,
-  getCountFromServer
+  getCountFromServer,
+  documentId
 } from 'firebase/firestore';
 import { GoogleGenAI, Modality } from "@google/genai";
 
@@ -413,14 +414,21 @@ export default function App() {
   };
 
   const markQuoteAsSeen = async () => {
-    if (!user || !currentQuote.id) return;
+    if (!user) return;
     
-    const newSeenIds = [...(userProfile.seenQuoteIds || []), currentQuote.id];
+    // If the quote has no ID (like the default one), we should still allow marking it
+    // but we might need to handle it differently. For now, let's just ensure we have an ID.
+    const quoteId = currentQuote.id || 'default-stoic-quote';
+    
+    const newSeenIds = Array.from(new Set([...(userProfile.seenQuoteIds || []), quoteId]));
     const newMarkedQuotes = [...(userProfile.markedQuotes || []), { 
-      id: currentQuote.id, 
+      id: quoteId, 
       date: new Date().toISOString(),
       wisdomGrade: dashboardWisdomGrade,
-      comment: dashboardComment
+      comment: dashboardComment,
+      // Store the text and author too, just in case the quote is deleted or it's the default one
+      text: currentQuote.text,
+      author: currentQuote.author
     }];
     
     try {
@@ -936,18 +944,22 @@ export default function App() {
   const fetchLibraryQuotes = useCallback(async () => {
     if (!user) return;
     setIsLibraryLoading(true);
+    console.log('Fetching library quotes for user:', user.uid);
     try {
-      const seenIds = userProfile.seenQuoteIds || [];
       const marked = userProfile.markedQuotes || [];
+      const markedIds = Array.from(new Set(marked.map(m => m.id).filter(Boolean) as string[]));
+      
+      console.log('Marked IDs found:', markedIds.length);
       
       let allFetchedQuotes: Quote[] = [];
 
-      // Fetch global quotes in batches of 30 (Firestore 'in' query limit)
-      if (seenIds.length > 0) {
+      // Fetch global quotes that are marked as wise
+      if (markedIds.length > 0) {
         const quotesRef = collection(db, 'quotes');
         const batches = [];
-        for (let i = 0; i < seenIds.length; i += 30) {
-          batches.push(seenIds.slice(i, i + 30));
+        // Firestore 'in' query limit is 30
+        for (let i = 0; i < markedIds.length; i += 30) {
+          batches.push(markedIds.slice(i, i + 30));
         }
 
         const batchPromises = batches.map(batch => 
@@ -958,9 +970,10 @@ export default function App() {
         allFetchedQuotes = snapshots.flatMap(snapshot => 
           snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote))
         );
+        console.log('Fetched global quotes:', allFetchedQuotes.length);
       }
       
-      // Filter and combine with metadata
+      // Combine with metadata from markedQuotes
       const filtered = allFetchedQuotes.map(q => {
         const markInfo = marked.find(m => m.id === q.id);
         return { 
@@ -970,6 +983,20 @@ export default function App() {
           comment: markInfo?.comment 
         };
       });
+
+      // Also include marked quotes that might not be in the global collection anymore
+      // or were the default quote
+      const missingGlobalQuotes = marked
+        .filter(m => !allFetchedQuotes.some(q => q.id === m.id))
+        .map(m => ({
+          id: m.id,
+          text: (m as any).text || 'Unknown Quote',
+          author: (m as any).author || 'Unknown Author',
+          source: 'Stoic',
+          markedDate: m.date,
+          wisdomGrade: m.wisdomGrade,
+          comment: m.comment
+        }));
 
       // Fetch custom quotes
       const customQuotesRef = collection(db, 'customQuotes');
@@ -981,14 +1008,23 @@ export default function App() {
         isCustom: true,
         markedDate: doc.data().date || new Date().toISOString()
       } as Quote));
+      console.log('Fetched custom quotes:', customQuotes.length);
         
-      setLibraryQuotes([...filtered, ...customQuotes]);
+      // Sort by marked date descending
+      const combined = [...filtered, ...missingGlobalQuotes, ...customQuotes].sort((a, b) => {
+        const dateA = new Date(a.markedDate || 0).getTime();
+        const dateB = new Date(b.markedDate || 0).getTime();
+        return dateB - dateA;
+      });
+
+      console.log('Total library quotes:', combined.length);
+      setLibraryQuotes(combined);
     } catch (error) {
       console.error('Error fetching library quotes:', error);
     } finally {
       setIsLibraryLoading(false);
     }
-  }, [user, userProfile.seenQuoteIds, userProfile.markedQuotes]);
+  }, [user, userProfile.markedQuotes]);
 
   useEffect(() => {
     if (activeView === 'library') {
