@@ -1926,7 +1926,7 @@ export default function App() {
                 <div className="grid grid-cols-1 gap-3">
                   {/* Exercise Plans Folder (Files & Drive Links) */}
                   {workouts.flatMap(w => (w.attachments || []).map(att => ({ ...att, workoutName: w.name, workoutDate: w.date })))
-                    .filter(att => att.type === 'file' || att.type === 'google-drive')
+                    .filter(att => att.type === 'file' || att.type === 'google-drive' || att.type === 'link')
                     .map(att => (
                       <a 
                         key={att.id}
@@ -1944,6 +1944,11 @@ export default function App() {
                             isDarkMode ? "bg-zinc-800" : "bg-zinc-100"
                           )}>
                             {att.type === 'google-drive' && <Cloud className="w-5 h-5 text-blue-500" />}
+                            {att.type === 'link' && (
+                              <>
+                                {att.url.includes('tiktok.com') ? <Music className="w-5 h-5 text-zinc-400" /> : <Link className="w-5 h-5 text-blue-400" />}
+                              </>
+                            )}
                             {att.type === 'file' && (
                               <>
                                 {att.fileType?.includes('mp4') && <Video className="w-5 h-5 text-purple-500" />}
@@ -1962,7 +1967,7 @@ export default function App() {
                         <ExternalLink className="w-4 h-4 text-zinc-500 group-hover:text-emerald-500 transition-colors" />
                       </a>
                     ))}
-                  {workouts.flatMap(w => w.attachments || []).filter(att => att.type === 'file' || att.type === 'google-drive').length === 0 && (
+                  {workouts.flatMap(w => w.attachments || []).filter(att => att.type === 'file' || att.type === 'google-drive' || att.type === 'link').length === 0 && (
                     <div className={cn(
                       "flex flex-col items-center justify-center p-12 rounded-3xl border-2 border-dashed",
                       isDarkMode ? "border-zinc-800" : "border-zinc-200"
@@ -3297,8 +3302,36 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
   const [failedThumbnails, setFailedThumbnails] = useState<Record<string, boolean>>({});
+  const [tiktokThumbnails, setTiktokThumbnails] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeAttachmentId, setActiveAttachmentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTikTokThumbnails = async () => {
+      const tiktokRegex = /(?:https?:\/\/)?(?:www\.|vm\.|vt\.|t\.)?tiktok\.com\/[^\s]+/g;
+      const links = workout.content?.match(tiktokRegex) || [];
+      
+      for (const link of links) {
+        if (!tiktokThumbnails[link]) {
+          try {
+            const response = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(link)}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.thumbnail_url) {
+                setTiktokThumbnails(prev => ({ ...prev, [link]: data.thumbnail_url }));
+              }
+            }
+          } catch (e) {
+            console.error("TikTok oEmbed error:", e);
+          }
+        }
+      }
+    };
+    
+    if (workout.content) {
+      fetchTikTokThumbnails();
+    }
+  }, [workout.content]);
 
   const getYoutubeId = (url: string) => {
     if (!url) return null;
@@ -3423,6 +3456,45 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
                     </div>
                   </div>
                 </a>
+              );
+            }
+            return null;
+          })()}
+
+          {(() => {
+            const tiktokRegex = /(?:https?:\/\/)?(?:www\.|vm\.|vt\.|t\.)?tiktok\.com\/[^\s]+/g;
+            const links = workout.content?.match(tiktokRegex) || [];
+            if (links.length > 0) {
+              return (
+                <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                  {links.map((link, idx) => (
+                    <a 
+                      key={idx}
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 relative aspect-[9/16] w-32 rounded-2xl overflow-hidden bg-zinc-900 group/tiktok"
+                    >
+                      {tiktokThumbnails[link] ? (
+                        <img 
+                          src={tiktokThumbnails[link]} 
+                          alt="TikTok Preview" 
+                          className="w-full h-full object-cover opacity-80 group-hover/tiktok:opacity-100 transition-opacity"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                          <Video className="w-8 h-8 text-zinc-700" />
+                          <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">TikTok</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-10 h-10 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 transform group-hover/tiktok:scale-110 transition-transform">
+                          <Music className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
               );
             }
             return null;
@@ -3569,20 +3641,21 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
       <div className="pt-3 border-t border-zinc-800/20">
         <button 
           onClick={() => setShowComments(!showComments)}
-          className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-emerald-500 transition-colors"
+          className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-emerald-500 transition-colors mb-3"
         >
           <MessageSquare className="w-3 h-3" />
           {workout.comments?.length || 0} Comments
         </button>
 
-        {showComments && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="mt-4 space-y-4"
-          >
-            <div className="space-y-3">
-              {workout.comments?.map(comment => (
+        <AnimatePresence>
+          {showComments && workout.comments && workout.comments.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4 space-y-3 overflow-hidden"
+            >
+              {workout.comments.map(comment => (
                 <div key={comment.id} className="flex gap-3">
                   <img src={comment.userAvatar} alt={comment.userName} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
                   <div className={cn(
@@ -3597,39 +3670,39 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
                   </div>
                 </div>
               ))}
-            </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            <div className="flex gap-2">
-              <input 
-                type="text"
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && commentText.trim()) {
-                    onAddComment?.(workout.id, commentText);
-                    setCommentText('');
-                  }
-                }}
-                placeholder="Add a comment..."
-                className={cn(
-                  "flex-1 px-3 py-2 rounded-xl text-xs focus:outline-none focus:border-emerald-500 transition-all",
-                  isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
-                )}
-              />
-              <button 
-                onClick={() => {
-                  if (commentText.trim()) {
-                    onAddComment?.(workout.id, commentText);
-                    setCommentText('');
-                  }
-                }}
-                className="p-2 bg-emerald-500 text-zinc-950 rounded-xl active:scale-95 transition-transform"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
+        <div className="flex gap-2">
+          <input 
+            type="text"
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && commentText.trim()) {
+                onAddComment?.(workout.id, commentText);
+                setCommentText('');
+              }
+            }}
+            placeholder="Add a comment..."
+            className={cn(
+              "flex-1 px-3 py-2 rounded-xl text-xs focus:outline-none focus:border-emerald-500 transition-all",
+              isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+            )}
+          />
+          <button 
+            onClick={() => {
+              if (commentText.trim()) {
+                onAddComment?.(workout.id, commentText);
+                setCommentText('');
+              }
+            }}
+            className="p-2 bg-emerald-500 text-zinc-950 rounded-xl active:scale-95 transition-transform"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
