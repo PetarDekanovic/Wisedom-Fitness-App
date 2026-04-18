@@ -60,6 +60,21 @@ export interface DayPlan {
   exercises: PlannedExercise[];
 }
 
+export interface YogaPose {
+  id: string;
+  name: string;
+  duration: number; // in seconds
+  description?: string;
+  counterPose?: string;
+}
+
+export interface YogaFlow {
+  id: string;
+  name: string;
+  description: string;
+  poses: YogaPose[];
+}
+
 export interface UserProfile {
   uid?: string;
   name: string;
@@ -74,7 +89,17 @@ export interface UserProfile {
   oneRMWeighted: number;
   avatarUrl: string;
   seenQuoteIds?: string[];
-  markedQuotes?: { id: string; date: string; wisdomGrade?: string; comment?: string }[];
+  markedQuotes?: { 
+    id: string; 
+    date: string; 
+    wisdomGrade?: string; 
+    comment?: string;
+    text?: string;
+    author?: string;
+    source?: string;
+    category?: string;
+    isAI?: boolean;
+  }[];
   dailyExercises?: { id: string; name: string; completed: boolean }[];
   dailyExerciseHistory?: { date: string; completedCount: number; totalCount: number }[];
   role?: 'user' | 'admin';
@@ -99,8 +124,10 @@ export interface Quote {
   source: string;
   randomId: number;
   isCustom?: boolean;
+  isAI?: boolean;
   userId?: string;
   markedDate?: string;
   wisdomGrade?: string;
   comment?: string;
+  category?: 'fitness' | 'wisdom' | 'finance';
 }

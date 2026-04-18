@@ -36,6 +36,15 @@ service cloud.firestore {
     //   - userId: string (required, immutable)
     //   - plan: list (required)
     //
+    // Collection: quotes
+    // Document ID: auto-generated
+    // Fields:
+    //   - text: string (required)
+    //   - author: string (required)
+    //   - source: string (required)
+    //   - randomId: number (required)
+    //   - category: string (optional, enum: ['fitness', 'wisdom', 'finance'])
+    //
     // ===============================================================
 
     // ===============================================================
@@ -91,7 +100,8 @@ service cloud.firestore {
              data.text is string && data.text.size() > 0 && data.text.size() < 1000 &&
              data.author is string && data.author.size() > 0 && data.author.size() < 100 &&
              data.source is string && data.source.size() > 0 && data.source.size() < 100 &&
-             data.randomId is number;
+             data.randomId is number &&
+             (!('category' in data) || (data.category in ['fitness', 'wisdom', 'finance']));
     }
 
     // ===============================================================

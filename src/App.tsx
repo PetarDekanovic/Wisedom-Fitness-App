@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, ChangeEvent, Component } from 'react';
+import { INITIAL_QUOTES } from './data/initialQuotes';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Activity, 
@@ -31,6 +32,7 @@ import {
   Database,
   Sparkles,
   Sprout,
+  Heart,
   BookOpen,
   Compass,
   GraduationCap,
@@ -48,9 +50,23 @@ import {
   ExternalLink,
   Edit,
   X,
+  Wind,
+  Play,
+  Pause,
+  RotateCcw,
+  SkipForward,
   Folder,
   Layout,
-  Cloud
+  Cloud,
+  Lock,
+  DollarSign,
+  Clover,
+  Radio,
+  Sword,
+  Trophy,
+  Medal,
+  Star,
+  RefreshCw
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -88,6 +104,55 @@ import {
   documentId
 } from 'firebase/firestore';
 import { GoogleGenAI, Modality } from "@google/genai";
+import YogaView from './components/YogaView';
+
+// Error Boundary Component
+class ErrorBoundary extends (Component as any) {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-6 text-center">
+          <div className="max-w-md space-y-4">
+            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
+              <Activity className="w-8 h-8 text-red-500" />
+            </div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Something went wrong</h1>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              The application encountered an unexpected error. This might be due to a browser limitation or a temporary connection issue.
+            </p>
+            <div className="bg-zinc-900/50 border border-zinc-800 p-4 rounded-2xl text-left">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Error Details:</p>
+              <pre className="text-[10px] text-zinc-400 overflow-auto max-h-32 font-mono">
+                {this.state.error?.message || "Unknown error"}
+              </pre>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full py-3 bg-emerald-500 text-zinc-950 rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+            >
+              Refresh Application
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 // Mock Data
 const AVATARS = [
@@ -100,7 +165,7 @@ const AVATARS = [
 ];
 
 const INITIAL_PROFILE: UserProfile = {
-  name: 'Petar',
+  name: 'Guest',
   height: 182,
   currentWeight: 80,
   targetWeight: 75,
@@ -115,20 +180,6 @@ const INITIAL_PROFILE: UserProfile = {
   dailyExercises: [],
   dailyExerciseHistory: []
 };
-
-const INITIAL_QUOTES: Omit<Quote, 'id' | 'randomId'>[] = [
-  { text: "Don't explain your philosophy, embody it.", author: "Epictetus", source: "Stoic" },
-  { text: "The happiness of your life depends upon the quality of your thoughts.", author: "Marcus Aurelius", source: "Stoic" },
-  { text: "Luck is what happens when preparation meets opportunity.", author: "Seneca", source: "Stoic" },
-  { text: "The nature of man is evil; his goodness is the result of conscious activity.", author: "Xunzi", source: "Chinese" },
-  { text: "If there is no inner self-cultivation, how can one govern others?", author: "Xunzi", source: "Chinese" },
-  { text: "The way of the warrior is resolute acceptance of death.", author: "Miyamoto Musashi", source: "Japanese" },
-  { text: "Fall seven times, stand up eight.", author: "Japanese Proverb", source: "Japanese" },
-  { text: "Love your neighbor as yourself.", author: "Jesus Christ", source: "Christian" },
-  { text: "Ask and it will be given to you; seek and you will find.", author: "Jesus Christ", source: "Christian" },
-  { text: "He who saves a single life, saves the entire world.", author: "The Talmud", source: "Jewish" },
-  { text: "If I am not for myself, who will be for me? If I am only for myself, what am I?", author: "Hillel the Elder", source: "Jewish" },
-];
 
 const WISDOM_LEVELS = [
   { threshold: 10000, title: 'Real Wise Guy', icon: Bird, description: 'Master of all traditions. The ultimate wise guy.', color: 'text-yellow-500' },
@@ -331,9 +382,17 @@ const MOCK_WORKOUTS: Workout[] = [
   }
 ];
 
-type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library';
+type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library' | 'yoga';
 
 export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
+}
+
+function AppContent() {
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [historySubView, setHistorySubView] = useState<'journal' | 'plans'>('journal');
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -348,10 +407,15 @@ export default function App() {
   const [isGeneratingQuotes, setIsGeneratingQuotes] = useState(false);
   const [libraryQuotes, setLibraryQuotes] = useState<(Quote & { markedDate?: string })[]>([]);
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
+  const [isGeneratingAIQuote, setIsGeneratingAIQuote] = useState(false);
+  const [aiCountdown, setAiCountdown] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [editGrade, setEditGrade] = useState('');
   const [editComment, setEditComment] = useState('');
   const [isAddingQuote, setIsAddingQuote] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [newQuote, setNewQuote] = useState({ 
     text: '', 
     author: '', 
@@ -363,131 +427,633 @@ export default function App() {
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [dashboardWisdomGrade, setDashboardWisdomGrade] = useState('A daily reminder');
   const [dashboardComment, setDashboardComment] = useState('This quote changed my life');
+  const [isYogaSessionActive, setIsYogaSessionActive] = useState(false);
+  const [isAutoFlowActive, setIsAutoFlowActive] = useState(false);
+  const [isAILoopActive, setIsAILoopActive] = useState(false);
+  const [autoFlowTimer, setAutoFlowTimer] = useState(30);
+  const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
+  const [quotesPool, setQuotesPool] = useState<Quote[]>([]);
+  const quotesPoolRef = useRef<Quote[]>([]);
+  const isRefillingPoolRef = useRef(false);
+  const isFetchingQuoteRef = useRef(false);
+  const [isRefillingPool, setIsRefillingPool] = useState(false);
+  const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
+  const [selectedLibraryIds, setSelectedLibraryIds] = useState<Set<string>>(new Set());
+  const [isLibrarySelectMode, setIsLibrarySelectMode] = useState(false);
+
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('petar_theme');
+      return saved ? saved === 'dark' : true;
+    } catch (e) {
+      return true;
+    }
+  });
   
+  // Chat State
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
   const [currentQuote, setCurrentQuote] = useState<Quote>({
     text: "The happiness of your life depends upon the quality of your thoughts.",
     author: "Marcus Aurelius",
     source: "Stoic",
     randomId: 0
   });
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('petar_theme');
-    return saved ? saved === 'dark' : true;
-  });
-  
-  // Chat State
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [quoteHistory, setQuoteHistory] = useState<Quote[]>([{
+    text: "The happiness of your life depends upon the quality of your thoughts.",
+    author: "Marcus Aurelius",
+    source: "Stoic",
+    randomId: 0
+  }]);
+  const quoteHistoryRef = useRef<Quote[]>(quoteHistory);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  useEffect(() => {
+    quoteHistoryRef.current = quoteHistory;
+  }, [quoteHistory]);
+
+  // Initialize Gemini lazily
+  const ai = React.useMemo(() => {
+    try {
+      const key = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
+      if (!key) {
+        console.warn('GEMINI_API_KEY is missing');
+        return null;
+      }
+      return new GoogleGenAI({ apiKey: key as string });
+    } catch (e) {
+      console.error('Failed to initialize Gemini:', e);
+      return null;
+    }
+  }, []);
+
+  // Audio State
   const [isSpeaking, setIsSpeaking] = useState<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  const fetchRandomQuote = async (excludeIds: string[] = []) => {
-    try {
-      const quotesRef = collection(db, 'quotes');
-      const markedQuotes = userProfile.markedQuotes || [];
-      const markedIds = markedQuotes.map(q => q.id);
-      const seenIds = userProfile.seenQuoteIds || [];
-      
-      // 10% chance to show an "old" quote (already marked as wise)
-      const showOldQuote = Math.random() < 0.1 && markedQuotes.length > 0;
+  const handleSpeak = useCallback(async (text: string, index: number) => {
+    if (isSpeaking === index) {
+      currentSourceRef.current?.stop();
+      setIsSpeaking(null);
+      return;
+    }
 
-      if (showOldQuote) {
-        // Pick a random marked quote
-        const randomIndex = Math.floor(Math.random() * markedQuotes.length);
-        const selectedMarked = markedQuotes[randomIndex];
-        
-        // We need to fetch the full quote data if it's not fully stored in markedQuotes
-        // or just use what we have. Let's try to fetch it to be sure.
-        if (selectedMarked.id && selectedMarked.id !== 'default-stoic-quote') {
-          const qDoc = await getDoc(doc(db, 'quotes', selectedMarked.id));
-          if (qDoc.exists()) {
-            setCurrentQuote({ id: qDoc.id, ...qDoc.data() } as Quote);
-            return;
-          }
+    if (!ai) return;
+    setIsSpeaking(index);
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: `Say in a calm, stoic, and authoritative voice: ${text}` }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Zephyr' },
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        const binaryString = atob(base64Audio);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
         }
         
-        // Fallback to the stored data in markedQuotes if fetch fails or it's the default
-        setCurrentQuote({
-          id: selectedMarked.id,
-          text: (selectedMarked as any).text || "Wisdom is the reward you get for a lifetime of listening.",
-          author: (selectedMarked as any).author || "Unknown",
-          source: "Stoic",
-          randomId: 0
-        });
+        const pcmData = new Int16Array(bytes.buffer);
+        const float32Data = new Float32Array(pcmData.length);
+        for (let i = 0; i < pcmData.length; i++) {
+          float32Data[i] = pcmData[i] / 32768.0;
+        }
+
+        if (!audioContextRef.current) {
+          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        
+        const buffer = audioContextRef.current.createBuffer(1, float32Data.length, 24000);
+        buffer.getChannelData(0).set(float32Data);
+        
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContextRef.current.destination);
+        
+        currentSourceRef.current = source;
+        source.start();
+        source.onended = () => {
+          setIsSpeaking(null);
+          currentSourceRef.current = null;
+        };
+      }
+    } catch (error: any) {
+      console.error('TTS failed:', error);
+      // Check for quota error (429)
+      if (error?.message?.includes('429') || error?.status === 'RESOURCE_EXHAUSTED' || JSON.stringify(error).includes('429')) {
+        console.warn('Daily voice limit reached (Quota 429).');
+        // Optional: Show a user-friendly message in the UI if you have a toast system
+      }
+      setIsSpeaking(null);
+    }
+  }, [ai, isSpeaking]);
+
+  const fetchAIQuote = useCallback(async (history: Quote[] = []): Promise<Quote | null> => {
+    if (!ai) {
+      console.warn('AI not initialized - skipping AI quote generation');
+      return null;
+    }
+    setIsGeneratingAIQuote(true);
+    setAiCountdown(12);
+    
+    // Start countdown
+    const timer = setInterval(() => {
+      setAiCountdown(prev => Math.max(0, prev - 1));
+    }, 1000);
+
+    console.log('--- GEMINI API CALL START ---');
+    console.log('Model: gemini-3-flash-preview');
+    console.log('Timestamp:', new Date().toISOString());
+    
+    try {
+      // Pass the last 30 quotes to ensure variety
+      const recentTexts = history.slice(-30).map(q => q.text.substring(0, 100)).join(' | ');
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Generate a unique, powerful wise quote from Latin, Jewish, Psychology, Chinese, Japanese, or Latin American traditions. 
+        Format as JSON: {text, author, source}.
+        
+        STRICT RULES:
+        1. CRITICAL: Do NOT repeat or paraphrase any of these recent quotes: ${recentTexts}. 
+        2. NO DUPLICATES: Ensure the quote is distinct in meaning, wording, and author from the ones listed above.
+        3. DIVERSITY: You MUST rotate the tradition. If the last quote was Jewish, pick Psychology, Latin American, or Latin.
+        4. FRESHNESS: Avoid the most "cliché" or common quotes if they have been shown recently.
+        5. DEPTH: Prefer profound, lesser-known insights over generic motivational phrases.
+        
+        Seed: ${Math.random()}`,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 1.0,
+          topP: 0.95
+        }
+      });
+      
+      console.log('--- GEMINI API CALL SUCCESS ---');
+      const data = JSON.parse(response.text || '{}');
+      if (data.text && data.author) {
+        return {
+          id: `ai-${Date.now()}`,
+          text: data.text,
+          author: data.author,
+          source: data.source || 'AI Wisdom',
+          randomId: Math.random(),
+          isAI: true
+        };
+      }
+      return null;
+    } catch (error: any) {
+      console.error('--- GEMINI API CALL FAILED ---');
+      console.error('Error generating AI quote:', error);
+      
+      if (error?.message?.includes('429') || error?.status === 'RESOURCE_EXHAUSTED' || JSON.stringify(error).includes('429')) {
+        console.warn('Daily AI generation limit reached (Quota 429).');
+      }
+      
+      return null;
+    } finally {
+      clearInterval(timer);
+      setIsGeneratingAIQuote(false);
+      setAiCountdown(0);
+    }
+  }, [ai]);
+
+  const refillQuotesPool = useCallback(async (force = false): Promise<Quote[]> => {
+    if (isRefillingPoolRef.current || (!force && quotesPoolRef.current.length > 50)) return [];
+    
+    isRefillingPoolRef.current = true;
+    setIsRefillingPool(true);
+    try {
+      const quotesRef = collection(db, 'quotes');
+      const randomStart = Math.random();
+      
+      // Fetch a large batch of 200 quotes to minimize reads
+      const q = query(
+        quotesRef, 
+        where('randomId', '>=', randomStart), 
+        orderBy('randomId'),
+        limit(200)
+      );
+      
+      let snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        const q2 = query(
+          quotesRef, 
+          where('randomId', '<=', randomStart), 
+          orderBy('randomId', 'desc'),
+          limit(200)
+        );
+        snapshot = await getDocs(q2);
+      }
+      
+      const newQuotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
+      
+      // Shuffle the new quotes locally
+      const shuffled = [...newQuotes].sort(() => Math.random() - 0.5);
+      
+      setQuotesPool(prev => {
+        const existingIds = new Set(prev.map(q => q.id));
+        const filtered = shuffled.filter(q => !existingIds.has(q.id));
+        return [...prev, ...filtered];
+      });
+      
+      return shuffled;
+    } catch (error) {
+      console.error('Error refilling quotes pool:', error);
+      return [];
+    } finally {
+      isRefillingPoolRef.current = false;
+      setIsRefillingPool(false);
+    }
+  }, []);
+
+  const fetchRandomQuote = useCallback(async (excludeIds: string[] = [], forceAI: boolean = false) => {
+    if (isFetchingQuoteRef.current) return;
+    isFetchingQuoteRef.current = true;
+
+    const useLocalFallback = () => {
+      const localQuotes = INITIAL_QUOTES;
+      const randomIndex = Math.floor(Math.random() * localQuotes.length);
+      const fallbackQuote = {
+        ...localQuotes[randomIndex],
+        id: `local-${Date.now()}-${randomIndex}`,
+        randomId: Math.random()
+      } as Quote;
+      
+      setCurrentQuote(fallbackQuote);
+      const nextIndex = historyIndex + 1 >= 50 ? 49 : historyIndex + 1;
+      setQuoteHistory(prev => {
+        const nextHistory = [...prev.slice(0, historyIndex + 1), fallbackQuote];
+        if (nextHistory.length > 50) return nextHistory.slice(-50);
+        return nextHistory;
+      });
+      setHistoryIndex(nextIndex);
+    };
+
+    try {
+      // 1. QUOTA SAVER: If we know quota is exceeded or it's "danger hours" (10PM - 8AM Dublin), use local
+      const now = new Date();
+      const dublinHour = (now.getUTCHours() + 1) % 24;
+      const isDangerHours = dublinHour >= 22 || dublinHour < 8;
+
+      if (isQuotaExceeded || (isDangerHours && !forceAI)) {
+        console.log('Quota Saver Active: Using local JSON quotes.');
+        useLocalFallback();
+        isFetchingQuoteRef.current = false;
         return;
       }
 
-      // 90% chance (or fallback) to show a "new" quote
-      const allExcluded = Array.from(new Set([...excludeIds, ...markedIds, ...seenIds]));
+      let selectedQuote: Quote | null = null;
 
-      // Fetch a small batch of quotes and pick one that isn't excluded
-      const randomNum = Math.random();
-      const q = query(quotesRef, where('randomId', '>=', randomNum), limit(20));
-      const snapshot = await getDocs(q);
+      // 2. Try AI first if forced
+      if (forceAI) {
+        selectedQuote = await fetchAIQuote(quoteHistoryRef.current);
+        if (!selectedQuote) {
+          // If AI fails and it was forced, we should probably notify the user
+          // For now, we'll just return null to indicate failure
+          isFetchingQuoteRef.current = false;
+          return null;
+        }
+      }
+
+      // 2. Try from Pool (Local Cache) - This is the primary optimization
+      if (!selectedQuote && !forceAI && quotesPoolRef.current.length > 0) {
+        const markedIds = (userProfile.markedQuotes || []).map(q => q.id);
+        const seenIds = userProfile.seenQuoteIds || [];
+        const historyIds = quoteHistoryRef.current.map(q => q.id).filter(Boolean) as string[];
+        
+        // Combine all exclusions: passed IDs, marked, seen, and current session history
+        const allExcluded = new Set([...excludeIds, ...markedIds, ...seenIds, ...historyIds]);
+        
+        // Find first quote in pool not in excluded
+        const poolIndex = quotesPoolRef.current.findIndex(q => !allExcluded.has(q.id || ''));
+        
+        if (poolIndex !== -1) {
+          selectedQuote = quotesPoolRef.current[poolIndex];
+          // Remove from pool immediately in state
+          const quoteToPick = selectedQuote;
+          setQuotesPool(prev => prev.filter(q => q.id !== quoteToPick.id));
+          
+          // Trigger refill if pool is getting low (background task)
+          if (quotesPoolRef.current.length < 30) {
+            refillQuotesPool();
+          }
+        }
+      }
+
+      // 3. Fallback to direct Firestore fetch ONLY if pool is empty or no valid quote found
+      if (!selectedQuote) {
+        // If pool is empty or exhausted, we must refill it
+        const freshQuotes = await refillQuotesPool(true);
+        
+        if (freshQuotes.length > 0) {
+          const markedIds = (userProfile.markedQuotes || []).map(q => q.id);
+          const seenIds = userProfile.seenQuoteIds || [];
+          const historyIds = quoteHistoryRef.current.map(q => q.id).filter(Boolean) as string[];
+          const allExcluded = new Set([...excludeIds, ...markedIds, ...seenIds, ...historyIds]);
+          
+          selectedQuote = freshQuotes.find(q => !allExcluded.has(q.id || '')) || freshQuotes[0];
+        }
+      }
+
+      if (selectedQuote) {
+        setCurrentQuote(selectedQuote);
+        const nextIndex = historyIndex + 1 >= 50 ? 49 : historyIndex + 1;
+        setQuoteHistory(prev => {
+          const nextHistory = [...prev.slice(0, historyIndex + 1), selectedQuote!];
+          if (nextHistory.length > 50) return nextHistory.slice(-50);
+          return nextHistory;
+        });
+        setHistoryIndex(nextIndex);
+
+        // Auto-speak if it's a forced AI generation
+        if (selectedQuote.isAI && forceAI) {
+          handleSpeak(selectedQuote.text, nextIndex);
+        }
+      } else {
+        // FINAL FALLBACK: Use local INITIAL_QUOTES if everything else fails (Quota exceeded)
+        const localQuotes = INITIAL_QUOTES;
+        const randomIndex = Math.floor(Math.random() * localQuotes.length);
+        const fallbackQuote = {
+          ...localQuotes[randomIndex],
+          id: `local-${Date.now()}-${randomIndex}`,
+          randomId: Math.random()
+        } as Quote;
+        
+        setCurrentQuote(fallbackQuote);
+        const nextIndex = historyIndex + 1 >= 50 ? 49 : historyIndex + 1;
+        setQuoteHistory(prev => {
+          const nextHistory = [...prev.slice(0, historyIndex + 1), fallbackQuote];
+          if (nextHistory.length > 50) return nextHistory.slice(-50);
+          return nextHistory;
+        });
+        setHistoryIndex(nextIndex);
+        console.warn('Using local fallback quote due to quota or network issues.');
+      }
+    } catch (error: any) {
+      console.error('Firestore fetch failed, attempting AI fallback...', error);
       
-      let candidates = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
-      let quoteData = candidates.find(q => !allExcluded.includes(q.id || ''));
-
-      if (!quoteData) {
-        // Try the other direction if no results or all excluded
-        const q2 = query(quotesRef, where('randomId', '<=', randomNum), limit(20));
-        const snapshot2 = await getDocs(q2);
-        candidates = snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
-        quoteData = candidates.find(q => !allExcluded.includes(q.id || ''));
+      // Check if this was a quota error
+      if (error?.message?.includes('Quota') || error?.code === 'resource-exhausted') {
+        setIsQuotaExceeded(true);
       }
 
-      // Final fallback: if we still don't have a quote (maybe all are seen), 
-      // just pick any random one from the first batch
-      if (!quoteData && candidates.length > 0) {
-        quoteData = candidates[Math.floor(Math.random() * candidates.length)];
+      try {
+        const aiQuote = await fetchAIQuote(quoteHistoryRef.current);
+        if (aiQuote) {
+          setCurrentQuote(aiQuote);
+          const nextIndex = historyIndex + 1 >= 50 ? 49 : historyIndex + 1;
+          setQuoteHistory(prev => {
+            const nextHistory = [...prev.slice(0, historyIndex + 1), aiQuote!];
+            if (nextHistory.length > 50) return nextHistory.slice(-50);
+            return nextHistory;
+          });
+          setHistoryIndex(nextIndex);
+          
+          if (forceAI) {
+            handleSpeak(aiQuote.text, nextIndex);
+          }
+        } else {
+          throw new Error('AI Fallback also failed');
+        }
+      } catch (aiError) {
+        // ULTIMATE FALLBACK: Local quotes
+        const localQuotes = INITIAL_QUOTES;
+        const randomIndex = Math.floor(Math.random() * localQuotes.length);
+        const fallbackQuote = {
+          ...localQuotes[randomIndex],
+          id: `local-err-${Date.now()}`,
+          randomId: Math.random()
+        } as Quote;
+        setCurrentQuote(fallbackQuote);
+        setQuoteHistory(prev => [...prev, fallbackQuote].slice(-50));
+        setHistoryIndex(prev => Math.min(prev + 1, 49));
+        console.warn('All quote sources exhausted (Quota?). Using local fallback.');
       }
+    } finally {
+      isFetchingQuoteRef.current = false;
+    }
+  }, [ai, historyIndex, refillQuotesPool, userProfile.markedQuotes, userProfile.seenQuoteIds, handleSpeak, fetchAIQuote]);
 
-      if (quoteData) {
-        setCurrentQuote(quoteData);
-      }
-    } catch (error) {
-      console.error('Error fetching quote:', error);
+  const goToNextQuote = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isAutoFlowActive) {
+      setAutoFlowTimer(30);
+    }
+    if (isAILoopActive) {
+      fetchRandomQuote([], true); // Force AI generation in loop
+    } else if (historyIndex < quoteHistory.length - 1) {
+      const nextIndex = historyIndex + 1;
+      setHistoryIndex(nextIndex);
+      setCurrentQuote(quoteHistory[nextIndex]);
+    } else {
+      fetchRandomQuote([], false); // Pull from database by default
+    }
+  }, [isAutoFlowActive, isAILoopActive, historyIndex, quoteHistory, fetchRandomQuote]);
+
+  const goToPreviousQuote = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (isAutoFlowActive) {
+      setAutoFlowTimer(30);
+    }
+    if (quoteHistory.length > 0) {
+      const prevIndex = historyIndex > 0 ? historyIndex - 1 : quoteHistory.length - 1;
+      setHistoryIndex(prevIndex);
+      setCurrentQuote(quoteHistory[prevIndex]);
     }
   };
 
+  const speakQuote = useCallback((quote: Quote) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(`${quote.text}. By ${quote.author}`);
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isAutoFlowActive) {
+      interval = setInterval(() => {
+        setAutoFlowTimer(prev => {
+          if (prev <= 1) {
+            goToNextQuote();
+            return 30;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setAutoFlowTimer(30);
+    }
+    return () => clearInterval(interval);
+  }, [isAutoFlowActive, goToNextQuote]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isAILoopActive && !isAutoFlowActive) {
+      interval = setInterval(() => {
+        setAutoFlowTimer(prev => {
+          if (prev <= 1) {
+            goToNextQuote();
+            return 30;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isAILoopActive, isAutoFlowActive, goToNextQuote]);
+
+  useEffect(() => {
+    if (isAutoFlowActive) {
+      speakQuote(currentQuote);
+    }
+  }, [currentQuote, isAutoFlowActive, speakQuote]);
+
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const generateAIQuote = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    fetchRandomQuote([], true); // Force AI generation
+  };
+
+  const getQuoteId = useCallback((quote: Quote) => {
+    return quote.id || `local-${quote.text.slice(0, 30).replace(/[^a-z0-9]/gi, '_').toLowerCase()}-${quote.author.slice(0, 20).replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+  }, []);
+
+  const alreadySaved = useMemo(() => {
+    if (!currentQuote) return false;
+    const qId = getQuoteId(currentQuote);
+    return userProfile.markedQuotes?.some(m => m.id === qId);
+  }, [currentQuote, userProfile.markedQuotes, getQuoteId]);
+
   const markQuoteAsSeen = async () => {
-    if (!user) return;
+    if (!user) {
+      alert("Please sign in to save quotes to your library.");
+      return;
+    }
     
-    // If the quote has no ID (like the default one), we should still allow marking it
-    // but we might need to handle it differently. For now, let's just ensure we have an ID.
-    const quoteId = currentQuote.id || 'default-stoic-quote';
+    // Safety check: Don't proceed if profile isn't loaded to avoid overwriting with empty data
+    // We check if the profile UID matches the current user UID
+    if (userProfile.uid !== user.uid) {
+      console.warn('User profile not yet loaded or UID mismatch:', { profileUid: userProfile.uid, userUid: user.uid });
+      // If we have no UID in profile, it might be the initial guest profile
+      if (!userProfile.uid) {
+        alert("Initializing your profile... Please try again in a moment.");
+      }
+      return;
+    }
     
+    // Generate a stable ID if missing (for local initial quotes)
+    const quoteId = getQuoteId(currentQuote);
+    
+    // Prevent duplicate entries for the same quote ID in markedQuotes
+    const existingMarked = userProfile.markedQuotes || [];
+    const isAlreadyMarked = existingMarked.some(m => m.id === quoteId);
+    
+    if (isAlreadyMarked) {
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+      return;
+    }
+
     const newSeenIds = Array.from(new Set([...(userProfile.seenQuoteIds || []), quoteId]));
-    const newMarkedQuotes = [...(userProfile.markedQuotes || []), { 
+    
+    const newMarkedQuotes = [...existingMarked, { 
       id: quoteId, 
       date: new Date().toISOString(),
-      wisdomGrade: dashboardWisdomGrade,
-      comment: dashboardComment,
-      // Store the text and author too, just in case the quote is deleted or it's the default one
-      text: currentQuote.text,
-      author: currentQuote.author
+      wisdomGrade: dashboardWisdomGrade || 'A daily reminder',
+      comment: dashboardComment || '',
+      text: currentQuote.text || 'Unknown Quote',
+      author: currentQuote.author || 'Unknown Author',
+      source: currentQuote.source || 'Philosophy',
+      category: currentQuote.category || 'wisdom',
+      isAI: currentQuote.isAI || false
     }];
     
     try {
+      console.log('Attempting to save quote to library:', quoteId);
+      
+      // Optimistic update to UI state
+      setUserProfile(prev => ({
+        ...prev,
+        seenQuoteIds: newSeenIds,
+        markedQuotes: newMarkedQuotes
+      }));
+
       await setDoc(doc(db, 'users', user.uid), { 
         seenQuoteIds: newSeenIds,
         markedQuotes: newMarkedQuotes
       }, { merge: true });
       
-      // Fetch next quote immediately
-      fetchRandomQuote(newSeenIds);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+      
+      // Reset comments to current quote's default or standard fallback
+      const nextComment = 'This quote changed my life';
       setDashboardWisdomGrade('A daily reminder');
-      setDashboardComment('This quote changed my life');
-    } catch (error) {
+      setDashboardComment(nextComment);
+      
+      // fetchRandomQuote will be triggered by the useEffect that watches for markedQuotes changes
+    } catch (error: any) {
       console.error('Error marking quote as seen:', error);
+      if (error?.message?.includes('Quota') || error?.code === 'resource-exhausted') {
+        setIsQuotaExceeded(true);
+        alert("Daily database limit exceeded. Your progress will be saved locally but might not sync until tomorrow.");
+        // Show local success feedback at least
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 2000);
+      } else {
+        alert("Failed to save quote: " + (error.message || "Unknown error"));
+      }
     }
   };
+
+  useEffect(() => {
+    if (currentQuote && currentQuote.comment) {
+      setDashboardComment(currentQuote.comment);
+    } else {
+      setDashboardComment('This quote changed my life');
+    }
+  }, [currentQuote]);
 
   useEffect(() => {
     if (!isAuthReady || !user) return;
 
     const seedQuotes = async () => {
+      // Check if already seeded in this session to save reads
+      try {
+        if (sessionStorage.getItem('wisefit_quotes_seeded_v3')) return;
+      } catch (e) {}
+      
       try {
         const quotesRef = collection(db, 'quotes');
         const snapshot = await getDocs(query(quotesRef, limit(1)));
@@ -500,31 +1066,239 @@ export default function App() {
               randomId: Math.random()
             });
           }
+        } else {
+          // Check if Balkan quotes are already seeded
+          const balkanQuery = query(quotesRef, where('source', '==', 'Balkan'), limit(1));
+          const balkanSnapshot = await getDocs(balkanQuery);
+          
+          if (balkanSnapshot.empty) {
+            console.log('Seeding Balkan proverbs...');
+            const balkanQuotes = INITIAL_QUOTES.filter(q => q.source === 'Balkan');
+            for (const q of balkanQuotes) {
+              await addDoc(quotesRef, {
+                ...q,
+                randomId: Math.random()
+              });
+            }
+          }
+
+          // Check if Finance quotes are already seeded
+          const financeQuery = query(quotesRef, where('category', '==', 'finance'), limit(1));
+          const financeSnapshot = await getDocs(financeQuery);
+          
+          if (financeSnapshot.empty) {
+            console.log('Seeding Finance quotes...');
+            const financeQuotes = INITIAL_QUOTES.filter(q => q.category === 'finance');
+            if (financeQuotes.length > 0) {
+              console.log(`Found ${financeQuotes.length} finance quotes to seed.`);
+              for (const q of financeQuotes) {
+                await addDoc(quotesRef, {
+                  ...q,
+                  randomId: Math.random()
+                });
+              }
+              console.log('Finance quotes seeded successfully.');
+            }
+          } else {
+            console.log('Finance quotes already present in database.');
+          }
+
+          // Check if Rubenstein quotes are already seeded
+          const rubensteinQuery = query(quotesRef, where('author', '==', 'Richard Rubenstein'), limit(1));
+          const rubensteinSnapshot = await getDocs(rubensteinQuery);
+          
+          if (rubensteinSnapshot.empty) {
+            console.log('Seeding Rubenstein quotes...');
+            const rubensteinQuotes = INITIAL_QUOTES.filter(q => q.author === 'Richard Rubenstein');
+            for (const q of rubensteinQuotes) {
+              await addDoc(quotesRef, {
+                ...q,
+                randomId: Math.random()
+              });
+            }
+            console.log('Rubenstein quotes seeded successfully.');
+          }
+
+          // Check if Irish quotes are already seeded
+          const irishQuery = query(quotesRef, where('source', '==', 'Irish'), limit(1));
+          const irishSnapshot = await getDocs(irishQuery);
+          
+          if (irishSnapshot.empty) {
+            console.log('Seeding Irish proverbs...');
+            const irishQuotes = INITIAL_QUOTES.filter(q => q.source === 'Irish');
+            for (const q of irishQuotes) {
+              await addDoc(quotesRef, {
+                ...q,
+                randomId: Math.random()
+              });
+            }
+          }
+
+          // Check if Psychology quotes are already seeded
+          const psychQuery = query(quotesRef, where('source', '==', 'Psychology'), limit(1));
+          const psychSnapshot = await getDocs(psychQuery);
+          
+          if (psychSnapshot.empty) {
+            console.log('Seeding Psychology quotes...');
+            const psychQuotes = INITIAL_QUOTES.filter(q => q.source === 'Psychology');
+            for (const q of psychQuotes) {
+              await addDoc(quotesRef, {
+                ...q,
+                randomId: Math.random()
+              });
+            }
+          }
+
+          // Check if Machiavelli quotes are already seeded
+          const machiavelliQuery = query(quotesRef, where('source', '==', 'Machiavelli'));
+          const machiavelliSnapshot = await getDocs(machiavelliQuery);
+          const existingMachTexts = new Set(machiavelliSnapshot.docs.map(d => d.data().text));
+          
+          const machiavelliQuotes = INITIAL_QUOTES.filter(q => q.source === 'Machiavelli');
+          for (const q of machiavelliQuotes) {
+            if (!existingMachTexts.has(q.text)) {
+              await addDoc(quotesRef, {
+                ...q,
+                randomId: Math.random()
+              });
+            }
+          }
+
+          // Check if Legendary quotes are already seeded
+          const legendaryQuery = query(quotesRef, where('source', '==', 'Legendary'));
+          const legendarySnapshot = await getDocs(legendaryQuery);
+          const existingLegendaryTexts = new Set(legendarySnapshot.docs.map(d => d.data().text));
+          
+          const legendaryQuotes = INITIAL_QUOTES.filter(q => q.source === 'Legendary');
+          for (const q of legendaryQuotes) {
+            if (!existingLegendaryTexts.has(q.text)) {
+              await addDoc(quotesRef, {
+                ...q,
+                randomId: Math.random()
+              });
+            }
+          }
+
+          // Check if Jewish quotes are already seeded (expanded)
+          const jewishQuery = query(quotesRef, where('source', '==', 'Jewish'));
+          const jewishSnapshot = await getDocs(jewishQuery);
+          const existingJewishTexts = new Set(jewishSnapshot.docs.map(d => d.data().text));
+          
+          const jewishQuotes = INITIAL_QUOTES.filter(q => q.source === 'Jewish');
+          for (const q of jewishQuotes) {
+            if (!existingJewishTexts.has(q.text)) {
+              await addDoc(quotesRef, {
+                ...q,
+                randomId: Math.random()
+              });
+            }
+          }
+
+          // Check if Latin quotes are already seeded
+          const latinQuery = query(quotesRef, where('source', '==', 'Latin'));
+          const latinSnapshot = await getDocs(latinQuery);
+          const existingLatinTexts = new Set(latinSnapshot.docs.map(d => d.data().text));
+          
+          const latinQuotes = INITIAL_QUOTES.filter(q => q.source === 'Latin');
+          for (const q of latinQuotes) {
+            if (!existingLatinTexts.has(q.text)) {
+              await addDoc(quotesRef, {
+                ...q,
+                randomId: Math.random()
+              });
+            }
+          }
+
+          // Check if Christian quotes are already seeded (the 125 Jesus Christ quotes)
+          const christianQuery = query(quotesRef, where('source', '==', 'Christian'));
+          const christianSnapshot = await getDocs(christianQuery);
+          const existingChristianTexts = new Set(christianSnapshot.docs.map(d => d.data().text));
+          
+          const christianQuotes = INITIAL_QUOTES.filter(q => q.source === 'Christian');
+          for (const q of christianQuotes) {
+            if (!existingChristianTexts.has(q.text)) {
+              await addDoc(quotesRef, {
+                ...q,
+                randomId: Math.random()
+              });
+            }
+          }
+
+          // Check if Stoic/Epictetus quotes are already seeded (the 1000 quotes batch)
+          const stoicQuery = query(quotesRef, where('author', '==', 'Epictetus'));
+          const stoicSnapshot = await getDocs(stoicQuery);
+          const existingStoicTexts = new Set(stoicSnapshot.docs.map(d => d.data().text));
+          
+          const epictetusQuotes = INITIAL_QUOTES.filter(q => q.author === 'Epictetus');
+          let epictetusSeedCount = 0;
+          for (const q of epictetusQuotes) {
+            if (!existingStoicTexts.has(q.text)) {
+              await addDoc(quotesRef, {
+                ...q,
+                randomId: Math.random()
+              });
+              epictetusSeedCount++;
+            }
+          }
+          if (epictetusSeedCount > 0) {
+            console.log(`Seeded ${epictetusSeedCount} new Epictetus quotes.`);
+          }
+          
+          const totalSnapshot = await getDocs(quotesRef);
+          console.log(`TOTAL QUOTES IN DATABASE: ${totalSnapshot.size}`);
         }
+        try {
+          sessionStorage.setItem('wisefit_quotes_seeded_v8', 'true');
+        } catch (e) {}
       } catch (error) {
-        console.error('Error seeding quotes:', error);
+        // Only log if it's not a permission error (which is expected for non-admins)
+        if (error instanceof Error && !error.message.includes('permission')) {
+          console.error('Error seeding quotes:', error);
+        }
       }
     };
 
     const fetchCount = async () => {
+      // Use cached count if available to save reads
+      try {
+        const cachedCount = localStorage.getItem('wisefit_quote_count');
+        if (cachedCount) {
+          setQuoteCount(Number(cachedCount));
+          // Only re-fetch every hour or so
+          const lastFetch = localStorage.getItem('wisefit_quote_count_time');
+          if (lastFetch && Date.now() - Number(lastFetch) < 3600000) return;
+        }
+      } catch (e) {
+        // Ignore storage errors
+      }
+
       try {
         const quotesRef = collection(db, 'quotes');
         const snapshot = await getCountFromServer(quotesRef);
-        setQuoteCount(snapshot.data().count);
+        const count = snapshot.data().count;
+        setQuoteCount(count);
+        try {
+          localStorage.setItem('wisefit_quote_count', count.toString());
+          localStorage.setItem('wisefit_quote_count_time', Date.now().toString());
+        } catch (e) {}
       } catch (error) {
-        console.error('Error fetching quote count:', error);
+        handleFirestoreError(error, 'get', 'quoteCount');
       }
     };
 
     // Initial setup
     seedQuotes().then(() => {
-      fetchRandomQuote();
+      refillQuotesPool(true).then(() => {
+        fetchRandomQuote();
+      });
       fetchCount();
     });
 
-    // Rotate quotes every 60 seconds
+    // Rotate quotes every 60 seconds from the database pool
     const interval = setInterval(() => {
-      fetchRandomQuote();
+      if (document.visibilityState === 'visible') {
+        fetchRandomQuote([], false); // Pull from pool
+      }
     }, 60000);
 
     return () => clearInterval(interval);
@@ -540,7 +1314,7 @@ export default function App() {
   }, [userProfile.markedQuotes, currentQuote.id]);
 
   const generateMoreQuotes = async () => {
-    if (isGeneratingQuotes) return;
+    if (isGeneratingQuotes || !ai) return;
     setIsGeneratingQuotes(true);
     try {
       const response = await ai.models.generateContent({
@@ -574,7 +1348,7 @@ export default function App() {
   };
 
   const generateLatinQuotes = async () => {
-    if (isGeneratingQuotes) return;
+    if (isGeneratingQuotes || !ai) return;
     setIsGeneratingQuotes(true);
     try {
       const response = await ai.models.generateContent({
@@ -620,65 +1394,6 @@ export default function App() {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  const handleSpeak = async (text: string, index: number) => {
-    if (isSpeaking === index) {
-      currentSourceRef.current?.stop();
-      setIsSpeaking(null);
-      return;
-    }
-
-    setIsSpeaking(index);
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Speak in a calm, stoic, and authoritative voice: ${text}` }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Zephyr' },
-            },
-          },
-        },
-      });
-
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (base64Audio) {
-        const binaryString = atob(base64Audio);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        const pcmData = new Int16Array(bytes.buffer);
-        const float32Data = new Float32Array(pcmData.length);
-        for (let i = 0; i < pcmData.length; i++) {
-          float32Data[i] = pcmData[i] / 32768.0;
-        }
-
-        if (!audioContextRef.current) {
-          audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        }
-        
-        const buffer = audioContextRef.current.createBuffer(1, float32Data.length, 24000);
-        buffer.getChannelData(0).set(float32Data);
-        
-        const source = audioContextRef.current.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioContextRef.current.destination);
-        source.onended = () => {
-          setIsSpeaking(prev => prev === index ? null : prev);
-        };
-        
-        currentSourceRef.current?.stop();
-        currentSourceRef.current = source;
-        source.start();
-      }
-    } catch (error) {
-      console.error('TTS Error:', error);
-      setIsSpeaking(null);
-    }
-  };
   const [copiedQuote, setCopiedQuote] = useState(false);
 
   const handleShareQuote = async () => {
@@ -976,6 +1691,98 @@ export default function App() {
     }
   };
 
+  const handleCleanupDuplicates = async () => {
+    if (!user || !userProfile.markedQuotes) return;
+    
+    const seen = new Set();
+    const uniqueMarked = [];
+    
+    // Keep the most recent version of each quote (by ID or by text)
+    const sorted = [...userProfile.markedQuotes].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    for (const q of sorted) {
+      const key = q.id || q.text;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueMarked.push(q);
+      }
+    }
+    
+    try {
+      await setDoc(doc(db, 'users', user.uid), { 
+        markedQuotes: uniqueMarked.reverse() // Restore chronological order
+      }, { merge: true });
+      alert(`Cleaned up ${userProfile.markedQuotes.length - uniqueMarked.length} duplicate quotes!`);
+    } catch (error) {
+      console.error('Error cleaning up duplicates:', error);
+    }
+  };
+
+  const handleDeleteQuotesFromLibrary = async (quoteIdsToDelete: string[]) => {
+    if (!user || !userProfile.markedQuotes) return;
+    
+    const confirmMessage = quoteIdsToDelete.length === 1 
+      ? "Are you sure you want to remove this quote from your library?"
+      : `Are you sure you want to remove ${quoteIdsToDelete.length} quotes from your library?`;
+      
+    if (!confirm(confirmMessage)) return;
+
+    // Optimistic update
+    const previousMarkedQuotes = [...userProfile.markedQuotes];
+    const previousLibraryQuotes = [...libraryQuotes];
+    const newMarkedQuotes = userProfile.markedQuotes.filter(q => !quoteIdsToDelete.includes(q.id));
+    const newLibraryQuotes = libraryQuotes.filter(q => !quoteIdsToDelete.includes(q.id!));
+
+    setUserProfile(prev => ({ ...prev, markedQuotes: newMarkedQuotes }));
+    setLibraryQuotes(newLibraryQuotes);
+
+    try {
+      await setDoc(doc(db, 'users', user.uid), { 
+        markedQuotes: newMarkedQuotes 
+      }, { merge: true });
+      
+      // If we are in selection mode, clear selection
+      if (isLibrarySelectMode) {
+        setSelectedLibraryIds(new Set());
+        setIsLibrarySelectMode(false);
+      }
+      
+      // Also check customQuotes collection and delete if any of these were custom
+      const customToDelete = quoteIdsToDelete.filter(id => {
+        const q = libraryQuotes.find(l => l.id === id);
+        return q?.isCustom;
+      });
+      
+      if (customToDelete.length > 0) {
+        for (const id of customToDelete) {
+          try {
+            await deleteDoc(doc(db, 'customQuotes', id));
+          } catch (e) {
+            console.warn('Could not delete custom quote doc:', id, e);
+          }
+        }
+      }
+      console.log('Successfully deleted quotes:', quoteIdsToDelete);
+    } catch (error) {
+      console.error('Error deleting quotes:', error);
+      // Revert optimistic update on error
+      setUserProfile(prev => ({ ...prev, markedQuotes: previousMarkedQuotes }));
+      setLibraryQuotes(previousLibraryQuotes);
+      alert('Failed to delete quotes. Please try again.');
+    }
+  };
+
+  const toggleLibraryQuoteSelection = (id: string) => {
+    setSelectedLibraryIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -991,24 +1798,26 @@ export default function App() {
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
   const [newDailyExercise, setNewDailyExercise] = useState('');
 
-  // Initialize Gemini
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        await ensureUserDoc(firebaseUser);
-        // Check if admin
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        setIsAdminUser(
-          firebaseUser.email === 'petar.dekanovic@gmail.com' || 
-          (userDoc.exists() && userDoc.data().role === 'admin')
-        );
-      } else {
-        setIsAdminUser(false);
+      try {
+        setUser(firebaseUser);
+        if (firebaseUser) {
+          await ensureUserDoc(firebaseUser);
+          // Check if admin
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          setIsAdminUser(
+            firebaseUser.email === 'petar.dekanovic@gmail.com' || 
+            (userDoc.exists() && userDoc.data().role === 'admin')
+          );
+        } else {
+          setIsAdminUser(false);
+        }
+      } catch (err: any) {
+        handleFirestoreError(err, 'init', 'auth');
+      } finally {
+        setIsAuthReady(true);
       }
-      setIsAuthReady(true);
     });
     return () => unsubscribe();
   }, []);
@@ -1019,9 +1828,10 @@ export default function App() {
     console.log('Fetching library quotes for user:', user.uid);
     try {
       const marked = userProfile.markedQuotes || [];
-      const markedIds = Array.from(new Set(marked.map(m => m.id).filter(Boolean) as string[]));
+      console.log('Marked quotes in profile:', marked.length);
       
-      console.log('Marked IDs found:', markedIds.length);
+      const markedIds = Array.from(new Set(marked.map(m => m.id).filter(Boolean) as string[]));
+      console.log('Unique marked IDs:', markedIds.length);
       
       let allFetchedQuotes: Quote[] = [];
 
@@ -1042,7 +1852,7 @@ export default function App() {
         allFetchedQuotes = snapshots.flatMap(snapshot => 
           snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote))
         );
-        console.log('Fetched global quotes:', allFetchedQuotes.length);
+        console.log('Fetched global quotes from Firestore:', allFetchedQuotes.length);
       }
       
       // Combine with metadata from markedQuotes
@@ -1050,9 +1860,9 @@ export default function App() {
         const markInfo = marked.find(m => m.id === q.id);
         return { 
           ...q, 
-          markedDate: markInfo?.date, 
-          wisdomGrade: markInfo?.wisdomGrade,
-          comment: markInfo?.comment 
+          markedDate: markInfo?.date || new Date().toISOString(), 
+          wisdomGrade: markInfo?.wisdomGrade || 'A daily reminder',
+          comment: markInfo?.comment || '' 
         };
       });
 
@@ -1062,14 +1872,18 @@ export default function App() {
         .filter(m => !allFetchedQuotes.some(q => q.id === m.id))
         .map(m => ({
           id: m.id,
-          text: (m as any).text || 'Unknown Quote',
-          author: (m as any).author || 'Unknown Author',
-          source: 'Stoic',
-          markedDate: m.date,
-          wisdomGrade: m.wisdomGrade,
-          comment: m.comment
+          text: m.text || 'Unknown Quote',
+          author: m.author || 'Unknown Author',
+          source: m.source || 'Philosophy',
+          category: m.category || 'wisdom',
+          markedDate: m.date || new Date().toISOString(),
+          wisdomGrade: m.wisdomGrade || 'A daily reminder',
+          comment: m.comment || '',
+          isAI: m.isAI || false
         }));
 
+      console.log('Missing global quotes (using profile data):', missingGlobalQuotes.length);
+      
       // Fetch custom quotes
       const customQuotesRef = collection(db, 'customQuotes');
       const qCustom = query(customQuotesRef, where('userId', '==', user.uid));
@@ -1086,10 +1900,13 @@ export default function App() {
       const combined = [...filtered, ...missingGlobalQuotes, ...customQuotes].sort((a, b) => {
         const dateA = new Date(a.markedDate || 0).getTime();
         const dateB = new Date(b.markedDate || 0).getTime();
+        // Handle invalid dates
+        if (isNaN(dateA)) return 1;
+        if (isNaN(dateB)) return -1;
         return dateB - dateA;
       });
 
-      console.log('Total library quotes:', combined.length);
+      console.log('Total library quotes combined:', combined.length);
       setLibraryQuotes(combined);
     } catch (error) {
       console.error('Error fetching library quotes:', error);
@@ -1171,10 +1988,13 @@ export default function App() {
         email: firebaseUser.email || '',
         role: 'user'
       };
+      console.log('Creating new user profile for:', firebaseUser.uid);
       await setDoc(userDocRef, newProfile);
       setUserProfile(newProfile);
     } else {
-      setUserProfile(userDoc.data() as UserProfile);
+      const data = userDoc.data();
+      console.log('Loaded existing user profile for:', firebaseUser.uid, 'Marked quotes:', data.markedQuotes?.length || 0);
+      setUserProfile({ ...INITIAL_PROFILE, ...data, markedQuotes: data.markedQuotes || [] } as UserProfile);
     }
   };
 
@@ -1183,7 +2003,11 @@ export default function App() {
 
     // Listen to user profile
     const unsubProfile = onSnapshot(doc(db, 'users', user.uid), (doc) => {
-      if (doc.exists()) setUserProfile(doc.data() as UserProfile);
+      if (doc.exists()) {
+        const data = doc.data();
+        console.log('User profile updated via snapshot:', data.name, 'Marked quotes:', data.markedQuotes?.length || 0);
+        setUserProfile({ ...INITIAL_PROFILE, ...data, markedQuotes: data.markedQuotes || [] } as UserProfile);
+      }
     }, (error) => handleFirestoreError(error, 'get', `users/${user.uid}`));
 
     // Listen to workouts
@@ -1200,9 +2024,16 @@ export default function App() {
       } else {
         // Use a one-time check to prevent infinite loops in onSnapshot
         const checkAndSeed = async () => {
+          try {
+            if (sessionStorage.getItem(`wisefit_plan_seeded_${user.uid}`)) return;
+          } catch (e) {}
+          
           const checkSnapshot = await getDocs(qPlans);
           if (checkSnapshot.empty) {
             await addDoc(collection(db, 'plans'), { uid: user.uid, plan: INITIAL_WEEKLY_PLAN });
+            try {
+              sessionStorage.setItem(`wisefit_plan_seeded_${user.uid}`, 'true');
+            } catch (e) {}
           }
         };
         checkAndSeed();
@@ -1217,6 +2048,12 @@ export default function App() {
   }, [user]);
 
   const handleFirestoreError = (error: any, operationType: string, path: string) => {
+    if (error.message?.includes('Quota limit exceeded') || error.message?.includes('quota') || error.code === 'resource-exhausted') {
+      setIsQuotaExceeded(true);
+      // Don't set fatal error, let app continue in local mode
+      return;
+    }
+    
     const errInfo = {
       error: error.message,
       operationType,
@@ -1274,7 +2111,7 @@ export default function App() {
   };
 
   const handleSendMessage = async () => {
-    if (!chatInput.trim() || isChatLoading) return;
+    if (!chatInput.trim() || isChatLoading || !ai) return;
 
     const userMessage: ChatMessage = { role: 'user', parts: [{ text: chatInput }] };
     setChatMessages(prev => [...prev, userMessage]);
@@ -1289,8 +2126,8 @@ export default function App() {
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [...chatMessages, userMessage],
+        model: "gemini-3.1-pro-preview",
+        contents: chatMessages.concat(userMessage),
         config: {
           systemInstruction: `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
           Your coaching style is deeply rooted in:
@@ -1319,14 +2156,43 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (isAuthReady && !user) {
+      try {
+        const hasSeenWelcome = sessionStorage.getItem('wisefit_welcome_seen');
+        if (!hasSeenWelcome) {
+          setShowWelcomeModal(true);
+        }
+      } catch (e) {
+        setShowWelcomeModal(true);
+      }
+    }
+  }, [isAuthReady, user]);
+
+  const dismissWelcome = () => {
+    setShowWelcomeModal(false);
+    try {
+      sessionStorage.setItem('wisefit_welcome_seen', 'true');
+    } catch (e) {}
+  };
+
+  const handleWelcomeLogin = async () => {
+    dismissWelcome();
+    handleLogin();
+  };
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
   useEffect(() => {
-    localStorage.setItem('petar_theme', isDarkMode ? 'dark' : 'light');
+    try {
+      localStorage.setItem('petar_theme', isDarkMode ? 'dark' : 'light');
+    } catch (e) {
+      // Ignore localStorage errors
+    }
   }, [isDarkMode]);
 
-  const todayStats = stats[stats.length - 1];
+  const todayStats = (stats && stats.length > 0) ? stats[stats.length - 1] : MOCK_STATS[0];
   const currentDayIndex = (getDay(new Date()) + 6) % 7; // Monday is 0
 
   if (!isAuthReady) {
@@ -1337,41 +2203,73 @@ export default function App() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className={cn(
-        "min-h-screen flex flex-col items-center justify-center p-6 transition-colors duration-500",
-        isDarkMode ? "bg-zinc-950 text-white" : "bg-zinc-50 text-zinc-900"
-      )}>
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-8 max-w-sm"
-        >
-          <div className="w-20 h-20 bg-emerald-500/20 rounded-3xl flex items-center justify-center mx-auto">
-            <Activity className="w-10 h-10 text-emerald-500" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tighter">WiseFit</h1>
-            <p className="text-zinc-500">Your personal fitness companion. Sign in to track your progress and access your plan.</p>
-          </div>
-          <button 
-            onClick={handleLogin}
-            className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-3 active:scale-95 transition-all"
-          >
-            <LogIn className="w-5 h-5" />
-            Sign in with Google
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
     <div className={cn(
       "min-h-screen font-sans selection:bg-emerald-500/30 overflow-x-hidden relative transition-colors duration-500",
       isDarkMode ? "bg-zinc-950 text-zinc-100" : "bg-zinc-50 text-zinc-900"
     )}>
+      {/* Welcome Modal */}
+      <AnimatePresence>
+        {showWelcomeModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={dismissWelcome}
+              className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={cn(
+                "relative z-10 w-full max-w-sm overflow-hidden rounded-3xl border shadow-2xl",
+                isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"
+              )}
+            >
+              <div className="p-8 text-center space-y-6">
+                <div className="w-20 h-20 bg-emerald-500/20 rounded-3xl flex items-center justify-center mx-auto">
+                  <Activity className="w-10 h-10 text-emerald-500" />
+                </div>
+                
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold tracking-tight">Welcome to WiseFit</h2>
+                  <p className={cn(
+                    "text-sm leading-relaxed",
+                    isDarkMode ? "text-zinc-400" : "text-zinc-500"
+                  )}>
+                    Embark on a journey of physical mastery and ancient wisdom. You can explore all features as a guest.
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-4">
+                  <button
+                    onClick={dismissWelcome}
+                    className={cn(
+                      "w-full py-4 rounded-2xl font-bold text-sm transition-all active:scale-95",
+                      isDarkMode ? "bg-zinc-800 text-white hover:bg-zinc-700" : "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
+                    )}
+                  >
+                    Continue as Guest
+                  </button>
+                  <button
+                    onClick={handleWelcomeLogin}
+                    className="w-full py-4 rounded-2xl bg-emerald-500 text-zinc-950 font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                  >
+                    Sign In to Save Progress
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">
+                  Login is only required for admins to post content
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Background Graphic Elements */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className={cn(
@@ -1430,6 +2328,18 @@ export default function App() {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {!user && (
+            <button 
+              onClick={handleLogin}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all active:scale-95",
+                isDarkMode ? "bg-emerald-500 text-zinc-950" : "bg-emerald-600 text-white"
+              )}
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </button>
+          )}
           <button 
             onClick={() => setIsDarkMode(!isDarkMode)}
             className={cn(
@@ -1455,6 +2365,22 @@ export default function App() {
 
       {/* Main Content */}
       <main className="relative z-10 pb-24 px-4 pt-6 max-w-md mx-auto">
+        {isQuotaExceeded && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+              "mb-6 p-4 rounded-2xl border flex items-center gap-3",
+              isDarkMode ? "bg-orange-500/10 border-orange-500/20 text-orange-400" : "bg-orange-50/50 border-orange-200 text-orange-600"
+            )}
+          >
+            <Database className="w-5 h-5 flex-shrink-0" />
+            <div className="text-xs leading-relaxed">
+              <p className="font-bold">Quota Saver Active</p>
+              <p className="opacity-80">Daily limit reached. Using local JSON quotes until reset (8am Dublin).</p>
+            </div>
+          </motion.div>
+        )}
         <AnimatePresence mode="wait">
           {activeView === 'dashboard' && (
             <motion.div
@@ -1515,13 +2441,48 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
                 className={cn(
-                  "backdrop-blur-md border rounded-3xl p-6 relative overflow-hidden transition-colors duration-500",
-                  isDarkMode ? "bg-zinc-900/60 border-zinc-800/50" : "bg-white/80 border-zinc-200 shadow-sm"
+                  "backdrop-blur-md border rounded-3xl p-6 relative overflow-hidden transition-all duration-500",
+                  currentQuote.source === 'Legendary'
+                    ? (isDarkMode ? "bg-amber-900/10 border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]" : "bg-amber-50/50 border-amber-200 shadow-sm")
+                    : currentQuote.source === 'Machiavelli'
+                      ? (isDarkMode ? "bg-red-900/10 border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.1)]" : "bg-red-50/50 border-red-200 shadow-sm")
+                      : currentQuote.source === 'Jewish'
+                        ? (isDarkMode ? "bg-cyan-900/10 border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.1)]" : "bg-cyan-50/50 border-cyan-200 shadow-sm")
+                        : currentQuote.source === 'Latin'
+                          ? (isDarkMode ? "bg-slate-900/10 border-slate-500/30 shadow-[0_0_20px_rgba(100,116,139,0.1)]" : "bg-slate-50/50 border-slate-200 shadow-sm")
+                          : currentQuote.category === 'finance'
+                            ? (isDarkMode ? "bg-emerald-900/10 border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.1)]" : "bg-emerald-50/50 border-emerald-200 shadow-sm")
+                            : currentQuote.isAI
+                              ? (isDarkMode ? "bg-purple-900/10 border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.1)]" : "bg-purple-50/50 border-purple-200 shadow-sm")
+                              : currentQuote.source === 'Christian'
+                          ? (isDarkMode ? "bg-indigo-900/10 border-indigo-500/30 shadow-[0_0_20px_rgba(99,102,241,0.1)]" : "bg-indigo-50/50 border-indigo-200 shadow-sm")
+                          : (isDarkMode ? "bg-zinc-900/60 border-zinc-800/50" : "bg-white/80 border-zinc-200 shadow-sm")
                 )}
               >
                 <div className="absolute top-[-20px] right-[-20px] opacity-10">
-                  <Flame className="w-24 h-24 text-emerald-500" />
+                  {currentQuote.source === 'Irish' ? (
+                    <Clover className="w-24 h-24 text-emerald-500" />
+                  ) : currentQuote.source === 'Machiavelli' ? (
+                    <Sword className="w-24 h-24 text-red-500" />
+                  ) : currentQuote.source === 'Legendary' ? (
+                    <Trophy className="w-24 h-24 text-amber-500" />
+                  ) : currentQuote.source === 'Jewish' ? (
+                    <Star className="w-24 h-24 text-cyan-500" />
+                  ) : currentQuote.source === 'Latin' ? (
+                    <Scroll className="w-24 h-24 text-slate-500" />
+                  ) : currentQuote.source === 'Christian' ? (
+                    <Heart className="w-24 h-24 text-indigo-500" />
+                  ) : currentQuote.category === 'finance' ? (
+                    <DollarSign className="w-24 h-24 text-emerald-500" />
+                  ) : (
+                    <Flame className="w-24 h-24 text-emerald-500" />
+                  )}
                 </div>
+                {currentQuote.source === 'Legendary' && (
+                  <div className="absolute bottom-[-20px] left-[-20px] opacity-10">
+                    <Medal className="w-24 h-24 text-amber-500" />
+                  </div>
+                )}
                 <div className="relative z-10 space-y-3">
                   <AnimatePresence mode="wait">
                     <motion.div
@@ -1533,19 +2494,62 @@ export default function App() {
                       className="space-y-3"
                     >
                       <div className="space-y-1">
-                        <p className={cn(
-                          "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                          isDarkMode ? "text-emerald-500/70" : "text-emerald-600/70"
-                        )}>{currentQuote.source} Wisdom</p>
+                        <div className="flex items-center justify-between">
+                          <p className={cn(
+                            "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
+                            currentQuote.source === 'Irish'
+                              ? (isDarkMode ? "text-emerald-400" : "text-emerald-600")
+                              : currentQuote.category === 'finance'
+                                ? (isDarkMode ? "text-emerald-400" : "text-emerald-600")
+                                : currentQuote.isAI 
+                                  ? (isDarkMode ? "text-purple-400" : "text-purple-600")
+                                  : (isDarkMode ? "text-emerald-500/70" : "text-emerald-600/70")
+                          )}>{currentQuote.source} Wisdom</p>
+                          {currentQuote.source === 'Irish' && (
+                            <div className={cn(
+                              "flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[8px] font-bold uppercase tracking-tighter",
+                              isDarkMode ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-emerald-50 border-emerald-100 text-emerald-600"
+                            )}>
+                              <Clover className="w-2 h-2" />
+                              Irish Wisdom
+                            </div>
+                          )}
+                          {currentQuote.category === 'finance' && currentQuote.source !== 'Irish' && (
+                            <div className={cn(
+                              "flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[8px] font-bold uppercase tracking-tighter",
+                              isDarkMode ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-emerald-50 border-emerald-100 text-emerald-600"
+                            )}>
+                              <DollarSign className="w-2 h-2" />
+                              Financial Wisdom
+                            </div>
+                          )}
+                          {currentQuote.isAI && (
+                            <div className={cn(
+                              "flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[8px] font-bold uppercase tracking-tighter",
+                              isDarkMode ? "bg-purple-500/10 border-purple-500/20 text-purple-400" : "bg-purple-50 border-purple-100 text-purple-600"
+                            )}>
+                              <Sparkles className="w-2 h-2" />
+                              AI Generated
+                            </div>
+                          )}
+                        </div>
                         <p className={cn(
                           "text-lg font-serif italic leading-relaxed transition-colors",
-                          isDarkMode ? "text-zinc-100" : "text-zinc-900"
+                          currentQuote.category === 'finance'
+                            ? (isDarkMode ? "text-emerald-50" : "text-emerald-900")
+                            : currentQuote.isAI
+                              ? (isDarkMode ? "text-purple-100" : "text-purple-900")
+                              : (isDarkMode ? "text-zinc-100" : "text-zinc-900")
                         )}>
                           "{currentQuote.text}"
                         </p>
                         <p className={cn(
                           "text-[11px] font-bold transition-colors",
-                          isDarkMode ? "text-blue-400" : "text-blue-600"
+                          currentQuote.category === 'finance'
+                            ? (isDarkMode ? "text-emerald-400" : "text-emerald-600")
+                            : currentQuote.isAI
+                              ? (isDarkMode ? "text-purple-400" : "text-purple-600")
+                              : (isDarkMode ? "text-blue-400" : "text-blue-600")
                         )}>{currentQuote.author}</p>
                       </div>
 
@@ -1565,6 +2569,114 @@ export default function App() {
                           />
                         </div>
 
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={goToPreviousQuote}
+                              className={cn(
+                                "flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm",
+                                isDarkMode 
+                                  ? "bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20" 
+                                  : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100"
+                              )}
+                            >
+                              <ChevronLeft className="w-3 h-3" />
+                              Previous
+                            </button>
+                            <button
+                              type="button"
+                              onClick={goToNextQuote}
+                              className={cn(
+                                "flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm",
+                                isDarkMode 
+                                  ? "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 border border-orange-500/20" 
+                                  : "bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-100"
+                              )}
+                            >
+                              Next Quote
+                              <ChevronRight className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAutoFlowActive(!isAutoFlowActive);
+                            }}
+                            className={cn(
+                              "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm",
+                              isAutoFlowActive
+                                ? (isDarkMode ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-emerald-50 text-emerald-600 border border-emerald-100")
+                                : (isDarkMode ? "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-600 border border-zinc-200 hover:bg-zinc-200")
+                            )}
+                          >
+                            {isAutoFlowActive ? (
+                              <>
+                                <Volume2 className="w-3 h-3 animate-pulse" />
+                                Auto-Flow Active ({autoFlowTimer}s)
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-3 h-3" />
+                                Start Auto-Flow (30s)
+                              </>
+                            )}
+                          </button>
+                          
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={generateAIQuote}
+                              disabled={isGeneratingAIQuote || !isAdminUser}
+                              className={cn(
+                                "flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm relative overflow-hidden",
+                                (isGeneratingAIQuote || !isAdminUser) ? "opacity-50 cursor-not-allowed" : "",
+                                isDarkMode 
+                                  ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30" 
+                                  : "bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-100"
+                              )}
+                            >
+                              {isGeneratingAIQuote ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  Generating ({aiCountdown}s)
+                                </>
+                              ) : !isAdminUser ? (
+                                <>
+                                  <Lock className="w-3 h-3" />
+                                  Admin Only
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-3 h-3" />
+                                  Create New (AI)
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextState = !isAILoopActive;
+                                setIsAILoopActive(nextState);
+                                if (nextState) setAutoFlowTimer(30);
+                              }}
+                              disabled={!isAdminUser}
+                              className={cn(
+                                "px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm flex items-center gap-1",
+                                isAILoopActive
+                                  ? (isDarkMode ? "bg-purple-500 text-white" : "bg-purple-600 text-white")
+                                  : (isDarkMode ? "bg-zinc-800 text-zinc-400 border border-zinc-700" : "bg-zinc-100 text-zinc-600 border border-zinc-200")
+                              )}
+                              title="Toggle AI Generation Loop"
+                            >
+                              <RefreshCw className={cn("w-3 h-3", isAILoopActive && "animate-spin")} />
+                              {isAILoopActive ? `Looping (${autoFlowTimer}s)` : "Loop"}
+                            </button>
+                          </div>
+                        </div>
+
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={handleCopyQuote}
@@ -1577,6 +2689,16 @@ export default function App() {
                             {copiedQuote ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                           <button
+                            onClick={() => speakQuote(currentQuote)}
+                            className={cn(
+                              "p-2 rounded-lg transition-all active:scale-95",
+                              isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                            )}
+                            title="Listen to Quote"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
                             onClick={handleShareQuote}
                             className={cn(
                               "p-2 rounded-lg transition-all active:scale-95",
@@ -1587,14 +2709,28 @@ export default function App() {
                             <Share2 className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            type="button"
                             onClick={markQuoteAsSeen}
+                            disabled={(isSaved && !alreadySaved) || !isAdminUser}
                             className={cn(
                               "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95",
-                              isDarkMode ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                              (isSaved || alreadySaved) 
+                                ? "bg-emerald-500 text-white" 
+                                : (isDarkMode ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"),
+                              !isAdminUser && "opacity-50 cursor-not-allowed"
                             )}
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Mark as Wise
+                            {isSaved || alreadySaved ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {alreadySaved ? 'In Library' : 'Saved!'}
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-3.5 h-3.5" />
+                                {isAdminUser ? 'Mark as Wise' : 'Admin Only'}
+                              </>
+                            )}
                           </button>
                         </div>
 
@@ -1640,6 +2776,131 @@ export default function App() {
                     </AnimatePresence>
                   </div>
                 </motion.div>
+
+              {/* Ritual Soundscapes */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn(
+                  "p-4 rounded-3xl border transition-all duration-500 mt-4",
+                  isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/60 border-zinc-200 shadow-sm"
+                )}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Music className="w-4 h-4 text-emerald-500" />
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Ritual Soundscapes</h3>
+                  </div>
+                  {activeSoundscape && (
+                    <button 
+                      onClick={() => setActiveSoundscape(null)}
+                      className="text-[9px] font-bold uppercase text-red-500 hover:text-red-400 transition-colors"
+                    >
+                      Stop Music
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setActiveSoundscape('focus')}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      activeSoundscape === 'focus'
+                        ? (isDarkMode ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-600")
+                        : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
+                    )}
+                  >
+                    <Volume2 className="w-3 h-3" />
+                    Focus Mode
+                  </button>
+                  <button
+                    onClick={() => setActiveSoundscape('techno')}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      activeSoundscape === 'techno'
+                        ? (isDarkMode ? "bg-purple-500/20 border-purple-500/40 text-purple-400" : "bg-purple-50 border-purple-200 text-purple-600")
+                        : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
+                    )}
+                  >
+                    <Activity className="w-3 h-3" />
+                    Techno/House
+                  </button>
+                  <button
+                    onClick={() => setActiveSoundscape('jazz')}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      activeSoundscape === 'jazz'
+                        ? (isDarkMode ? "bg-orange-500/20 border-orange-500/40 text-orange-400" : "bg-orange-50 border-orange-200 text-orange-600")
+                        : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
+                    )}
+                  >
+                    <Music className="w-3 h-3" />
+                    Smooth Jazz
+                  </button>
+                  <button
+                    onClick={() => setActiveSoundscape('classical')}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      activeSoundscape === 'classical'
+                        ? (isDarkMode ? "bg-blue-500/20 border-blue-500/40 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600")
+                        : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
+                    )}
+                  >
+                    <Scroll className="w-3 h-3" />
+                    Classical
+                  </button>
+                </div>
+
+                {activeSoundscape && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mt-4 overflow-hidden rounded-2xl border border-zinc-800/50"
+                  >
+                    <div className="bg-zinc-900/80 p-2 text-[8px] font-bold uppercase tracking-tighter text-zinc-500 flex justify-between items-center">
+                      <span>Live Stream Active</span>
+                      <span className="text-emerald-500 animate-pulse">● Volume tip: Adjust in player</span>
+                    </div>
+                    {activeSoundscape === 'jazz' || activeSoundscape === 'classical' ? (
+                      <div className="relative h-20 bg-zinc-950 flex items-center px-4 gap-4">
+                        <img 
+                          src={activeSoundscape === 'jazz' ? "https://picsum.photos/seed/jazz-sax/200/200" : "https://picsum.photos/seed/classical-violin/200/200"} 
+                          alt={activeSoundscape === 'jazz' ? "Jazz" : "Classical"} 
+                          className="w-12 h-12 rounded-lg object-cover border border-zinc-800"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1">
+                          <p className="text-[10px] font-bold text-zinc-100 uppercase tracking-wider">
+                            {activeSoundscape === 'jazz' ? "WRTI Jazz Radio" : "Classic FM"}
+                          </p>
+                          <p className="text-[8px] text-zinc-500 uppercase tracking-tighter">Live Stream</p>
+                        </div>
+                        <audio
+                          autoPlay
+                          controls
+                          className="h-8 w-32 opacity-80"
+                          src={activeSoundscape === 'jazz' ? "https://wrti-live.streamguys1.com/jazz-mp3" : "https://media-ice.musicradio.com/ClassicFMMP3"}
+                        />
+                      </div>
+                    ) : (
+                      <iframe
+                        width="100%"
+                        height="80"
+                        src={
+                          activeSoundscape === 'focus' ? "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1" :
+                          "https://www.youtube.com/embed/4xDzrJKXOOY?autoplay=1"
+                        }
+                        title="Ritual Soundscape"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="opacity-80 grayscale hover:grayscale-0 transition-all duration-500"
+                      />
+                    )}
+                  </motion.div>
+                )}
+              </motion.div>
 
               {/* Wisdom Scoreboard */}
               <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
@@ -1960,12 +3221,14 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setIsAddingWorkout(true)}
-                  className="bg-emerald-500 text-zinc-950 p-2 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
-                >
-                  <Plus className="w-6 h-6" />
-                </button>
+                {isAdminUser && (
+                  <button 
+                    onClick={() => setIsAddingWorkout(true)}
+                    className="bg-emerald-500 text-zinc-950 p-2 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
+                  >
+                    <Plus className="w-6 h-6" />
+                  </button>
+                )}
               </div>
 
               {historySubView === 'journal' ? (
@@ -1981,6 +3244,7 @@ export default function App() {
                       onAddComment={handleAddComment}
                       onUpdateWorkout={handleUpdateWorkout}
                       currentUserId={user?.uid}
+                      isAdminUser={isAdminUser}
                     />
                   ))}
                   {workouts.length === 0 && (
@@ -2051,6 +3315,22 @@ export default function App() {
                   )}
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {activeView === 'yoga' && (
+            <motion.div
+              key="yoga"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <YogaView 
+                isDarkMode={isDarkMode} 
+                onMarkAsWise={markQuoteAsSeen}
+                isSessionActive={isYogaSessionActive}
+                setIsSessionActive={setIsYogaSessionActive}
+              />
             </motion.div>
           )}
 
@@ -2514,12 +3794,64 @@ export default function App() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">Library of Wisdom</h2>
-                  <p className={cn(
-                    "text-xs font-medium",
-                    isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                  )}>{libraryQuotes.length} Quotes Ticked</p>
+                  <div className="flex items-center gap-2">
+                    <p className={cn(
+                      "text-xs font-medium",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>{libraryQuotes.length} Quotes Ticked</p>
+                    {libraryQuotes.length > 1 && (
+                      <button 
+                        onClick={handleCleanupDuplicates}
+                        className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 hover:text-emerald-400 transition-colors"
+                      >
+                        (Clean Duplicates)
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {libraryQuotes.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setIsLibrarySelectMode(!isLibrarySelectMode);
+                        setSelectedLibraryIds(new Set());
+                      }}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all",
+                        isLibrarySelectMode 
+                          ? "bg-red-500 text-white" 
+                          : (isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200")
+                      )}
+                    >
+                      {isLibrarySelectMode ? 'Cancel' : 'Select'}
+                    </button>
+                  )}
+                  {isLibrarySelectMode && (
+                    <button
+                      onClick={() => {
+                        if (selectedLibraryIds.size === libraryQuotes.length) {
+                          setSelectedLibraryIds(new Set());
+                        } else {
+                          setSelectedLibraryIds(new Set(libraryQuotes.map(q => q.id!)));
+                        }
+                      }}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all",
+                        isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                      )}
+                    >
+                      {selectedLibraryIds.size === libraryQuotes.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                  )}
+                  {isLibrarySelectMode && selectedLibraryIds.size > 0 && (
+                    <button
+                      onClick={() => handleDeleteQuotesFromLibrary(Array.from(selectedLibraryIds))}
+                      className="px-3 py-1.5 rounded-xl bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-red-500 transition-all flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete ({selectedLibraryIds.size})
+                    </button>
+                  )}
                   <button
                     onClick={() => setIsAddingQuote(true)}
                     className={cn(
@@ -2655,16 +3987,25 @@ export default function App() {
                       </div>
                       <button
                         onClick={handleAddCustomQuote}
-                        disabled={!newQuote.text.trim()}
+                        disabled={!newQuote.text.trim() || !isAdminUser}
                         className={cn(
                           "w-full py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2",
-                          !newQuote.text.trim()
+                          (!newQuote.text.trim() || !isAdminUser)
                             ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
                             : "bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20"
                         )}
                       >
-                        <Plus className="w-4 h-4" />
-                        Save Wisdom
+                        {isAdminUser ? (
+                          <>
+                            <Plus className="w-4 h-4" />
+                            Save Wisdom
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4" />
+                            Admin Access Required
+                          </>
+                        )}
                       </button>
                     </div>
                   </motion.div>
@@ -2721,20 +4062,55 @@ export default function App() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className={cn(
                                   "p-5 rounded-3xl border transition-all relative group overflow-hidden",
-                                  quote.isCustom
-                                    ? (isDarkMode ? "bg-purple-900/20 border-purple-800/50" : "bg-purple-50/50 border-purple-200 shadow-sm")
-                                    : quote.wisdomGrade
-                                      ? (isDarkMode ? "bg-yellow-900/20 border-yellow-800/50" : "bg-yellow-50/50 border-yellow-200 shadow-sm")
-                                      : (isDarkMode ? "bg-zinc-900/60 border-zinc-800/50" : "bg-white border-zinc-200 shadow-sm")
+                                  quote.category === 'finance'
+                                    ? (isDarkMode ? "bg-emerald-900/20 border-emerald-800/50" : "bg-emerald-50/50 border-emerald-200 shadow-sm")
+                                    : (quote.isCustom || quote.isAI)
+                                      ? (isDarkMode ? "bg-purple-900/20 border-purple-800/50" : "bg-purple-50/50 border-purple-200 shadow-sm")
+                                      : quote.wisdomGrade
+                                        ? (isDarkMode ? "bg-yellow-900/20 border-yellow-800/50" : "bg-yellow-50/50 border-yellow-200 shadow-sm")
+                                        : (isDarkMode ? "bg-zinc-900/60 border-zinc-800/50" : "bg-white border-zinc-200 shadow-sm")
                                 )}
                               >
                                 <div className={cn(
+                                  "absolute top-1 right-1 h-10 flex items-center gap-2 px-3 transition-opacity",
+                                  isLibrarySelectMode ? "opacity-100" : "opacity-40 group-hover:opacity-100"
+                                )}>
+                                  {isLibrarySelectMode ? (
+                                    <button
+                                      onClick={() => toggleLibraryQuoteSelection(quote.id!)}
+                                      className={cn(
+                                        "p-2 rounded-xl transition-all shadow-sm",
+                                        selectedLibraryIds.has(quote.id!)
+                                          ? "bg-red-500 text-white"
+                                          : (isDarkMode ? "bg-zinc-800 text-zinc-500" : "bg-white text-zinc-400 border border-zinc-100")
+                                      )}
+                                    >
+                                      {selectedLibraryIds.has(quote.id!) ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleDeleteQuotesFromLibrary([quote.id!])}
+                                      className={cn(
+                                        "p-2 rounded-xl transition-all shadow-sm",
+                                        isDarkMode 
+                                          ? "bg-zinc-800 text-zinc-500 hover:text-red-400 hover:bg-red-500/10" 
+                                          : "bg-white border border-zinc-100 text-zinc-400 hover:text-red-500 hover:bg-red-50"
+                                      )}
+                                      title="Remove from Library"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                                <div className={cn(
                                   "absolute top-0 left-0 px-3 py-1 rounded-br-2xl text-[10px] font-black tracking-tighter",
-                                  quote.isCustom
-                                    ? (isDarkMode ? "bg-purple-800/30 text-purple-400" : "bg-purple-100 text-purple-500")
-                                    : quote.wisdomGrade
-                                      ? (isDarkMode ? "bg-yellow-800/30 text-yellow-400" : "bg-yellow-100 text-yellow-500")
-                                      : (isDarkMode ? "bg-zinc-800 text-zinc-600" : "bg-zinc-100 text-zinc-400")
+                                  quote.category === 'finance'
+                                    ? (isDarkMode ? "bg-emerald-800/30 text-emerald-400" : "bg-emerald-100 text-emerald-500")
+                                    : (quote.isCustom || quote.isAI)
+                                      ? (isDarkMode ? "bg-purple-800/30 text-purple-400" : "bg-purple-100 text-purple-500")
+                                      : quote.wisdomGrade
+                                        ? (isDarkMode ? "bg-yellow-800/30 text-yellow-400" : "bg-yellow-100 text-yellow-500")
+                                        : (isDarkMode ? "bg-zinc-800 text-zinc-600" : "bg-zinc-100 text-zinc-400")
                                 )}>
                                   #{quoteToGlobalIndex.get(quote.id)}
                                 </div>
@@ -2746,12 +4122,12 @@ export default function App() {
                                 </p>
                                   <div className="mt-4 space-y-3">
                                     <div className="flex items-center gap-2">
-                                      <div className={cn("h-[1px] flex-1", quote.isCustom ? "bg-purple-500/20" : "bg-yellow-500/20")} />
+                                      <div className={cn("h-[1px] flex-1", quote.category === 'finance' ? "bg-emerald-500/20" : quote.isCustom ? "bg-purple-500/20" : "bg-yellow-500/20")} />
                                       <span className={cn(
                                         "text-[8px] font-black uppercase tracking-[0.2em]",
-                                        quote.isCustom ? "text-purple-400/70" : "text-yellow-500/70"
+                                        quote.category === 'finance' ? "text-emerald-400/70" : quote.isCustom ? "text-purple-400/70" : "text-yellow-500/70"
                                       )}>Wisdom Data</span>
-                                      <div className={cn("h-[1px] flex-1", quote.isCustom ? "bg-purple-500/20" : "bg-yellow-500/20")} />
+                                      <div className={cn("h-[1px] flex-1", quote.category === 'finance' ? "bg-emerald-500/20" : quote.isCustom ? "bg-purple-500/20" : "bg-yellow-500/20")} />
                                     </div>
                                     
                                     {editingQuoteId === quote.id ? (
@@ -2871,10 +4247,11 @@ export default function App() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t px-6 py-3 pb-8 transition-colors duration-500",
-        isDarkMode ? "bg-zinc-950/90 border-zinc-800/50" : "bg-white/90 border-zinc-200 shadow-lg"
-      )}>
+      {!isYogaSessionActive && (
+        <nav className={cn(
+          "fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t px-6 py-3 pb-8 transition-colors duration-500",
+          isDarkMode ? "bg-zinc-950/90 border-zinc-800/50" : "bg-white/90 border-zinc-200 shadow-lg"
+        )}>
         <div className="max-w-md mx-auto flex items-center justify-between">
           <NavButton 
             active={activeView === 'dashboard'} 
@@ -2895,6 +4272,13 @@ export default function App() {
             onClick={() => setActiveView('workouts')}
             icon={<Dumbbell className="w-6 h-6" />}
             label="History"
+            isDarkMode={isDarkMode}
+          />
+          <NavButton 
+            active={activeView === 'yoga'} 
+            onClick={() => setActiveView('yoga')}
+            icon={<Wind className="w-6 h-6" />}
+            label="Yoga"
             isDarkMode={isDarkMode}
           />
           <NavButton 
@@ -2927,6 +4311,7 @@ export default function App() {
           />
         </div>
       </nav>
+      )}
 
       {/* Edit Profile Modal */}
       <AnimatePresence>
@@ -3082,6 +4467,20 @@ export default function App() {
                 >
                   Save Changes
                 </button>
+
+                {/* Debug Info Section */}
+                <div className={cn(
+                  "mt-8 p-4 rounded-2xl border border-dashed",
+                  isDarkMode ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
+                )}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Debug Information</p>
+                  <div className="space-y-1 font-mono text-[10px] text-zinc-400">
+                    <p>UID: {user?.uid}</p>
+                    <p>Email: {user?.email}</p>
+                    <p>Marked Quotes: {userProfile.markedQuotes?.length || 0}</p>
+                    <p>Library Quotes: {libraryQuotes.length}</p>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -3317,13 +4716,23 @@ export default function App() {
               <div className="p-6 border-t border-zinc-800/20">
                 <button 
                   onClick={handleSaveWorkout}
-                  disabled={!newWorkout.name || isUploadingFile}
-                  className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={!newWorkout.name || isUploadingFile || !isAdminUser}
+                  className={cn(
+                    "w-full py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2",
+                    (!newWorkout.name || isUploadingFile || !isAdminUser)
+                      ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                      : "bg-emerald-500 text-zinc-950 shadow-emerald-500/20"
+                  )}
                 >
                   {isUploadingFile ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
                       Processing File...
+                    </>
+                  ) : !isAdminUser ? (
+                    <>
+                      <Lock className="w-5 h-5" />
+                      Admin Access Required
                     </>
                   ) : 'Save Workout'}
                 </button>
@@ -3392,10 +4801,11 @@ interface WorkoutCardProps {
   onAddComment?: (workoutId: string, text: string) => void;
   onUpdateWorkout?: (workout: Workout) => void;
   currentUserId?: string;
+  isAdminUser?: boolean;
   key?: any;
 }
 
-function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAddComment, onUpdateWorkout, currentUserId }: WorkoutCardProps) {
+function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAddComment, onUpdateWorkout, currentUserId, isAdminUser }: WorkoutCardProps) {
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
   const [failedThumbnails, setFailedThumbnails] = useState<Record<string, boolean>>({});
@@ -3483,7 +4893,7 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {currentUserId === workout.userId && (
+          {isAdminUser && (
             <>
               <button 
                 onClick={() => onEdit?.(workout)}
@@ -3790,12 +5200,16 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
           />
           <button 
             onClick={() => {
-              if (commentText.trim()) {
+              if (commentText.trim() && isAdminUser) {
                 onAddComment?.(workout.id, commentText);
                 setCommentText('');
               }
             }}
-            className="p-2 bg-emerald-500 text-zinc-950 rounded-xl active:scale-95 transition-transform"
+            disabled={!isAdminUser}
+            className={cn(
+              "p-2 bg-emerald-500 text-zinc-950 rounded-xl active:scale-95 transition-transform",
+              !isAdminUser && "opacity-50 cursor-not-allowed"
+            )}
           >
             <Send className="w-4 h-4" />
           </button>
