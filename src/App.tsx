@@ -412,6 +412,8 @@ function AppContent() {
   const [isSaved, setIsSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editAuthor, setEditAuthor] = useState('');
   const [editGrade, setEditGrade] = useState('');
   const [editComment, setEditComment] = useState('');
   const [isAddingQuote, setIsAddingQuote] = useState(false);
@@ -1694,6 +1696,7 @@ function AppContent() {
   const handleCleanupDuplicates = async () => {
     if (!user || !userProfile.markedQuotes) return;
     
+    console.log('Cleaning up duplicate quotes...');
     const seen = new Set();
     const uniqueMarked = [];
     
@@ -1710,47 +1713,52 @@ function AppContent() {
       }
     }
     
+    if (uniqueMarked.length === userProfile.markedQuotes.length) {
+      console.log('No duplicates found.');
+      return;
+    }
+
     try {
       await setDoc(doc(db, 'users', user.uid), { 
         markedQuotes: uniqueMarked.reverse() // Restore chronological order
       }, { merge: true });
-      alert(`Cleaned up ${userProfile.markedQuotes.length - uniqueMarked.length} duplicate quotes!`);
+      console.log(`Cleaned up ${userProfile.markedQuotes.length - uniqueMarked.length} duplicate quotes.`);
     } catch (error) {
       console.error('Error cleaning up duplicates:', error);
     }
   };
 
   const handleDeleteQuotesFromLibrary = async (quoteIdsToDelete: string[]) => {
-    if (!user || !userProfile.markedQuotes) return;
+    if (!user || !userProfile.markedQuotes || quoteIdsToDelete.length === 0) return;
     
-    const confirmMessage = quoteIdsToDelete.length === 1 
-      ? "Are you sure you want to remove this quote from your library?"
-      : `Are you sure you want to remove ${quoteIdsToDelete.length} quotes from your library?`;
-      
-    if (!confirm(confirmMessage)) return;
+    console.log('Deleting quotes from library:', quoteIdsToDelete.length);
+
+    // Filter out any potential non-string values just in case
+    const validIds = quoteIdsToDelete.filter(id => typeof id === 'string' && id);
+    if (validIds.length === 0) return;
 
     // Optimistic update
     const previousMarkedQuotes = [...userProfile.markedQuotes];
     const previousLibraryQuotes = [...libraryQuotes];
-    const newMarkedQuotes = userProfile.markedQuotes.filter(q => !quoteIdsToDelete.includes(q.id));
-    const newLibraryQuotes = libraryQuotes.filter(q => !quoteIdsToDelete.includes(q.id!));
+    const newMarkedQuotes = userProfile.markedQuotes.filter(q => !validIds.includes(q.id));
+    const newLibraryQuotes = libraryQuotes.filter(q => q.id && !validIds.includes(q.id));
 
     setUserProfile(prev => ({ ...prev, markedQuotes: newMarkedQuotes }));
     setLibraryQuotes(newLibraryQuotes);
+
+    // If we are in selection mode, clear selection immediately for UI responsiveness
+    if (isLibrarySelectMode) {
+      setSelectedLibraryIds(new Set());
+      setIsLibrarySelectMode(false);
+    }
 
     try {
       await setDoc(doc(db, 'users', user.uid), { 
         markedQuotes: newMarkedQuotes 
       }, { merge: true });
       
-      // If we are in selection mode, clear selection
-      if (isLibrarySelectMode) {
-        setSelectedLibraryIds(new Set());
-        setIsLibrarySelectMode(false);
-      }
-      
       // Also check customQuotes collection and delete if any of these were custom
-      const customToDelete = quoteIdsToDelete.filter(id => {
+      const customToDelete = validIds.filter(id => {
         const q = libraryQuotes.find(l => l.id === id);
         return q?.isCustom;
       });
@@ -1758,19 +1766,18 @@ function AppContent() {
       if (customToDelete.length > 0) {
         for (const id of customToDelete) {
           try {
-            await deleteDoc(doc(db, 'customQuotes', id));
+            await deleteDoc(doc(db, 'customQuotes', id!));
           } catch (e) {
             console.warn('Could not delete custom quote doc:', id, e);
           }
         }
       }
-      console.log('Successfully deleted quotes:', quoteIdsToDelete);
+      console.log('Successfully deleted quotes:', validIds);
     } catch (error) {
       console.error('Error deleting quotes:', error);
       // Revert optimistic update on error
       setUserProfile(prev => ({ ...prev, markedQuotes: previousMarkedQuotes }));
       setLibraryQuotes(previousLibraryQuotes);
-      alert('Failed to delete quotes. Please try again.');
     }
   };
 
@@ -1860,6 +1867,8 @@ function AppContent() {
         const markInfo = marked.find(m => m.id === q.id);
         return { 
           ...q, 
+          text: markInfo?.text || q.text,
+          author: markInfo?.author || q.author,
           markedDate: markInfo?.date || new Date().toISOString(), 
           wisdomGrade: markInfo?.wisdomGrade || 'A daily reminder',
           comment: markInfo?.comment || '' 
@@ -1927,12 +1936,14 @@ function AppContent() {
     try {
       if (isCustom) {
         await setDoc(doc(db, 'customQuotes', quoteId), { 
+          text: editText,
+          author: editAuthor,
           wisdomGrade: editGrade,
           comment: editComment
         }, { merge: true });
       } else {
         const newMarkedQuotes = (userProfile.markedQuotes || []).map(m => 
-          m.id === quoteId ? { ...m, wisdomGrade: editGrade, comment: editComment } : m
+          m.id === quoteId ? { ...m, text: editText, author: editAuthor, wisdomGrade: editGrade, comment: editComment } : m
         );
         
         await setDoc(doc(db, 'users', user.uid), { 
@@ -2567,6 +2578,18 @@ function AppContent() {
                                 : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20"
                             )}
                           />
+                          <button
+                            type="button"
+                            onClick={markQuoteAsSeen}
+                            className={cn(
+                              "w-full py-1.5 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-sm mt-1",
+                              isDarkMode 
+                                ? "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400" 
+                                : "bg-zinc-50 text-zinc-500 border border-zinc-200 hover:bg-zinc-100 hover:text-emerald-600"
+                            )}
+                          >
+                            COMMENT
+                          </button>
                         </div>
 
                         <div className="flex flex-col gap-2">
@@ -2642,11 +2665,6 @@ function AppContent() {
                                   <Loader2 className="w-3 h-3 animate-spin" />
                                   Generating ({aiCountdown}s)
                                 </>
-                              ) : !isAdminUser ? (
-                                <>
-                                  <Lock className="w-3 h-3" />
-                                  Admin Only
-                                </>
                               ) : (
                                 <>
                                   <Sparkles className="w-3 h-3" />
@@ -2662,7 +2680,6 @@ function AppContent() {
                                 setIsAILoopActive(nextState);
                                 if (nextState) setAutoFlowTimer(30);
                               }}
-                              disabled={!isAdminUser}
                               className={cn(
                                 "px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm flex items-center gap-1",
                                 isAILoopActive
@@ -2711,13 +2728,12 @@ function AppContent() {
                           <button
                             type="button"
                             onClick={markQuoteAsSeen}
-                            disabled={(isSaved && !alreadySaved) || !isAdminUser}
+                            disabled={(isSaved && !alreadySaved)}
                             className={cn(
                               "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95",
                               (isSaved || alreadySaved) 
                                 ? "bg-emerald-500 text-white" 
-                                : (isDarkMode ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"),
-                              !isAdminUser && "opacity-50 cursor-not-allowed"
+                                : (isDarkMode ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100")
                             )}
                           >
                             {isSaved || alreadySaved ? (
@@ -2728,7 +2744,7 @@ function AppContent() {
                             ) : (
                               <>
                                 <Sparkles className="w-3.5 h-3.5" />
-                                {isAdminUser ? 'Mark as Wise' : 'Admin Only'}
+                                Mark as Wise
                               </>
                             )}
                           </button>
@@ -4131,40 +4147,68 @@ function AppContent() {
                                     </div>
                                     
                                     {editingQuoteId === quote.id ? (
-                                      <div className="space-y-3 p-3 rounded-2xl bg-zinc-900/40 border border-zinc-800/50">
+                                      <div className="space-y-4 p-4 rounded-3xl bg-zinc-900/60 border border-zinc-800/50 shadow-inner">
+                                        <div className="space-y-2">
+                                          <label className="text-[7px] font-black uppercase tracking-[0.2em] text-emerald-500/70 px-1">Wisdom Text</label>
+                                          <textarea
+                                            value={editText}
+                                            onChange={(e) => setEditText(e.target.value)}
+                                            className={cn(
+                                              "w-full p-3 rounded-2xl border text-xs font-serif italic focus:outline-none focus:ring-1 transition-all resize-none min-h-[80px] leading-relaxed",
+                                              isDarkMode 
+                                                ? "bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-emerald-500/50" 
+                                                : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20 shadow-sm"
+                                            )}
+                                          />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <label className="text-[7px] font-black uppercase tracking-[0.2em] text-emerald-500/70 px-1">Author Identity</label>
+                                          <input
+                                            type="text"
+                                            value={editAuthor}
+                                            onChange={(e) => setEditAuthor(e.target.value)}
+                                            className={cn(
+                                              "w-full p-2.5 rounded-xl border text-[11px] font-black focus:outline-none focus:ring-1 transition-all",
+                                              isDarkMode 
+                                                ? "bg-zinc-950 border-zinc-800 text-blue-400 focus:ring-emerald-500/50" 
+                                                : "bg-white border-zinc-200 text-blue-600 focus:ring-emerald-500/20 shadow-sm"
+                                            )}
+                                          />
+                                        </div>
                                         <div className="grid grid-cols-2 gap-3">
-                                          <div className="space-y-1">
-                                            <label className="text-[7px] font-bold uppercase tracking-widest text-zinc-500">Grade:</label>
+                                          <div className="space-y-1.5">
+                                            <label className="text-[7px] font-bold uppercase tracking-widest text-zinc-500 px-1">Grade</label>
                                             <select
                                               value={editGrade}
                                               onChange={(e) => setEditGrade(e.target.value)}
                                               className={cn(
-                                                "w-full p-1.5 rounded-lg border text-[10px] focus:outline-none focus:ring-1 transition-all",
+                                                "w-full p-2 rounded-xl border text-[10px] focus:outline-none focus:ring-1 transition-all cursor-pointer",
                                                 isDarkMode 
-                                                  ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-emerald-500/50" 
-                                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20"
+                                                  ? "bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-emerald-500/50" 
+                                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20 shadow-sm"
                                               )}
                                             >
-                                              <option value="A daily reminder" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>A daily reminder</option>
-                                              <option value="The wisest quote ever" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>The wisest quote ever</option>
-                                              <option value="My favourite" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>My favourite</option>
-                                              <option value="This one changed my life for better" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>This one changed my life for better</option>
-                                              <option value="I realised this quote is so true in my own experience" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>I realised this quote is so true in my own experience</option>
-                                              <option value="Pure gold" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Pure gold</option>
-                                              <option value="Timeless truth" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Timeless truth</option>
-                                              <option value="Echoes of the ancients" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Echoes of the ancients</option>
+                                              <option value="A daily reminder">A daily reminder</option>
+                                              <option value="The wisest quote ever">The wisest quote ever</option>
+                                              <option value="My favourite">My favourite</option>
+                                              <option value="This one changed my life for better">This one changed my life for better</option>
+                                              <option value="I realised this quote is so true in my own experience">I realised this quote is so true in my own experience</option>
+                                              <option value="Pure gold">Pure gold</option>
+                                              <option value="Timeless truth">Timeless truth</option>
+                                              <option value="Echoes of the ancients">Echoes of the ancients</option>
                                             </select>
                                           </div>
-                                          <div className="space-y-1">
-                                            <label className="text-[7px] font-bold uppercase tracking-widest text-zinc-500">Reflection:</label>
+                                          <div className="space-y-1.5">
+                                            <label className="text-[7px] font-bold uppercase tracking-widest text-zinc-500 px-1">Reflection</label>
                                             <textarea
                                               value={editComment}
                                               onChange={(e) => setEditComment(e.target.value)}
+                                              placeholder="Personal notes..."
                                               className={cn(
-                                                "w-full p-1.5 rounded-lg border text-[10px] focus:outline-none focus:ring-1 transition-all resize-none h-8",
+                                                "w-full p-2 rounded-xl border text-[10px] focus:outline-none focus:ring-1 transition-all resize-none h-[38px] leading-snug",
                                                 isDarkMode 
-                                                  ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-emerald-500/50" 
-                                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20"
+                                                  ? "bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-emerald-500/50" 
+                                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20 shadow-sm"
                                               )}
                                             />
                                           </div>
@@ -4172,13 +4216,13 @@ function AppContent() {
                                         <div className="flex gap-2 pt-1">
                                           <button
                                             onClick={() => handleUpdateWisdomData(quote.id!, quote.isCustom || false)}
-                                            className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider hover:bg-emerald-500 transition-colors"
+                                            className="flex-1 py-2.5 bg-emerald-600 text-white rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-950/20 active:scale-[0.98]"
                                           >
                                             Save Changes
                                           </button>
                                           <button
                                             onClick={() => setEditingQuoteId(null)}
-                                            className="px-3 py-2 bg-zinc-800 text-zinc-400 rounded-lg text-[9px] font-bold uppercase tracking-wider hover:bg-zinc-700 transition-colors"
+                                            className="px-4 py-2.5 bg-zinc-800 text-zinc-400 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-zinc-700 transition-all active:scale-[0.98]"
                                           >
                                             Cancel
                                           </button>
@@ -4189,12 +4233,14 @@ function AppContent() {
                                         <button
                                           onClick={() => {
                                             setEditingQuoteId(quote.id!);
+                                            setEditText(quote.text);
+                                            setEditAuthor(quote.author);
                                             setEditGrade(quote.wisdomGrade || 'A daily reminder');
                                             setEditComment(quote.comment || '');
                                           }}
                                           className="absolute -top-6 right-0 transition-opacity text-[8px] font-bold uppercase tracking-wider text-emerald-500 hover:text-emerald-400"
                                         >
-                                          COMMENT
+                                          EDIT
                                         </button>
                                         {quote.wisdomGrade && (
                                           <div className="flex items-center gap-2">
