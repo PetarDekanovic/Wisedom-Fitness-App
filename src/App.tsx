@@ -425,7 +425,6 @@ function AppContent() {
     wisdomGrade: 'A daily reminder',
     comment: 'This quote changed my life'
   });
-  const [isAdminUser, setIsAdminUser] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [dashboardWisdomGrade, setDashboardWisdomGrade] = useState('A daily reminder');
   const [dashboardComment, setDashboardComment] = useState('This quote changed my life');
@@ -478,9 +477,12 @@ function AppContent() {
   // Initialize Gemini lazily
   const ai = React.useMemo(() => {
     try {
-      const key = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
+      // Check standard and Vite-prefixed environment variables
+      const key = (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || 
+                  (import.meta.env?.VITE_GEMINI_API_KEY);
+      
       if (!key) {
-        console.warn('GEMINI_API_KEY is missing');
+        console.warn('GEMINI_API_KEY is missing. AI features will be disabled.');
         return null;
       }
       return new GoogleGenAI({ apiKey: key as string });
@@ -2273,7 +2275,7 @@ function AppContent() {
                 </div>
 
                 <p className="text-[10px] text-zinc-500 uppercase tracking-widest">
-                  Login is only required for admins to post content
+                  Login is optional. Save your wisdom to the cloud.
                 </p>
               </div>
             </motion.div>
@@ -2651,10 +2653,10 @@ function AppContent() {
                             <button
                               type="button"
                               onClick={generateAIQuote}
-                              disabled={isGeneratingAIQuote || !isAdminUser}
+                              disabled={isGeneratingAIQuote}
                               className={cn(
                                 "flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm relative overflow-hidden",
-                                (isGeneratingAIQuote || !isAdminUser) ? "opacity-50 cursor-not-allowed" : "",
+                                isGeneratingAIQuote ? "opacity-50 cursor-not-allowed" : "",
                                 isDarkMode 
                                   ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30" 
                                   : "bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-100"
@@ -3237,14 +3239,12 @@ function AppContent() {
                     </button>
                   </div>
                 </div>
-                {isAdminUser && (
-                  <button 
-                    onClick={() => setIsAddingWorkout(true)}
-                    className="bg-emerald-500 text-zinc-950 p-2 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
-                  >
-                    <Plus className="w-6 h-6" />
-                  </button>
-                )}
+                <button 
+                  onClick={() => setIsAddingWorkout(true)}
+                  className="bg-emerald-500 text-zinc-950 p-2 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
+                >
+                  <Plus className="w-6 h-6" />
+                </button>
               </div>
 
               {historySubView === 'journal' ? (
@@ -3260,7 +3260,6 @@ function AppContent() {
                       onAddComment={handleAddComment}
                       onUpdateWorkout={handleUpdateWorkout}
                       currentUserId={user?.uid}
-                      isAdminUser={isAdminUser}
                     />
                   ))}
                   {workouts.length === 0 && (
@@ -3612,10 +3611,10 @@ function AppContent() {
 
                 <button 
                   onClick={generateMoreQuotes}
-                  disabled={isGeneratingQuotes || !isAdminUser}
+                  disabled={isGeneratingQuotes}
                   className={cn(
                     "w-full py-3 rounded-2xl font-bold active:scale-95 transition-all flex items-center justify-center gap-2",
-                    (isGeneratingQuotes || !isAdminUser)
+                    isGeneratingQuotes
                       ? (isDarkMode ? "bg-zinc-800 text-zinc-600" : "bg-zinc-100 text-zinc-400")
                       : "bg-purple-500 text-white hover:bg-purple-600 shadow-lg shadow-purple-500/20"
                   )}
@@ -3625,8 +3624,6 @@ function AppContent() {
                       <Loader2 className="w-5 h-5 animate-spin" />
                       Generating Wisdom...
                     </>
-                  ) : !isAdminUser ? (
-                    "Admin Access Required"
                   ) : (
                     <>
                       <Sparkles className="w-5 h-5" />
@@ -3635,30 +3632,28 @@ function AppContent() {
                   )}
                 </button>
 
-                {isAdminUser && (
-                  <button 
-                    onClick={generateLatinQuotes}
-                    disabled={isGeneratingQuotes}
-                    className={cn(
-                      "w-full py-3 rounded-2xl font-bold active:scale-95 transition-all flex items-center justify-center gap-2",
-                      isGeneratingQuotes
-                        ? (isDarkMode ? "bg-zinc-800 text-zinc-600" : "bg-zinc-100 text-zinc-400")
-                        : "bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20"
-                    )}
-                  >
-                    {isGeneratingQuotes ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Generating Latin...
-                      </>
-                    ) : (
-                      <>
-                        <BookOpen className="w-5 h-5" />
-                        Generate 50 Latin Expressions
-                      </>
-                    )}
-                  </button>
-                )}
+                <button 
+                  onClick={generateLatinQuotes}
+                  disabled={isGeneratingQuotes}
+                  className={cn(
+                    "w-full py-3 rounded-2xl font-bold active:scale-95 transition-all flex items-center justify-center gap-2",
+                    isGeneratingQuotes
+                      ? (isDarkMode ? "bg-zinc-800 text-zinc-600" : "bg-zinc-100 text-zinc-400")
+                      : "bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-500/20"
+                  )}
+                >
+                  {isGeneratingQuotes ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Generating Latin...
+                    </>
+                  ) : (
+                    <>
+                      <BookOpen className="w-5 h-5" />
+                      Generate 50 Latin Expressions
+                    </>
+                  )}
+                </button>
               </div>
 
               <button 
@@ -4003,25 +3998,18 @@ function AppContent() {
                       </div>
                       <button
                         onClick={handleAddCustomQuote}
-                        disabled={!newQuote.text.trim() || !isAdminUser}
+                        disabled={!newQuote.text.trim()}
                         className={cn(
                           "w-full py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2",
-                          (!newQuote.text.trim() || !isAdminUser)
+                          !newQuote.text.trim()
                             ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
                             : "bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20"
                         )}
                       >
-                        {isAdminUser ? (
-                          <>
-                            <Plus className="w-4 h-4" />
-                            Save Wisdom
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="w-4 h-4" />
-                            Admin Access Required
-                          </>
-                        )}
+                        <>
+                          <Plus className="w-4 h-4" />
+                          Save Wisdom
+                        </>
                       </button>
                     </div>
                   </motion.div>
@@ -4762,10 +4750,10 @@ function AppContent() {
               <div className="p-6 border-t border-zinc-800/20">
                 <button 
                   onClick={handleSaveWorkout}
-                  disabled={!newWorkout.name || isUploadingFile || !isAdminUser}
+                  disabled={!newWorkout.name || isUploadingFile}
                   className={cn(
                     "w-full py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2",
-                    (!newWorkout.name || isUploadingFile || !isAdminUser)
+                    (!newWorkout.name || isUploadingFile)
                       ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
                       : "bg-emerald-500 text-zinc-950 shadow-emerald-500/20"
                   )}
@@ -4774,11 +4762,6 @@ function AppContent() {
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
                       Processing File...
-                    </>
-                  ) : !isAdminUser ? (
-                    <>
-                      <Lock className="w-5 h-5" />
-                      Admin Access Required
                     </>
                   ) : 'Save Workout'}
                 </button>
@@ -4847,11 +4830,10 @@ interface WorkoutCardProps {
   onAddComment?: (workoutId: string, text: string) => void;
   onUpdateWorkout?: (workout: Workout) => void;
   currentUserId?: string;
-  isAdminUser?: boolean;
   key?: any;
 }
 
-function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAddComment, onUpdateWorkout, currentUserId, isAdminUser }: WorkoutCardProps) {
+function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAddComment, onUpdateWorkout, currentUserId }: WorkoutCardProps) {
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
   const [failedThumbnails, setFailedThumbnails] = useState<Record<string, boolean>>({});
@@ -4939,22 +4921,20 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isAdminUser && (
-            <>
-              <button 
-                onClick={() => onEdit?.(workout)}
-                className="p-2 rounded-xl hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-500 transition-all"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={() => onDelete?.(workout.id)}
-                className="p-2 rounded-xl hover:bg-red-500/10 text-zinc-500 hover:text-red-500 transition-all"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </>
-          )}
+          <>
+            <button 
+              onClick={() => onEdit?.(workout)}
+              className="p-2 rounded-xl hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-500 transition-all"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => onDelete?.(workout.id)}
+              className="p-2 rounded-xl hover:bg-red-500/10 text-zinc-500 hover:text-red-500 transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </>
           <ChevronRight className={cn(
             "w-5 h-5 transition-colors",
             isDarkMode ? "text-zinc-600 group-hover:text-emerald-500" : "text-zinc-300 group-hover:text-emerald-500"
@@ -5246,15 +5226,13 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
           />
           <button 
             onClick={() => {
-              if (commentText.trim() && isAdminUser) {
+              if (commentText.trim()) {
                 onAddComment?.(workout.id, commentText);
                 setCommentText('');
               }
             }}
-            disabled={!isAdminUser}
             className={cn(
-              "p-2 bg-emerald-500 text-zinc-950 rounded-xl active:scale-95 transition-transform",
-              !isAdminUser && "opacity-50 cursor-not-allowed"
+              "p-2 bg-emerald-500 text-zinc-950 rounded-xl active:scale-95 transition-transform"
             )}
           >
             <Send className="w-4 h-4" />
