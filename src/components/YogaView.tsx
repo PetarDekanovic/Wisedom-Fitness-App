@@ -41,17 +41,17 @@ export default function YogaView({ isDarkMode, onMarkAsWise, isSessionActive, se
       {/* Nature Background for Yoga Section */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
-          src="https://picsum.photos/seed/forest/1920/1080?blur=2" 
+          src="https://picsum.photos/seed/vibrant_nature/1920/1080?blur=1" 
           alt="Nature Background" 
           className={cn(
             "w-full h-full object-cover transition-opacity duration-1000",
-            isDarkMode ? "opacity-10" : "opacity-5"
+            isDarkMode ? "opacity-20" : "opacity-15"
           )}
           referrerPolicy="no-referrer"
         />
         <div className={cn(
           "absolute inset-0",
-          isDarkMode ? "bg-zinc-950/40" : "bg-white/40"
+          isDarkMode ? "bg-zinc-950/20" : "bg-white/20"
         )} />
       </div>
 

@@ -479,7 +479,7 @@ function AppContent() {
     try {
       // Check standard and Vite-prefixed environment variables
       const key = (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || 
-                  (import.meta.env?.VITE_GEMINI_API_KEY);
+                  ((import.meta as any).env?.VITE_GEMINI_API_KEY);
       
       if (!key) {
         console.warn('GEMINI_API_KEY is missing. AI features will be disabled.');
@@ -1813,14 +1813,6 @@ function AppContent() {
         setUser(firebaseUser);
         if (firebaseUser) {
           await ensureUserDoc(firebaseUser);
-          // Check if admin
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          setIsAdminUser(
-            firebaseUser.email === 'petar.dekanovic@gmail.com' || 
-            (userDoc.exists() && userDoc.data().role === 'admin')
-          );
-        } else {
-          setIsAdminUser(false);
         }
       } catch (err: any) {
         handleFirestoreError(err, 'init', 'auth');
@@ -2319,8 +2311,11 @@ function AppContent() {
         "sticky top-0 z-40 backdrop-blur-xl border-b px-6 py-4 flex items-center justify-between transition-colors duration-500",
         isDarkMode ? "bg-zinc-950/60 border-zinc-800/50" : "bg-white/60 border-zinc-200"
       )}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center overflow-hidden border border-emerald-500/20">
+        <div 
+          className="flex items-center gap-3 cursor-pointer group active:scale-95 transition-transform"
+          onClick={() => setActiveView('dashboard')}
+        >
+          <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center overflow-hidden border border-emerald-500/20 group-hover:border-emerald-500/50 transition-colors">
             <img 
               src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 80 Q50 95 80 80 Q90 40 50 20 Q10 40 20 80' fill='%23064e3b'/%3E%3Ccircle cx='35' cy='50' r='12' fill='white'/%3E%3Ccircle cx='65' cy='50' r='12' fill='white'/%3E%3Ccircle cx='35' cy='50' r='5' fill='%23064e3b'/%3E%3Ccircle cx='65' cy='50' r='5' fill='%23064e3b'/%3E%3Cpath d='M46 60 L54 60 L50 70 Z' fill='%23fbbf24'/%3E%3Cpath d='M50 15 Q55 25 50 35 Q45 25 50 15' fill='%23f59e0b'/%3E%3Cpath d='M25 35 L15 20 L35 30' fill='%23064e3b'/%3E%3Cpath d='M75 35 L85 20 L65 30' fill='%23064e3b'/%3E%3C/svg%3E" 
               alt="WiseFit Logo" 
@@ -2329,7 +2324,7 @@ function AppContent() {
           </div>
           <div>
             <h1 className={cn(
-              "text-xl font-bold tracking-tight transition-colors",
+              "text-xl font-bold tracking-tight transition-colors group-hover:text-emerald-500",
               isDarkMode ? "text-emerald-400" : "text-emerald-600"
             )}>WiseFit</h1>
             <p className={cn(
@@ -2362,10 +2357,13 @@ function AppContent() {
           >
             {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-          <div className={cn(
-            "w-10 h-10 rounded-full border flex items-center justify-center overflow-hidden transition-colors",
-            isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-zinc-200 border-zinc-300"
-          )}>
+          <div 
+            onClick={() => setActiveView('profile')}
+            className={cn(
+              "w-10 h-10 rounded-full border flex items-center justify-center overflow-hidden transition-all cursor-pointer active:scale-90 hover:border-emerald-500 shadow-lg shadow-transparent hover:shadow-emerald-500/10",
+              isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-zinc-200 border-zinc-300"
+            )}
+          >
             <img 
               src={userProfile.avatarUrl} 
               alt="Avatar" 
