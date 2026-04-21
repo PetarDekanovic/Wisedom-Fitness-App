@@ -194,17 +194,17 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
       {/* Immersive Nature Background */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
-          src="https://picsum.photos/seed/lush-garden/1920/1080?blur=4" 
+          src="https://picsum.photos/seed/sacred_forest/1920/1080?blur=2" 
           alt="Yoga Background" 
           className={cn(
             "w-full h-full object-cover transition-opacity duration-1000",
-            isDarkMode ? "opacity-20" : "opacity-10"
+            isDarkMode ? "opacity-30" : "opacity-25"
           )}
           referrerPolicy="no-referrer"
         />
         <div className={cn(
           "absolute inset-0",
-          isDarkMode ? "bg-zinc-950/60" : "bg-white/60"
+          isDarkMode ? "bg-zinc-950/40" : "bg-white/40"
         )} />
       </div>
 
