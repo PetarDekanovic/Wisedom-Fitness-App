@@ -82,8 +82,13 @@ import {
 import { format, subDays, startOfToday, getDay } from 'date-fns';
 import { cn } from './lib/utils';
 import type { Workout, DailyStats, Exercise, WorkoutSet, DayPlan, PlannedExercise, UserProfile, ChatMessage, Quote, WorkoutComment } from './types';
-import { auth, db, googleProvider, signInWithPopup, signOut } from './firebase';
+import { auth, db, storage, googleProvider, signInWithPopup, signOut } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { 
+  ref, 
+  uploadBytes, 
+  getDownloadURL 
+} from 'firebase/storage';
 import { 
   doc, 
   getDoc, 
@@ -1535,39 +1540,11 @@ function AppContent() {
   };
 
   const handleAddAttachment = async (type: 'file' | 'youtube' | 'article' | 'google-drive', name: string, url: string, fileType?: string) => {
-    let finalUrl = url;
-    
-    // If it's a file, we should ideally store it persistently.
-    // Since we don't have Firebase Storage, we'll use Base64 for small files (< 700KB)
-    // to ensure they stay there after refresh.
-    if (type === 'file' && url.startsWith('blob:')) {
-      setIsUploadingFile(true);
-      try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        
-        if (blob.size > 700 * 1024) {
-          alert('File is too large (>700KB). Please use a smaller file or a link to ensure it stays saved.');
-          // We'll still keep the blob URL for the current session, but it won't persist.
-        } else {
-          finalUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-        }
-      } catch (error) {
-        console.error('Error converting file to base64:', error);
-      } finally {
-        setIsUploadingFile(false);
-      }
-    }
-
     setNewWorkout(prev => ({
       ...prev,
       attachments: [
         ...(prev.attachments || []),
-        { id: Math.random().toString(36).substr(2, 9), type, name, url: finalUrl, fileType }
+        { id: Math.random().toString(36).substr(2, 9), type, name, url, fileType }
       ]
     }));
   };
@@ -4706,8 +4683,19 @@ function AppContent() {
                           className="hidden" 
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
-                            if (file) {
-                              await handleAddAttachment('file', file.name, URL.createObjectURL(file), file.type);
+                            if (file && user) {
+                              setIsUploadingFile(true);
+                              try {
+                                const storageRef = ref(storage, `users/${user.uid}/attachments/${Date.now()}_${file.name}`);
+                                await uploadBytes(storageRef, file);
+                                const downloadUrl = await getDownloadURL(storageRef);
+                                await handleAddAttachment('file', file.name, downloadUrl, file.type);
+                              } catch (uploadError) {
+                                console.error('Upload failed:', uploadError);
+                                alert('Upload failed. Please check your connection and try again.');
+                              } finally {
+                                setIsUploadingFile(false);
+                              }
                             }
                           }}
                         />
