@@ -3661,6 +3661,100 @@ function AppContent() {
                 </div>
               </div>
 
+              {/* Membership Pricing Section */}
+              <div className="space-y-4">
+                <h3 className={cn(
+                  "text-sm font-bold uppercase tracking-widest px-2 transition-colors",
+                  isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                )}>Membership Path</h3>
+                
+                <div className="grid gap-4">
+                  {/* Free Tier */}
+                  <div className={cn(
+                    "p-6 rounded-3xl border transition-all relative overflow-hidden",
+                    isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200"
+                  )}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="text-lg font-bold">Disciple</h4>
+                        <p className="text-xs text-zinc-500 font-medium tracking-tight">The Foundation</p>
+                      </div>
+                      <p className="text-2xl font-black italic">Free</p>
+                    </div>
+                    <ul className="space-y-2 mb-6">
+                      {["Workout Tracking", "Basic Library Access", "Community Journal"].map(f => (
+                        <li key={f} className="flex items-center gap-2 text-xs font-medium text-zinc-500">
+                          <Check className="w-3.5 h-3.5 text-emerald-500" /> {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <button className={cn(
+                      "w-full py-3 rounded-2xl font-bold text-sm transition-all",
+                      isDarkMode ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-500"
+                    )}>
+                      Current Plan
+                    </button>
+                  </div>
+
+                  {/* Pro Tier (Featured) */}
+                  <div className={cn(
+                    "p-6 rounded-3xl border-2 transition-all relative overflow-hidden",
+                    isDarkMode ? "bg-emerald-950/10 border-emerald-500/50" : "bg-emerald-50/50 border-emerald-500/30"
+                  )}>
+                    <div className="absolute top-0 right-0 px-4 py-1 bg-emerald-500 text-zinc-950 text-[10px] font-black uppercase rounded-bl-xl tracking-widest">
+                      Recommended
+                    </div>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="text-lg font-bold">Philosopher</h4>
+                        <p className="text-xs text-emerald-600 font-medium tracking-tight">The Practitioner</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-black italic">$15</p>
+                        <p className="text-[10px] uppercase font-bold text-zinc-500">per month</p>
+                      </div>
+                    </div>
+                    <ul className="space-y-2 mb-6">
+                      {["Unlimited AI Wisdom", "AI Stoic Coaching", "Full Cloud Persistence", "Custom Soundscapes"].map(f => (
+                        <li key={f} className="flex items-center gap-2 text-xs font-medium">
+                          <Check className="w-3.5 h-3.5 text-emerald-500" /> {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <button className="w-full py-3 rounded-2xl bg-emerald-500 text-zinc-950 font-bold text-sm hover:bg-emerald-400 active:scale-95 transition-all shadow-lg shadow-emerald-500/20">
+                      Begin Practice
+                    </button>
+                  </div>
+
+                  {/* Elite Tier */}
+                  <div className={cn(
+                    "p-6 rounded-3xl border transition-all relative overflow-hidden",
+                    isDarkMode ? "bg-purple-950/10 border-purple-500/20" : "bg-purple-50/50 border-purple-200"
+                  )}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="text-lg font-bold">Stoic Sage</h4>
+                        <p className="text-xs text-purple-500 font-medium tracking-tight">The Master</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-black italic">$249</p>
+                        <p className="text-[10px] uppercase font-bold text-zinc-500">per year</p>
+                      </div>
+                    </div>
+                    <ul className="space-y-2 mb-6">
+                      {["Early Access: Social Paladin", "Advanced Calisthenics Tracks", "Historical Mastery Courses", "Direct Mentorship Channels"].map(f => (
+                        <li key={f} className="flex items-center gap-2 text-xs font-medium">
+                          <Check className="w-3.5 h-3.5 text-purple-500" /> {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <button className="w-full py-3 rounded-2xl bg-purple-500 text-white font-bold text-sm hover:bg-purple-600 active:scale-95 transition-all shadow-lg shadow-purple-500/20">
+                      Master the Path
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className={cn(
                 "backdrop-blur-md border rounded-3xl p-6 space-y-4 transition-colors duration-500",
                 isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
