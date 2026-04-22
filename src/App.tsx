@@ -3558,6 +3558,109 @@ function AppContent() {
 
               <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
 
+              {/* WiseFit Vision & Roadmap Section */}
+              <div className={cn(
+                "backdrop-blur-md border rounded-3xl p-6 space-y-6 transition-colors duration-500 overflow-hidden relative",
+                isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
+              )}>
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <Scroll className="w-24 h-24 rotate-12" />
+                </div>
+
+                <div className="space-y-4 relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-emerald-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold">WiseFit News & Roadmap</h3>
+                      <p className={cn(
+                        "text-[10px] uppercase font-black tracking-widest",
+                        isDarkMode ? "text-emerald-500/70" : "text-emerald-600"
+                      )}>The Future of Discipline</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="text-[11px] font-black uppercase text-zinc-500 tracking-tighter">I. News & Recent Updates</h4>
+                      <ul className="grid gap-2">
+                        {[
+                          "Global deployment to wisefit.fun successfully completed.",
+                          "Full Firebase Cloud persistence integrated for all users.",
+                          "AI Wisdom Engine upgraded to Gemini 1.5 for deeper insights.",
+                          "Nature-themed meditative environments added to Yoga flows."
+                        ].map((news, i) => (
+                          <li key={i} className="flex gap-2 text-xs">
+                            <span className="text-emerald-500 mt-0.5">●</span>
+                            <span className={isDarkMode ? "text-zinc-400" : "text-zinc-600"}>{news}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h4 className="text-[11px] font-black uppercase text-zinc-500 tracking-tighter">II. Action Plan (Stoic Milestones)</h4>
+                      <div className="space-y-3">
+                        <div className="p-3 rounded-2xl bg-zinc-800/30 border border-zinc-800/50">
+                          <p className="text-[10px] font-bold text-emerald-500 mb-1">III. THE SOCIAL PALADIN (Q3 2026)</p>
+                          <p className="text-xs text-zinc-400">Launch of "The Scroll" - a curated vertical feed of Roman history, Stoic bursts, and advanced calisthenics technique.</p>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-zinc-800/10 border border-zinc-800/10">
+                          <p className="text-[10px] font-bold text-zinc-500 mb-1">IV. MASTERY & MENTORSHIP (Q4 2026)</p>
+                          <p className="text-xs text-zinc-500">Introduction of personalized AI mentorship paths and community challenge tiers.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-zinc-800/50">
+                      <h4 className="text-[11px] font-black uppercase text-purple-500 tracking-tighter italic">Revolutionary Vision: tiktok for the Wise</h4>
+                      <p className={cn(
+                        "text-xs leading-relaxed",
+                        isDarkMode ? "text-zinc-400" : "text-zinc-600"
+                      )}>
+                        We are building more than a tracker. We are building a <span className="text-zinc-100 font-bold">Social Knowledge Network</span>. Imagine a TikTok-style "Wise Scroll" where instead of mindless entertainment, you consume:
+                      </p>
+                      <ul className="grid grid-cols-2 gap-2 mt-2">
+                        {["History Learning", "Stoic Wisdom", "Technique Tips", "Life Strategy"].map((tag) => (
+                          <div key={tag} className="px-2 py-1 bg-zinc-800/50 rounded-lg text-[9px] font-bold text-zinc-300 flex items-center gap-1">
+                            <Check className="w-3 h-3 text-emerald-500" /> {tag}
+                          </div>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={cn(
+                "backdrop-blur-md border rounded-3xl p-6 space-y-4 transition-colors duration-500",
+                isDarkMode ? "bg-emerald-900/10 border-emerald-500/20" : "bg-emerald-50/50 border-emerald-200"
+              )}>
+                <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-500">Developer & Investor Brief</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-500">Tech Stack</span>
+                    <span className="font-bold">React + Vite + Gemini AI</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-500">Market Position</span>
+                    <span className="font-bold">Premium High-Performance Living</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-500">Est. Value (Post-Social)</span>
+                    <span className="text-emerald-500 font-bold">$12.5M - $25.0M</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-zinc-500">Target Series A Price</span>
+                    <span className="font-bold">$249/yr per Seat</span>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <p className="text-[10px] text-zinc-500 italic text-center">"Building the infrastructure for the modern philosopher-athlete."</p>
+                </div>
+              </div>
+
               <div className={cn(
                 "backdrop-blur-md border rounded-3xl p-6 space-y-4 transition-colors duration-500",
                 isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
