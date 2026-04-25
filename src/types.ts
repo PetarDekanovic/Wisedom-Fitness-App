@@ -103,6 +103,21 @@ export interface UserProfile {
   dailyExercises?: { id: string; name: string; completed: boolean }[];
   dailyExerciseHistory?: { date: string; completedCount: number; totalCount: number }[];
   role?: 'user' | 'admin';
+  integrations?: {
+    fitbit?: {
+      connected: boolean;
+      accessToken?: string;
+      refreshToken?: string;
+      expiresAt?: number;
+      userId?: string;
+    };
+    googleFit?: {
+      connected: boolean;
+      accessToken?: string;
+      refreshToken?: string;
+      expiresAt?: number;
+    };
+  };
 }
 
 export interface ChatMessage {
@@ -130,4 +145,13 @@ export interface Quote {
   wisdomGrade?: string;
   comment?: string;
   category?: 'fitness' | 'wisdom' | 'finance';
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number; // index of the correct option
+  category: 'latin' | 'jewish' | 'history' | 'psychology';
+  wisdom: string; // the "lesson" behind the answer
 }

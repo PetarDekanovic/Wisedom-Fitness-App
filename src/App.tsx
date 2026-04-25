@@ -66,7 +66,11 @@ import {
   Trophy,
   Medal,
   Star,
-  RefreshCw
+  RefreshCw,
+  Watch,
+  ShieldCheck,
+  Smartphone,
+  Brain
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -110,6 +114,7 @@ import {
 } from 'firebase/firestore';
 import { GoogleGenAI, Modality } from "@google/genai";
 import YogaView from './components/YogaView';
+import { QuizView } from './components/QuizView';
 
 // Error Boundary Component
 class ErrorBoundary extends (Component as any) {
@@ -387,7 +392,7 @@ const MOCK_WORKOUTS: Workout[] = [
   }
 ];
 
-type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library' | 'yoga';
+type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library' | 'yoga' | 'quiz';
 
 export default function App() {
   return (
@@ -446,6 +451,7 @@ function AppContent() {
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const [selectedLibraryIds, setSelectedLibraryIds] = useState<Set<string>>(new Set());
   const [isLibrarySelectMode, setIsLibrarySelectMode] = useState(false);
+  const [isConnectingHealth, setIsConnectingHealth] = useState<string | null>(null);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try {
@@ -476,8 +482,82 @@ function AppContent() {
   const [historyIndex, setHistoryIndex] = useState(0);
 
   useEffect(() => {
-    quoteHistoryRef.current = quoteHistory;
-  }, [quoteHistory]);
+    const handleOAuthMessage = async (event: MessageEvent) => {
+      if (!event.origin.endsWith('.run.app') && !event.origin.includes('localhost')) return;
+      
+      if (event.data?.type === 'FITBIT_AUTH_SUCCESS' && user) {
+        const tokens = event.data.tokens;
+        const newProfile = {
+          ...userProfile,
+          integrations: {
+            ...userProfile.integrations,
+            fitbit: {
+              connected: true,
+              accessToken: tokens.access_token,
+              refreshToken: tokens.refresh_token,
+              expiresAt: Date.now() + (tokens.expires_in * 1000),
+              userId: tokens.user_id
+            }
+          }
+        };
+        setUserProfile(newProfile);
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, { integrations: newProfile.integrations });
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 2000);
+      }
+
+      if (event.data?.type === 'GOOGLE_FIT_AUTH_SUCCESS' && user) {
+        const tokens = event.data.tokens;
+        const newProfile = {
+          ...userProfile,
+          integrations: {
+            ...userProfile.integrations,
+            googleFit: {
+              connected: true,
+              accessToken: tokens.access_token,
+              refreshToken: tokens.refresh_token,
+              expiresAt: Date.now() + (tokens.expires_in * 1000)
+            }
+          }
+        };
+        setUserProfile(newProfile);
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, { integrations: newProfile.integrations });
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 2000);
+      }
+    };
+
+    window.addEventListener('message', handleOAuthMessage);
+    return () => window.removeEventListener('message', handleOAuthMessage);
+  }, [user, userProfile]);
+
+  const connectFitbit = async () => {
+    setIsConnectingHealth('fitbit');
+    try {
+      const response = await fetch('/api/auth/fitbit/url');
+      const { url } = await response.json();
+      window.open(url, 'fitbit_oauth', 'width=600,height=700');
+    } catch (e) {
+      console.error('Fitbit connect error:', e);
+    } finally {
+      setIsConnectingHealth(null);
+    }
+  };
+
+  const connectGoogleFit = async () => {
+    setIsConnectingHealth('google-fit');
+    try {
+      const response = await fetch('/api/auth/google-fit/url');
+      const { url } = await response.json();
+      window.open(url, 'google_fit_oauth', 'width=600,height=700');
+    } catch (e) {
+      console.error('Google Fit connect error:', e);
+    } finally {
+      setIsConnectingHealth(null);
+    }
+  };
 
   // Initialize Gemini lazily
   const ai = React.useMemo(() => {
@@ -3324,163 +3404,16 @@ function AppContent() {
             </motion.div>
           )}
 
-          {activeView === 'progress' && (
+          {activeView === 'quiz' && (
             <motion.div
-              key="progress"
+              key="quiz"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <h2 className="text-2xl font-bold">Progress</h2>
-              
-              <div className={cn(
-                "backdrop-blur-md border rounded-3xl p-6 transition-colors duration-500",
-                isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
-              )}>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className={cn(
-                    "text-sm font-semibold uppercase tracking-wider transition-colors",
-                    isDarkMode ? "text-zinc-400" : "text-zinc-500"
-                  )}>Weight Trend (kg)</h3>
-                  <button 
-                    onClick={() => setIsLoggingWeight(true)}
-                    className="text-xs font-bold text-emerald-500 flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" /> Log Weight
-                  </button>
-                </div>
-
-                {isLoggingWeight && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    className="mb-6 flex gap-2"
-                  >
-                    <input 
-                      type="number"
-                      value={newWeight}
-                      onChange={(e) => setNewWeight(e.target.value)}
-                      placeholder="Enter weight in kg..."
-                      className={cn(
-                        "flex-1 px-4 py-2 rounded-xl text-sm focus:outline-none border transition-all",
-                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
-                      )}
-                    />
-                    <button 
-                      onClick={handleLogWeight}
-                      className="bg-emerald-500 text-zinc-950 px-4 py-2 rounded-xl text-sm font-bold active:scale-95 transition-transform"
-                    >
-                      Save
-                    </button>
-                    <button 
-                      onClick={() => setIsLoggingWeight(false)}
-                      className={cn(
-                        "px-4 py-2 rounded-xl text-sm font-bold transition-colors",
-                        isDarkMode ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-500"
-                      )}
-                    >
-                      Cancel
-                    </button>
-                  </motion.div>
-                )}
-
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={stats}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#27272a" : "#e4e4e7"} vertical={false} />
-                      <XAxis 
-                        dataKey="date" 
-                        tickFormatter={(str) => format(new Date(str), 'MMM d')}
-                        stroke={isDarkMode ? "#71717a" : "#a1a1aa"}
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis 
-                        domain={['auto', 'auto']}
-                        stroke={isDarkMode ? "#71717a" : "#a1a1aa"}
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(val) => `${val.toFixed(0)}kg`}
-                        allowDecimals={false}
-                      />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: isDarkMode ? '#18181b' : '#ffffff', 
-                          border: `1px solid ${isDarkMode ? '#27272a' : '#e4e4e7'}`, 
-                          borderRadius: '12px',
-                          color: isDarkMode ? '#ffffff' : '#000000'
-                        }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="weight" 
-                        stroke="#8b5cf6" 
-                        strokeWidth={3}
-                        dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, strokeWidth: 0 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className={cn(
-                  "backdrop-blur-md border rounded-2xl p-4 transition-colors duration-500",
-                  isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
-                )}>
-                  <p className={cn(
-                    "text-xs uppercase font-bold mb-1 transition-colors",
-                    isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                  )}>Total Workouts</p>
-                  <p className="text-2xl font-bold text-emerald-500">{workouts.length}</p>
-                  <div className="mt-4 pt-4 border-t border-zinc-800/50">
-                    <p className={cn(
-                      "text-[10px] uppercase font-bold mb-1 transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>Wise Quotes Learned</p>
-                    <p className="text-xl font-bold text-yellow-500">{(userProfile.markedQuotes?.length || 0).toLocaleString()}</p>
-                  </div>
-                </div>
-                <div className={cn(
-                  "backdrop-blur-md border rounded-2xl p-4 transition-colors duration-500 flex flex-col justify-between",
-                  isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
-                )}>
-                  <div>
-                    <p className={cn(
-                      "text-xs uppercase font-bold mb-1 transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>Consistency</p>
-                    {(() => {
-                      const history = userProfile.dailyExerciseHistory || [];
-                      const totalCompleted = history.reduce((acc, h) => acc + h.completedCount, 0);
-                      const totalAssigned = history.reduce((acc, h) => acc + h.totalCount, 0);
-                      const consistency = totalAssigned > 0 ? (totalCompleted / totalAssigned) * 100 : 0;
-                      return (
-                        <div className="space-y-1">
-                          <p className="text-2xl font-bold text-blue-500">{consistency.toFixed(0)}%</p>
-                          <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-blue-500 transition-all duration-1000" 
-                              style={{ width: `${consistency}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-zinc-800/50">
-                    <p className={cn(
-                      "text-[10px] uppercase font-bold mb-1 transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>Avg Calories</p>
-                    <p className="text-xl font-bold text-orange-500">2,140</p>
-                  </div>
-                </div>
-              </div>
+              <h2 className="text-2xl font-bold">Training the Mind</h2>
+              <QuizView isDarkMode={isDarkMode} />
             </motion.div>
           )}
 
@@ -3557,6 +3490,138 @@ function AppContent() {
               </div>
 
               <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
+
+              {/* Training Stats Section */}
+              <div className="space-y-4">
+                <h3 className={cn(
+                  "text-sm font-bold uppercase tracking-widest px-2 transition-colors",
+                  isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                )}>Training Performance</h3>
+                
+                <div className={cn(
+                  "backdrop-blur-md border rounded-3xl p-6 transition-colors duration-500",
+                  isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
+                )}>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className={cn(
+                      "text-[10px] uppercase font-black tracking-widest transition-colors",
+                      isDarkMode ? "text-zinc-400" : "text-zinc-500"
+                    )}>Weight Trend (kg)</h3>
+                    <button 
+                      onClick={() => setIsLoggingWeight(true)}
+                      className="text-xs font-bold text-emerald-500 flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" /> Log
+                    </button>
+                  </div>
+
+                  {isLoggingWeight && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      className="mb-6 flex gap-2"
+                    >
+                      <input 
+                        type="number"
+                        value={newWeight}
+                        onChange={(e) => setNewWeight(e.target.value)}
+                        placeholder="Weight..."
+                        className={cn(
+                          "flex-1 px-4 py-2 rounded-xl text-sm focus:outline-none border transition-all",
+                          isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                        )}
+                      />
+                      <button 
+                        onClick={handleLogWeight}
+                        className="bg-emerald-500 text-zinc-950 px-4 py-2 rounded-xl text-sm font-bold active:scale-95 transition-transform"
+                      >
+                        Save
+                      </button>
+                      <button 
+                        onClick={() => setIsLoggingWeight(false)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-sm font-bold transition-colors",
+                          isDarkMode ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-500"
+                        )}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </motion.div>
+                  )}
+
+                  <div className="h-48 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={stats}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#27272a" : "#e4e4e7"} vertical={false} />
+                        <XAxis 
+                          dataKey="date" 
+                          tickFormatter={(str) => format(new Date(str), 'MMM d')}
+                          stroke={isDarkMode ? "#71717a" : "#a1a1aa"}
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis 
+                          domain={['auto', 'auto']}
+                          stroke={isDarkMode ? "#71717a" : "#a1a1aa"}
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(val) => `${val.toFixed(0)}`}
+                          allowDecimals={false}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: isDarkMode ? '#18181b' : '#ffffff', 
+                            border: `1px solid ${isDarkMode ? '#27272a' : '#e4e4e7'}`, 
+                            borderRadius: '12px',
+                            color: isDarkMode ? '#ffffff' : '#000000'
+                          }}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="weight" 
+                          stroke="#10b981" 
+                          strokeWidth={3}
+                          dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                          activeDot={{ r: 6, strokeWidth: 0 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className={cn(
+                    "backdrop-blur-md border rounded-2xl p-4 transition-colors duration-500",
+                    isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
+                  )}>
+                    <p className={cn(
+                      "text-[10px] uppercase font-bold mb-1 transition-colors",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>Workouts</p>
+                    <p className="text-2xl font-black italic text-emerald-500">{workouts.length}</p>
+                  </div>
+                  <div className={cn(
+                    "backdrop-blur-md border rounded-2xl p-4 transition-colors duration-500",
+                    isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
+                  )}>
+                    <p className={cn(
+                      "text-[10px] uppercase font-bold mb-1 transition-colors",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>Consistency</p>
+                    {(() => {
+                      const history = userProfile.dailyExerciseHistory || [];
+                      const totalCompleted = history.reduce((acc, h) => acc + h.completedCount, 0);
+                      const totalAssigned = history.reduce((acc, h) => acc + h.totalCount, 0);
+                      const consistency = totalAssigned > 0 ? (totalCompleted / totalAssigned) * 100 : 0;
+                      return (
+                        <p className="text-2xl font-black italic text-blue-500">{consistency.toFixed(0)}%</p>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
 
               {/* WiseFit Vision & Roadmap Section */}
               <div className={cn(
@@ -3659,6 +3724,80 @@ function AppContent() {
                 <div className="pt-2">
                   <p className="text-[10px] text-zinc-500 italic text-center">"Building the infrastructure for the modern philosopher-athlete."</p>
                 </div>
+              </div>
+
+              {/* Health Device Integrations */}
+              <div className="space-y-4">
+                <h3 className={cn(
+                  "text-sm font-bold uppercase tracking-widest px-2 transition-colors",
+                  isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                )}>Device Ecosystem</h3>
+                
+                <div className="grid gap-3">
+                  {/* Fitbit Integration (Pixel Watch + Scale) */}
+                  <div className={cn(
+                    "p-5 rounded-3xl border transition-all flex items-center justify-between overflow-hidden relative",
+                    isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+                  )}>
+                    <div className="flex items-center gap-4 relative z-10">
+                      <div className="w-12 h-12 bg-teal-500/10 rounded-2xl flex items-center justify-center">
+                        <Watch className="w-6 h-6 text-teal-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold">Fitbit Ecosystem</h4>
+                        <p className="text-xs text-zinc-500 font-medium tracking-tight">Pixel Watch & Smart Scale</p>
+                      </div>
+                    </div>
+                    {userProfile.integrations?.fitbit?.connected ? (
+                      <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 relative z-10">
+                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Linked</span>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={connectFitbit}
+                        disabled={!!isConnectingHealth}
+                        className="text-xs font-black uppercase tracking-widest text-emerald-500 px-4 py-2 bg-emerald-500/10 rounded-xl hover:bg-emerald-500/20 transition-all border border-emerald-500/20 relative z-10"
+                      >
+                        {isConnectingHealth === 'fitbit' ? 'Linking...' : 'Connect'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Google Fit Integration */}
+                  <div className={cn(
+                    "p-5 rounded-3xl border transition-all flex items-center justify-between overflow-hidden relative",
+                    isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+                  )}>
+                    <div className="flex items-center gap-4 relative z-10">
+                      <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center">
+                        <Activity className="w-6 h-6 text-blue-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold">Google Health</h4>
+                        <p className="text-xs text-zinc-500 font-medium tracking-tight">Core Activity Metrics</p>
+                      </div>
+                    </div>
+                    {userProfile.integrations?.googleFit?.connected ? (
+                      <div className="flex items-center gap-2 bg-blue-500/10 px-3 py-1.5 rounded-xl border border-blue-500/20 relative z-10">
+                        <ShieldCheck className="w-4 h-4 text-blue-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Linked</span>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={connectGoogleFit}
+                        disabled={!!isConnectingHealth}
+                        className="text-xs font-black uppercase tracking-widest text-blue-500 px-4 py-2 bg-blue-500/10 rounded-xl hover:bg-blue-500/20 transition-all border border-blue-500/20 relative z-10"
+                      >
+                        {isConnectingHealth === 'google-fit' ? 'Linking...' : 'Connect'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-zinc-500 px-4 italic leading-relaxed">
+                  * Integrations allow WiseFit to automatically sync your daily weight from your scale and steps from your watch to your Stoic progression metrics.
+                </p>
               </div>
 
               {/* Membership Pricing Section */}
@@ -4488,10 +4627,10 @@ function AppContent() {
             isDarkMode={isDarkMode}
           />
           <NavButton 
-            active={activeView === 'progress'} 
-            onClick={() => setActiveView('progress')}
-            icon={<TrendingUp className="w-6 h-6" />}
-            label="Stats"
+            active={activeView === 'quiz'} 
+            onClick={() => setActiveView('quiz')}
+            icon={<Brain className="w-6 h-6" />}
+            label="Quiz"
             isDarkMode={isDarkMode}
           />
           <NavButton 
