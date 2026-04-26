@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Brain, 
@@ -10,11 +10,15 @@ import {
   ArrowRight,
   Flame,
   Ghost,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { QuizQuestion } from '../types';
 import { INITIAL_QUESTIONS } from '../data/initialQuestions';
+import { db } from '../firebase';
+import { collection, getDocs, query, limit } from 'firebase/firestore';
 
 interface QuizViewProps {
   isDarkMode: boolean;
@@ -22,36 +26,66 @@ interface QuizViewProps {
 }
 
 export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, onCorrectAnswer }) => {
-  const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
   const [timeLeft, setTimeLeft] = useState(30);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [streak, setStreak] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [showWisdom, setShowWisdom] = useState(false);
+  const [dataSource, setDataSource] = useState<'database' | 'local'>('local');
 
-  const loadQuestion = useCallback(() => {
+  // Load all questions (from DB or Local)
+  const initializeQuestions = useCallback(async () => {
     setIsLoading(true);
-    // For now, pick a random one from initial questions
-    // In a real app, this could call an AI endpoint
-    const randomIndex = Math.floor(Math.random() * INITIAL_QUESTIONS.length);
-    setCurrentQuestion(INITIAL_QUESTIONS[randomIndex]);
-    setTimeLeft(30);
-    setSelectedAnswer(null);
-    setIsAnswered(false);
-    setShowWisdom(false);
+    let loadedQuestions: QuizQuestion[] = [];
+    
+    try {
+      // Try to fetch from Firestore
+      const q = query(collection(db, 'questions'), limit(100));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        loadedQuestions = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as QuizQuestion));
+        setDataSource('database');
+      }
+    } catch (error) {
+      console.error("Firestore quota or error, falling back to local wisdom:", error);
+    }
+
+    // Fallback or Merge
+    if (loadedQuestions.length === 0) {
+      loadedQuestions = [...INITIAL_QUESTIONS];
+      setDataSource('local');
+    }
+
+    // Shuffle
+    const shuffled = [...loadedQuestions].sort(() => Math.random() - 0.5);
+    setQuestions(shuffled);
+    setCurrentQuestionIndex(0);
     setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    loadQuestion();
-  }, [loadQuestion]);
+    initializeQuestions();
+  }, [initializeQuestions]);
+
+  const currentQuestion = useMemo(() => {
+    if (currentQuestionIndex >= 0 && currentQuestionIndex < questions.length) {
+      return questions[currentQuestionIndex];
+    }
+    return null;
+  }, [questions, currentQuestionIndex]);
 
   useEffect(() => {
     if (timeLeft > 0 && !isAnswered && currentQuestion) {
       const timer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
       return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && !isAnswered) {
+    } else if (timeLeft === 0 && !isAnswered && currentQuestion) {
       handleAnswer(-1); // Timeout
     }
   }, [timeLeft, isAnswered, currentQuestion]);
@@ -72,11 +106,40 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, onCorrectAnswer 
     setTimeout(() => setShowWisdom(true), 500);
   };
 
-  if (isLoading || !currentQuestion) {
+  const nextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setTimeLeft(30);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+      setShowWisdom(false);
+    } else {
+      // Re-shuffle and start over if we hit the end
+      const reshuffled = [...questions].sort(() => Math.random() - 0.5);
+      setQuestions(reshuffled);
+      setCurrentQuestionIndex(0);
+      setTimeLeft(30);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+      setShowWisdom(false);
+    }
+  };
+
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <Brain className="w-12 h-12 text-emerald-500 animate-pulse" />
         <p className={isDarkMode ? "text-zinc-400" : "text-zinc-500"}>Architecting your next trial...</p>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <Ghost className="w-12 h-12 text-zinc-500" />
+        <p className={isDarkMode ? "text-zinc-400" : "text-zinc-500"}>No wisdom found in the scrolls.</p>
+        <button onClick={initializeQuestions} className="px-6 py-2 bg-emerald-500 text-white rounded-xl">Retry</button>
       </div>
     );
   }
@@ -86,22 +149,30 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, onCorrectAnswer 
     jewish: 'text-blue-500 bg-blue-500/10',
     history: 'text-rose-500 bg-rose-500/10',
     psychology: 'text-purple-500 bg-purple-500/10'
-  };
+  } as const;
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 px-4 py-8">
       {/* Header Info */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className={cn(
-            "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest",
-            categoryColors[currentQuestion.category]
-          )}>
-            {currentQuestion.category} Wisdom
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-4">
+            <div className={cn(
+              "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest",
+              categoryColors[currentQuestion.category as keyof typeof categoryColors] || 'text-zinc-500 bg-zinc-500/10'
+            )}>
+              {currentQuestion.category} Wisdom
+            </div>
+            <div className="flex items-center gap-2 text-orange-500">
+              <Flame className="w-4 h-4 fill-current" />
+              <span className="text-sm font-black italic">{streak}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-orange-500">
-            <Flame className="w-4 h-4 fill-current" />
-            <span className="text-sm font-black italic">{streak}</span>
+          <div className="flex items-center gap-1 opacity-40">
+            {dataSource === 'database' ? <Database className="w-3 h-3" /> : <RefreshCw className="w-3 h-3" />}
+            <span className="text-[8px] font-bold uppercase tracking-tighter">
+              {dataSource === 'database' ? 'Cloud Stream' : 'Archive Mode (Quota Fulfilled)'}
+            </span>
           </div>
         </div>
         
@@ -193,7 +264,7 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, onCorrectAnswer 
             </p>
             
             <button
-              onClick={loadQuestion}
+              onClick={nextQuestion}
               className="mt-4 w-full py-4 rounded-2xl bg-emerald-500 text-white font-black uppercase tracking-tighter flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors"
             >
               Next Trial <ArrowRight className="w-4 h-4" />

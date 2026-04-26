@@ -95,6 +95,19 @@
         "category": { "type": "string", "enum": ["fitness", "wisdom", "finance"], "description": "The category of the quote" }
       },
       "required": ["text", "author", "source", "randomId"]
+    },
+    "QuizQuestion": {
+      "title": "QuizQuestion",
+      "description": "A wisdom training question",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "correctAnswer": { "type": "number" },
+        "category": { "type": "string", "enum": ["latin", "jewish", "history", "psychology"] },
+        "wisdom": { "type": "string" }
+      },
+      "required": ["question", "options", "correctAnswer", "category", "wisdom"]
     }
   },
   "firestore": {
@@ -113,6 +126,10 @@
     "/quotes/{quoteId}": {
       "schema": "Quote",
       "description": "Wise quotes collection"
+    },
+    "/questions/{questionId}": {
+      "schema": "QuizQuestion",
+      "description": "Wisdom quiz questions"
     }
   }
 }
