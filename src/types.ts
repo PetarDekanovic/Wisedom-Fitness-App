@@ -155,3 +155,11 @@ export interface QuizQuestion {
   category: 'latin' | 'jewish' | 'history' | 'psychology';
   wisdom: string; // the "lesson" behind the answer
 }
+
+export interface VideoHistoryItem {
+  id: string;
+  type: 'tiktok' | 'youtube';
+  videoId: string;
+  title: string;
+  category: 'History' | 'Stoicism' | 'Philosophy' | 'Training';
+}
