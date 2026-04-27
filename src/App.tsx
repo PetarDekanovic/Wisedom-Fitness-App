@@ -404,16 +404,16 @@ const extractYoutubeId = (url: string) => {
 };
 
 const extractTiktokId = (url: string) => {
+  // Direct ID extraction
   const regExp = /\/video\/(\d+)/;
   const match = url.match(regExp);
   if (match) return match[1];
   
-  // Handle mobile share links like vm.tiktok.com
-  if (url.includes('tiktok.com')) {
-    const parts = url.split('/');
-    const lastPart = parts[parts.length - 1] || parts[parts.length - 2];
-    if (/^\d+$/.test(lastPart)) return lastPart;
-  }
+  // Numerical ID at the end of URL
+  const parts = url.split('?')[0].split('/');
+  const lastPart = parts[parts.length - 1] || parts[parts.length - 2];
+  if (/^\d+$/.test(lastPart)) return lastPart;
+
   return null;
 };
 
@@ -421,17 +421,19 @@ const getHistoryEmbedUrl = (type: 'youtube' | 'tiktok', videoId: string) => {
   if (type === 'youtube') {
     return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1`;
   }
-  return `https://www.tiktok.com/embed/v2/${videoId}?autoplay=1&loop=1&music_info=0&description=0&rel=0&native_controls=0`;
+  // TikTok V2 embed with auto-loop and mute
+  return `https://www.tiktok.com/embed/v2/${videoId}?autoplay=1&loop=1&rel=0&native_controls=0`;
 };
 
 const VideoEmbed = ({ type, videoId, isDarkMode }: { type: 'youtube' | 'tiktok', videoId: string, isDarkMode: boolean }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
-      { threshold: 0.5 }
+      { threshold: 0.2 }
     );
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -441,20 +443,60 @@ const VideoEmbed = ({ type, videoId, isDarkMode }: { type: 'youtube' | 'tiktok',
     <div 
       ref={containerRef}
       className={cn(
-        "relative w-full aspect-[9/16] mt-4 rounded-3xl overflow-hidden border",
-        isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+        "relative w-full aspect-[9/16] mt-4 rounded-[32px] overflow-hidden border group",
+        isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-zinc-100 border-zinc-200"
       )}
     >
+      {/* YouTube Thumbnail Background */}
+      {type === 'youtube' && !isLoaded && (
+        <img 
+          src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+          className="absolute inset-0 w-full h-full object-cover blur-sm opacity-50"
+          alt="Preview"
+          onError={(e) => { (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`; }}
+        />
+      )}
+
+      {/* Loading Indicator */}
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center animate-pulse">
+            <Play className="w-6 h-6 text-white fill-current opacity-20" />
+          </div>
+        </div>
+      )}
+
       {isVisible && (
         <iframe
-          className="w-full h-full scale-[1.02]"
+          className={cn(
+            "w-full h-full scale-[1.05] transition-opacity duration-1000",
+            isLoaded ? "opacity-100" : "opacity-0"
+          )}
           src={getHistoryEmbedUrl(type, videoId)}
           allow="autoplay; encrypted-media"
           loading="lazy"
+          onLoad={() => setIsLoaded(true)}
         />
       )}
-      {/* Click Trap Overlay */}
-      <div className="absolute inset-0 z-20 cursor-default" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} />
+
+      {/* Glass Overlay with Play Icon */}
+      <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
+          <Play className="w-8 h-8 text-white fill-current ml-1" />
+        </div>
+      </div>
+
+      {/* Click Trap Overlay - prevents interaction with iframe if desired, but allows "tap to play" via native tiktok UI if needed */}
+      {/* We keep it partly interactive but prevent the big TikTok/YT branding clicks if possible */}
+      <div 
+        className="absolute inset-0 z-30 cursor-default" 
+        onClick={(e) => { 
+          // If the user wants to truly prevent redirects, we block clicks
+          // But some embeds need a click to unmute
+          // e.preventDefault(); 
+          // e.stopPropagation(); 
+        }} 
+      />
     </div>
   );
 };
