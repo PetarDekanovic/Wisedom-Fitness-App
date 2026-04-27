@@ -396,6 +396,69 @@ const MOCK_WORKOUTS: Workout[] = [
 
 type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library' | 'yoga' | 'quiz';
 
+// Video Utils
+const extractYoutubeId = (url: string) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const extractTiktokId = (url: string) => {
+  const regExp = /\/video\/(\d+)/;
+  const match = url.match(regExp);
+  if (match) return match[1];
+  
+  // Handle mobile share links like vm.tiktok.com
+  if (url.includes('tiktok.com')) {
+    const parts = url.split('/');
+    const lastPart = parts[parts.length - 1] || parts[parts.length - 2];
+    if (/^\d+$/.test(lastPart)) return lastPart;
+  }
+  return null;
+};
+
+const getHistoryEmbedUrl = (type: 'youtube' | 'tiktok', videoId: string) => {
+  if (type === 'youtube') {
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1`;
+  }
+  return `https://www.tiktok.com/embed/v2/${videoId}?autoplay=1&loop=1&music_info=0&description=0&rel=0&native_controls=0`;
+};
+
+const VideoEmbed = ({ type, videoId, isDarkMode }: { type: 'youtube' | 'tiktok', videoId: string, isDarkMode: boolean }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.5 }
+    );
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div 
+      ref={containerRef}
+      className={cn(
+        "relative w-full aspect-[9/16] mt-4 rounded-3xl overflow-hidden border",
+        isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+      )}
+    >
+      {isVisible && (
+        <iframe
+          className="w-full h-full scale-[1.02]"
+          src={getHistoryEmbedUrl(type, videoId)}
+          allow="autoplay; encrypted-media"
+          loading="lazy"
+        />
+      )}
+      {/* Click Trap Overlay */}
+      <div className="absolute inset-0 z-20 cursor-default" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} />
+    </div>
+  );
+};
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -5333,69 +5396,14 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
             })}
           </p>
           {(() => {
-            const id = getYoutubeId(workout.content);
-            if (id) {
-              return (
-                <a 
-                  href={`https://www.youtube.com/watch?v=${id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block relative aspect-video w-full rounded-2xl overflow-hidden bg-black group/thumb"
-                >
-                  <img 
-                    src={`https://img.youtube.com/vi/${id}/maxresdefault.jpg`} 
-                    alt="YouTube Preview" 
-                    className="w-full h-full object-cover opacity-90 group-hover/thumb:opacity-100 transition-opacity"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-                    }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-xl transform group-hover/thumb:scale-110 transition-transform">
-                      <Youtube className="w-7 h-7 text-white fill-white" />
-                    </div>
-                  </div>
-                </a>
-              );
+            const ytId = extractYoutubeId(workout.content || '');
+            const ttId = extractTiktokId(workout.content || '');
+            
+            if (ytId) {
+              return <VideoEmbed type="youtube" videoId={ytId} isDarkMode={isDarkMode} />;
             }
-            return null;
-          })()}
-
-          {(() => {
-            const tiktokRegex = /(?:https?:\/\/)?(?:www\.|vm\.|vt\.|t\.)?tiktok\.com\/[^\s]+/g;
-            const links = workout.content?.match(tiktokRegex) || [];
-            if (links.length > 0) {
-              return (
-                <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                  {links.map((link, idx) => (
-                    <a 
-                      key={idx}
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-shrink-0 relative aspect-[9/16] w-32 rounded-2xl overflow-hidden bg-zinc-900 group/tiktok"
-                    >
-                      {tiktokThumbnails[link] ? (
-                        <img 
-                          src={tiktokThumbnails[link]} 
-                          alt="TikTok Preview" 
-                          className="w-full h-full object-cover opacity-80 group-hover/tiktok:opacity-100 transition-opacity"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                          <Video className="w-8 h-8 text-zinc-700" />
-                          <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">TikTok</span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-10 h-10 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 transform group-hover/tiktok:scale-110 transition-transform">
-                          <Music className="w-5 h-5 text-white" />
-                        </div>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              );
+            if (ttId) {
+              return <VideoEmbed type="tiktok" videoId={ttId} isDarkMode={isDarkMode} />;
             }
             return null;
           })()}
