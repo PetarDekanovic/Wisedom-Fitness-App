@@ -419,10 +419,11 @@ const extractTiktokId = (url: string) => {
 
 const getHistoryEmbedUrl = (type: 'youtube' | 'tiktok', videoId: string) => {
   if (type === 'youtube') {
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1`;
+    // Removed mute=1 to allow sound (requires user activity in most browsers to actually play)
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=1&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1`;
   }
-  // TikTok V2 embed with auto-loop and mute
-  return `https://www.tiktok.com/embed/v2/${videoId}?autoplay=1&loop=1&rel=0&native_controls=0`;
+  // TikTok V2 embed
+  return `https://www.tiktok.com/embed/v2/${videoId}?autoplay=1&loop=1`;
 };
 
 const VideoEmbed = ({ type, videoId, isDarkMode }: { type: 'youtube' | 'tiktok', videoId: string, isDarkMode: boolean }) => {
