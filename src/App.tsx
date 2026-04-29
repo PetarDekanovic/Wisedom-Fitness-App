@@ -417,6 +417,12 @@ const extractTiktokId = (url: string) => {
   return null;
 };
 
+const extractDirectVideoUrl = (content: string) => {
+  const mp4Regex = /(https?:\/\/[^\s]+\.mp4)/i;
+  const match = content.match(mp4Regex);
+  return match ? match[1] : null;
+};
+
 const getHistoryEmbedUrl = (type: 'youtube' | 'tiktok', videoId: string) => {
   if (type === 'youtube') {
     return `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=1&modestbranding=1&rel=0&iv_load_policy=3&enablejsapi=1`;
@@ -424,19 +430,32 @@ const getHistoryEmbedUrl = (type: 'youtube' | 'tiktok', videoId: string) => {
   return `https://www.tiktok.com/embed/v2/${videoId}?autoplay=1&loop=1&rel=0`;
 };
 
-const VideoEmbed = ({ type, videoId, isDarkMode }: { type: 'youtube' | 'tiktok', videoId: string, isDarkMode: boolean }) => {
+const VideoEmbed = ({ type, videoId, isDarkMode }: { type: 'youtube' | 'tiktok' | 'direct', videoId: string, isDarkMode: boolean }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => setIsVisible(entry.isIntersecting),
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+        if (type === 'direct' && videoRef.current) {
+          if (entry.isIntersecting) {
+            videoRef.current.play().catch(() => {
+              // Autoplay might be blocked until interaction
+              console.log("Autoplay blocked, waiting for interaction");
+            });
+          } else {
+            videoRef.current.pause();
+          }
+        }
+      },
       { threshold: 0.1 }
     );
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, []);
+  }, [type]);
 
   return (
     <div 
@@ -454,24 +473,39 @@ const VideoEmbed = ({ type, videoId, isDarkMode }: { type: 'youtube' | 'tiktok',
         </div>
       )}
 
-      {isVisible && (
-        <iframe
+      {type === 'direct' ? (
+        <video
+          ref={videoRef}
+          src={videoId} // for direct type, videoId is the full URL
           className={cn(
-            "w-full h-full scale-[1.05] transition-opacity duration-1000",
+            "w-full h-full object-cover transition-opacity duration-1000",
             isLoaded ? "opacity-100" : "opacity-0"
           )}
-          src={getHistoryEmbedUrl(type, videoId)}
-          allow="autoplay; encrypted-media"
-          loading="lazy"
-          onLoad={() => setIsLoaded(true)}
+          muted
+          loop
+          playsInline
+          controls
+          onLoadedData={() => setIsLoaded(true)}
         />
+      ) : (
+        isVisible && (
+          <iframe
+            className={cn(
+              "w-full h-full scale-[1.05] transition-opacity duration-1000",
+              isLoaded ? "opacity-100" : "opacity-0"
+            )}
+            src={getHistoryEmbedUrl(type as 'youtube' | 'tiktok', videoId)}
+            allow="autoplay; encrypted-media"
+            loading="lazy"
+            onLoad={() => setIsLoaded(true)}
+          />
+        )
       )}
 
-      {/* interaction hint - disappearing after load if you want, but good for unmute */}
       {!isLoaded && (
         <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="px-4 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest">
-            Tap to Listen
+            {type === 'direct' ? 'Native Play' : 'Tap to Listen'}
           </div>
         </div>
       )}
@@ -5418,7 +5452,11 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
           {(() => {
             const ytId = extractYoutubeId(workout.content || '');
             const ttId = extractTiktokId(workout.content || '');
+            const directUrl = extractDirectVideoUrl(workout.content || '');
             
+            if (directUrl) {
+              return <VideoEmbed type="direct" videoId={directUrl} isDarkMode={isDarkMode} />;
+            }
             if (ytId) {
               return <VideoEmbed type="youtube" videoId={ytId} isDarkMode={isDarkMode} />;
             }
