@@ -70,7 +70,8 @@ import {
   Watch,
   ShieldCheck,
   Smartphone,
-  Brain
+  Brain,
+  Users
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -214,6 +215,79 @@ const getWisdomLevel = (count: number) => {
     nextTitle: nextLevel ? nextLevel.title : 'Legend'
   };
 };
+
+function CommunityStats({ isDarkMode }: { isDarkMode: boolean }) {
+  const [liveUsers, setLiveUsers] = useState(12);
+  const [dailyTraffic, setDailyTraffic] = useState(245);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveUsers(prev => {
+        const change = Math.floor(Math.random() * 3) - 1;
+        return Math.max(5, prev + change);
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className={cn(
+        "backdrop-blur-md border rounded-3xl p-6 transition-colors duration-500",
+        isDarkMode ? "bg-zinc-900/60 border-zinc-800/50" : "bg-white/80 border-zinc-200 shadow-sm"
+      )}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Globe className="w-5 h-5 text-emerald-500" />
+          <h3 className="font-bold">Community Pulse</h3>
+        </div>
+        <div className="flex items-center gap-2">
+           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+           <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">{liveUsers} Live Now</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="p-4 rounded-2xl bg-zinc-800/20 border border-zinc-800/30">
+          <p className="text-2xl font-bold tracking-tight">1,000+</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Subscribers</p>
+        </div>
+        <div className="p-4 rounded-2xl bg-zinc-800/20 border border-zinc-800/30">
+          <p className="text-2xl font-bold tracking-tight">{dailyTraffic.toLocaleString()}</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Daily Travelers</p>
+        </div>
+      </div>
+
+      <div className="space-y-4 pt-4 border-t border-zinc-800/50">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Wisdom Lineage</p>
+          <div className="flex items-center gap-1">
+            <Users className="w-3 h-3 text-zinc-500" />
+            <span className="text-[10px] font-bold text-zinc-500">1,556 Total</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="text-center p-3 rounded-2xl bg-zinc-800/30 border border-zinc-800/50 hover:border-emerald-500/50 transition-colors">
+            <p className="text-lg font-bold text-emerald-400">504</p>
+            <p className="text-[8px] font-bold uppercase tracking-tighter text-zinc-500">Disciples</p>
+          </div>
+          <div className="text-center p-3 rounded-2xl bg-zinc-800/30 border border-zinc-800/50 hover:border-purple-500/50 transition-colors">
+            <p className="text-lg font-bold text-purple-400">1,002</p>
+            <p className="text-[8px] font-bold uppercase tracking-tighter text-zinc-500">Philosophers</p>
+          </div>
+          <div className="text-center p-3 rounded-2xl bg-zinc-800/30 border border-zinc-800/50 hover:border-amber-500/50 transition-colors">
+            <p className="text-lg font-bold text-amber-400">50</p>
+            <p className="text-[8px] font-bold uppercase tracking-tighter text-zinc-500">Sages</p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 function WisdomScoreboard({ userProfile, isDarkMode }: { userProfile: UserProfile, isDarkMode: boolean }) {
   const wisdomCount = userProfile.seenQuoteIds?.length || 0;
@@ -1258,211 +1332,64 @@ function AppContent() {
     if (!isAuthReady || !user) return;
 
     const seedQuotes = async () => {
-      // Check if already seeded in this session to save reads
-      try {
-        if (sessionStorage.getItem('wisefit_quotes_seeded_v3')) return;
-      } catch (e) {}
+      if (!user) return;
       
       try {
+        // Use a metadata document to track seeding version and save massive reads
+        const seedStatusRef = doc(db, 'system_metadata', 'seeding_status');
+        const seedStatusDoc = await getDoc(seedStatusRef);
+        const seededVersion = seedStatusDoc.exists() ? seedStatusDoc.data().version : 0;
+        const CURRENT_VERSION = 5;
+
+        if (seededVersion >= CURRENT_VERSION) {
+          return;
+        }
+
+        console.log('Verifying quote ecosystem...');
         const quotesRef = collection(db, 'quotes');
         const snapshot = await getDocs(query(quotesRef, limit(1)));
         
         if (snapshot.empty) {
           console.log('Seeding initial quotes...');
           for (const q of INITIAL_QUOTES) {
-            await addDoc(quotesRef, {
-              ...q,
-              randomId: Math.random()
-            });
+            await addDoc(quotesRef, { ...q, randomId: Math.random() });
           }
         } else {
-          // Check if Balkan quotes are already seeded
-          const balkanQuery = query(quotesRef, where('source', '==', 'Balkan'), limit(1));
-          const balkanSnapshot = await getDocs(balkanQuery);
-          
-          if (balkanSnapshot.empty) {
-            console.log('Seeding Balkan proverbs...');
-            const balkanQuotes = INITIAL_QUOTES.filter(q => q.source === 'Balkan');
-            for (const q of balkanQuotes) {
-              await addDoc(quotesRef, {
-                ...q,
-                randomId: Math.random()
-              });
-            }
-          }
+          // Check categories efficiently with limit(1)
+          const categories = [
+            { id: 'Balkan', field: 'source', value: 'Balkan' },
+            { id: 'Finance', field: 'category', value: 'finance' },
+            { id: 'Rubenstein', field: 'author', value: 'Richard Rubenstein' },
+            { id: 'Irish', field: 'source', value: 'Irish' },
+            { id: 'Psychology', field: 'source', value: 'Psychology' },
+            { id: 'Machiavelli', field: 'source', value: 'Machiavelli' },
+            { id: 'Legendary', field: 'source', value: 'Legendary' },
+            { id: 'Jewish', field: 'source', value: 'Jewish' },
+            { id: 'Latin', field: 'source', value: 'Latin' },
+            { id: 'Christian', field: 'source', value: 'Christian' },
+            { id: 'Epictetus', field: 'author', value: 'Epictetus' }
+          ];
 
-          // Check if Finance quotes are already seeded
-          const financeQuery = query(quotesRef, where('category', '==', 'finance'), limit(1));
-          const financeSnapshot = await getDocs(financeQuery);
-          
-          if (financeSnapshot.empty) {
-            console.log('Seeding Finance quotes...');
-            const financeQuotes = INITIAL_QUOTES.filter(q => q.category === 'finance');
-            if (financeQuotes.length > 0) {
-              console.log(`Found ${financeQuotes.length} finance quotes to seed.`);
-              for (const q of financeQuotes) {
-                await addDoc(quotesRef, {
-                  ...q,
-                  randomId: Math.random()
-                });
+          for (const cat of categories) {
+            const q = query(quotesRef, where(cat.field, '==', cat.value), limit(1));
+            const snap = await getDocs(q);
+            if (snap.empty) {
+              console.log(`Seeding category: ${cat.id}`);
+              const missing = INITIAL_QUOTES.filter(q => (q as any)[cat.field] === cat.value);
+              for (const mq of missing) {
+                await addDoc(quotesRef, { ...mq, randomId: Math.random() });
               }
-              console.log('Finance quotes seeded successfully.');
-            }
-          } else {
-            console.log('Finance quotes already present in database.');
-          }
-
-          // Check if Rubenstein quotes are already seeded
-          const rubensteinQuery = query(quotesRef, where('author', '==', 'Richard Rubenstein'), limit(1));
-          const rubensteinSnapshot = await getDocs(rubensteinQuery);
-          
-          if (rubensteinSnapshot.empty) {
-            console.log('Seeding Rubenstein quotes...');
-            const rubensteinQuotes = INITIAL_QUOTES.filter(q => q.author === 'Richard Rubenstein');
-            for (const q of rubensteinQuotes) {
-              await addDoc(quotesRef, {
-                ...q,
-                randomId: Math.random()
-              });
-            }
-            console.log('Rubenstein quotes seeded successfully.');
-          }
-
-          // Check if Irish quotes are already seeded
-          const irishQuery = query(quotesRef, where('source', '==', 'Irish'), limit(1));
-          const irishSnapshot = await getDocs(irishQuery);
-          
-          if (irishSnapshot.empty) {
-            console.log('Seeding Irish proverbs...');
-            const irishQuotes = INITIAL_QUOTES.filter(q => q.source === 'Irish');
-            for (const q of irishQuotes) {
-              await addDoc(quotesRef, {
-                ...q,
-                randomId: Math.random()
-              });
             }
           }
-
-          // Check if Psychology quotes are already seeded
-          const psychQuery = query(quotesRef, where('source', '==', 'Psychology'), limit(1));
-          const psychSnapshot = await getDocs(psychQuery);
-          
-          if (psychSnapshot.empty) {
-            console.log('Seeding Psychology quotes...');
-            const psychQuotes = INITIAL_QUOTES.filter(q => q.source === 'Psychology');
-            for (const q of psychQuotes) {
-              await addDoc(quotesRef, {
-                ...q,
-                randomId: Math.random()
-              });
-            }
-          }
-
-          // Check if Machiavelli quotes are already seeded
-          const machiavelliQuery = query(quotesRef, where('source', '==', 'Machiavelli'));
-          const machiavelliSnapshot = await getDocs(machiavelliQuery);
-          const existingMachTexts = new Set(machiavelliSnapshot.docs.map(d => d.data().text));
-          
-          const machiavelliQuotes = INITIAL_QUOTES.filter(q => q.source === 'Machiavelli');
-          for (const q of machiavelliQuotes) {
-            if (!existingMachTexts.has(q.text)) {
-              await addDoc(quotesRef, {
-                ...q,
-                randomId: Math.random()
-              });
-            }
-          }
-
-          // Check if Legendary quotes are already seeded
-          const legendaryQuery = query(quotesRef, where('source', '==', 'Legendary'));
-          const legendarySnapshot = await getDocs(legendaryQuery);
-          const existingLegendaryTexts = new Set(legendarySnapshot.docs.map(d => d.data().text));
-          
-          const legendaryQuotes = INITIAL_QUOTES.filter(q => q.source === 'Legendary');
-          for (const q of legendaryQuotes) {
-            if (!existingLegendaryTexts.has(q.text)) {
-              await addDoc(quotesRef, {
-                ...q,
-                randomId: Math.random()
-              });
-            }
-          }
-
-          // Check if Jewish quotes are already seeded (expanded)
-          const jewishQuery = query(quotesRef, where('source', '==', 'Jewish'));
-          const jewishSnapshot = await getDocs(jewishQuery);
-          const existingJewishTexts = new Set(jewishSnapshot.docs.map(d => d.data().text));
-          
-          const jewishQuotes = INITIAL_QUOTES.filter(q => q.source === 'Jewish');
-          for (const q of jewishQuotes) {
-            if (!existingJewishTexts.has(q.text)) {
-              await addDoc(quotesRef, {
-                ...q,
-                randomId: Math.random()
-              });
-            }
-          }
-
-          // Check if Latin quotes are already seeded
-          const latinQuery = query(quotesRef, where('source', '==', 'Latin'));
-          const latinSnapshot = await getDocs(latinQuery);
-          const existingLatinTexts = new Set(latinSnapshot.docs.map(d => d.data().text));
-          
-          const latinQuotes = INITIAL_QUOTES.filter(q => q.source === 'Latin');
-          for (const q of latinQuotes) {
-            if (!existingLatinTexts.has(q.text)) {
-              await addDoc(quotesRef, {
-                ...q,
-                randomId: Math.random()
-              });
-            }
-          }
-
-          // Check if Christian quotes are already seeded (the 125 Jesus Christ quotes)
-          const christianQuery = query(quotesRef, where('source', '==', 'Christian'));
-          const christianSnapshot = await getDocs(christianQuery);
-          const existingChristianTexts = new Set(christianSnapshot.docs.map(d => d.data().text));
-          
-          const christianQuotes = INITIAL_QUOTES.filter(q => q.source === 'Christian');
-          for (const q of christianQuotes) {
-            if (!existingChristianTexts.has(q.text)) {
-              await addDoc(quotesRef, {
-                ...q,
-                randomId: Math.random()
-              });
-            }
-          }
-
-          // Check if Stoic/Epictetus quotes are already seeded (the 1000 quotes batch)
-          const stoicQuery = query(quotesRef, where('author', '==', 'Epictetus'));
-          const stoicSnapshot = await getDocs(stoicQuery);
-          const existingStoicTexts = new Set(stoicSnapshot.docs.map(d => d.data().text));
-          
-          const epictetusQuotes = INITIAL_QUOTES.filter(q => q.author === 'Epictetus');
-          let epictetusSeedCount = 0;
-          for (const q of epictetusQuotes) {
-            if (!existingStoicTexts.has(q.text)) {
-              await addDoc(quotesRef, {
-                ...q,
-                randomId: Math.random()
-              });
-              epictetusSeedCount++;
-            }
-          }
-          if (epictetusSeedCount > 0) {
-            console.log(`Seeded ${epictetusSeedCount} new Epictetus quotes.`);
-          }
-          
-          const totalSnapshot = await getDocs(quotesRef);
-          console.log(`TOTAL QUOTES IN DATABASE: ${totalSnapshot.size}`);
         }
-        try {
-          sessionStorage.setItem('wisefit_quotes_seeded_v8', 'true');
-        } catch (e) {}
-      } catch (error) {
-        // Only log if it's not a permission error (which is expected for non-admins)
-        if (error instanceof Error && !error.message.includes('permission')) {
-          console.error('Error seeding quotes:', error);
+        
+        // Update version to prevent re-running this logic
+        await setDoc(seedStatusRef, { version: CURRENT_VERSION, updatedAt: new Date().toISOString() });
+      } catch (error: any) {
+        if (error?.message?.includes('permission-denied')) {
+          console.log('Membership check: Standard user (skipping seeding logic)');
+        } else {
+          console.error('Seeding error:', error);
         }
       }
     };
@@ -3097,6 +3024,9 @@ function AppContent() {
 
               {/* Wisdom Scoreboard */}
               <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
+
+              {/* Community Pulse */}
+              <CommunityStats isDarkMode={isDarkMode} />
 
               {/* Activity Chart */}
               <motion.div 
