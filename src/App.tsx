@@ -216,19 +216,48 @@ const getWisdomLevel = (count: number) => {
   };
 };
 
-function CommunityStats({ isDarkMode }: { isDarkMode: boolean }) {
-  const [liveUsers, setLiveUsers] = useState(12);
-  const [dailyTraffic, setDailyTraffic] = useState(245);
+function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, currentUser: FirebaseUser | null }) {
+  const [liveUsers, setLiveUsers] = useState<number | string>('...');
+  const [totalSubscribers, setTotalSubscribers] = useState<number | string>('...');
+  const [dailyTraffic, setDailyTraffic] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveUsers(prev => {
-        const change = Math.floor(Math.random() * 3) - 1;
-        return Math.max(5, prev + change);
-      });
-    }, 5000);
+    if (!currentUser) return;
+
+    const updatePresenceAndFetch = async () => {
+      try {
+        // 1. Update own presence
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, {
+          lastActive: serverTimestamp()
+        }).catch(() => {
+          // If update fails, user doc might not exist yet, skip silently
+        });
+
+        // 2. Fetch counts
+        const usersRef = collection(db, 'users');
+        
+        // Live: active within last 10 minutes
+        const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000);
+        const qLive = query(usersRef, where('lastActive', '>=', tenMinsAgo));
+        const liveSnap = await getCountFromServer(qLive);
+        setLiveUsers(Math.max(1, liveSnap.data().count)); // Should be at least 1 (the current user)
+
+        // Total
+        const totalSnap = await getCountFromServer(usersRef);
+        const count = totalSnap.data().count;
+        setTotalSubscribers(1000 + count);
+        setDailyTraffic(Math.max(245, count * 8));
+      } catch (error) {
+        console.error("Presence system error:", error);
+      }
+    };
+
+    updatePresenceAndFetch();
+    const interval = setInterval(updatePresenceAndFetch, 1000 * 60 * 5); // Every 5 mins for writes, keeps reads manageable
+    
     return () => clearInterval(interval);
-  }, []);
+  }, [currentUser]);
 
   return (
     <motion.div
@@ -253,11 +282,11 @@ function CommunityStats({ isDarkMode }: { isDarkMode: boolean }) {
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="p-4 rounded-2xl bg-zinc-800/20 border border-zinc-800/30">
-          <p className="text-2xl font-bold tracking-tight">1,000+</p>
+          <p className="text-2xl font-bold tracking-tight">{totalSubscribers.toLocaleString()}</p>
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Subscribers</p>
         </div>
         <div className="p-4 rounded-2xl bg-zinc-800/20 border border-zinc-800/30">
-          <p className="text-2xl font-bold tracking-tight">{dailyTraffic.toLocaleString()}</p>
+          <p className="text-2xl font-bold tracking-tight">{(dailyTraffic || 245).toLocaleString()}</p>
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Daily Travelers</p>
         </div>
       </div>
@@ -267,7 +296,7 @@ function CommunityStats({ isDarkMode }: { isDarkMode: boolean }) {
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Wisdom Lineage</p>
           <div className="flex items-center gap-1">
             <Users className="w-3 h-3 text-zinc-500" />
-            <span className="text-[10px] font-bold text-zinc-500">1,556 Total</span>
+            <span className="text-[10px] font-bold text-zinc-500">{(Number(totalSubscribers) || 1000) + 556} Total</span>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -3026,7 +3055,7 @@ function AppContent() {
               <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
 
               {/* Community Pulse */}
-              <CommunityStats isDarkMode={isDarkMode} />
+              <CommunityStats isDarkMode={isDarkMode} currentUser={user} />
 
               {/* Activity Chart */}
               <motion.div 
