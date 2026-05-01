@@ -216,17 +216,29 @@ const getWisdomLevel = (count: number) => {
   };
 };
 
+const ADMIN_EMAIL = "petar.dekanovic@gmail.com";
+
 function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, currentUser: FirebaseUser | null }) {
   const [liveUsers, setLiveUsers] = useState<number | string>('...');
   const [totalSubscribers, setTotalSubscribers] = useState<number | string>('...');
   const [dailyTraffic, setDailyTraffic] = useState(0);
 
   useEffect(() => {
-    if (!currentUser) return;
+    // 1. Guests see cached/static data ONLY to save quota
+    if (!currentUser) {
+      try {
+        const cachedCount = localStorage.getItem('wisefit_total_subs');
+        setLiveUsers(0);
+        setTotalSubscribers(cachedCount ? Number(cachedCount) : 1000);
+        setDailyTraffic(245);
+      } catch (e) {}
+      return;
+    }
 
     const updatePresenceAndFetch = async () => {
       try {
-        // 1. Update own presence
+        // Only Admin or specific members contribute to writes to save credits
+        // For now, let's allow all members but at a much slower rate (15 mins)
         const userRef = doc(db, 'users', currentUser.uid);
         await updateDoc(userRef, {
           lastActive: serverTimestamp()
@@ -234,27 +246,50 @@ function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, curr
           // If update fails, user doc might not exist yet, skip silently
         });
 
-        // 2. Fetch counts
+        // 2. Fetch counts with local storage caching
         const usersRef = collection(db, 'users');
         
-        // Live: active within last 10 minutes
-        const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000);
-        const qLive = query(usersRef, where('lastActive', '>=', tenMinsAgo));
+        // Cache management
+        const lastFetchTime = localStorage.getItem('wisefit_community_fetch_time');
+        const now = Date.now();
+        
+        // Only fetch from server every 15 minutes
+        if (lastFetchTime && now - Number(lastFetchTime) < 15 * 60 * 1000) {
+          const cachedLive = localStorage.getItem('wisefit_live_users');
+          const cachedSubs = localStorage.getItem('wisefit_total_subs');
+          if (cachedLive) setLiveUsers(Number(cachedLive));
+          if (cachedSubs) {
+             setTotalSubscribers(Number(cachedSubs));
+             setDailyTraffic(Math.max(245, Number(cachedSubs) * 0.8));
+          }
+          return;
+        }
+
+        // Live: active within last 15 minutes
+        const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+        const qLive = query(usersRef, where('lastActive', '>=', fifteenMinsAgo));
         const liveSnap = await getCountFromServer(qLive);
-        setLiveUsers(Math.max(1, liveSnap.data().count)); // Should be at least 1 (the current user)
+        const liveCount = Math.max(1, liveSnap.data().count);
+        setLiveUsers(liveCount);
 
         // Total
         const totalSnap = await getCountFromServer(usersRef);
         const count = totalSnap.data().count;
-        setTotalSubscribers(1000 + count);
+        const subCount = 1000 + count;
+        setTotalSubscribers(subCount);
         setDailyTraffic(Math.max(245, count * 8));
+
+        // Update cache
+        localStorage.setItem('wisefit_live_users', liveCount.toString());
+        localStorage.setItem('wisefit_total_subs', subCount.toString());
+        localStorage.setItem('wisefit_community_fetch_time', now.toString());
       } catch (error) {
         console.error("Presence system error:", error);
       }
     };
 
     updatePresenceAndFetch();
-    const interval = setInterval(updatePresenceAndFetch, 1000 * 60 * 5); // Every 5 mins for writes, keeps reads manageable
+    const interval = setInterval(updatePresenceAndFetch, 1000 * 60 * 15); // Every 15 mins
     
     return () => clearInterval(interval);
   }, [currentUser]);
@@ -941,7 +976,8 @@ function AppContent() {
   }, [ai]);
 
   const refillQuotesPool = useCallback(async (force = false): Promise<Quote[]> => {
-    if (isRefillingPoolRef.current || (!force && quotesPoolRef.current.length > 50)) return [];
+    // GUEST PROTECTION: Guests never refill from database to save quota
+    if (!user || isQuotaExceeded || isRefillingPoolRef.current || (!force && quotesPoolRef.current.length > 50)) return [];
     
     isRefillingPoolRef.current = true;
     setIsRefillingPool(true);
@@ -989,10 +1025,11 @@ function AppContent() {
       setIsRefillingPool(false);
     }
   }, []);
-
-  const fetchRandomQuote = useCallback(async (excludeIds: string[] = [], forceAI: boolean = false) => {
+   const fetchRandomQuote = useCallback(async (excludeIds: string[] = [], forceAI: boolean = false) => {
     if (isFetchingQuoteRef.current) return;
     isFetchingQuoteRef.current = true;
+
+    const isAdmin = user?.email === ADMIN_EMAIL;
 
     const useLocalFallback = () => {
       const localQuotes = INITIAL_QUOTES;
@@ -1014,17 +1051,21 @@ function AppContent() {
     };
 
     try {
-      // 1. QUOTA SAVER: If we know quota is exceeded or it's "danger hours" (10PM - 8AM Dublin), use local
+      // 1. QUOTA SAVER: 
+      // - Guests always use local fallback
+      // - Members use local fallback during danger hours
+      // - Admins are unrestricted but respect isQuotaExceeded
       const now = new Date();
       const dublinHour = (now.getUTCHours() + 1) % 24;
       const isDangerHours = dublinHour >= 22 || dublinHour < 8;
 
-      if (isQuotaExceeded || (isDangerHours && !forceAI)) {
+      if (!user || isQuotaExceeded || (isDangerHours && !forceAI && !isAdmin)) {
         console.log('Quota Saver Active: Using local JSON quotes.');
         useLocalFallback();
         isFetchingQuoteRef.current = false;
         return;
       }
+
 
       let selectedQuote: Quote | null = null;
 
@@ -1358,10 +1399,11 @@ function AppContent() {
   }, [currentQuote]);
 
   useEffect(() => {
-    if (!isAuthReady || !user) return;
+    if (!isAuthReady) return;
 
     const seedQuotes = async () => {
-      if (!user) return;
+      // ONLY ADMIN can run seeding logic to prevent thousands of redundant writes/reads
+      if (!user || user.email !== ADMIN_EMAIL) return;
       
       try {
         // Use a metadata document to track seeding version and save massive reads
@@ -1424,6 +1466,9 @@ function AppContent() {
     };
 
     const fetchCount = async () => {
+      // GUEST PROTECTION: No need for precise count for guests
+      if (!user) return;
+      
       // Use cached count if available to save reads
       try {
         const cachedCount = localStorage.getItem('wisefit_quote_count');
@@ -1480,6 +1525,10 @@ function AppContent() {
 
   const generateMoreQuotes = async () => {
     if (isGeneratingQuotes || !ai) return;
+    if (user?.email !== ADMIN_EMAIL) {
+      alert("AI Generation is restricted to Admin only during development.");
+      return;
+    }
     setIsGeneratingQuotes(true);
     try {
       const response = await ai.models.generateContent({
@@ -1514,6 +1563,10 @@ function AppContent() {
 
   const generateLatinQuotes = async () => {
     if (isGeneratingQuotes || !ai) return;
+    if (user?.email !== ADMIN_EMAIL) {
+      alert("AI Generation is restricted to Admin only during development.");
+      return;
+    }
     setIsGeneratingQuotes(true);
     try {
       const response = await ai.models.generateContent({
