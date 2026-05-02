@@ -155,6 +155,50 @@ async function startServer() {
     }
   });
 
+  app.post("/api/health/weekly", async (req, res) => {
+    const { accessToken } = req.body;
+    if (!accessToken) return res.status(401).json({ error: "No access token" });
+
+    try {
+      const now = Date.now();
+      const sevenDaysAgo = now - (7 * 86400000);
+      const startTimeMillis = new Date(sevenDaysAgo).setHours(0, 0, 0, 0);
+
+      const requestBody = {
+        aggregateBy: [
+          { dataSourceId: "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps" },
+          { dataSourceId: "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended" },
+          { dataSourceId: "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta" }
+        ],
+        bucketByTime: { durationMillis: 86400000 },
+        startTimeMillis,
+        endTimeMillis: now,
+      };
+
+      const response = await axios.post(
+        "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+        requestBody,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      const weeklyData = response.data.bucket.map((bucket: any, index: number) => {
+        const date = new Date(bucket.startTimeMillis);
+        return {
+          day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+          date: date.toISOString().split('T')[0],
+          steps: bucket.dataset[0].point[0]?.value[0].intVal || 0,
+          calories: Math.round(bucket.dataset[1].point[0]?.value[0].fpVal || 0),
+          distance: parseFloat((bucket.dataset[2].point[0]?.value[0].fpVal / 1000 || 0).toFixed(2)) // meters to km
+        };
+      });
+
+      res.json(weeklyData);
+    } catch (error: any) {
+      console.error("Weekly health sync error:", error.response?.data || error.message);
+      res.status(500).json({ error: "Failed to fetch weekly health trends" });
+    }
+  });
+
   // --- VITE MIDDLEWARE ---
 
   if (process.env.NODE_ENV !== "production") {

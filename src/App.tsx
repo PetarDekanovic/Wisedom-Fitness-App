@@ -82,7 +82,9 @@ import {
   Tooltip, 
   ResponsiveContainer,
   AreaChart,
-  Area
+  Area,
+  BarChart,
+  Bar
 } from 'recharts';
 import { format, subDays, startOfToday, getDay } from 'date-fns';
 import { cn } from './lib/utils';
@@ -670,6 +672,109 @@ const VideoEmbed = ({ type, videoId, isDarkMode }: { type: 'youtube' | 'tiktok' 
   );
 };
 
+function BiometricDashboard({ data, isDarkMode }: { data: any[], isDarkMode: boolean }) {
+  if (!data || data.length === 0) return null;
+
+  return (
+    <div className="space-y-6">
+      <div className={cn(
+        "backdrop-blur-md border rounded-3xl p-6 transition-colors duration-500",
+        isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
+      )}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-orange-500" />
+            <h3 className={cn(
+              "text-[10px] uppercase font-black tracking-widest transition-colors",
+              isDarkMode ? "text-zinc-400" : "text-zinc-500"
+            )}>Weekly Calorie Burn</h3>
+          </div>
+          <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+            <span className="text-[8px] font-black uppercase text-emerald-500 tracking-tighter">Verified Sync</span>
+          </div>
+        </div>
+        <div className="h-48 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <XAxis 
+                dataKey="day" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: isDarkMode ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 700 }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: isDarkMode ? '#18181b' : '#ffffff', 
+                  borderColor: isDarkMode ? '#27272a' : '#e4e4e7',
+                  borderRadius: '12px',
+                  fontSize: '12px'
+                }}
+              />
+              <Bar 
+                dataKey="calories" 
+                fill={isDarkMode ? "#f97316" : "#ea580c"} 
+                radius={[4, 4, 0, 0]} 
+                barSize={20}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className={cn(
+        "backdrop-blur-md border rounded-3xl p-6 transition-colors duration-500",
+        isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
+      )}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-blue-500" />
+            <h3 className={cn(
+              "text-[10px] uppercase font-black tracking-widest transition-colors",
+              isDarkMode ? "text-zinc-400" : "text-zinc-500"
+            )}>Weekly Distance (km)</h3>
+          </div>
+          <div className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+            <span className="text-[8px] font-black uppercase text-blue-500 tracking-tighter">Google Path</span>
+          </div>
+        </div>
+        <div className="h-48 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data}>
+              <defs>
+                <linearGradient id="colorDistance" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <XAxis 
+                dataKey="day" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: isDarkMode ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 700 }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: isDarkMode ? '#18181b' : '#ffffff', 
+                  borderColor: isDarkMode ? '#27272a' : '#e4e4e7',
+                  borderRadius: '12px',
+                  fontSize: '12px'
+                }}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="distance" 
+                stroke="#3b82f6" 
+                fillOpacity={1} 
+                fill="url(#colorDistance)" 
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -849,12 +954,21 @@ function AppContent() {
       const data = await response.json();
       if (data.error) throw new Error(data.error);
 
+      // Fetch weekly trend data
+      const weeklyResponse = await fetch('/api/health/weekly', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken })
+      });
+      const weeklyData = await weeklyResponse.json();
+
       // Update local metrics with synced data
       const updatedProfile = {
         ...userProfile,
         currentSteps: data.steps || userProfile.currentSteps,
         currentCalories: data.calories || userProfile.currentCalories,
         currentWeight: data.weight || userProfile.currentWeight,
+        weeklyHealthData: weeklyData,
         integrations: {
           ...userProfile.integrations,
           googleFit: {
@@ -873,6 +987,7 @@ function AppContent() {
           currentSteps: updatedProfile.currentSteps,
           currentCalories: updatedProfile.currentCalories,
           currentWeight: updatedProfile.currentWeight,
+          weeklyHealthData: updatedProfile.weeklyHealthData,
           integrations: updatedProfile.integrations
         });
       }
@@ -3927,6 +4042,17 @@ function AppContent() {
                   </div>
                 </div>
 
+                {/* Biometric Intelligence Dashboard */}
+                {userProfile.weeklyHealthData && userProfile.weeklyHealthData.length > 0 && (
+                  <div className="space-y-4 pt-4">
+                    <h3 className={cn(
+                      "text-sm font-bold uppercase tracking-widest px-2 transition-colors",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>Biometric Intelligence</h3>
+                    <BiometricDashboard data={userProfile.weeklyHealthData} isDarkMode={isDarkMode} />
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className={cn(
                     "backdrop-blur-md border rounded-2xl p-4 transition-colors duration-500",
@@ -4090,9 +4216,21 @@ function AppContent() {
                       </div>
                     </div>
                     {userProfile.integrations?.googleFit?.connected ? (
-                      <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 relative z-10">
-                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Linked</span>
+                      <div className="flex gap-2 relative z-10">
+                        <button 
+                          onClick={() => userProfile.integrations?.googleFit?.accessToken && syncHealthData(userProfile.integrations.googleFit.accessToken)}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all active:scale-95",
+                            isDarkMode ? "bg-zinc-800 border-zinc-700 hover:bg-zinc-700" : "bg-zinc-50 border-zinc-200 hover:bg-zinc-100"
+                          )}
+                        >
+                          <RefreshCw className={cn("w-4 h-4 text-emerald-500", isConnectingHealth && "animate-spin")} />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Sync</span>
+                        </button>
+                        <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
+                          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Linked</span>
+                        </div>
                       </div>
                     ) : (
                       <button 
