@@ -71,16 +71,21 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
     osc.stop(audioContextRef.current.currentTime + duration);
   }, [isMuted]);
 
-  const speak = useCallback((text: string) => {
+  const speak = useCallback((text: string, lang: string = 'en-US', cancel: boolean = true) => {
     if (isMuted || !('speechSynthesis' in window)) return;
     
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
+    if (cancel) window.speechSynthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
     utterance.pitch = 1;
     utterance.volume = 1;
+    utterance.lang = lang;
+
+    // Selection of voice based on language
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.lang.startsWith(lang));
+    if (voice) utterance.voice = voice;
     
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
@@ -91,11 +96,26 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
     
     speechRef.current = utterance;
     
-    // Some mobile browsers require a short delay or specific context
+    // Some mobile browsers require a short delay
     setTimeout(() => {
       window.speechSynthesis.speak(utterance);
     }, 50);
   }, [isMuted]);
+
+  const speakQuote = useCallback((quote: Quote) => {
+    const isBalkan = quote.source === 'Balkan';
+    const hasCroatianChars = /[čćžšđČĆŽŠĐ]/.test(quote.text);
+    const parts = quote.text.split(/[—–-]/);
+
+    if (isBalkan && parts.length > 1) {
+      speak(parts[0].trim(), 'hr-HR', false); // Don't cancel, queue
+      speak(parts[1].trim(), 'en-US', false);
+      speak(`By ${quote.author}`, 'en-US', false);
+    } else {
+      const lang = hasCroatianChars ? 'hr-HR' : 'en-US';
+      speak(`${quote.text} by ${quote.author}`, lang, false);
+    }
+  }, [speak]);
 
   const getRandomQuote = () => {
     const randomIndex = Math.floor(Math.random() * INITIAL_QUOTES.length);
@@ -109,8 +129,9 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
     setTimeLeft(pose.duration);
     
     // TTS Sequence
-    speak(`Starting ${pose.name}. ${quote.text} by ${quote.author}.`);
-  }, [flow.poses, speak]);
+    speak(`Starting ${pose.name}.`, 'en-US', true);
+    speakQuote(quote);
+  }, [flow.poses, speak, speakQuote]);
 
   const nextPose = useCallback(() => {
     if (currentPoseIndex < flow.poses.length - 1) {

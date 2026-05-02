@@ -1577,10 +1577,39 @@ function AppContent() {
   const speakQuote = useCallback((quote: Quote) => {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(`${quote.text}. By ${quote.author}`);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    window.speechSynthesis.speak(utterance);
+
+    // Check if it's a Balkan proverb which usually follows "Croatian — English" format
+    const isBalkan = quote.source === 'Balkan';
+    const parts = quote.text.split(/[—–-]/); // Split by various dash types
+    
+    const speakPart = (text: string, lang: string, onEnd?: () => void) => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.lang = lang;
+      
+      // Try to find a matching voice for the language
+      const voices = window.speechSynthesis.getVoices();
+      const voice = voices.find(v => v.lang.startsWith(lang));
+      if (voice) utterance.voice = voice;
+
+      if (onEnd) utterance.onend = onEnd;
+      window.speechSynthesis.speak(utterance);
+    };
+
+    if (isBalkan && parts.length > 1) {
+      // Speak Croatian part first, then English
+      speakPart(parts[0].trim(), 'hr-HR', () => {
+        speakPart(parts[1].trim(), 'en-US', () => {
+          speakPart(`By ${quote.author}`, 'en-US');
+        });
+      });
+    } else {
+      // General case: detect if text looks Croatian or just use English
+      const hasCroatianChars = /[čćžšđČĆŽŠĐ]/.test(quote.text);
+      const lang = hasCroatianChars ? 'hr-HR' : 'en-US';
+      speakPart(`${quote.text}. By ${quote.author}`, lang);
+    }
   }, []);
 
   useEffect(() => {
