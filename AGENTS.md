@@ -24,12 +24,41 @@ WiseFit is not just a workout app; it is a **daily ritual** that integrates phys
     - During Strength: Motivating, discipline-focused quotes.
 - **Audio/Visual Cues:** Quotes appear or are spoken at key moments in the workout.
 
-### 3. Yoga Integration (Upcoming)
+### 3. Yoga & Breathwork (Active Development)
 - **Yin Yoga Focus:** Targeting deep connective tissues, stress reduction, and recovery.
 - **Hybrid Routines:** Blending Yin Yoga with bodyweight strength exercises.
 - **Breathwork:** Integrating breathing techniques into the flow for recovery.
 
-### 4. Target Personas
+### 4. Wearable Ecosystem (Planned)
+- **Fitbit & Pixel Watch Integration:**
+    - **Live Pulse Sync:** Real-time heart rate displayed during "Fire" phases.
+    - **Haptic Wisdom:** Gentle vibrations on the wrist during transitions or breathwork.
+    - **Auto-Logging:** Syncing sessions directly to Google Fit and Fitbit accounts.
+
+### 5. The "Wisdom Stream" (Infinite Inspiration)
+- **Immersive Feed:** A TikTok-style vertical scroll for wisdom. Each quote is presented against cinematic, AI-generated ambient backgrounds.
+- **Thematic Discovery:** Swipe through categories: *Neuroscience, Stoicism, Zen, Modern Psychology, Financial Mastery.*
+- **Daily Seed:** A personalized "Seed of Wisdom" delivered every morning based on user intent.
+
+### 6. Biometric-Driven Flow (Intelligence)
+- **Readiness Score:** Integration with Paladin-style metrics (HRV, Sleep, Activity).
+- **Adaptive Rituals:** If recovery is low, the app automatically prioritizes "Stillness/Yin" over "Fire/Strength".
+
+---
+
+## Market Positioning & Value Estimation
+
+### The Vision
+WiseFit is a **Digital Sanctuary**. By merging high-tier fitness tracking (Paladin/Whoop style) with profound philosophical depth (Meditation apps) and addictive discovery (Social feed style), it targets the high-value "Conscious Professional" market.
+
+### Estimated App Value (Full Implementation)
+- **Competitive Landscape:** Sits between *Whoop/Paladin* ($30/mo) and *Headspace/Calm* ($15/mo).
+- **Boutique Offering:** As a integrated "Lifestyle ritual," its intrinsic value is estimated at **$19.99 - $29.99/month** per subscriber.
+- **Platform Potential:** If scaled as a community-driven "Philosophy Social Network," the valuation increases significantly due to user-generated wisdom collections and social fitness accountability.
+
+---
+
+## Target Personas
 - **Inner Strength:** Stressed professionals seeking calm and functional strength.
 - **Flow & Fire:** Busy users wanting short, high-impact cinematic sessions.
 - **Philosophy Fitness:** Users who want to live and train according to a philosophical system (Stoicism, Zen, etc.).
