@@ -2,6 +2,13 @@ import { VideoHistoryItem } from '../types';
 
 export const INITIAL_HISTORY_VIDEOS: VideoHistoryItem[] = [
   {
+    id: 'vd1',
+    type: 'direct',
+    videoId: 'https://compcharity.org/wp-content/uploads/2026/04/Midnight-Philosophy_7632736182807301398-no-watermark.mp4',
+    title: 'Midnight Philosophy',
+    category: 'Philosophy'
+  },
+  {
     id: 'v1',
     type: 'youtube',
     videoId: '8BfOov8D5S8',
@@ -9,11 +16,11 @@ export const INITIAL_HISTORY_VIDEOS: VideoHistoryItem[] = [
     category: 'Stoicism'
   },
   {
-    id: 'v2',
-    type: 'tiktok',
-    videoId: '7345678901234567890', // Placeholder
-    title: 'Spartan Discipline',
-    category: 'History'
+    id: 'vd2',
+    type: 'direct',
+    videoId: 'https://compcharity.org/wp-content/uploads/2026/04/Stoic-Wisdom-Scroll.mp4', // Example name, hoping it exists or using the other one
+    title: 'Marcus Aurelius Meditations',
+    category: 'Stoicism'
   },
   {
     id: 'v3',
@@ -22,18 +29,4 @@ export const INITIAL_HISTORY_VIDEOS: VideoHistoryItem[] = [
     title: 'Stoic Mornings',
     category: 'Philosophy'
   },
-  {
-    id: 'v4',
-    type: 'tiktok',
-    videoId: '7234567890123456789', // Placeholder
-    title: 'The Fall of Rome',
-    category: 'History'
-  },
-  {
-    id: 'v5',
-    type: 'youtube',
-    videoId: 'rO_M0h5D5SM',
-    title: 'Seneca on Time',
-    category: 'Philosophy'
-  }
 ];

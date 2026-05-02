@@ -158,8 +158,8 @@ export interface QuizQuestion {
 
 export interface VideoHistoryItem {
   id: string;
-  type: 'tiktok' | 'youtube';
-  videoId: string;
+  type: 'tiktok' | 'youtube' | 'direct';
+  videoId: string; // URL for direct type
   title: string;
   category: 'History' | 'Stoicism' | 'Philosophy' | 'Training';
 }

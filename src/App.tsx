@@ -506,6 +506,22 @@ const INITIAL_WEEKLY_PLAN: DayPlan[] = [
 
 const MOCK_WORKOUTS: Workout[] = [
   {
+    id: 'mock-wisdom-1',
+    userId: 'mock-user',
+    date: format(startOfToday(), 'yyyy-MM-dd'),
+    name: 'Wisdom of Schopenhauer',
+    content: 'https://compcharity.org/wp-content/uploads/2026/04/Midnight-Philosophy_7632736182807301398-no-watermark.mp4',
+    exercises: []
+  },
+  {
+    id: 'mock-wisdom-2',
+    userId: 'mock-user',
+    date: format(subDays(startOfToday(), 2), 'yyyy-MM-dd'),
+    name: 'Stoic Morning Routine',
+    content: 'https://www.youtube.com/watch?v=u6S7u0W0Wks',
+    exercises: []
+  },
+  {
     id: '1',
     userId: 'mock-user',
     date: format(subDays(startOfToday(), 1), 'yyyy-MM-dd'),

@@ -66,10 +66,10 @@ const VideoCard: React.FC<VideoCardProps> = ({ item, isDarkMode, index }) => {
   const getEmbedUrl = () => {
     if (item.type === 'youtube') {
       return `https://www.youtube.com/embed/${item.videoId}?autoplay=1&mute=1&loop=1&playlist=${item.videoId}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1`;
-    } else {
-      // TikTok Embed URL
+    } else if (item.type === 'tiktok') {
       return `https://www.tiktok.com/embed/v2/${item.videoId}?autoplay=1&loop=1&music_info=0&description=0&rel=0&native_controls=0`;
     }
+    return '';
   };
 
   return (
@@ -96,23 +96,35 @@ const VideoCard: React.FC<VideoCardProps> = ({ item, isDarkMode, index }) => {
           {item.title}
         </h3>
         <p className="text-white/60 text-xs font-medium uppercase tracking-widest">
-          {item.type === 'youtube' ? 'YouTube Archive' : 'TikTok Scroll'}
+          {item.type === 'youtube' ? 'YouTube Archive' : item.type === 'tiktok' ? 'TikTok Scroll' : 'Direct Archive'}
         </p>
       </div>
 
-      {/* Video Iframe */}
+      {/* Video Content */}
       {hasStarted && (
         <div className={cn(
           "w-full h-full transition-opacity duration-700",
           isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
         )}>
-          <iframe
-            className="w-full h-full scale-[1.02]"
-            src={isVisible ? getEmbedUrl() : ''}
-            allow="autoplay; encrypted-media"
-            title={item.title}
-            loading="lazy"
-          />
+          {item.type === 'direct' ? (
+            <video
+              src={item.videoId}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+            />
+          ) : (
+            <iframe
+              className="w-full h-full scale-[1.02]"
+              src={isVisible ? getEmbedUrl() : ''}
+              allow="autoplay; encrypted-media"
+              title={item.title}
+              loading="lazy"
+            />
+          )}
         </div>
       )}
 
