@@ -798,6 +798,10 @@ function AppContent() {
         setUserProfile(newProfile);
         const userRef = doc(db, 'users', user.uid);
         await updateDoc(userRef, { integrations: newProfile.integrations });
+        
+        // Trigger immediate sync
+        await syncHealthData(tokens.access_token);
+        
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 2000);
       }
@@ -806,6 +810,67 @@ function AppContent() {
     window.addEventListener('message', handleOAuthMessage);
     return () => window.removeEventListener('message', handleOAuthMessage);
   }, [user, userProfile]);
+
+  // Sync Health Data on Load
+  useEffect(() => {
+    const googleFit = userProfile.integrations?.googleFit;
+    if (googleFit?.connected && googleFit?.accessToken) {
+      // Check if token is expired (simple check)
+      const now = Date.now();
+      if (googleFit.expiresAt && now < googleFit.expiresAt) {
+        syncHealthData(googleFit.accessToken);
+      }
+    }
+  }, [userProfile.integrations?.googleFit?.connected]);
+
+  const syncHealthData = async (accessToken: string) => {
+    try {
+      const response = await fetch('/api/health/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken,
+          types: ['steps', 'weight', 'calories']
+        })
+      });
+      
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      // Update local metrics with synced data
+      const updatedProfile = {
+        ...userProfile,
+        metrics: {
+          ...userProfile.metrics,
+          steps: { ...userProfile.metrics.steps, current: data.steps || userProfile.metrics.steps.current },
+          calories: { ...userProfile.metrics.calories, current: data.calories || userProfile.metrics.calories.current },
+          weight: { ...userProfile.metrics.weight, current: data.weight || userProfile.metrics.weight.current }
+        },
+        integrations: {
+          ...userProfile.integrations,
+          googleFit: {
+            ...userProfile.integrations?.googleFit,
+            connected: true,
+            lastSync: new Date().toISOString()
+          }
+        }
+      };
+      
+      setUserProfile(updatedProfile);
+      
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, { 
+          metrics: updatedProfile.metrics,
+          integrations: updatedProfile.integrations
+        });
+      }
+      
+      setSavedMessage('Health Synced');
+    } catch (e) {
+      console.error('Health sync error:', e);
+    }
+  };
 
   const connectGoogleFit = async () => {
     setIsConnectingHealth('google-health');

@@ -18,92 +18,7 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
-  // --- FITBIT OAUTH ---
-  
-  app.get("/api/auth/fitbit/url", (req, res) => {
-    const clientId = process.env.VITE_FITBIT_CLIENT_ID;
-    if (!clientId) {
-      return res.status(500).json({ error: "Fitbit Client ID not configured" });
-    }
-    
-    // Using window.location.origin on the client side is better for the redirect_uri
-    // But since this is the server, we might need to know the APP_URL
-    const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
-    const redirectUri = `${appUrl}/auth/fitbit/callback`;
-    
-    const params = new URLSearchParams({
-      client_id: clientId,
-      response_type: "code",
-      scope: "activity profile weight heartrate",
-      redirect_uri: redirectUri,
-    });
-    
-    const authUrl = `https://www.fitbit.com/oauth2/authorize?${params.toString()}`;
-    res.json({ url: authUrl });
-  });
-
-  app.get(["/auth/fitbit/callback", "/auth/fitbit/callback/"], async (req, res) => {
-    const { code } = req.query;
-    if (!code) return res.status(400).send("Missing code");
-
-    const clientId = process.env.VITE_FITBIT_CLIENT_ID;
-    const clientSecret = process.env.FITBIT_CLIENT_SECRET;
-    const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
-    const redirectUri = `${appUrl}/auth/fitbit/callback`;
-
-    try {
-      // Fitbit requires Basic Auth header with base64 encoded client_id:client_secret
-      const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-      
-      const response = await axios.post(
-        "https://api.fitbit.com/oauth2/token",
-        new URLSearchParams({
-          client_id: clientId!,
-          grant_type: "authorization_code",
-          redirect_uri: redirectUri,
-          code: code as string,
-        }),
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            Authorization: `Basic ${authHeader}`,
-          },
-        }
-      );
-
-      const tokens = response.data;
-      // In a real production app, we would store these securely in Firestore or a session.
-      // For this demo/integration, we'll send it back to the window or set a cookie.
-      // We'll use postMessage to send the tokens back to the main app so it can store them in Firestore.
-
-      res.send(`
-        <html>
-          <body style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #09090b; color: white; text-align: center;">
-            <div>
-              <h2 style="color: #10b981;">Fitbit Connected!</h2>
-              <p>Synchronizing your discipline...</p>
-              <script>
-                if (window.opener) {
-                  window.opener.postMessage({ 
-                    type: 'FITBIT_AUTH_SUCCESS',
-                    tokens: ${JSON.stringify(tokens)}
-                  }, '*');
-                  window.close();
-                } else {
-                  window.location.href = '/';
-                }
-              </script>
-            </div>
-          </body>
-        </html>
-      `);
-    } catch (error: any) {
-      console.error("Fitbit token exchange error:", error.response?.data || error.message);
-      res.status(500).send("Authentication failed. Check your credentials.");
-    }
-  });
-
-  // --- GOOGLE HEALTH / PIXEL WATCH OAUTH ---
+  // --- GOOGLE HEALTH / PIXEL WATCH INTEGRATION ---
 
   app.get("/api/auth/google/url", (req, res) => {
     const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
@@ -112,7 +27,7 @@ async function startServer() {
     const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
     const redirectUri = `${appUrl}/api/auth/callback/google`;
     
-    // Scopes requested by user
+    // Scopes for Pixel Watch 3 & Fitbit (Unified May 2026)
     const scopes = [
       "https://www.googleapis.com/auth/fitness.activity.read",
       "https://www.googleapis.com/auth/fitness.body.read",
@@ -178,6 +93,66 @@ async function startServer() {
     } catch (error: any) {
       console.error("Google token exchange error:", error.response?.data || error.message);
       res.status(500).send("Authentication failed. Check your client secret and redirect URI settings.");
+    }
+  });
+
+  app.post("/api/health/sync", async (req, res) => {
+    const { accessToken, types } = req.body;
+    if (!accessToken) return res.status(401).json({ error: "No access token" });
+
+    try {
+      const results: any = {};
+      const now = Date.now();
+      const startTimeMillis = new Date().setHours(0, 0, 0, 0); // Start of today
+
+      // Fetch Steps (Estimated from Pixel Watch/Phone)
+      if (types.includes('steps')) {
+        const stepsResponse = await axios.post(
+          "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+          {
+            aggregateBy: [{ dataSourceId: "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps" }],
+            bucketByTime: { durationMillis: 86400000 },
+            startTimeMillis,
+            endTimeMillis: now,
+          },
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const point = stepsResponse.data.bucket[0]?.dataset[0]?.point[0];
+        results.steps = point ? point.value[0].intVal : 0;
+      }
+
+      // Fetch Calories
+      if (types.includes('calories')) {
+        const caloriesResponse = await axios.post(
+          "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+          {
+            aggregateBy: [{ dataSourceId: "derived:com.google.calories.expended:com.google.android.gms:merge_calories_expended" }],
+            bucketByTime: { durationMillis: 86400000 },
+            startTimeMillis,
+            endTimeMillis: now,
+          },
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const point = caloriesResponse.data.bucket[0]?.dataset[0]?.point[0];
+        results.calories = point ? Math.round(point.value[0].fpVal) : 0;
+      }
+
+      // Fetch Weight (Focusing on your 89.0kg data stream)
+      if (types.includes('weight')) {
+        const weightResponse = await axios.get(
+          "https://www.googleapis.com/fitness/v1/users/me/dataSources/derived:com.google.weight:com.google.android.gms:merge_weight/datasets/0-" + (now * 1000000),
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const points = weightResponse.data.point;
+        if (points && points.length > 0) {
+          results.weight = points[points.length - 1].value[0].fpVal;
+        }
+      }
+
+      res.json(results);
+    } catch (error: any) {
+      console.error("Health sync error:", error.response?.data || error.message);
+      res.status(500).json({ error: "Failed to sync health data from Google Cloud" });
     }
   });
 
