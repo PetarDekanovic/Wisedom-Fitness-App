@@ -37,11 +37,11 @@ export async function generateStoicReflection(data: HealthReflectionInput): Prom
   `;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent({
+    const response = await genAI.models.generateContent({
+      model: "gemini-3-flash-preview",
       contents: [{ role: "user", parts: [{ text: prompt }] }]
     });
-    return result.response.text();
+    return response.text || "Nature does not hurry, yet everything is accomplished...";
   } catch (error) {
     console.error("Gemini Error:", error);
     return "Nature does not hurry, yet everything is accomplished... and so it is with our connection to the AI. Please try again later.";

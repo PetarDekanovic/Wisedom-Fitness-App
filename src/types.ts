@@ -92,6 +92,7 @@ export interface UserProfile {
     distance: number;
   }[];
   personalRecords?: {
+    id: string;
     label: string;
     date: string;
     value: string;

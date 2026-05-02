@@ -2964,115 +2964,42 @@ function AppContent() {
               transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
               className="space-y-6"
             >
-              {/* Biological Trends & Records Teaser */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {userProfile.integrations?.googleFit?.connected && userProfile.weeklyHealthData && userProfile.weeklyHealthData.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className={cn(
-                      "p-5 rounded-3xl border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
-                      isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
-                    )}
-                    onClick={() => setActiveView('profile')}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-emerald-500" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">7-Day Trend</span>
-                      </div>
-                      <ChevronRight className="w-3 h-3 text-emerald-500" />
+              {/* 1. 7-Day Biological Trend */}
+              {userProfile.integrations?.googleFit?.connected && userProfile.weeklyHealthData && userProfile.weeklyHealthData.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={cn(
+                    "p-5 rounded-3xl border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
+                    isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                  )}
+                  onClick={() => setActiveView('profile')}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">7-Day Biological Trend</span>
                     </div>
-                    <div className="flex items-end gap-1 h-8 px-1">
-                      {userProfile.weeklyHealthData.map((d, i) => (
-                        <div 
-                          key={i} 
-                          className="flex-1 rounded-sm bg-emerald-500/20 group-hover:bg-emerald-500/40 transition-all"
-                          style={{ height: `${Math.max(10, (d.steps / 15000) * 100)}%` }}
-                        />
-                      ))}
-                    </div>
-                    <div className="mt-3 flex justify-between items-center">
-                      <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Avg Daily Steps</p>
-                      <p className="text-sm font-black italic text-emerald-500">
-                        {Math.round(userProfile.weeklyHealthData.reduce((acc, curr) => acc + curr.steps, 0) / userProfile.weeklyHealthData.length).toLocaleString()}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
+                    <ChevronRight className="w-3 h-3 text-emerald-500" />
+                  </div>
+                  <div className="flex items-end gap-1 h-8 px-1">
+                    {userProfile.weeklyHealthData.map((d, i) => (
+                      <div 
+                        key={i} 
+                        className="flex-1 rounded-sm bg-emerald-500/20 group-hover:bg-emerald-500/40 transition-all"
+                        style={{ height: `${Math.max(10, (d.steps / 15000) * 100)}%` }}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-3 flex justify-between items-center bg-zinc-500/5 rounded-xl px-2 py-1">
+                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Avg Daily Steps</p>
+                    <p className="text-sm font-black italic text-emerald-500">
+                      {Math.round(userProfile.weeklyHealthData.reduce((acc, curr) => acc + curr.steps, 0) / userProfile.weeklyHealthData.length).toLocaleString()}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
 
-                {userProfile.personalRecords && userProfile.personalRecords.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className={cn(
-                      "p-5 rounded-3xl border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
-                      isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
-                    )}
-                    onClick={() => setActiveView('profile')}
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="w-4 h-4 text-orange-500" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Best Performance</span>
-                      </div>
-                      <ChevronRight className="w-3 h-3 text-orange-500" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold leading-none">{userProfile.personalRecords[0].label}</p>
-                      <p className="text-xl font-black italic text-orange-500">{userProfile.personalRecords[0].value}</p>
-                    </div>
-                    <div className="mt-2 flex justify-between items-center bg-zinc-500/5 rounded-lg px-2 py-1">
-                      <p className="text-[8px] font-black text-zinc-500 uppercase tracking-tighter">Last Personal Record</p>
-                      <p className="text-[9px] font-bold text-zinc-400">{userProfile.personalRecords[0].date}</p>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <StatCard 
-                  index={0}
-                  isDarkMode={isDarkMode}
-                  icon={<Footprints className="w-5 h-5 text-blue-400" />}
-                  label="Steps"
-                  value={(userProfile.currentSteps || 0).toLocaleString()}
-                  goal={userProfile.stepGoal.toLocaleString()}
-                  progress={(userProfile.currentSteps || 0) / userProfile.stepGoal}
-                  color="bg-blue-500"
-                />
-                <StatCard 
-                  index={1}
-                  isDarkMode={isDarkMode}
-                  icon={<Flame className="w-5 h-5 text-orange-400" />}
-                  label="Calories"
-                  value={(userProfile.currentCalories || 0).toLocaleString()}
-                  goal="2,500"
-                  progress={(userProfile.currentCalories || 0) / 2500}
-                  color="bg-orange-500"
-                />
-                <StatCard 
-                  index={2}
-                  isDarkMode={isDarkMode}
-                  icon={<Clock className="w-5 h-5 text-emerald-400" />}
-                  label="Active"
-                  value={`${todayStats.activeMinutes}m`}
-                  goal="60m"
-                  progress={todayStats.activeMinutes / 60}
-                  color="bg-emerald-500"
-                />
-                <StatCard 
-                  index={3}
-                  isDarkMode={isDarkMode}
-                  icon={<Activity className="w-5 h-5 text-purple-400" />}
-                  label="Weight"
-                  value={`${(userProfile.currentWeight || 89).toFixed(1)}kg`}
-                  goal={`${userProfile.targetWeight}kg`}
-                  progress={userProfile.targetWeight / (userProfile.currentWeight || 89)}
-                  color="bg-purple-500"
-                />
-              </div>
 
               {/* Sync Status Badge (Visible if connected) */}
               {userProfile.integrations?.googleFit?.connected && (
@@ -3670,6 +3597,90 @@ function AppContent() {
                   </ResponsiveContainer>
                 </div>
               </motion.div>
+
+              {/* 2. Biometric Overview Grid (Moved below Weekly Activity) */}
+              <div className="grid grid-cols-2 gap-4">
+                <StatCard 
+                  index={0}
+                  isDarkMode={isDarkMode}
+                  icon={<Footprints className="w-5 h-5 text-blue-400" />}
+                  label="Steps"
+                  value={(userProfile.currentSteps || 0).toLocaleString()}
+                  goal={userProfile.stepGoal.toLocaleString()}
+                  progress={(userProfile.currentSteps || 0) / userProfile.stepGoal}
+                  color="bg-blue-500"
+                />
+                <StatCard 
+                  index={1}
+                  isDarkMode={isDarkMode}
+                  icon={<Flame className="w-5 h-5 text-orange-400" />}
+                  label="Calories"
+                  value={(userProfile.currentCalories || 0).toLocaleString()}
+                  goal="2,500"
+                  progress={(userProfile.currentCalories || 0) / 2500}
+                  color="bg-orange-500"
+                />
+                <StatCard 
+                  index={2}
+                  isDarkMode={isDarkMode}
+                  icon={<Clock className="w-5 h-5 text-emerald-400" />}
+                  label="Active"
+                  value={`${todayStats.activeMinutes}m`}
+                  goal="60m"
+                  progress={todayStats.activeMinutes / 60}
+                  color="bg-emerald-500"
+                />
+                <StatCard 
+                  index={3}
+                  isDarkMode={isDarkMode}
+                  icon={<Activity className="w-5 h-5 text-purple-400" />}
+                  label="Weight"
+                  value={`${(userProfile.currentWeight || 89).toFixed(1)}kg`}
+                  goal={`${userProfile.targetWeight}kg`}
+                  progress={userProfile.targetWeight / (userProfile.currentWeight || 89)}
+                  color="bg-purple-500"
+                />
+              </div>
+
+              {/* 3. Biological Achievement (Moved below Weekly Activity) */}
+              {userProfile.personalRecords && userProfile.personalRecords.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className={cn(
+                    "p-6 rounded-[2.5rem] border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
+                    isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                  )}
+                  onClick={() => setActiveView('profile')}
+                >
+                  <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity blur-3xl -z-10" />
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center">
+                        <Trophy className="w-4 h-4 text-orange-500" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 italic">Best Performance</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] font-bold text-orange-500/60 group-hover:text-orange-500 transition-colors uppercase tracking-widest italic">Go to Profile</span>
+                      <ChevronRight className="w-3 h-3 text-orange-500" />
+                    </div>
+                  </div>
+                  <div className="flex items-end justify-between">
+                    <div className="space-y-1">
+                      <p className={cn("text-xs font-bold", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>{userProfile.personalRecords[0].label}</p>
+                      <p className="text-3xl font-black italic text-orange-500 tracking-tighter">
+                        {userProfile.personalRecords[0].value}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest mb-1">Authenticated On</p>
+                      <p className={cn("text-[10px] font-bold", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>{userProfile.personalRecords[0].date}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Today's Plan Preview */}
               <div className="space-y-4">
