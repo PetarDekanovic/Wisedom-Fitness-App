@@ -103,20 +103,29 @@ async function startServer() {
     }
   });
 
-  // --- GOOGLE FIT OAUTH (Optional, for completeness) ---
+  // --- GOOGLE HEALTH / PIXEL WATCH OAUTH ---
 
-  app.get("/api/auth/google-fit/url", (req, res) => {
-    const clientId = process.env.VITE_GOOGLE_HEALTH_CLIENT_ID;
+  app.get("/api/auth/google/url", (req, res) => {
+    const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) return res.status(500).json({ error: "Google Client ID not configured" });
     
     const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
-    const redirectUri = `${appUrl}/auth/google/callback`;
+    const redirectUri = `${appUrl}/api/auth/callback/google`;
+    
+    // Scopes requested by user
+    const scopes = [
+      "https://www.googleapis.com/auth/fitness.activity.read",
+      "https://www.googleapis.com/auth/fitness.body.read",
+      "https://www.googleapis.com/auth/fitness.calories.read",
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "openid"
+    ];
     
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: "code",
-      scope: "https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.body.read",
+      scope: scopes.join(" "),
       access_type: "offline",
       prompt: "consent"
     });
@@ -125,14 +134,14 @@ async function startServer() {
     res.json({ url: authUrl });
   });
 
-  app.get(["/auth/google/callback", "/auth/google/callback/"], async (req, res) => {
+  app.get(["/api/auth/callback/google", "/api/auth/callback/google/"], async (req, res) => {
     const { code } = req.query;
     if (!code) return res.status(400).send("Missing code");
 
-    const clientId = process.env.VITE_GOOGLE_HEALTH_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_HEALTH_CLIENT_SECRET;
+    const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
-    const redirectUri = `${appUrl}/auth/google/callback`;
+    const redirectUri = `${appUrl}/api/auth/callback/google`;
 
     try {
       const response = await axios.post("https://oauth2.googleapis.com/token", {
@@ -148,13 +157,13 @@ async function startServer() {
       res.send(`
         <html>
           <body style="font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #09090b; color: white; text-align: center;">
-            <div>
-              <h2 style="color: #10b981;">Google Fit Connected!</h2>
-              <p>Syncing your Stoic progress...</p>
+            <div style="max-width: 400px; padding: 2rem; border-radius: 2rem; background: #18181b; border: 1px solid #27272a;">
+              <h2 style="color: #10b981; margin-bottom: 1rem;">Pixel Watch Connected!</h2>
+              <p style="color: #a1a1aa; margin-bottom: 2rem;">Your health data is now syncing with WiseFit.</p>
               <script>
                 if (window.opener) {
                   window.opener.postMessage({ 
-                    type: 'GOOGLE_FIT_AUTH_SUCCESS',
+                    type: 'GOOGLE_HEALTH_AUTH_SUCCESS',
                     tokens: ${JSON.stringify(tokens)}
                   }, '*');
                   window.close();
@@ -167,8 +176,8 @@ async function startServer() {
         </html>
       `);
     } catch (error: any) {
-      console.error("Google Fit token exchange error:", error.response?.data || error.message);
-      res.status(500).send("Authentication failed.");
+      console.error("Google token exchange error:", error.response?.data || error.message);
+      res.status(500).send("Authentication failed. Check your client secret and redirect URI settings.");
     }
   });
 

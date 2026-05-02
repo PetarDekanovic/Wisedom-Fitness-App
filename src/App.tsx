@@ -781,7 +781,7 @@ function AppContent() {
         setTimeout(() => setIsSaved(false), 2000);
       }
 
-      if (event.data?.type === 'GOOGLE_FIT_AUTH_SUCCESS' && user) {
+      if ((event.data?.type === 'GOOGLE_FIT_AUTH_SUCCESS' || event.data?.type === 'GOOGLE_HEALTH_AUTH_SUCCESS') && user) {
         const tokens = event.data.tokens;
         const newProfile = {
           ...userProfile,
@@ -807,27 +807,14 @@ function AppContent() {
     return () => window.removeEventListener('message', handleOAuthMessage);
   }, [user, userProfile]);
 
-  const connectFitbit = async () => {
-    setIsConnectingHealth('fitbit');
-    try {
-      const response = await fetch('/api/auth/fitbit/url');
-      const { url } = await response.json();
-      window.open(url, 'fitbit_oauth', 'width=600,height=700');
-    } catch (e) {
-      console.error('Fitbit connect error:', e);
-    } finally {
-      setIsConnectingHealth(null);
-    }
-  };
-
   const connectGoogleFit = async () => {
-    setIsConnectingHealth('google-fit');
+    setIsConnectingHealth('google-health');
     try {
-      const response = await fetch('/api/auth/google-fit/url');
+      const response = await fetch('/api/auth/google/url');
       const { url } = await response.json();
-      window.open(url, 'google_fit_oauth', 'width=600,height=700');
+      window.open(url, 'google_health_oauth', 'width=600,height=700');
     } catch (e) {
-      console.error('Google Fit connect error:', e);
+      console.error('Google Health connect error:', e);
     } finally {
       setIsConnectingHealth(null);
     }
@@ -3912,62 +3899,32 @@ function AppContent() {
                 )}>Device Ecosystem</h3>
                 
                 <div className="grid gap-3">
-                  {/* Fitbit Integration (Pixel Watch + Scale) */}
+                  {/* Google Health Integration (Pixel Watch 3 + Fitbit) */}
                   <div className={cn(
                     "p-5 rounded-3xl border transition-all flex items-center justify-between overflow-hidden relative",
                     isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
                   )}>
                     <div className="flex items-center gap-4 relative z-10">
-                      <div className="w-12 h-12 bg-teal-500/10 rounded-2xl flex items-center justify-center">
-                        <Watch className="w-6 h-6 text-teal-500" />
+                      <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
+                        <Activity className="w-6 h-6 text-emerald-500" />
                       </div>
                       <div>
-                        <h4 className="font-bold">Fitbit Ecosystem</h4>
-                        <p className="text-xs text-zinc-500 font-medium tracking-tight">Pixel Watch & Smart Scale</p>
+                        <h4 className="font-bold">Google Health</h4>
+                        <p className="text-xs text-zinc-500 font-medium tracking-tight">Sync Pixel Watch 3 & Health data</p>
                       </div>
                     </div>
-                    {userProfile.integrations?.fitbit?.connected ? (
+                    {userProfile.integrations?.googleFit?.connected ? (
                       <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 relative z-10">
                         <ShieldCheck className="w-4 h-4 text-emerald-500" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Linked</span>
                       </div>
                     ) : (
                       <button 
-                        onClick={connectFitbit}
+                        onClick={connectGoogleFit}
                         disabled={!!isConnectingHealth}
                         className="text-xs font-black uppercase tracking-widest text-emerald-500 px-4 py-2 bg-emerald-500/10 rounded-xl hover:bg-emerald-500/20 transition-all border border-emerald-500/20 relative z-10"
                       >
-                        {isConnectingHealth === 'fitbit' ? 'Linking...' : 'Connect'}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Google Fit Integration */}
-                  <div className={cn(
-                    "p-5 rounded-3xl border transition-all flex items-center justify-between overflow-hidden relative",
-                    isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
-                  )}>
-                    <div className="flex items-center gap-4 relative z-10">
-                      <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center">
-                        <Activity className="w-6 h-6 text-blue-500" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold">Google Health</h4>
-                        <p className="text-xs text-zinc-500 font-medium tracking-tight">Core Activity Metrics</p>
-                      </div>
-                    </div>
-                    {userProfile.integrations?.googleFit?.connected ? (
-                      <div className="flex items-center gap-2 bg-blue-500/10 px-3 py-1.5 rounded-xl border border-blue-500/20 relative z-10">
-                        <ShieldCheck className="w-4 h-4 text-blue-500" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Linked</span>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={connectGoogleFit}
-                        disabled={!!isConnectingHealth}
-                        className="text-xs font-black uppercase tracking-widest text-blue-500 px-4 py-2 bg-blue-500/10 rounded-xl hover:bg-blue-500/20 transition-all border border-blue-500/20 relative z-10"
-                      >
-                        {isConnectingHealth === 'google-fit' ? 'Linking...' : 'Connect'}
+                        {isConnectingHealth === 'google-health' ? 'Linking...' : 'Connect'}
                       </button>
                     )}
                   </div>
