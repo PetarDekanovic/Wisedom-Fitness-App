@@ -201,10 +201,11 @@ const INITIAL_PROFILE: UserProfile = {
   dailyExercises: [],
   dailyExerciseHistory: [],
   personalRecords: [
-    { id: '1', label: 'Fastest 5K', date: '2026-02-18', value: '24 min 12 sec', category: 'speed' },
-    { id: '2', label: 'Fastest 10K', date: '2026-03-26', value: '52 min 45 sec', category: 'speed' },
-    { id: '3', label: 'Farthest run', date: '2026-04-30', value: '14.2 km', category: 'distance' },
-    { id: '4', label: 'Highest Calorie Burn', date: '2026-04-15', value: '842 kcal', category: 'burn' }
+    { id: '1', label: 'Fastest kilometre', date: 'Sun 8 Feb', value: '4 min 38 sec', category: 'speed' },
+    { id: '2', label: 'Fastest 5K', date: '18 Oct 2025', value: '26 min 9 sec', category: 'speed' },
+    { id: '3', label: 'Fastest 10K', date: '26 Jul 2025', value: '56 min 43 sec', category: 'speed' },
+    { id: '4', label: 'Fastest half marathon', date: '31 Aug 2025', value: '2 h 11 m', category: 'speed' },
+    { id: '5', label: 'Farthest run', date: '31 Aug 2025', value: '41.24 km', category: 'distance' }
   ]
 };
 
