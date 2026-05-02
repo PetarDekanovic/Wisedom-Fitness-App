@@ -685,36 +685,63 @@ function PersonalRecords({ records, isDarkMode }: { records: any[], isDarkMode: 
   if (!records || records.length === 0) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {records.map((record, i) => (
         <motion.div
           key={i}
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.05 }}
           className={cn(
-            "p-4 rounded-[2rem] border flex items-center justify-between transition-all group",
-            isDarkMode ? "bg-zinc-950/40 border-zinc-900/50 hover:border-emerald-500/30" : "bg-white border-zinc-100 shadow-sm hover:border-emerald-200"
+            "p-5 rounded-[2.5rem] border flex items-center justify-between transition-all group relative overflow-hidden",
+            isDarkMode ? "bg-zinc-900/60 border-zinc-800/50 hover:border-emerald-500/40" : "bg-white border-zinc-100 shadow-sm hover:border-emerald-200"
           )}
         >
-          <div className="flex items-center gap-4">
+          {/* Subtle Glow Effect on Hover */}
+          <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl -z-10" />
+          
+          <div className="flex items-center gap-5">
             <div className={cn(
-              "w-12 h-12 rounded-full flex items-center justify-center relative overflow-hidden",
-              record.category === 'speed' ? "bg-emerald-500/10 text-emerald-500" : 
-              record.category === 'distance' ? "bg-blue-500/10 text-blue-500" : "bg-zinc-500/10 text-zinc-500"
+              "w-14 h-14 rounded-full flex items-center justify-center relative flex-shrink-0 animate-in fade-in zoom-in duration-500",
+              record.category === 'speed' ? "bg-emerald-400/20 text-emerald-400" : 
+              record.category === 'distance' ? "bg-blue-400/20 text-blue-400" : "bg-zinc-800 text-zinc-400"
             )}>
-              <div className="absolute inset-0 bg-current opacity-5 rounded-full blur-xl animate-pulse" />
-              {record.category === 'speed' ? <Timer className="w-5 h-5 relative z-10" /> : 
-               record.category === 'distance' ? <MapPin className="w-5 h-5 relative z-10" /> : <Flame className="w-5 h-5 relative z-10" />}
+              {/* Outer Ring Decoration */}
+              <div className="absolute inset-0 border-2 border-current opacity-20 rounded-full scale-90" />
+              
+              {record.category === 'speed' ? (
+                <div className="relative">
+                  <Timer className="w-6 h-6 stroke-[2.5]" />
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                </div>
+              ) : record.category === 'distance' ? (
+                <MapPin className="w-6 h-6 stroke-[2.5]" />
+              ) : (
+                <Flame className="w-6 h-6 stroke-[2.5]" />
+              )}
             </div>
-            <div>
-              <h4 className={cn("text-sm font-bold tracking-tight mb-0.5", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>{record.label}</h4>
-              <p className="text-[10px] font-medium text-zinc-500">
-                {record.date} • <span className="text-emerald-500/80 font-bold italic">{record.value}</span>
-              </p>
+            
+            <div className="space-y-1">
+              <h4 className={cn(
+                "text-sm font-bold tracking-tight transition-colors",
+                isDarkMode ? "text-zinc-100 group-hover:text-white" : "text-zinc-900"
+              )}>
+                {record.label}
+              </h4>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{record.date}</span>
+                <span className="text-zinc-700">•</span>
+                <span className={cn(
+                  "text-[11px] font-black italic tracking-tight",
+                  record.category === 'speed' ? "text-emerald-400" : "text-blue-400"
+                )}>
+                  {record.value}
+                </span>
+              </div>
             </div>
           </div>
-          <button className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors text-zinc-600 opacity-0 group-hover:opacity-100">
+          
+          <button className="p-2.5 hover:bg-zinc-500/10 rounded-full transition-all text-zinc-600 active:scale-90 flex-shrink-0">
             <MoreVertical className="w-4 h-4" />
           </button>
         </motion.div>
