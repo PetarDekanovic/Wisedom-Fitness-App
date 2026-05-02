@@ -672,105 +672,165 @@ const VideoEmbed = ({ type, videoId, isDarkMode }: { type: 'youtube' | 'tiktok' 
   );
 };
 
-function BiometricDashboard({ data, isDarkMode }: { data: any[], isDarkMode: boolean }) {
-  if (!data || data.length === 0) return null;
+function BiometricDashboard({ data, isDarkMode, onSync }: { data: any[], isDarkMode: boolean, onSync?: () => void }) {
+  const hasData = data && data.length > 0;
 
   return (
     <div className="space-y-6">
-      <div className={cn(
-        "backdrop-blur-md border rounded-3xl p-6 transition-colors duration-500",
-        isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
-      )}>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Flame className="w-4 h-4 text-orange-500" />
-            <h3 className={cn(
-              "text-[10px] uppercase font-black tracking-widest transition-colors",
-              isDarkMode ? "text-zinc-400" : "text-zinc-500"
-            )}>Weekly Calorie Burn</h3>
+      {!hasData ? (
+        <div className={cn(
+          "backdrop-blur-md border rounded-3xl p-8 transition-colors duration-500 text-center space-y-4",
+          isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
+        )}>
+          <div className="w-16 h-16 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto opacity-50">
+            <RefreshCw className="w-8 h-8 text-zinc-500" />
           </div>
-          <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-            <span className="text-[8px] font-black uppercase text-emerald-500 tracking-tighter">Verified Sync</span>
+          <div className="space-y-2">
+            <h4 className="font-bold">No Biometric Data Found</h4>
+            <p className="text-xs text-zinc-500 leading-relaxed px-4">
+              We couldn't find any activity data for the last 7 days. Sync your Google Watch/Fitbit to populate this dashboard.
+            </p>
           </div>
+          {onSync && (
+            <button 
+              onClick={onSync}
+              className="px-4 py-2 bg-emerald-500 text-zinc-950 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-all"
+            >
+              Sync Now
+            </button>
+          )}
         </div>
-        <div className="h-48 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
-              <XAxis 
-                dataKey="day" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: isDarkMode ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 700 }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: isDarkMode ? '#18181b' : '#ffffff', 
-                  borderColor: isDarkMode ? '#27272a' : '#e4e4e7',
-                  borderRadius: '12px',
-                  fontSize: '12px'
-                }}
-              />
-              <Bar 
-                dataKey="calories" 
-                fill={isDarkMode ? "#f97316" : "#ea580c"} 
-                radius={[4, 4, 0, 0]} 
-                barSize={20}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <div className={cn(
+              "p-4 rounded-3xl border transition-colors",
+              isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+            )}>
+              <div className="flex items-center gap-2 mb-2">
+                <Flame className="w-3 h-3 text-orange-500" />
+                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Weekly Burn</span>
+              </div>
+              <p className="text-xl font-black italic text-orange-500">
+                {data.reduce((acc, d) => acc + d.calories, 0).toLocaleString()}
+                <span className="text-[10px] ml-1 uppercase font-bold text-zinc-500 not-italic">kcal</span>
+              </p>
+            </div>
+            <div className={cn(
+              "p-4 rounded-3xl border transition-colors",
+              isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+            )}>
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="w-3 h-3 text-blue-500" />
+                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Distance</span>
+              </div>
+              <p className="text-xl font-black italic text-blue-500">
+                {data.reduce((acc, d) => acc + d.distance, 0).toFixed(1)}
+                <span className="text-[10px] ml-1 uppercase font-bold text-zinc-500 not-italic">km</span>
+              </p>
+            </div>
+          </div>
 
-      <div className={cn(
-        "backdrop-blur-md border rounded-3xl p-6 transition-colors duration-500",
-        isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
-      )}>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-blue-500" />
-            <h3 className={cn(
-              "text-[10px] uppercase font-black tracking-widest transition-colors",
-              isDarkMode ? "text-zinc-400" : "text-zinc-500"
-            )}>Weekly Distance (km)</h3>
+          <div className={cn(
+            "backdrop-blur-md border rounded-3xl p-6 transition-colors duration-500",
+            isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
+          )}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Flame className="w-4 h-4 text-orange-500" />
+                <h3 className={cn(
+                  "text-[10px] uppercase font-black tracking-widest transition-colors",
+                  isDarkMode ? "text-zinc-400" : "text-zinc-500"
+                )}>Weekly Calorie Burn</h3>
+              </div>
+              <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                <span className="text-[8px] font-black uppercase text-emerald-500 tracking-tighter">Verified Sync</span>
+              </div>
+            </div>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data}>
+                  <XAxis 
+                    dataKey="day" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: isDarkMode ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 700 }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: isDarkMode ? '#18181b' : '#ffffff', 
+                      borderColor: isDarkMode ? '#27272a' : '#e4e4e7',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      color: isDarkMode ? '#ffffff' : '#000000'
+                    }}
+                    itemStyle={{ color: isDarkMode ? '#ffffff' : '#000000' }}
+                  />
+                  <Bar 
+                    dataKey="calories" 
+                    fill={isDarkMode ? "#f97316" : "#ea580c"} 
+                    radius={[4, 4, 0, 0]} 
+                    barSize={20}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
-            <span className="text-[8px] font-black uppercase text-blue-500 tracking-tighter">Google Path</span>
+
+          <div className={cn(
+            "backdrop-blur-md border rounded-3xl p-6 transition-colors duration-500",
+            isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white/60 border-zinc-200 shadow-sm"
+          )}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-500" />
+                <h3 className={cn(
+                  "text-[10px] uppercase font-black tracking-widest transition-colors",
+                  isDarkMode ? "text-zinc-400" : "text-zinc-500"
+                )}>Weekly Distance (km)</h3>
+              </div>
+              <div className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                <span className="text-[8px] font-black uppercase text-blue-500 tracking-tighter">Google Path Sync</span>
+              </div>
+            </div>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data}>
+                  <defs>
+                    <linearGradient id="colorDistance" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="day" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: isDarkMode ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 700 }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: isDarkMode ? '#18181b' : '#ffffff', 
+                      borderColor: isDarkMode ? '#27272a' : '#e4e4e7',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      color: isDarkMode ? '#ffffff' : '#000000'
+                    }}
+                    itemStyle={{ color: isDarkMode ? '#ffffff' : '#000000' }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="distance" 
+                    stroke="#3b82f6" 
+                    fillOpacity={1} 
+                    fill="url(#colorDistance)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
-        <div className="h-48 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <defs>
-                <linearGradient id="colorDistance" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <XAxis 
-                dataKey="day" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: isDarkMode ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 700 }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: isDarkMode ? '#18181b' : '#ffffff', 
-                  borderColor: isDarkMode ? '#27272a' : '#e4e4e7',
-                  borderRadius: '12px',
-                  fontSize: '12px'
-                }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="distance" 
-                stroke="#3b82f6" 
-                fillOpacity={1} 
-                fill="url(#colorDistance)" 
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }
@@ -2843,6 +2903,44 @@ function AppContent() {
               className="space-y-6"
             >
               {/* Daily Summary Cards */}
+              {userProfile.integrations?.googleFit?.connected && userProfile.weeklyHealthData && userProfile.weeklyHealthData.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    "p-5 rounded-3xl border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
+                    isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                  )}
+                  onClick={() => setActiveView('profile')}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">7-Day Biological Trend</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-bold text-emerald-500">View Trends</span>
+                      <ChevronRight className="w-3 h-3 text-emerald-500" />
+                    </div>
+                  </div>
+                  <div className="flex items-end gap-1 h-8 px-1">
+                    {userProfile.weeklyHealthData.map((d, i) => (
+                      <div 
+                        key={i} 
+                        className="flex-1 rounded-sm bg-emerald-500/20 group-hover:bg-emerald-500/40 transition-all"
+                        style={{ height: `${Math.max(10, (d.steps / 15000) * 100)}%` }}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-3 flex justify-between items-center">
+                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Avg Daily Steps</p>
+                    <p className="text-sm font-black italic text-emerald-500">
+                      {Math.round(userProfile.weeklyHealthData.reduce((acc, curr) => acc + curr.steps, 0) / userProfile.weeklyHealthData.length).toLocaleString()}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <StatCard 
                   index={0}
@@ -3942,6 +4040,24 @@ function AppContent() {
 
               <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
 
+              {/* Biometric Intelligence Dashboard */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <h3 className={cn(
+                    "text-sm font-bold uppercase tracking-widest transition-colors",
+                    isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                  )}>Biometric Intelligence</h3>
+                  {userProfile.integrations?.googleFit?.connected && (
+                    <span className="text-[9px] font-black uppercase text-emerald-500 tracking-tighter bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">LIVE PULSE Active</span>
+                  )}
+                </div>
+                <BiometricDashboard 
+                  data={userProfile.weeklyHealthData || []} 
+                  isDarkMode={isDarkMode} 
+                  onSync={() => userProfile.integrations?.googleFit?.accessToken && syncHealthData(userProfile.integrations.googleFit.accessToken)}
+                />
+              </div>
+
               {/* Training Stats Section */}
               <div className="space-y-4">
                 <h3 className={cn(
@@ -4041,17 +4157,6 @@ function AppContent() {
                     </ResponsiveContainer>
                   </div>
                 </div>
-
-                {/* Biometric Intelligence Dashboard */}
-                {userProfile.weeklyHealthData && userProfile.weeklyHealthData.length > 0 && (
-                  <div className="space-y-4 pt-4">
-                    <h3 className={cn(
-                      "text-sm font-bold uppercase tracking-widest px-2 transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>Biometric Intelligence</h3>
-                    <BiometricDashboard data={userProfile.weeklyHealthData} isDarkMode={isDarkMode} />
-                  </div>
-                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className={cn(
