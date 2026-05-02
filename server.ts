@@ -199,6 +199,18 @@ async function startServer() {
     }
   });
 
+  app.post("/api/health/records", async (req, res) => {
+    // Mock records that match the professional dashboard requested
+    // In a real app, these would be aggregated from historical data
+    const records = [
+      { id: '1', label: 'Fastest 5K', date: '2026-04-18', value: '24 min 12 sec', category: 'speed' },
+      { id: '2', label: 'Fastest 10K', date: '2026-03-26', value: '52 min 45 sec', category: 'speed' },
+      { id: '3', label: 'Farthest run', date: '2026-04-30', value: '14.2 km', category: 'distance' },
+      { id: '4', label: 'Highest Calorie Burn', date: '2026-04-15', value: '842 kcal', category: 'burn' }
+    ];
+    res.json(records);
+  });
+
   // --- VITE MIDDLEWARE ---
 
   if (process.env.NODE_ENV !== "production") {

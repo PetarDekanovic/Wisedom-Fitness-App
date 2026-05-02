@@ -91,6 +91,12 @@ export interface UserProfile {
     calories: number;
     distance: number;
   }[];
+  personalRecords?: {
+    label: string;
+    date: string;
+    value: string;
+    category: string;
+  }[];
   stepGoal: number;
   shortTermGoal: string;
   longTermGoal: string;
