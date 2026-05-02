@@ -180,7 +180,7 @@ const AVATARS = [
 const INITIAL_PROFILE: UserProfile = {
   name: 'Guest',
   height: 182,
-  currentWeight: 80,
+  currentWeight: 89.0,
   targetWeight: 75,
   currentSteps: 0,
   currentCalories: 0,
@@ -2751,6 +2751,22 @@ function AppContent() {
                   color="bg-purple-500"
                 />
               </div>
+
+              {/* Sync Status Badge (Visible if connected) */}
+              {userProfile.integrations?.googleFit?.connected && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-6 flex items-center justify-center gap-2"
+                >
+                  <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                      Live Sync: Pixel Watch 3
+                    </span>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Stoic Quote of the Day */}
               <motion.div 
