@@ -24,7 +24,7 @@ async function startServer() {
     const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) return res.status(500).json({ error: "Google Client ID not configured" });
     
-    const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+    const appUrl = (process.env.APP_URL || `http://localhost:${PORT}`).replace(/\/$/, "");
     const redirectUri = `${appUrl}/api/auth/callback/google`;
     
     // Scopes for Pixel Watch 3 & Fitbit (Unified May 2026)
@@ -55,7 +55,7 @@ async function startServer() {
 
     const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+    const appUrl = (process.env.APP_URL || `http://localhost:${PORT}`).replace(/\/$/, "");
     const redirectUri = `${appUrl}/api/auth/callback/google`;
 
     try {

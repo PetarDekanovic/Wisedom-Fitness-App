@@ -82,6 +82,8 @@ export interface UserProfile {
   height: number;
   currentWeight: number;
   targetWeight: number;
+  currentSteps?: number;
+  currentCalories?: number;
   stepGoal: number;
   shortTermGoal: string;
   longTermGoal: string;

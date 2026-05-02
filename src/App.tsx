@@ -182,6 +182,8 @@ const INITIAL_PROFILE: UserProfile = {
   height: 182,
   currentWeight: 80,
   targetWeight: 75,
+  currentSteps: 0,
+  currentCalories: 0,
   stepGoal: 10000,
   shortTermGoal: '+60 kg',
   longTermGoal: '+100 kg',
@@ -726,6 +728,7 @@ function AppContent() {
   const [selectedLibraryIds, setSelectedLibraryIds] = useState<Set<string>>(new Set());
   const [isLibrarySelectMode, setIsLibrarySelectMode] = useState(false);
   const [isConnectingHealth, setIsConnectingHealth] = useState<string | null>(null);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try {
@@ -777,6 +780,12 @@ function AppContent() {
         setUserProfile(newProfile);
         const userRef = doc(db, 'users', user.uid);
         await updateDoc(userRef, { integrations: newProfile.integrations });
+        
+        // Trigger immediate sync
+        if (tokens.access_token) {
+          syncHealthData(tokens.access_token);
+        }
+        
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 2000);
       }
@@ -840,12 +849,9 @@ function AppContent() {
       // Update local metrics with synced data
       const updatedProfile = {
         ...userProfile,
-        metrics: {
-          ...userProfile.metrics,
-          steps: { ...userProfile.metrics.steps, current: data.steps || userProfile.metrics.steps.current },
-          calories: { ...userProfile.metrics.calories, current: data.calories || userProfile.metrics.calories.current },
-          weight: { ...userProfile.metrics.weight, current: data.weight || userProfile.metrics.weight.current }
-        },
+        currentSteps: data.steps || userProfile.currentSteps,
+        currentCalories: data.calories || userProfile.currentCalories,
+        currentWeight: data.weight || userProfile.currentWeight,
         integrations: {
           ...userProfile.integrations,
           googleFit: {
@@ -861,12 +867,15 @@ function AppContent() {
       if (user) {
         const userRef = doc(db, 'users', user.uid);
         await updateDoc(userRef, { 
-          metrics: updatedProfile.metrics,
+          currentSteps: updatedProfile.currentSteps,
+          currentCalories: updatedProfile.currentCalories,
+          currentWeight: updatedProfile.currentWeight,
           integrations: updatedProfile.integrations
         });
       }
       
       setSavedMessage('Health Synced');
+      setTimeout(() => setSavedMessage(null), 3000);
     } catch (e) {
       console.error('Health sync error:', e);
     }
@@ -2675,6 +2684,20 @@ function AppContent() {
             </div>
           </motion.div>
         )}
+        <AnimatePresence>
+          {savedMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 bg-emerald-500 text-zinc-950 rounded-full font-bold text-sm shadow-2xl flex items-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {savedMessage}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence mode="wait">
           {activeView === 'dashboard' && (
             <motion.div
@@ -2692,9 +2715,9 @@ function AppContent() {
                   isDarkMode={isDarkMode}
                   icon={<Footprints className="w-5 h-5 text-blue-400" />}
                   label="Steps"
-                  value={todayStats.steps.toLocaleString()}
+                  value={(userProfile.currentSteps || 0).toLocaleString()}
                   goal={userProfile.stepGoal.toLocaleString()}
-                  progress={todayStats.steps / userProfile.stepGoal}
+                  progress={(userProfile.currentSteps || 0) / userProfile.stepGoal}
                   color="bg-blue-500"
                 />
                 <StatCard 
@@ -2702,9 +2725,9 @@ function AppContent() {
                   isDarkMode={isDarkMode}
                   icon={<Flame className="w-5 h-5 text-orange-400" />}
                   label="Calories"
-                  value={todayStats.calories.toLocaleString()}
+                  value={(userProfile.currentCalories || 0).toLocaleString()}
                   goal="2,500"
-                  progress={todayStats.calories / 2500}
+                  progress={(userProfile.currentCalories || 0) / 2500}
                   color="bg-orange-500"
                 />
                 <StatCard 
@@ -2722,9 +2745,9 @@ function AppContent() {
                   isDarkMode={isDarkMode}
                   icon={<Activity className="w-5 h-5 text-purple-400" />}
                   label="Weight"
-                  value={`${userProfile.currentWeight.toFixed(1)}kg`}
+                  value={`${(userProfile.currentWeight || 89).toFixed(1)}kg`}
                   goal={`${userProfile.targetWeight}kg`}
-                  progress={userProfile.targetWeight / userProfile.currentWeight}
+                  progress={userProfile.targetWeight / (userProfile.currentWeight || 89)}
                   color="bg-purple-500"
                 />
               </div>
