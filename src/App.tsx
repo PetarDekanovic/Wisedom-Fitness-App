@@ -685,68 +685,76 @@ const VideoEmbed = ({ type, videoId, isDarkMode }: { type: 'youtube' | 'tiktok' 
 function PersonalRecords({ records, isDarkMode }: { records: any[], isDarkMode: boolean }) {
   if (!records || records.length === 0) return null;
 
+  const getRecordTheme = (label: string) => {
+    const l = label.toLowerCase();
+    if (l.includes('kilometre')) return { color: 'text-amber-400', bg: 'bg-amber-400/15', glow: 'bg-amber-500/10', icon: Timer };
+    if (l.includes('5k')) return { color: 'text-emerald-400', bg: 'bg-emerald-400/15', glow: 'bg-emerald-500/10', icon: Timer };
+    if (l.includes('10k')) return { color: 'text-cyan-400', bg: 'bg-cyan-400/15', glow: 'bg-cyan-500/10', icon: Timer };
+    if (l.includes('marathon')) return { color: 'text-purple-400', bg: 'bg-purple-400/15', glow: 'bg-purple-500/10', icon: Timer };
+    if (l.includes('distance') || l.includes('farthest') || l.includes('run')) return { color: 'text-blue-400', bg: 'bg-blue-400/15', glow: 'bg-blue-500/10', icon: MapPin };
+    return { color: 'text-zinc-400', bg: 'bg-zinc-400/15', glow: 'bg-zinc-500/10', icon: Activity };
+  };
+
   return (
     <div className="space-y-3">
-      {records.map((record, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: i * 0.05 }}
-          className={cn(
-            "p-5 rounded-[2.5rem] border flex items-center justify-between transition-all group relative overflow-hidden",
-            isDarkMode ? "bg-zinc-900/60 border-zinc-800/50 hover:border-emerald-500/40" : "bg-white border-zinc-100 shadow-sm hover:border-emerald-200"
-          )}
-        >
-          {/* Subtle Glow Effect on Hover */}
-          <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity blur-2xl -z-10" />
-          
-          <div className="flex items-center gap-5">
-            <div className={cn(
-              "w-14 h-14 rounded-full flex items-center justify-center relative flex-shrink-0 animate-in fade-in zoom-in duration-500",
-              record.category === 'speed' ? "bg-emerald-400/20 text-emerald-400" : 
-              record.category === 'distance' ? "bg-blue-400/20 text-blue-400" : "bg-zinc-800 text-zinc-400"
-            )}>
-              {/* Outer Ring Decoration */}
-              <div className="absolute inset-0 border-2 border-current opacity-20 rounded-full scale-90" />
-              
-              {record.category === 'speed' ? (
-                <div className="relative">
-                  <Timer className="w-6 h-6 stroke-[2.5]" />
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                </div>
-              ) : record.category === 'distance' ? (
-                <MapPin className="w-6 h-6 stroke-[2.5]" />
-              ) : (
-                <Flame className="w-6 h-6 stroke-[2.5]" />
-              )}
-            </div>
+      {records.map((record, i) => {
+        const theme = getRecordTheme(record.label);
+        const Icon = theme.icon;
+        
+        return (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className={cn(
+              "p-4 rounded-[2rem] border flex items-center justify-between transition-all group relative overflow-hidden",
+              isDarkMode ? "bg-zinc-950/40 border-zinc-900 shadow-xl" : "bg-white border-zinc-100 shadow-sm"
+            )}
+          >
+            {/* Dynamic Glow Effect */}
+            <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity blur-3xl -z-10", theme.glow)} />
             
-            <div className="space-y-1">
-              <h4 className={cn(
-                "text-sm font-bold tracking-tight transition-colors",
-                isDarkMode ? "text-zinc-100 group-hover:text-white" : "text-zinc-900"
+            <div className="flex items-center gap-4">
+              <div className={cn(
+                "w-11 h-11 rounded-2xl flex items-center justify-center relative flex-shrink-0 transition-transform group-hover:scale-110",
+                theme.bg, theme.color
               )}>
-                {record.label}
-              </h4>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{record.date}</span>
-                <span className="text-zinc-700">•</span>
-                <span className={cn(
-                  "text-[11px] font-black italic tracking-tight",
-                  record.category === 'speed' ? "text-emerald-400" : "text-blue-400"
+                {/* Decorative Elements */}
+                <div className="absolute inset-0 border border-current opacity-10 rounded-2xl scale-90" />
+                <Icon className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              
+              <div className="space-y-0.5">
+                <h4 className={cn(
+                  "text-xs font-black uppercase tracking-widest transition-colors",
+                  isDarkMode ? "text-zinc-500 group-hover:text-zinc-300" : "text-zinc-400"
                 )}>
-                  {record.value}
-                </span>
+                  {record.label}
+                </h4>
+                <div className="flex items-baseline gap-2">
+                  <span className={cn(
+                    "text-lg font-black italic tracking-tighter",
+                    theme.color
+                  )}>
+                    {record.value}
+                  </span>
+                  <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-tighter">
+                    {record.date}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <button className="p-2.5 hover:bg-zinc-500/10 rounded-full transition-all text-zinc-600 active:scale-90 flex-shrink-0">
-            <MoreVertical className="w-4 h-4" />
-          </button>
-        </motion.div>
-      ))}
+            
+            <button className={cn(
+              "p-2 hover:bg-zinc-500/10 rounded-full transition-all text-zinc-600 active:scale-90 flex-shrink-0",
+              isDarkMode ? "hover:text-zinc-300" : "hover:text-zinc-900"
+            )}>
+              <MoreVertical className="w-4 h-4" />
+            </button>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
@@ -3643,44 +3651,56 @@ function AppContent() {
               </div>
 
               {/* 3. Biological Achievement (Moved below Weekly Activity) */}
-              {userProfile.personalRecords && userProfile.personalRecords.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  className={cn(
-                    "p-6 rounded-[2.5rem] border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
-                    isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
-                  )}
-                  onClick={() => setActiveView('profile')}
-                >
-                  <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity blur-3xl -z-10" />
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center">
-                        <Trophy className="w-4 h-4 text-orange-500" />
+              {userProfile.personalRecords && userProfile.personalRecords.length > 0 && (() => {
+                const firstRecord = userProfile.personalRecords[0];
+                const l = firstRecord.label.toLowerCase();
+                let themeColor = "text-orange-500";
+                let themeBg = "bg-orange-500/10";
+                if (l.includes('kilometre')) { themeColor = "text-amber-400"; themeBg = "bg-amber-400/15"; }
+                else if (l.includes('5k')) { themeColor = "text-emerald-400"; themeBg = "bg-emerald-400/15"; }
+                else if (l.includes('10k')) { themeColor = "text-cyan-400"; themeBg = "bg-cyan-400/15"; }
+                else if (l.includes('marathon')) { themeColor = "text-purple-400"; themeBg = "bg-purple-400/15"; }
+                else if (l.includes('distance') || l.includes('farthest') || l.includes('run')) { themeColor = "text-blue-400"; themeBg = "bg-blue-400/15"; }
+
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className={cn(
+                      "p-6 rounded-[2.5rem] border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
+                      isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                    )}
+                    onClick={() => setActiveView('profile')}
+                  >
+                    <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity blur-3xl -z-10", themeBg.replace('/15', '/5').replace('/10', '/5'))} />
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", themeBg)}>
+                          <Trophy className={cn("w-4 h-4", themeColor)} />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 italic">Best Performance</span>
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 italic">Best Performance</span>
+                      <div className="flex items-center gap-1">
+                        <span className={cn("text-[9px] font-bold opacity-60 group-hover:opacity-100 transition-colors uppercase tracking-widest italic", themeColor)}>Go to Profile</span>
+                        <ChevronRight className={cn("w-3 h-3", themeColor)} />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[9px] font-bold text-orange-500/60 group-hover:text-orange-500 transition-colors uppercase tracking-widest italic">Go to Profile</span>
-                      <ChevronRight className="w-3 h-3 text-orange-500" />
+                    <div className="flex items-end justify-between">
+                      <div className="space-y-1">
+                        <p className={cn("text-xs font-bold", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>{firstRecord.label}</p>
+                        <p className={cn("text-3xl font-black italic tracking-tighter", themeColor)}>
+                          {firstRecord.value}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest mb-1">Authenticated On</p>
+                        <p className={cn("text-[10px] font-bold", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>{firstRecord.date}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-end justify-between">
-                    <div className="space-y-1">
-                      <p className={cn("text-xs font-bold", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>{userProfile.personalRecords[0].label}</p>
-                      <p className="text-3xl font-black italic text-orange-500 tracking-tighter">
-                        {userProfile.personalRecords[0].value}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest mb-1">Authenticated On</p>
-                      <p className={cn("text-[10px] font-bold", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>{userProfile.personalRecords[0].date}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+                  </motion.div>
+                );
+              })()}
 
               {/* Today's Plan Preview */}
               <div className="space-y-4">
