@@ -1082,7 +1082,7 @@ function AppContent() {
       const { url } = await response.json();
       window.open(url, 'google_health_oauth', 'width=600,height=700');
     } catch (e) {
-      console.error('Google Health connect error:', e);
+      console.error('Google Fitness connect error:', e);
     } finally {
       setIsConnectingHealth(null);
     }
@@ -4301,7 +4301,7 @@ function AppContent() {
                 )}>Device Ecosystem</h3>
                 
                 <div className="grid gap-3">
-                  {/* Google Health Integration (Pixel Watch 3 + Fitbit) */}
+                  {/* Google Fitness Integration (Pixel Watch 3 + Fitbit) */}
                   <div className={cn(
                     "p-5 rounded-3xl border transition-all flex items-center justify-between overflow-hidden relative",
                     isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
@@ -4311,7 +4311,7 @@ function AppContent() {
                         <Activity className="w-6 h-6 text-emerald-500" />
                       </div>
                       <div>
-                        <h4 className="font-bold">Google Health</h4>
+                        <h4 className="font-bold">Google Fitness</h4>
                         <p className="text-xs text-zinc-500 font-medium tracking-tight">Sync Pixel Watch 3 & Health data</p>
                         {userProfile.integrations?.googleFit?.lastSync && (
                           <p className="text-[9px] text-emerald-500/60 font-bold uppercase tracking-widest mt-1">

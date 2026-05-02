@@ -4,7 +4,7 @@ WiseFit is a digital sanctuary that integrates physical strength, mental stillne
 
 ## Health Data Status: SUCCESS
 
-WiseFit is successfully integrated with the **Google Health API** (health.googleapis.com). 
+WiseFit is successfully integrated with the **Google Fitness API** (fitness.googleapis.com). 
 
 *   **Status**: ACTIVE
 *   **Hardware**: Pixel Watch 3 & Fitbit (Unified)
@@ -16,7 +16,7 @@ WiseFit is successfully integrated with the **Google Health API** (health.google
 To maintain this integration, ensure your Google Cloud Project (`WiseFitGoogle`) has the following:
 
 *   **Google Cloud Project**: A project named `WiseFitGoogle` must be active.
-*   **Google Health API**: The Service `health.googleapis.com` must be enabled in the Google Cloud Console.
+*   **Google Fitness API**: The Service `fitness.googleapis.com` must be enabled in the Google Cloud Console.
 *   **OAuth 2.0 Credentials**:
     *   **Client Type**: Web Application.
     *   **Authorized JavaScript Origins**: `https://wisefit.fun`
@@ -47,7 +47,7 @@ The integration ensures a seamless journey from your wrist to your dashboard:
 
 1.  **Hardware Sync**: The **Pixel Watch 3** records biometric data during your day and workouts.
 2.  **Google Cloud Sync**: This data is synchronized with your personal Google account.
-3.  **Google Health API**: WiseFit's backend communicates with the `health.googleapis.com` service using the authorized OAuth token.
+3.  **Google Fitness API**: WiseFit's backend communicates with the `fitness.googleapis.com` service using the authorized OAuth token.
 4.  **Dashboard Visualization**: Live metrics for Steps, Active Minutes, Calories, and Weight are pulled and displayed in the WiseFit "Fire" (Strength) and "Stillness" (Recovery) sections.
 
 ## Development

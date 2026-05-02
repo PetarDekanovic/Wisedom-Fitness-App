@@ -18,7 +18,7 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
-  // --- GOOGLE HEALTH / PIXEL WATCH INTEGRATION ---
+  // --- GOOGLE FITNESS / PIXEL WATCH INTEGRATION ---
 
   app.get("/api/auth/google/url", (req, res) => {
     const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
