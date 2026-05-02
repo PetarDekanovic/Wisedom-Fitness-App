@@ -114,6 +114,7 @@ import {
   documentId
 } from 'firebase/firestore';
 import { GoogleGenAI, Modality } from "@google/genai";
+import { generateStoicReflection } from './services/aiService';
 import YogaView from './components/YogaView';
 import { QuizView } from './components/QuizView';
 import { HistoryFeed } from './components/HistoryFeed';
@@ -729,6 +730,8 @@ function AppContent() {
   const [isLibrarySelectMode, setIsLibrarySelectMode] = useState(false);
   const [isConnectingHealth, setIsConnectingHealth] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
+  const [stoicReflection, setStoicReflection] = useState<string | null>(null);
+  const [isGeneratingReflection, setIsGeneratingReflection] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try {
@@ -876,6 +879,22 @@ function AppContent() {
       
       setSavedMessage('Health Synced');
       setTimeout(() => setSavedMessage(null), 3000);
+
+      // Generate Stoic Reflection
+      setIsGeneratingReflection(true);
+      try {
+        const reflection = await generateStoicReflection({
+          steps: updatedProfile.currentSteps || 0,
+          weight: updatedProfile.currentWeight || 89,
+          calories: updatedProfile.currentCalories || 0,
+          userName: userProfile.name
+        });
+        setStoicReflection(reflection);
+      } catch (err) {
+        console.error("Reflection error:", err);
+      } finally {
+        setIsGeneratingReflection(false);
+      }
     } catch (e) {
       console.error('Health sync error:', e);
     }
@@ -2768,6 +2787,54 @@ function AppContent() {
                 </motion.div>
               )}
 
+              {/* AI Stoic Reflection */}
+              <AnimatePresence>
+                {(stoicReflection || isGeneratingReflection) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className={cn(
+                      "p-6 rounded-3xl border relative overflow-hidden transition-all duration-700",
+                      isDarkMode 
+                        ? "bg-zinc-900/40 border-zinc-800/50 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" 
+                        : "bg-white/90 border-zinc-200 shadow-sm"
+                    )}
+                  >
+                    <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50" />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-emerald-500" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500">
+                        Biological Reflection
+                      </span>
+                      {isGeneratingReflection && (
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest animate-pulse">
+                            Consulting the Oracle
+                          </span>
+                          <Loader2 className="w-3 h-3 text-zinc-500 animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    {stoicReflection ? (
+                      <p className={cn(
+                        "text-sm leading-relaxed italic font-serif",
+                        isDarkMode ? "text-zinc-200" : "text-zinc-800"
+                      )}>
+                        "{stoicReflection}"
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="h-4 w-full bg-zinc-800/50 animate-pulse rounded-md" />
+                        <div className="h-4 w-3/4 bg-zinc-800/50 animate-pulse rounded-md" />
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Stoic Quote of the Day */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
@@ -4015,6 +4082,11 @@ function AppContent() {
                       <div>
                         <h4 className="font-bold">Google Health</h4>
                         <p className="text-xs text-zinc-500 font-medium tracking-tight">Sync Pixel Watch 3 & Health data</p>
+                        {userProfile.integrations?.googleFit?.lastSync && (
+                          <p className="text-[9px] text-emerald-500/60 font-bold uppercase tracking-widest mt-1">
+                            Synced {format(new Date(userProfile.integrations.googleFit.lastSync), 'HH:mm')}
+                          </p>
+                        )}
                       </div>
                     </div>
                     {userProfile.integrations?.googleFit?.connected ? (
