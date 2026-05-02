@@ -1309,10 +1309,7 @@ function AppContent() {
   }, [currentQuote, userProfile.markedQuotes, getQuoteId]);
 
   const markQuoteAsSeen = async () => {
-    if (!user) {
-      alert("Please sign in to save quotes to your library.");
-      return;
-    }
+    if (checkGuestAction()) return;
     
     // Safety check: Don't proceed if profile isn't loaded to avoid overwriting with empty data
     // We check if the profile UID matches the current user UID
@@ -1640,6 +1637,7 @@ function AppContent() {
   };
 
   const handleLogWeight = async () => {
+    if (checkGuestAction()) return;
     if (!newWeight || isNaN(Number(newWeight))) return;
     
     const weight = Number(newWeight);
@@ -1679,6 +1677,7 @@ function AppContent() {
     }
   };
   const handleAddDailyExercise = async () => {
+    if (checkGuestAction()) return;
     if (!newDailyExercise.trim() || (userProfile.dailyExercises?.length || 0) >= 10) return;
     
     const newEx = {
@@ -1703,6 +1702,7 @@ function AppContent() {
   };
 
   const toggleDailyExercise = async (id: string) => {
+    if (checkGuestAction()) return;
     const updatedExercises = userProfile.dailyExercises?.map(ex => 
       ex.id === id ? { ...ex, completed: !ex.completed } : ex
     );
@@ -1759,6 +1759,7 @@ function AppContent() {
   };
 
   const handleSaveWorkout = async () => {
+    if (checkGuestAction()) return;
     if (!newWorkout.name) return;
     
     if (editingWorkoutId) {
@@ -1882,6 +1883,7 @@ function AppContent() {
   };
 
   const handleCleanupDuplicates = async () => {
+    if (checkGuestAction()) return;
     if (!user || !userProfile.markedQuotes) return;
     
     console.log('Cleaning up duplicate quotes...');
@@ -1917,6 +1919,7 @@ function AppContent() {
   };
 
   const handleDeleteQuotesFromLibrary = async (quoteIdsToDelete: string[]) => {
+    if (checkGuestAction()) return;
     if (!user || !userProfile.markedQuotes || quoteIdsToDelete.length === 0) return;
     
     console.log('Deleting quotes from library:', quoteIdsToDelete.length);
@@ -2010,7 +2013,18 @@ function AppContent() {
   }, []);
 
   const fetchLibraryQuotes = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      // GUEST PROTECTION: Show a curated selection of local quotes to save quota
+      const sampleQuotes = INITIAL_QUOTES.slice(0, 12).map((q, idx) => ({ 
+        ...q, 
+        id: `sample-${idx}`,
+        markedDate: new Date(Date.now() - idx * 86400000).toISOString(),
+        wisdomGrade: 'A daily reminder',
+        comment: 'Explore WiseFit to save your own wisdom.'
+      }));
+      setLibraryQuotes(sampleQuotes as any);
+      return;
+    }
     setIsLibraryLoading(true);
     console.log('Fetching library quotes for user:', user.uid);
     try {
@@ -2110,8 +2124,16 @@ function AppContent() {
     }
   }, [activeView, fetchLibraryQuotes]);
 
+  const checkGuestAction = () => {
+    if (!user) {
+      alert("This is a preview. Sign in to save your personal logs and wisdom database to the cloud.");
+      return true;
+    }
+    return false;
+  };
+
   const handleUpdateWisdomData = async (quoteId: string, isCustom: boolean) => {
-    if (!user) return;
+    if (checkGuestAction()) return;
     
     try {
       if (isCustom) {
@@ -2139,7 +2161,8 @@ function AppContent() {
   };
 
   const handleAddCustomQuote = async () => {
-    if (!user || !newQuote.text.trim()) return;
+    if (checkGuestAction()) return;
+    if (!newQuote.text.trim()) return;
     
     try {
       const quoteData = {
@@ -2190,7 +2213,12 @@ function AppContent() {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setWorkouts(MOCK_WORKOUTS);
+      setStats(MOCK_STATS);
+      setWeeklyPlan(INITIAL_WEEKLY_PLAN);
+      return;
+    }
 
     // Listen to user profile
     const unsubProfile = onSnapshot(doc(db, 'users', user.uid), (doc) => {
@@ -2279,7 +2307,7 @@ function AppContent() {
   };
 
   const toggleExercise = async (dayIndex: number, exerciseId: string) => {
-    if (!user) return;
+    if (checkGuestAction()) return;
     const newPlan = [...weeklyPlan];
     const day = newPlan[dayIndex];
     const exercise = day.exercises.find(ex => ex.id === exerciseId);
