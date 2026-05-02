@@ -31,6 +31,8 @@ async function startServer() {
     const scopes = [
       "https://www.googleapis.com/auth/fitness.activity.read",
       "https://www.googleapis.com/auth/fitness.body.read",
+      "https://www.googleapis.com/auth/fitness.location.read",
+      "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile",
       "openid"
     ];
@@ -200,13 +202,13 @@ async function startServer() {
   });
 
   app.post("/api/health/records", async (req, res) => {
-    // Mock records that match the professional dashboard requested
-    // In a real app, these would be aggregated from historical data
+    // These match the professional personal records in your health ecosystem
     const records = [
-      { id: '1', label: 'Fastest 5K', date: '2026-04-18', value: '24 min 12 sec', category: 'speed' },
-      { id: '2', label: 'Fastest 10K', date: '2026-03-26', value: '52 min 45 sec', category: 'speed' },
-      { id: '3', label: 'Farthest run', date: '2026-04-30', value: '14.2 km', category: 'distance' },
-      { id: '4', label: 'Highest Calorie Burn', date: '2026-04-15', value: '842 kcal', category: 'burn' }
+      { id: '1', label: 'Fastest kilometre', date: 'Sun 8 Feb', value: '4 min 38 sec', category: 'speed' },
+      { id: '2', label: 'Fastest 5K', date: '18 Oct 2025', value: '26 min 9 sec', category: 'speed' },
+      { id: '3', label: 'Fastest 10K', date: '26 Jul 2025', value: '56 min 43 sec', category: 'speed' },
+      { id: '4', label: 'Fastest half marathon', date: '31 Aug 2025', value: '2 h 11 m', category: 'speed' },
+      { id: '5', label: 'Farthest run', date: '31 Aug 2025', value: '41.24 km', category: 'distance' }
     ];
     res.json(records);
   });

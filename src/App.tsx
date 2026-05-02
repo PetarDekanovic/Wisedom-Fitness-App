@@ -71,7 +71,10 @@ import {
   ShieldCheck,
   Smartphone,
   Brain,
-  Users
+  Users,
+  Timer,
+  MapPin,
+  MoreVertical
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -682,36 +685,37 @@ function PersonalRecords({ records, isDarkMode }: { records: any[], isDarkMode: 
   if (!records || records.length === 0) return null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {records.map((record, i) => (
         <motion.div
           key={i}
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.1 }}
+          transition={{ delay: i * 0.05 }}
           className={cn(
-            "p-4 rounded-3xl border flex items-center justify-between transition-all",
-            isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+            "p-4 rounded-[2rem] border flex items-center justify-between transition-all group",
+            isDarkMode ? "bg-zinc-950/40 border-zinc-900/50 hover:border-emerald-500/30" : "bg-white border-zinc-100 shadow-sm hover:border-emerald-200"
           )}
         >
           <div className="flex items-center gap-4">
             <div className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center",
+              "w-12 h-12 rounded-full flex items-center justify-center relative overflow-hidden",
               record.category === 'speed' ? "bg-emerald-500/10 text-emerald-500" : 
-              record.category === 'distance' ? "bg-blue-500/10 text-blue-500" : "bg-orange-500/10 text-orange-500"
+              record.category === 'distance' ? "bg-blue-500/10 text-blue-500" : "bg-zinc-500/10 text-zinc-500"
             )}>
-              {record.category === 'speed' ? <Timer className="w-5 h-5" /> : 
-               record.category === 'distance' ? <MapPin className="w-5 h-5" /> : <Flame className="w-5 h-5" />}
+              <div className="absolute inset-0 bg-current opacity-5 rounded-full blur-xl animate-pulse" />
+              {record.category === 'speed' ? <Timer className="w-5 h-5 relative z-10" /> : 
+               record.category === 'distance' ? <MapPin className="w-5 h-5 relative z-10" /> : <Flame className="w-5 h-5 relative z-10" />}
             </div>
             <div>
-              <h4 className={cn("text-xs font-bold leading-none mb-1", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>{record.label}</h4>
-              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                {record.date} • {record.value}
+              <h4 className={cn("text-sm font-bold tracking-tight mb-0.5", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>{record.label}</h4>
+              <p className="text-[10px] font-medium text-zinc-500">
+                {record.date} • <span className="text-emerald-500/80 font-bold italic">{record.value}</span>
               </p>
             </div>
           </div>
-          <button className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors text-zinc-600">
-            <MoreVertical className="w-3 h-3" />
+          <button className="p-2 hover:bg-zinc-500/10 rounded-full transition-colors text-zinc-600 opacity-0 group-hover:opacity-100">
+            <MoreVertical className="w-4 h-4" />
           </button>
         </motion.div>
       ))}
@@ -2932,44 +2936,72 @@ function AppContent() {
               transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
               className="space-y-6"
             >
-              {/* Daily Summary Cards */}
-              {userProfile.integrations?.googleFit?.connected && userProfile.weeklyHealthData && userProfile.weeklyHealthData.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={cn(
-                    "p-5 rounded-3xl border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
-                    isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
-                  )}
-                  onClick={() => setActiveView('profile')}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-emerald-500" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">7-Day Biological Trend</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-bold text-emerald-500">View Trends</span>
+              {/* Biological Trends & Records Teaser */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {userProfile.integrations?.googleFit?.connected && userProfile.weeklyHealthData && userProfile.weeklyHealthData.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={cn(
+                      "p-5 rounded-3xl border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
+                      isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                    )}
+                    onClick={() => setActiveView('profile')}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-emerald-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">7-Day Trend</span>
+                      </div>
                       <ChevronRight className="w-3 h-3 text-emerald-500" />
                     </div>
-                  </div>
-                  <div className="flex items-end gap-1 h-8 px-1">
-                    {userProfile.weeklyHealthData.map((d, i) => (
-                      <div 
-                        key={i} 
-                        className="flex-1 rounded-sm bg-emerald-500/20 group-hover:bg-emerald-500/40 transition-all"
-                        style={{ height: `${Math.max(10, (d.steps / 15000) * 100)}%` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="mt-3 flex justify-between items-center">
-                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Avg Daily Steps</p>
-                    <p className="text-sm font-black italic text-emerald-500">
-                      {Math.round(userProfile.weeklyHealthData.reduce((acc, curr) => acc + curr.steps, 0) / userProfile.weeklyHealthData.length).toLocaleString()}
-                    </p>
-                  </div>
-                </motion.div>
-              )}
+                    <div className="flex items-end gap-1 h-8 px-1">
+                      {userProfile.weeklyHealthData.map((d, i) => (
+                        <div 
+                          key={i} 
+                          className="flex-1 rounded-sm bg-emerald-500/20 group-hover:bg-emerald-500/40 transition-all"
+                          style={{ height: `${Math.max(10, (d.steps / 15000) * 100)}%` }}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-3 flex justify-between items-center">
+                      <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Avg Daily Steps</p>
+                      <p className="text-sm font-black italic text-emerald-500">
+                        {Math.round(userProfile.weeklyHealthData.reduce((acc, curr) => acc + curr.steps, 0) / userProfile.weeklyHealthData.length).toLocaleString()}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {userProfile.personalRecords && userProfile.personalRecords.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className={cn(
+                      "p-5 rounded-3xl border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
+                      isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                    )}
+                    onClick={() => setActiveView('profile')}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-orange-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Best Performance</span>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-orange-500" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold leading-none">{userProfile.personalRecords[0].label}</p>
+                      <p className="text-xl font-black italic text-orange-500">{userProfile.personalRecords[0].value}</p>
+                    </div>
+                    <div className="mt-2 flex justify-between items-center bg-zinc-500/5 rounded-lg px-2 py-1">
+                      <p className="text-[8px] font-black text-zinc-500 uppercase tracking-tighter">Last Personal Record</p>
+                      <p className="text-[9px] font-bold text-zinc-400">{userProfile.personalRecords[0].date}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <StatCard 
