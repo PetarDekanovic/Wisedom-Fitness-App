@@ -20,12 +20,15 @@ import { INITIAL_QUESTIONS } from '../data/initialQuestions';
 import { db } from '../firebase';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 
+import { User } from 'firebase/auth';
+
 interface QuizViewProps {
   isDarkMode: boolean;
+  user: User | null;
   onCorrectAnswer?: () => void;
 }
 
-export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, onCorrectAnswer }) => {
+export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, user, onCorrectAnswer }) => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -42,16 +45,18 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, onCorrectAnswer 
     let loadedQuestions: QuizQuestion[] = [];
     
     try {
-      // Try to fetch from Firestore
-      const q = query(collection(db, 'questions'), limit(100));
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        loadedQuestions = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        } as QuizQuestion));
-        setDataSource('database');
+      // GUEST PROTECTION: No Firestore reads for guests
+      if (db && user) {
+        const q = query(collection(db, 'questions'), limit(100));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          loadedQuestions = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as QuizQuestion));
+          setDataSource('database');
+        }
       }
     } catch (error) {
       console.error("Firestore quota or error, falling back to local wisdom:", error);

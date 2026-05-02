@@ -1291,6 +1291,7 @@ function AppContent() {
   }, []);
 
   const generateAIQuote = (e?: React.MouseEvent) => {
+    if (checkGuestAction()) return;
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -2890,6 +2891,7 @@ function AppContent() {
                             <button
                               type="button"
                               onClick={() => {
+                                if (checkGuestAction()) return;
                                 const nextState = !isAILoopActive;
                                 setIsAILoopActive(nextState);
                                 if (nextState) setAutoFlowTimer(30);
@@ -3573,7 +3575,7 @@ function AppContent() {
               className="space-y-6"
             >
               <h2 className="text-2xl font-bold">Training the Mind</h2>
-              <QuizView isDarkMode={isDarkMode} />
+              <QuizView isDarkMode={isDarkMode} user={user} />
             </motion.div>
           )}
 
@@ -4146,8 +4148,25 @@ function AppContent() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="flex flex-col h-[calc(100vh-180px)]"
+              className="flex flex-col h-[calc(100vh-180px)] relative"
             >
+              {!user && (
+                <div className="absolute inset-0 z-50 backdrop-blur-md bg-zinc-950/20 rounded-3xl flex flex-col items-center justify-center p-8 text-center space-y-6">
+                  <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center border border-emerald-500/30">
+                    <Sparkles className="w-10 h-10 text-emerald-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-black uppercase tracking-tight text-white">Consult the Sage</h3>
+                    <p className="text-sm text-zinc-300">The AI Stoic requires a deeper connection. Sign in to unlock personal coaching and wisdom logs.</p>
+                  </div>
+                  <button 
+                    onClick={handleLogin}
+                    className="px-8 py-3 bg-emerald-500 text-zinc-950 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform"
+                  >
+                    Enter the Sanctuary
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl overflow-hidden flex items-center justify-center border border-emerald-500/20">
                   <img 
