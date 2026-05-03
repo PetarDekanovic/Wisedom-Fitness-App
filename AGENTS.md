@@ -1,71 +1,77 @@
-# WiseFit App Vision & Roadmap
+# WiseFit — Strategic Build Plan for €10M Acquisition Path
 
-## Core Concept: Philosophy-Driven Physical Training
-WiseFit is not just a workout app; it is a **daily ritual** that integrates physical strength, mental stillness, and timeless wisdom. It sits at the intersection of fitness, mindfulness, and lifestyle.
-
-### The "Winning Formula"
-- **Daily Ritual, Not a Library:** Instead of overwhelming users with choices, provide a curated daily flow.
-- **Integrated Wisdom:** Quotes are not separate screens; they are woven into the practice (e.g., during Yin poses or between strength sets).
-- **Clear Identity:** "Train your body. Train your mind." / "Strength + Stillness".
+> **Note to AI Assistant:** Use this document as the strategic frame for all WiseFit feature work. Every code change, feature, and design decision must be evaluated against the priorities and "Strategic Filters" defined below.
 
 ---
 
-## Roadmap & Features
+## 1. Project Vision & Context
+WiseFit is a **Digital Sanctuary** merging biometric/wearable intelligence (Oura/Whoop style) with profound philosophical and intellectual depth. We are building toward a €5–15M strategic acquisition by a major wellness or wearable platform.
 
-### 1. The Daily Ritual (The "Flow")
-- **Structure:** `🧘 Yin Yoga (Calm) → 💪 Strength Training (Fire) → 🧠 Reflection (Wisdom)`.
-- **Duration:** 15–25 minutes.
-- **Format:** A single, guided session that transitions smoothly between phases.
-
-### 2. Deep Integration of Wisdom
-- **Themed Workouts:** Each day has a theme (e.g., Resilience, Patience, Discipline).
-- **Contextual Quotes:** 
-    - During Yin Yoga: Deep, reflective quotes to match the slow pace.
-    - During Strength: Motivating, discipline-focused quotes.
-- **Audio/Visual Cues:** Quotes appear or are spoken at key moments in the workout.
-
-### 3. Yoga & Breathwork (Active Development)
-- **Yin Yoga Focus:** Targeting deep connective tissues, stress reduction, and recovery.
-- **Hybrid Routines:** Blending Yin Yoga with bodyweight strength exercises.
-- **Breathwork:** Integrating breathing techniques into the flow for recovery.
-
-### 4. Wearable Ecosystem (Planned)
-- **Fitbit & Pixel Watch Integration:**
-    - **Live Pulse Sync:** Real-time heart rate displayed during "Fire" phases.
-    - **Haptic Wisdom:** Gentle vibrations on the wrist during transitions or breathwork.
-    - **Auto-Logging:** Syncing sessions directly to Google Fit and Fitbit accounts.
-
-### 5. The "Wisdom Stream" (Infinite Inspiration)
-- **Immersive Feed:** A TikTok-style vertical scroll for wisdom. Each quote is presented against cinematic, AI-generated ambient backgrounds.
-- **Thematic Discovery:** Swipe through categories: *Neuroscience, Stoicism, Zen, Modern Psychology, Financial Mastery.*
-- **Daily Seed:** A personalized "Seed of Wisdom" delivered every morning based on user intent.
-
-### 6. Biometric-Driven Flow (Intelligence)
-- **Readiness Score:** Integration with Paladin-style metrics (HRV, Sleep, Activity).
-- **Adaptive Rituals:** If recovery is low, the app automatically prioritizes "Stillness/Yin" over "Fire/Strength".
+### Current Core Capabilities:
+- **Biometric Sync:** Pixel Watch 3 / Fitbit live sync (Health Connect path).
+- **Personal Records:** Dashboard for speed and distance (Fastest 1k, 5k, etc.).
+- **Wisdom Repository:** Curated quotes with AI-powered expansion and personal tagging.
+- **Yoga Rituals:** Flow-based sequences with timed poses and meditation soundscapes.
+- **AI Stoic:** Personalized mentor (Gemini-powered) that understands user context.
+- **Regional Edge:** Croatian-aware TTS and local translations for Slavic markets.
 
 ---
 
-## Market Positioning & Value Estimation
-
-### The Vision
-WiseFit is a **Digital Sanctuary**. By merging high-tier fitness tracking (Paladin/Whoop style) with profound philosophical depth (Meditation apps) and addictive discovery (Social feed style), it targets the high-value "Conscious Professional" market.
-
-### Estimated App Value (Full Implementation)
-- **Competitive Landscape:** Sits between *Whoop/Paladin* ($30/mo) and *Headspace/Calm* ($15/mo).
-- **Boutique Offering:** As a integrated "Lifestyle ritual," its intrinsic value is estimated at **$19.99 - $29.99/month** per subscriber.
-- **Platform Potential:** If scaled as a community-driven "Philosophy Social Network," the valuation increases significantly due to user-generated wisdom collections and social fitness accountability.
+## 2. Strategic Filter (The "Acquisition" Lens)
+Before implementing any feature, ask:
+1. **Does this strengthen the acquisition pitch?** (Proprietary IP, high retention, unique biometric data).
+2. **Is it automated?** Manual curation doesn't scale. Prefer AI-assisted human curation.
+3. **Does it respect the user's brain?** No "gamified" junk. Only high-signal, cinematic UI.
 
 ---
 
-## Target Personas
-- **Inner Strength:** Stressed professionals seeking calm and functional strength.
-- **Flow & Fire:** Busy users wanting short, high-impact cinematic sessions.
-- **Philosophy Fitness:** Users who want to live and train according to a philosophical system (Stoicism, Zen, etc.).
+## 3. High-Priority Roadmap (Months 1–12)
+
+### A. The Biometric→Content "Operating Mode" (The Killer Feature)
+Each morning, the app computes a **Daily Operating Mode** based on HRV, Sleep, and RHR:
+- **SHARP:** (High Recovery) → Serve strategic/geopolitical analysis + Power Yoga.
+- **BUILD:** (Baseline Recovery) → Serve discipline-focused wisdom + Strength training.
+- **RESTORE:** (Low Recovery) → Serve Yin Yoga + Gentle Stoic patience quotes.
+- **HOLD:** (Mixed signals) → Serve equanimity-themed meditation + breathwork.
+
+### B. Monetization & Retention
+- **WiseFit Plus (€4.99/mo):** Unlimited daily flows, full yoga library, Biometric matching, and Monthly Pattern Reports.
+- **Founding Member (€99 Lifetime):** Immediate cash injection and social proof for first 500 users.
+- **Grace Day System:** Users get one "Grace Day" a week where a missed session doesn't break their streak. This is critical for long-term retention.
+
+### C. Native Wearable & Mobile Strategy
+- **Capacitor Hardening:** Polished PWA install flow and native push notifications.
+- **Wear OS / watchOS Native Apps:** Complications showing "Operating Mode" + Haptic "Wisdom Prompts" when high stress is detected.
 
 ---
 
-## Technical Implementation Notes
-- **State Management:** Ensure the "Daily Flow" state is persistent and easy to follow.
-- **Content Strategy:** Categorize quotes by "Mood" or "Phase" (Yin vs. Strength).
-- **UI/UX:** Maintain the "Technical Dashboard" feel but soften it during Yoga phases with smoother transitions and atmospheric design.
+## 4. Growth & Regional Moat
+- **Slavic Market Dominance:** Lean into the Croatian/Serbian market. Localized thinkers (Krleža, Tesla, Andrić) and localized TTS are our secret weapon.
+- **WordPress Integration:** Use external MP4 loops and SEO-driven deep-dives (e.g., "The Science of HRV") to drive top-of-funnel traffic.
+
+---
+
+## 5. Technical Implementation Notes (Brainstormed)
+
+### AI & Data Intelligence:
+- **Semantic Library Search:** Implement a search feature in the "Wisdom Repository" that allows users to find advice based on *how they feel* using Gemini embeddings.
+- **Biometric Snapshotting:** Cache the last 7 days of biometric trends locally so the "Biological Trend" dash is instant, even if the Google Fit sync is slow.
+- **Zustand/Firebase Persistence:** Ensure the subscription state and "Daily Flow" progress are rock-solid. A user should never lose their place in a 20-minute ritual.
+
+### UI/UX Aesthetic ("Technical Zen"):
+- **Home Tab:** Simplify. The default view should be the 60–90 second "Morning Ritual" (Operating Mode → Quote → Breathwork). Everything else belongs in the "More" or "Profile" tabs.
+- **Cinematic Transitions:** Use `motion/react` for every transition. No abrupt jumps. The app should feel like a physical sanctuary.
+- **Audio Experience:** Ensure we have a "Global Player" component so Ritual Soundscapes can continue playing smoothly while the user navigates between tabs.
+
+---
+
+## 6. Things to Cut/Avoid
+- **No Social Feeds:** Avoid the noise of a "Social Fitness Network." Keep it individual and focused.
+- **No Corny Gamification:** Drop terms like "Real Wise Guy." Stick to Seeker → Student → Scholar → Sage.
+- **No Chatty AI:** AI Stoic must be terse (max 4 sentences), declarative, and source-cited. No "Petar, my friend" openers.
+
+---
+
+## 7. Exit Strategy Target
+**Acquirer:** Whoop, Oura, Garmin, or Calm.
+**Pitch:** "We own the seam between the biometric signal and the intellectual content. We have the highest-LTV users in the premium wellness space and a dominant position in Slavic markets."

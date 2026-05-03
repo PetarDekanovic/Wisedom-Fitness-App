@@ -959,14 +959,26 @@ function AppContent() {
   const [stoicReflection, setStoicReflection] = useState<string | null>(null);
   const [isGeneratingReflection, setIsGeneratingReflection] = useState(false);
 
-  const [isDarkMode, setIsDarkMode] = useState(() => {
+  const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'girly'>(() => {
     try {
-      const saved = localStorage.getItem('petar_theme');
-      return saved ? saved === 'dark' : true;
+      const saved = localStorage.getItem('petar_theme') as 'light' | 'dark' | 'girly' | null;
+      return saved || 'dark';
     } catch (e) {
-      return true;
+      return 'dark';
     }
   });
+
+  const isDarkMode = themeMode === 'dark';
+  const isGirlyMode = themeMode === 'girly';
+  const isLightMode = themeMode === 'light';
+
+  useEffect(() => {
+    localStorage.setItem('petar_theme', themeMode);
+  }, [themeMode]);
+
+  const setIsDarkMode = (dark: boolean) => {
+    setThemeMode(dark ? 'dark' : 'light');
+  };
   
   // Chat State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -2796,6 +2808,7 @@ function AppContent() {
   return (
     <div className={cn(
       "min-h-screen font-sans selection:bg-emerald-500/30 overflow-x-hidden relative transition-colors duration-500",
+      themeMode === 'girly' ? "bg-[#FFF5F7] text-pink-950 selection:bg-pink-500/30" : 
       isDarkMode ? "bg-zinc-950 text-zinc-100" : "bg-zinc-50 text-zinc-900"
     )}>
       {/* Welcome Modal */}
@@ -2861,33 +2874,44 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Background Graphic Elements */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden text-black">
         <div className={cn(
-          "absolute inset-0 transition-opacity duration-1000",
-          isDarkMode ? "opacity-20" : "opacity-10"
+          "absolute inset-0 transition-all duration-1000",
+          themeMode === 'girly' ? "opacity-30" : isDarkMode ? "opacity-20" : "opacity-10"
         )}>
           <img 
-            src="https://compcharity.org/wp-content/uploads/2026/04/e0efb5a2-1d04-40b2-b3fa-459dfdab069e_839bb3b2-scaled.jpg" 
-            alt="Stoic Background" 
-            className="w-full h-full object-cover scale-110 animate-pulse-slow"
+            src={themeMode === 'girly' 
+              ? "https://images.unsplash.com/photo-1558231061-000c077b949d?auto=format&fit=crop&q=80&w=2000" 
+              : "https://compcharity.org/wp-content/uploads/2026/04/e0efb5a2-1d04-40b2-b3fa-459dfdab069e_839bb3b2-scaled.jpg"
+            } 
+            alt="Background" 
+            className={cn(
+              "w-full h-full object-cover scale-110",
+              themeMode === 'girly' ? "filter sepia(0.3) saturate(1.5) animate-in fade-in zoom-in duration-1000" : "grayscale animate-pulse-slow"
+            )}
             referrerPolicy="no-referrer"
           />
           {/* Vignette Effect */}
           <div className={cn(
-            "absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]",
-            !isDarkMode && "bg-[radial-gradient(circle_at_center,transparent_0%,rgba(255,255,255,0.4)_100%)]"
+            "absolute inset-0 transition-all duration-1000",
+            themeMode === 'girly' ? "bg-[radial-gradient(circle_at_center,transparent_0%,rgba(255,182,193,0.4)_100%)]" :
+            isDarkMode ? "bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" :
+            "bg-[radial-gradient(circle_at_center,transparent_0%,rgba(255,255,255,0.4)_100%)]"
           )} />
           {/* Subtle Texture Overlay */}
-          <div className="absolute inset-0 opacity-[0.03] bg-[url('https://compcharity.org/wp-content/uploads/2026/04/StoicsColourPainting.jpg')]" />
+          <div className={cn(
+            "absolute inset-0 opacity-[0.03] transition-opacity duration-1000",
+            themeMode === 'girly' ? "bg-none" : "bg-[url('https://compcharity.org/wp-content/uploads/2026/04/StoicsColourPainting.jpg')]"
+          )} />
         </div>
         
         <div className={cn(
-          "absolute top-[-10%] left-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full transition-colors duration-1000",
-          isDarkMode ? "bg-emerald-500/10" : "bg-emerald-500/5"
+          "absolute top-[-10%] left-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full transition-all duration-1000",
+          themeMode === 'girly' ? "bg-pink-400/20" : isDarkMode ? "bg-emerald-500/10" : "bg-emerald-500/5"
         )} />
         <div className={cn(
-          "absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full transition-colors duration-1000",
-          isDarkMode ? "bg-purple-500/10" : "bg-purple-500/5"
+          "absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full transition-all duration-1000",
+          themeMode === 'girly' ? "bg-rose-400/20 shadow-[0_0_100px_rgba(244,63,94,0.1)]" : isDarkMode ? "bg-emerald-500/10" : "bg-emerald-400/5"
         )} />
       </div>
 
@@ -2933,19 +2957,44 @@ function AppContent() {
               Sign In
             </button>
           )}
-          <button 
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className={cn(
-              "p-2 rounded-xl transition-all active:scale-90",
-              isDarkMode ? "bg-zinc-900 text-yellow-400 border border-zinc-800" : "bg-zinc-100 text-zinc-600 border border-zinc-200"
-            )}
-          >
-            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-1.5 bg-zinc-100/50 dark:bg-zinc-900/50 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+            <button 
+              onClick={() => {
+                const nextMode = themeMode === 'light' ? 'dark' : 'light';
+                setThemeMode(nextMode);
+              }}
+              className={cn(
+                "p-2 rounded-xl transition-all active:scale-90 flex items-center justify-center min-w-[40px]",
+                themeMode === 'dark' ? "bg-zinc-800 text-yellow-400 shadow-sm" : 
+                themeMode === 'light' ? "bg-white text-zinc-600 shadow-sm" :
+                "text-zinc-500 hover:bg-zinc-200/50"
+              )}
+              title={themeMode === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {themeMode === 'dark' ? <Sun className="w-5 h-5 animate-in zoom-in" /> : <Moon className="w-5 h-5 animate-in zoom-in" />}
+            </button>
+            <button 
+              onClick={() => {
+                const nextMode = themeMode === 'girly' ? (isDarkMode ? 'dark' : 'light') : 'girly';
+                // Note: isDarkMode is local to the component, so we might need a fallback if it's derived from themeMode
+                // Let's just use dark as fallback for simpler logic or check state
+                setThemeMode(themeMode === 'girly' ? 'light' : 'girly');
+              }}
+              className={cn(
+                "p-2 rounded-xl transition-all active:scale-90 flex items-center justify-center min-w-[40px]",
+                themeMode === 'girly' ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" :
+                "text-pink-400 hover:bg-pink-50"
+              )}
+              title="Toggle Girly Mode"
+            >
+              <Sparkles className={cn("w-5 h-5 animate-in zoom-in", themeMode === 'girly' ? "animate-pulse" : "")} />
+            </button>
+          </div>
           <div 
             onClick={() => setActiveView('profile')}
             className={cn(
-              "w-10 h-10 rounded-full border flex items-center justify-center overflow-hidden transition-all cursor-pointer active:scale-90 hover:border-emerald-500 shadow-lg shadow-transparent hover:shadow-emerald-500/10",
+              "w-10 h-10 rounded-full border flex items-center justify-center overflow-hidden transition-all cursor-pointer active:scale-90 shadow-lg shadow-transparent",
+              isGirlyMode ? "hover:border-pink-500 hover:shadow-pink-500/10" : "hover:border-emerald-500 hover:shadow-emerald-500/10",
               isDarkMode ? "bg-zinc-800 border-zinc-700" : "bg-zinc-200 border-zinc-300"
             )}
           >
@@ -3008,29 +3057,47 @@ function AppContent() {
                   animate={{ opacity: 1, scale: 1 }}
                   className={cn(
                     "p-5 rounded-3xl border overflow-hidden relative group cursor-pointer transition-all active:scale-[0.98]",
+                    isGirlyMode ? "bg-white/40 border-pink-100 shadow-sm" :
                     isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
                   )}
                   onClick={() => setActiveView('profile')}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-emerald-500" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 italic">7-Day Biological Trend</span>
+                      <TrendingUp className={cn("w-4 h-4", isGirlyMode ? "text-pink-500" : "text-emerald-500")} />
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-widest italic",
+                        isGirlyMode ? "text-pink-400" : "text-zinc-500"
+                      )}>7-Day Biological Trend</span>
                     </div>
-                    <ChevronRight className="w-3 h-3 text-emerald-500" />
+                    <ChevronRight className={cn("w-3 h-3", isGirlyMode ? "text-pink-500" : "text-emerald-500")} />
                   </div>
                   <div className="flex items-end gap-1 h-8 px-1">
                     {userProfile.weeklyHealthData.map((d, i) => (
                       <div 
                         key={i} 
-                        className="flex-1 rounded-sm bg-emerald-500/20 group-hover:bg-emerald-500/40 transition-all"
+                        className={cn(
+                          "flex-1 rounded-sm transition-all",
+                          isGirlyMode 
+                            ? "bg-pink-500/20 group-hover:bg-pink-500/40" 
+                            : "bg-emerald-500/20 group-hover:bg-emerald-500/40"
+                        )}
                         style={{ height: `${Math.max(10, (d.steps / 15000) * 100)}%` }}
                       />
                     ))}
                   </div>
-                  <div className="mt-3 flex justify-between items-center bg-zinc-500/5 rounded-xl px-2 py-1">
-                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Avg Daily Steps</p>
-                    <p className="text-sm font-black italic text-emerald-500">
+                  <div className={cn(
+                    "mt-3 flex justify-between items-center rounded-xl px-2 py-1",
+                    isGirlyMode ? "bg-pink-500/5" : "bg-zinc-500/5"
+                  )}>
+                    <p className={cn(
+                      "text-[9px] font-bold uppercase tracking-tighter",
+                      isGirlyMode ? "text-pink-400" : "text-zinc-500"
+                    )}>Avg Daily Steps</p>
+                    <p className={cn(
+                      "text-sm font-black italic",
+                      isGirlyMode ? "text-pink-600" : "text-emerald-500"
+                    )}>
                       {Math.round(userProfile.weeklyHealthData.reduce((acc, curr) => acc + curr.steps, 0) / userProfile.weeklyHealthData.length).toLocaleString()}
                     </p>
                   </div>
@@ -3045,9 +3112,18 @@ function AppContent() {
                   animate={{ opacity: 1 }}
                   className="mt-6 flex items-center justify-center gap-2"
                 >
-                  <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                  <div className={cn(
+                    "flex items-center gap-2 px-3 py-1 border rounded-full",
+                    isGirlyMode ? "bg-pink-500/10 border-pink-500/20" : "bg-emerald-500/10 border-emerald-500/20"
+                  )}>
+                    <div className={cn(
+                      "w-1.5 h-1.5 rounded-full animate-pulse",
+                      isGirlyMode ? "bg-pink-500" : "bg-emerald-500"
+                    )} />
+                    <span className={cn(
+                      "text-[10px] font-black uppercase tracking-widest",
+                      isGirlyMode ? "text-pink-600" : "text-emerald-500"
+                    )}>
                       Live Sync: Pixel Watch 3
                     </span>
                   </div>
@@ -3063,17 +3139,27 @@ function AppContent() {
                     exit={{ opacity: 0, y: -10 }}
                     className={cn(
                       "p-6 rounded-3xl border relative overflow-hidden transition-all duration-700",
+                      isGirlyMode ? "bg-white/40 border-pink-100 shadow-sm" :
                       isDarkMode 
                         ? "bg-zinc-900/40 border-zinc-800/50 shadow-[0_8px_32px_rgba(0,0,0,0.4)]" 
                         : "bg-white/90 border-zinc-200 shadow-sm"
                     )}
                   >
-                    <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50" />
+                    <div className={cn(
+                      "absolute top-0 left-0 w-1 h-full",
+                      isGirlyMode ? "bg-pink-500/50" : "bg-emerald-500/50"
+                    )} />
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                        <Sparkles className="w-4 h-4 text-emerald-500" />
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center",
+                        isGirlyMode ? "bg-pink-500/10" : "bg-emerald-500/10"
+                      )}>
+                        <Sparkles className={cn("w-4 h-4", isGirlyMode ? "text-pink-500" : "text-emerald-500")} />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500">
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-[0.3em]",
+                        isGirlyMode ? "text-pink-500" : "text-emerald-500"
+                      )}>
                         Biological Reflection
                       </span>
                       {isGeneratingReflection && (
@@ -3588,44 +3674,45 @@ function AppContent() {
                 transition={{ delay: 0.4 }}
                 className={cn(
                   "backdrop-blur-md border rounded-3xl p-6 transition-colors duration-500",
+                  isGirlyMode ? "bg-white/40 border-pink-100 shadow-sm shadow-pink-500/5" :
                   isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/60 border-zinc-200 shadow-sm"
                 )}
               >
                 <h3 className={cn(
                   "text-sm font-semibold mb-4 uppercase tracking-wider transition-colors",
-                  isDarkMode ? "text-zinc-400" : "text-zinc-500"
+                  isGirlyMode ? "text-pink-500/80" : isDarkMode ? "text-zinc-400" : "text-zinc-500"
                 )}>Weekly Activity</h3>
                 <div className="h-48 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={stats}>
                       <defs>
                         <linearGradient id="colorSteps" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          <stop offset="5%" stopColor={isGirlyMode ? "#ec4899" : "#10b981"} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={isGirlyMode ? "#ec4899" : "#10b981"} stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#27272a" : "#e4e4e7"} vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={isGirlyMode ? "#fce7f3" : isDarkMode ? "#27272a" : "#e4e4e7"} vertical={false} />
                       <XAxis 
                         dataKey="date" 
                         tickFormatter={(str) => format(new Date(str), 'EEE')}
-                        stroke={isDarkMode ? "#71717a" : "#a1a1aa"}
+                        stroke={isGirlyMode ? "#f472b6" : isDarkMode ? "#71717a" : "#a1a1aa"}
                         fontSize={10}
                         tickLine={false}
                         axisLine={false}
                       />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: isDarkMode ? '#18181b' : '#ffffff', 
-                          border: `1px solid ${isDarkMode ? '#27272a' : '#e4e4e7'}`, 
+                          backgroundColor: isGirlyMode ? '#fff' : isDarkMode ? '#18181b' : '#ffffff', 
+                          border: `1px solid ${isGirlyMode ? '#fbcfe8' : isDarkMode ? '#27272a' : '#e4e4e7'}`, 
                           borderRadius: '12px',
-                          color: isDarkMode ? '#ffffff' : '#000000'
+                          color: isGirlyMode ? '#9d174d' : isDarkMode ? '#ffffff' : '#000000'
                         }}
-                        itemStyle={{ color: '#10b981' }}
+                        itemStyle={{ color: isGirlyMode ? '#ec4899' : '#10b981' }}
                       />
                       <Area 
                         type="monotone" 
                         dataKey="steps" 
-                        stroke="#10b981" 
+                        stroke={isGirlyMode ? "#ec4899" : "#10b981"} 
                         fillOpacity={1} 
                         fill="url(#colorSteps)" 
                         strokeWidth={3}
@@ -3640,42 +3727,46 @@ function AppContent() {
                 <StatCard 
                   index={0}
                   isDarkMode={isDarkMode}
-                  icon={<Footprints className="w-5 h-5 text-blue-400" />}
+                  isGirlyMode={isGirlyMode}
+                  icon={<Footprints className={cn("w-5 h-5", isGirlyMode ? "text-pink-400" : "text-blue-400")} />}
                   label="Steps"
                   value={(userProfile.currentSteps || 0).toLocaleString()}
                   goal={userProfile.stepGoal.toLocaleString()}
                   progress={(userProfile.currentSteps || 0) / userProfile.stepGoal}
-                  color="bg-blue-500"
+                  color={isGirlyMode ? "bg-pink-500" : "bg-blue-500"}
                 />
                 <StatCard 
                   index={1}
                   isDarkMode={isDarkMode}
-                  icon={<Flame className="w-5 h-5 text-orange-400" />}
+                  isGirlyMode={isGirlyMode}
+                  icon={<Flame className={cn("w-5 h-5", isGirlyMode ? "text-pink-400" : "text-orange-400")} />}
                   label="Calories"
                   value={(userProfile.currentCalories || 0).toLocaleString()}
                   goal="2,500"
                   progress={(userProfile.currentCalories || 0) / 2500}
-                  color="bg-orange-500"
+                  color={isGirlyMode ? "bg-rose-400" : "bg-orange-500"}
                 />
                 <StatCard 
                   index={2}
                   isDarkMode={isDarkMode}
-                  icon={<Clock className="w-5 h-5 text-emerald-400" />}
+                  isGirlyMode={isGirlyMode}
+                  icon={<Clock className={cn("w-5 h-5", isGirlyMode ? "text-pink-400" : "text-emerald-400")} />}
                   label="Active"
                   value={`${todayStats.activeMinutes}m`}
                   goal="60m"
                   progress={todayStats.activeMinutes / 60}
-                  color="bg-emerald-500"
+                  color={isGirlyMode ? "bg-pink-400" : "bg-emerald-500"}
                 />
                 <StatCard 
                   index={3}
                   isDarkMode={isDarkMode}
-                  icon={<Activity className="w-5 h-5 text-purple-400" />}
+                  isGirlyMode={isGirlyMode}
+                  icon={<Activity className={cn("w-5 h-5", isGirlyMode ? "text-pink-400" : "text-purple-400")} />}
                   label="Weight"
                   value={`${(userProfile.currentWeight || 89).toFixed(1)}kg`}
                   goal={`${userProfile.targetWeight}kg`}
                   progress={userProfile.targetWeight / (userProfile.currentWeight || 89)}
-                  color="bg-purple-500"
+                  color={isGirlyMode ? "bg-pink-600" : "bg-purple-500"}
                 />
               </div>
 
@@ -3734,20 +3825,24 @@ function AppContent() {
               {/* Today's Plan Preview */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold">Today's Plan</h3>
+                  <h3 className={cn("text-lg font-bold", isGirlyMode ? "text-pink-900" : "")}>Today's Plan</h3>
                   <button 
                     onClick={() => setActiveView('plan')}
-                    className="text-sm text-emerald-500 font-medium flex items-center gap-1"
+                    className={cn(
+                      "text-sm font-medium flex items-center gap-1",
+                      isGirlyMode ? "text-pink-500" : "text-emerald-500"
+                    )}
                   >
                     Full Plan <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
                 <div className={cn(
                   "backdrop-blur-md border rounded-3xl p-5 transition-colors duration-500",
+                  isGirlyMode ? "bg-white/40 border-pink-100 shadow-sm shadow-pink-500/5" :
                   isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/60 border-zinc-200 shadow-sm"
                 )}>
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-bold text-emerald-500">{weeklyPlan[currentDayIndex].day} - {weeklyPlan[currentDayIndex].type}</h4>
+                    <h4 className={cn("font-bold", isGirlyMode ? "text-pink-500" : "text-emerald-500")}>{weeklyPlan[currentDayIndex].day} - {weeklyPlan[currentDayIndex].type}</h4>
                   </div>
                   <div className="space-y-3">
                     {weeklyPlan[currentDayIndex].exercises.map(ex => (
@@ -3765,12 +3860,12 @@ function AppContent() {
                           </button>
                           <div className={cn(
                             "transition-all",
-                            ex.completed && (isDarkMode ? "opacity-50 line-through" : "opacity-40 line-through")
+                            ex.completed && (isGirlyMode ? "opacity-40 line-through text-pink-300" : isDarkMode ? "opacity-50 line-through" : "opacity-40 line-through")
                           )}>
-                            <p className="text-sm font-bold">{ex.name}</p>
+                            <p className={cn("text-sm font-bold", isGirlyMode && !ex.completed ? "text-pink-900" : "")}>{ex.name}</p>
                             <p className={cn(
                               "text-[10px] font-medium",
-                              isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                              isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
                             )}>{ex.details}</p>
                           </div>
                         </div>
@@ -4096,6 +4191,7 @@ function AppContent() {
             >
               <YogaView 
                 isDarkMode={isDarkMode} 
+                isGirlyMode={isGirlyMode}
                 onMarkAsWise={markQuoteAsSeen}
                 isSessionActive={isYogaSessionActive}
                 setIsSessionActive={setIsYogaSessionActive}
@@ -4112,7 +4208,7 @@ function AppContent() {
               className="space-y-6"
             >
               <h2 className="text-2xl font-bold">Training the Mind</h2>
-              <QuizView isDarkMode={isDarkMode} user={user} />
+              <QuizView isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} user={user} />
             </motion.div>
           )}
 
@@ -4127,20 +4223,20 @@ function AppContent() {
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className={cn(
                   "w-24 h-24 rounded-full border-4 flex items-center justify-center overflow-hidden transition-colors",
-                  isDarkMode ? "bg-zinc-800 border-emerald-500/20" : "bg-zinc-200 border-emerald-500/10"
+                  isGirlyMode ? "bg-pink-100 border-pink-500/20" : isDarkMode ? "bg-zinc-800 border-emerald-500/20" : "bg-zinc-200 border-emerald-500/10"
                 )}>
                   <img 
                     src={userProfile.avatarUrl} 
                     alt="Avatar" 
-                    className="w-full h-full object-cover"
+                    className={cn("w-full h-full object-cover", isGirlyMode && "saturate-150")}
                     referrerPolicy="no-referrer"
                   />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">{userProfile.name}</h2>
+                  <h2 className={cn("text-2xl font-bold", isGirlyMode ? "text-pink-900" : "")}>{userProfile.name}</h2>
                   <p className={cn(
                     "font-medium transition-colors",
-                    isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    isGirlyMode ? "text-pink-600/60" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
                   )}>{user?.email}</p>
                 </div>
               </div>
@@ -4156,7 +4252,10 @@ function AppContent() {
                   )}>Current Stats</h3>
                   <button 
                     onClick={() => setIsEditingProfile(true)}
-                    className="text-xs text-emerald-500 font-bold"
+                    className={cn(
+                      "text-xs font-bold",
+                      isGirlyMode ? "text-pink-500" : "text-emerald-500"
+                    )}
                   >
                     Edit
                   </button>
@@ -4180,12 +4279,12 @@ function AppContent() {
               </div>
 
               <div className="space-y-2">
-                <ProfileItem label="Height" value={`${userProfile.height} cm`} isDarkMode={isDarkMode} />
-                <ProfileItem label="Current Weight" value={`${userProfile.currentWeight} kg`} isDarkMode={isDarkMode} />
-                <ProfileItem label="Target Weight" value={`${userProfile.targetWeight} kg`} isDarkMode={isDarkMode} />
-                <ProfileItem label="Goal" value="23 Max Pull-ups" isDarkMode={isDarkMode} />
-                <ProfileItem label="Short-term Goal" value={userProfile.shortTermGoal} isDarkMode={isDarkMode} />
-                <ProfileItem label="Long-term Goal" value={userProfile.longTermGoal} isDarkMode={isDarkMode} />
+                <ProfileItem label="Height" value={`${userProfile.height} cm`} isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} />
+                <ProfileItem label="Current Weight" value={`${userProfile.currentWeight} kg`} isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} />
+                <ProfileItem label="Target Weight" value={`${userProfile.targetWeight} kg`} isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} />
+                <ProfileItem label="Goal" value="23 Max Pull-ups" isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} />
+                <ProfileItem label="Short-term Goal" value={userProfile.shortTermGoal} isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} />
+                <ProfileItem label="Long-term Goal" value={userProfile.longTermGoal} isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} />
               </div>
 
               <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
@@ -4195,10 +4294,13 @@ function AppContent() {
                 <div className="flex items-center justify-between px-2">
                   <h3 className={cn(
                     "text-sm font-bold uppercase tracking-widest transition-colors",
-                    isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    isGirlyMode ? "text-pink-500/60" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
                   )}>Biometric Intelligence</h3>
                   {userProfile.integrations?.googleFit?.connected && (
-                    <span className="text-[9px] font-black uppercase text-emerald-500 tracking-tighter bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">LIVE PULSE Active</span>
+                    <span className={cn(
+                      "text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded border",
+                      isGirlyMode ? "text-pink-500 bg-pink-500/10 border-pink-500/20" : "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                    )}>LIVE PULSE Active</span>
                   )}
                 </div>
                 <BiometricDashboard 
@@ -4676,7 +4778,7 @@ function AppContent() {
                 onClick={handleLogout}
                 className={cn(
                   "w-full py-4 border rounded-2xl font-bold text-red-500 active:scale-95 transition-all flex items-center justify-center gap-2",
-                  isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+                  isGirlyMode ? "bg-white/60 border-pink-100" : isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
                 )}
               >
                 <LogOut className="w-5 h-5" />
@@ -4695,8 +4797,13 @@ function AppContent() {
             >
               {!user && (
                 <div className="absolute inset-0 z-50 backdrop-blur-md bg-zinc-950/20 rounded-3xl flex flex-col items-center justify-center p-8 text-center space-y-6">
-                  <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center border border-emerald-500/30">
-                    <Sparkles className="w-10 h-10 text-emerald-400" />
+                  <div className={cn(
+                    "w-20 h-20 rounded-full flex items-center justify-center border transition-colors",
+                    isGirlyMode 
+                      ? "bg-pink-500/20 border-pink-500/30" 
+                      : "bg-emerald-500/20 border-emerald-500/30"
+                  )}>
+                    <Sparkles className={cn("w-10 h-10", isGirlyMode ? "text-pink-400" : "text-emerald-400")} />
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-xl font-black uppercase tracking-tight text-white">Consult the Sage</h3>
@@ -4704,14 +4811,20 @@ function AppContent() {
                   </div>
                   <button 
                     onClick={handleLogin}
-                    className="px-8 py-3 bg-emerald-500 text-zinc-950 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform"
+                    className={cn(
+                      "px-8 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform",
+                      isGirlyMode ? "bg-pink-500 text-white" : "bg-emerald-500 text-zinc-950"
+                    )}
                   >
                     Enter the Sanctuary
                   </button>
                 </div>
               )}
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl overflow-hidden flex items-center justify-center border border-emerald-500/20">
+                <div className={cn(
+                  "w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border transition-colors",
+                  isGirlyMode ? "bg-pink-500/20 border-pink-500/20" : "bg-emerald-500/20 border-emerald-500/20"
+                )}>
                   <img 
                     src={AVATARS[0].url} 
                     alt="AI Stoic" 
@@ -4720,14 +4833,17 @@ function AppContent() {
                   />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">AI Stoic</h2>
-                  <p className="text-xs text-zinc-500 font-medium uppercase tracking-widest">Powered by Gemini</p>
+                  <h2 className={cn("text-2xl font-bold", isGirlyMode ? "text-pink-900" : "")}>AI Stoic</h2>
+                  <p className={cn(
+                    "text-xs font-medium uppercase tracking-widest",
+                    isGirlyMode ? "text-pink-500" : "text-zinc-500"
+                  )}>Powered by Gemini</p>
                 </div>
               </div>
 
               <div className={cn(
                 "flex-1 overflow-y-auto space-y-4 p-4 rounded-3xl border mb-4 no-scrollbar",
-                isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/60 border-zinc-200 shadow-sm"
+                isGirlyMode ? "bg-white/40 border-pink-100" : isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/60 border-zinc-200 shadow-sm"
               )}>
                 {chatMessages.length === 0 && (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
@@ -4838,11 +4954,11 @@ function AppContent() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold">Wisdom Repository</h2>
+                    <h2 className={cn("text-2xl font-bold", isGirlyMode ? "text-pink-900" : "")}>Wisdom Repository</h2>
                     <div className="flex items-center gap-2">
                        <p className={cn(
                         "text-xs font-medium",
-                        isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
                       )}>{libraryQuotes.length} Wisdoms Stored</p>
                     </div>
                   </div>
@@ -4851,14 +4967,14 @@ function AppContent() {
                       onClick={() => setIsAddingQuote(true)}
                       className={cn(
                         "p-2 rounded-xl transition-all hover:scale-110",
-                        isDarkMode ? "bg-purple-500/10 text-purple-400" : "bg-purple-50 text-purple-600 shadow-sm"
+                        isGirlyMode ? "bg-pink-500/10 text-pink-500 shadow-sm" : isDarkMode ? "bg-purple-500/10 text-purple-400" : "bg-purple-50 text-purple-600 shadow-sm"
                       )}
                     >
                       <Plus className="w-5 h-5" />
                     </button>
                     <div className={cn(
                       "p-2 rounded-xl",
-                      isDarkMode ? "bg-zinc-900 text-emerald-400" : "bg-emerald-50 text-emerald-600"
+                      isGirlyMode ? "bg-pink-50 text-pink-600" : isDarkMode ? "bg-zinc-900 text-emerald-400" : "bg-emerald-50 text-emerald-600"
                     )}>
                       <BookOpen className="w-5 h-5" />
                     </div>
@@ -4868,14 +4984,14 @@ function AppContent() {
                 {/* Sub Tabs */}
                 <div className={cn(
                   "flex p-1 rounded-2xl",
-                  isDarkMode ? "bg-zinc-900/50" : "bg-zinc-100"
+                  isGirlyMode ? "bg-pink-50" : isDarkMode ? "bg-zinc-900/50" : "bg-zinc-100"
                 )}>
                   <button
                     onClick={() => setLibraryTab('quotes')}
                     className={cn(
                       "flex-1 py-2 rounded-xl text-xs font-bold transition-all",
                       libraryTab === 'quotes' 
-                        ? (isDarkMode ? "bg-zinc-800 text-white shadow-lg" : "bg-white text-zinc-900 shadow-sm")
+                        ? (isGirlyMode ? "bg-white text-pink-600 shadow-lg shadow-pink-500/10" : isDarkMode ? "bg-zinc-800 text-white shadow-lg" : "bg-white text-zinc-900 shadow-sm")
                         : "text-zinc-500 hover:text-zinc-400"
                     )}
                   >
@@ -4886,7 +5002,7 @@ function AppContent() {
                     className={cn(
                       "flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2",
                       libraryTab === 'archive' 
-                        ? (isDarkMode ? "bg-zinc-800 text-white shadow-lg" : "bg-white text-zinc-900 shadow-sm")
+                        ? (isGirlyMode ? "bg-white text-pink-600 shadow-lg shadow-pink-500/10" : isDarkMode ? "bg-zinc-800 text-white shadow-lg" : "bg-white text-zinc-900 shadow-sm")
                         : "text-zinc-500 hover:text-zinc-400"
                     )}
                   >
@@ -4909,7 +5025,7 @@ function AppContent() {
                             "px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all",
                             isLibrarySelectMode 
                               ? "bg-red-500 text-white" 
-                              : (isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200")
+                              : (isGirlyMode ? "bg-pink-100 text-pink-600" : isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200")
                           )}
                         >
                           {isLibrarySelectMode ? 'Cancel' : 'Select'}
@@ -4990,9 +5106,11 @@ function AppContent() {
                           onChange={(e) => setNewQuote({ ...newQuote, author: e.target.value })}
                           className={cn(
                             "p-3 rounded-xl border text-xs focus:outline-none focus:ring-2 transition-all",
-                            isDarkMode 
-                              ? "bg-zinc-800/50 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
-                              : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
+                            isGirlyMode 
+                              ? "bg-white border-pink-100 text-pink-900 focus:ring-pink-500/20"
+                              : isDarkMode 
+                                ? "bg-zinc-800/50 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
+                                : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
                           )}
                         />
                         <select
@@ -5000,9 +5118,11 @@ function AppContent() {
                           onChange={(e) => setNewQuote({ ...newQuote, source: e.target.value })}
                           className={cn(
                             "p-3 rounded-xl border text-xs focus:outline-none focus:ring-2 transition-all cursor-pointer",
-                            isDarkMode 
-                              ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
-                              : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
+                            isGirlyMode 
+                              ? "bg-white border-pink-100 text-pink-900 focus:ring-pink-500/20"
+                              : isDarkMode 
+                                ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
+                                : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
                           )}
                         >
                           <option value="Philosophy" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Philosophy</option>
@@ -5017,15 +5137,20 @@ function AppContent() {
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-purple-500 px-1">Wisdom Grade</label>
+                        <label className={cn(
+                          "text-[10px] font-bold uppercase tracking-wider px-1",
+                          isGirlyMode ? "text-pink-500" : "text-purple-500"
+                        )}>Wisdom Grade</label>
                         <select
                           value={newQuote.wisdomGrade}
                           onChange={(e) => setNewQuote({ ...newQuote, wisdomGrade: e.target.value })}
                           className={cn(
                             "w-full p-3 rounded-xl border text-xs focus:outline-none focus:ring-2 transition-all cursor-pointer",
-                            isDarkMode 
-                              ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
-                              : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
+                            isGirlyMode 
+                              ? "bg-white border-pink-100 text-pink-900 focus:ring-pink-500/20"
+                              : isDarkMode 
+                                ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
+                                : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
                           )}
                         >
                           <option value="The wisest quote ever" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>The wisest quote ever</option>
@@ -5054,16 +5179,21 @@ function AppContent() {
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-purple-500 px-1">Personal Comment</label>
+                        <label className={cn(
+                          "text-[10px] font-bold uppercase tracking-wider px-1",
+                          isGirlyMode ? "text-pink-500" : "text-purple-500"
+                        )}>Personal Comment</label>
                         <textarea
                           value={newQuote.comment}
                           onChange={(e) => setNewQuote({ ...newQuote, comment: e.target.value })}
                           placeholder="Add a personal reflection..."
                           className={cn(
                             "w-full p-3 rounded-xl border text-xs focus:outline-none focus:ring-2 transition-all resize-none h-20",
-                            isDarkMode 
-                              ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
-                              : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
+                            isGirlyMode 
+                              ? "bg-white border-pink-100 text-pink-900 focus:ring-pink-500/20"
+                              : isDarkMode 
+                                ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
+                                : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
                           )}
                         />
                       </div>
@@ -5073,8 +5203,8 @@ function AppContent() {
                         className={cn(
                           "w-full py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2",
                           !newQuote.text.trim()
-                            ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                            : "bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20"
+                            ? (isGirlyMode ? "bg-pink-100 text-pink-300" : "bg-zinc-800 text-zinc-600")
+                            : (isGirlyMode ? "bg-pink-500 text-white hover:bg-pink-600 shadow-lg shadow-pink-500/20" : "bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-500/20")
                         )}
                       >
                         <>
@@ -5089,17 +5219,17 @@ function AppContent() {
 
               {isLibraryLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-                  <p className="text-sm text-zinc-500">Opening the scrolls...</p>
+                  <Loader2 className={cn("w-8 h-8 animate-spin", isGirlyMode ? "text-pink-500" : "text-emerald-500")} />
+                  <p className={cn("text-sm", isGirlyMode ? "text-pink-600/60" : "text-zinc-500")}>Opening the scrolls...</p>
                 </div>
               ) : libraryQuotes.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                  <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center">
-                    <Scroll className="w-8 h-8 text-zinc-600" />
+                  <div className={cn("w-16 h-16 rounded-full flex items-center justify-center", isGirlyMode ? "bg-pink-100" : "bg-zinc-800")}>
+                    <Scroll className={cn("w-8 h-8", isGirlyMode ? "text-pink-500" : "text-zinc-600")} />
                   </div>
                   <div>
-                    <h3 className="font-bold">No Wisdom Yet</h3>
-                    <p className="text-sm text-zinc-500 max-w-[200px] mx-auto">Mark quotes as wise on your dashboard to build your library.</p>
+                    <h3 className={cn("font-bold", isGirlyMode ? "text-pink-900" : "")}>No Wisdom Yet</h3>
+                    <p className={cn("text-sm max-w-[200px] mx-auto", isGirlyMode ? "text-pink-600/60" : "text-zinc-500")}>Mark quotes as wise on your dashboard to build your library.</p>
                   </div>
                 </div>
               ) : (
@@ -5115,12 +5245,12 @@ function AppContent() {
                     const quoteToGlobalIndex = new Map(
                       sortedChronological.map((q, idx) => [q.id, idx + 1])
                     );
-
+ 
                     return Array.from(new Set(libraryQuotes.map(q => q.source))).sort().map(source => (
                       <div key={source} className="space-y-3">
                         <h3 className={cn(
                           "text-[10px] font-bold uppercase tracking-[0.2em] px-2",
-                          isDarkMode ? "text-emerald-500/70" : "text-emerald-600/70"
+                          isGirlyMode ? "text-pink-500/70" : isDarkMode ? "text-emerald-500/70" : "text-emerald-600/70"
                         )}>{source} Tradition</h3>
                         <div className="grid gap-3">
                           {libraryQuotes
@@ -5137,13 +5267,15 @@ function AppContent() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className={cn(
                                   "p-5 rounded-3xl border transition-all relative group overflow-hidden",
-                                  quote.category === 'finance'
-                                    ? (isDarkMode ? "bg-emerald-900/20 border-emerald-800/50" : "bg-emerald-50/50 border-emerald-200 shadow-sm")
-                                    : (quote.isCustom || quote.isAI)
-                                      ? (isDarkMode ? "bg-purple-900/20 border-purple-800/50" : "bg-purple-50/50 border-purple-200 shadow-sm")
-                                      : quote.wisdomGrade
-                                        ? (isDarkMode ? "bg-yellow-900/20 border-yellow-800/50" : "bg-yellow-50/50 border-yellow-200 shadow-sm")
-                                        : (isDarkMode ? "bg-zinc-900/60 border-zinc-800/50" : "bg-white border-zinc-200 shadow-sm")
+                                  isGirlyMode
+                                    ? "bg-white/60 border-pink-100 shadow-sm"
+                                    : quote.category === 'finance'
+                                      ? (isDarkMode ? "bg-emerald-900/20 border-emerald-800/50" : "bg-emerald-50/50 border-emerald-200 shadow-sm")
+                                      : (quote.isCustom || quote.isAI)
+                                        ? (isDarkMode ? "bg-purple-900/20 border-purple-800/50" : "bg-purple-50/50 border-purple-200 shadow-sm")
+                                        : quote.wisdomGrade
+                                          ? (isDarkMode ? "bg-yellow-900/20 border-yellow-800/50" : "bg-yellow-50/50 border-yellow-200 shadow-sm")
+                                          : (isDarkMode ? "bg-zinc-900/60 border-zinc-800/50" : "bg-white border-zinc-200 shadow-sm")
                                 )}
                               >
                                 <div className={cn(
@@ -5156,8 +5288,8 @@ function AppContent() {
                                       className={cn(
                                         "p-2 rounded-xl transition-all shadow-sm",
                                         selectedLibraryIds.has(quote.id!)
-                                          ? "bg-red-500 text-white"
-                                          : (isDarkMode ? "bg-zinc-800 text-zinc-500" : "bg-white text-zinc-400 border border-zinc-100")
+                                          ? (isGirlyMode ? "bg-pink-500 text-white" : "bg-red-500 text-white")
+                                          : (isGirlyMode ? "bg-pink-100 text-pink-400" : isDarkMode ? "bg-zinc-800 text-zinc-500" : "bg-white text-zinc-400 border border-zinc-100")
                                       )}
                                     >
                                       {selectedLibraryIds.has(quote.id!) ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
@@ -5167,9 +5299,11 @@ function AppContent() {
                                       onClick={() => handleDeleteQuotesFromLibrary([quote.id!])}
                                       className={cn(
                                         "p-2 rounded-xl transition-all shadow-sm",
-                                        isDarkMode 
-                                          ? "bg-zinc-800 text-zinc-500 hover:text-red-400 hover:bg-red-500/10" 
-                                          : "bg-white border border-zinc-100 text-zinc-400 hover:text-red-500 hover:bg-red-50"
+                                        isGirlyMode
+                                          ? "bg-pink-100 text-pink-400 hover:text-pink-600 hover:bg-pink-200"
+                                          : isDarkMode 
+                                            ? "bg-zinc-800 text-zinc-500 hover:text-red-400 hover:bg-red-500/10" 
+                                            : "bg-white border border-zinc-100 text-zinc-400 hover:text-red-500 hover:bg-red-50"
                                       )}
                                       title="Remove from Library"
                                     >
@@ -5179,58 +5313,67 @@ function AppContent() {
                                 </div>
                                 <div className={cn(
                                   "absolute top-0 left-0 px-3 py-1 rounded-br-2xl text-[10px] font-black tracking-tighter",
-                                  quote.category === 'finance'
-                                    ? (isDarkMode ? "bg-emerald-800/30 text-emerald-400" : "bg-emerald-100 text-emerald-500")
-                                    : (quote.isCustom || quote.isAI)
-                                      ? (isDarkMode ? "bg-purple-800/30 text-purple-400" : "bg-purple-100 text-purple-500")
-                                      : quote.wisdomGrade
-                                        ? (isDarkMode ? "bg-yellow-800/30 text-yellow-400" : "bg-yellow-100 text-yellow-500")
-                                        : (isDarkMode ? "bg-zinc-800 text-zinc-600" : "bg-zinc-100 text-zinc-400")
+                                  isGirlyMode
+                                    ? "bg-pink-100 text-pink-500"
+                                    : quote.category === 'finance'
+                                      ? (isDarkMode ? "bg-emerald-800/30 text-emerald-400" : "bg-emerald-100 text-emerald-500")
+                                      : (quote.isCustom || quote.isAI)
+                                        ? (isDarkMode ? "bg-purple-800/30 text-purple-400" : "bg-purple-100 text-purple-500")
+                                        : quote.wisdomGrade
+                                          ? (isDarkMode ? "bg-yellow-800/30 text-yellow-400" : "bg-yellow-100 text-yellow-500")
+                                          : (isDarkMode ? "bg-zinc-800 text-zinc-600" : "bg-zinc-100 text-zinc-400")
                                 )}>
                                   #{quoteToGlobalIndex.get(quote.id)}
                                 </div>
                                 <p className={cn(
                                   "text-sm font-serif italic leading-relaxed mb-1 mt-2",
-                                  isDarkMode ? "text-zinc-100" : "text-zinc-900"
+                                  isGirlyMode ? "text-pink-950" : isDarkMode ? "text-zinc-100" : "text-zinc-900"
                                 )}>
                                   "{quote.text}"
                                 </p>
                                   <div className="mt-4 space-y-3">
                                     <div className="flex items-center gap-2">
-                                      <div className={cn("h-[1px] flex-1", quote.category === 'finance' ? "bg-emerald-500/20" : quote.isCustom ? "bg-purple-500/20" : "bg-yellow-500/20")} />
+                                      <div className={cn("h-[1px] flex-1", isGirlyMode ? "bg-pink-500/20" : quote.category === 'finance' ? "bg-emerald-500/20" : quote.isCustom ? "bg-purple-500/20" : "bg-yellow-500/20")} />
                                       <span className={cn(
                                         "text-[8px] font-black uppercase tracking-[0.2em]",
-                                        quote.category === 'finance' ? "text-emerald-400/70" : quote.isCustom ? "text-purple-400/70" : "text-yellow-500/70"
+                                        isGirlyMode ? "text-pink-400/70" : quote.category === 'finance' ? "text-emerald-400/70" : quote.isCustom ? "text-purple-400/70" : "text-yellow-500/70"
                                       )}>Wisdom Data</span>
-                                      <div className={cn("h-[1px] flex-1", quote.category === 'finance' ? "bg-emerald-500/20" : quote.isCustom ? "bg-purple-500/20" : "bg-yellow-500/20")} />
+                                      <div className={cn("h-[1px] flex-1", isGirlyMode ? "bg-pink-500/20" : quote.category === 'finance' ? "bg-emerald-500/20" : quote.isCustom ? "bg-purple-500/20" : "bg-yellow-500/20")} />
                                     </div>
                                     
                                     {editingQuoteId === quote.id ? (
-                                      <div className="space-y-4 p-4 rounded-3xl bg-zinc-900/60 border border-zinc-800/50 shadow-inner">
+                                      <div className={cn(
+                                        "space-y-4 p-4 rounded-3xl border shadow-inner",
+                                        isGirlyMode ? "bg-pink-50/50 border-pink-100" : "bg-zinc-900/60 border border-zinc-800/50"
+                                      )}>
                                         <div className="space-y-2">
-                                          <label className="text-[7px] font-black uppercase tracking-[0.2em] text-emerald-500/70 px-1">Wisdom Text</label>
+                                          <label className={cn("text-[7px] font-black uppercase tracking-[0.2em] px-1", isGirlyMode ? "text-pink-500/70" : "text-emerald-500/70")}>Wisdom Text</label>
                                           <textarea
                                             value={editText}
                                             onChange={(e) => setEditText(e.target.value)}
                                             className={cn(
                                               "w-full p-3 rounded-2xl border text-xs font-serif italic focus:outline-none focus:ring-1 transition-all resize-none min-h-[80px] leading-relaxed",
-                                              isDarkMode 
-                                                ? "bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-emerald-500/50" 
-                                                : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20 shadow-sm"
+                                              isGirlyMode 
+                                                ? "bg-white border-pink-100 text-pink-900 focus:ring-pink-500/20 shadow-sm"
+                                                : isDarkMode 
+                                                  ? "bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-emerald-500/50" 
+                                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20 shadow-sm"
                                             )}
                                           />
                                         </div>
                                         <div className="space-y-2">
-                                          <label className="text-[7px] font-black uppercase tracking-[0.2em] text-emerald-500/70 px-1">Author Identity</label>
+                                          <label className={cn("text-[7px] font-black uppercase tracking-[0.2em] px-1", isGirlyMode ? "text-pink-500/70" : "text-emerald-500/70")}>Author Identity</label>
                                           <input
                                             type="text"
                                             value={editAuthor}
                                             onChange={(e) => setEditAuthor(e.target.value)}
                                             className={cn(
                                               "w-full p-2.5 rounded-xl border text-[11px] font-black focus:outline-none focus:ring-1 transition-all",
-                                              isDarkMode 
-                                                ? "bg-zinc-950 border-zinc-800 text-blue-400 focus:ring-emerald-500/50" 
-                                                : "bg-white border-zinc-200 text-blue-600 focus:ring-emerald-500/20 shadow-sm"
+                                              isGirlyMode 
+                                                ? "bg-white border-pink-100 text-pink-600 focus:ring-pink-500/20 shadow-sm"
+                                                : isDarkMode 
+                                                  ? "bg-zinc-950 border-zinc-800 text-blue-400 focus:ring-emerald-500/50" 
+                                                  : "bg-white border-zinc-200 text-blue-600 focus:ring-emerald-500/20 shadow-sm"
                                             )}
                                           />
                                         </div>
@@ -5242,9 +5385,11 @@ function AppContent() {
                                               onChange={(e) => setEditGrade(e.target.value)}
                                               className={cn(
                                                 "w-full p-2 rounded-xl border text-[10px] focus:outline-none focus:ring-1 transition-all cursor-pointer",
-                                                isDarkMode 
-                                                  ? "bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-emerald-500/50" 
-                                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20 shadow-sm"
+                                                isGirlyMode 
+                                                  ? "bg-white border-pink-100 text-pink-900 focus:ring-pink-500/20 shadow-sm"
+                                                  : isDarkMode 
+                                                    ? "bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-emerald-500/50" 
+                                                    : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20 shadow-sm"
                                               )}
                                             >
                                               <option value="A daily reminder">A daily reminder</option>
@@ -5265,9 +5410,11 @@ function AppContent() {
                                               placeholder="Personal notes..."
                                               className={cn(
                                                 "w-full p-2 rounded-xl border text-[10px] focus:outline-none focus:ring-1 transition-all resize-none h-[38px] leading-snug",
-                                                isDarkMode 
-                                                  ? "bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-emerald-500/50" 
-                                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20 shadow-sm"
+                                                isGirlyMode 
+                                                  ? "bg-white border-pink-100 text-pink-900 focus:ring-pink-500/20 shadow-sm"
+                                                  : isDarkMode 
+                                                    ? "bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-emerald-500/50" 
+                                                    : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20 shadow-sm"
                                               )}
                                             />
                                           </div>
@@ -5275,13 +5422,19 @@ function AppContent() {
                                         <div className="flex gap-2 pt-1">
                                           <button
                                             onClick={() => handleUpdateWisdomData(quote.id!, quote.isCustom || false)}
-                                            className="flex-1 py-2.5 bg-emerald-600 text-white rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-950/20 active:scale-[0.98]"
+                                            className={cn(
+                                              "flex-1 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-lg active:scale-[0.98]",
+                                              isGirlyMode ? "bg-pink-500 text-white hover:bg-pink-400 shadow-pink-900/20" : "bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-950/20"
+                                            )}
                                           >
                                             Save Changes
                                           </button>
                                           <button
                                             onClick={() => setEditingQuoteId(null)}
-                                            className="px-4 py-2.5 bg-zinc-800 text-zinc-400 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-zinc-700 transition-all active:scale-[0.98]"
+                                            className={cn(
+                                              "px-4 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98]",
+                                              isGirlyMode ? "bg-pink-100 text-pink-400 hover:bg-pink-200" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                                            )}
                                           >
                                             Cancel
                                           </button>
@@ -5297,7 +5450,10 @@ function AppContent() {
                                             setEditGrade(quote.wisdomGrade || 'A daily reminder');
                                             setEditComment(quote.comment || '');
                                           }}
-                                          className="absolute -top-6 right-0 transition-opacity text-[8px] font-bold uppercase tracking-wider text-emerald-500 hover:text-emerald-400"
+                                          className={cn(
+                                            "absolute -top-6 right-0 transition-opacity text-[8px] font-bold uppercase tracking-wider",
+                                            isGirlyMode ? "text-pink-500 hover:text-pink-400" : "text-emerald-500 hover:text-emerald-400"
+                                          )}
                                         >
                                           EDIT
                                         </button>
@@ -5306,7 +5462,7 @@ function AppContent() {
                                             <span className="text-[7px] font-bold uppercase tracking-widest text-zinc-500">Grade:</span>
                                             <p className={cn(
                                               "text-[9px] font-bold uppercase tracking-wider",
-                                              quote.isCustom ? "text-purple-400" : "text-yellow-500"
+                                              isGirlyMode ? "text-pink-500" : quote.isCustom ? "text-purple-400" : "text-yellow-500"
                                             )}>
                                               {quote.wisdomGrade}
                                             </p>
@@ -5315,9 +5471,9 @@ function AppContent() {
                                       </div>
                                     )}
                                   </div>
-                                <div className="mt-3 pt-3 border-t border-zinc-800/10 space-y-2">
+                                <div className={cn("mt-3 pt-3 border-t space-y-2", isDarkMode ? "border-zinc-800/20" : "border-zinc-800/10")}>
                                   <div className="flex items-center justify-between">
-                                    <p className="text-[16px] font-bold text-blue-500">{quote.author}</p>
+                                    <p className={cn("text-[16px] font-bold", isGirlyMode ? "text-pink-600" : "text-blue-500")}>{quote.author}</p>
                                     {quote.markedDate && (
                                       <p className={cn(
                                         "text-[9px] font-medium",
@@ -5348,7 +5504,7 @@ function AppContent() {
               )}
             </>
           ) : (
-            <HistoryFeed isDarkMode={isDarkMode} items={INITIAL_HISTORY_VIDEOS} />
+            <HistoryFeed isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} items={INITIAL_HISTORY_VIDEOS} />
           )}
         </motion.div>
           )}
@@ -5359,6 +5515,7 @@ function AppContent() {
       {!isYogaSessionActive && (
         <nav className={cn(
           "fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t px-6 py-3 pb-8 transition-colors duration-500",
+          isGirlyMode ? "bg-white/90 border-pink-100 shadow-[0_-8px_32px_rgba(244,63,94,0.1)]" :
           isDarkMode ? "bg-zinc-950/90 border-zinc-800/50" : "bg-white/90 border-zinc-200 shadow-lg"
         )}>
         <div className="max-w-md mx-auto flex items-center justify-between">
@@ -5368,6 +5525,7 @@ function AppContent() {
             icon={<Activity className="w-6 h-6" />}
             label="Home"
             isDarkMode={isDarkMode}
+            isGirlyMode={isGirlyMode}
           />
           <NavButton 
             active={activeView === 'plan'} 
@@ -5375,6 +5533,7 @@ function AppContent() {
             icon={<ListTodo className="w-6 h-6" />}
             label="Plan"
             isDarkMode={isDarkMode}
+            isGirlyMode={isGirlyMode}
           />
           <NavButton 
             active={activeView === 'workouts'} 
@@ -5382,6 +5541,7 @@ function AppContent() {
             icon={<Dumbbell className="w-6 h-6" />}
             label="Log"
             isDarkMode={isDarkMode}
+            isGirlyMode={isGirlyMode}
           />
           <NavButton 
             active={activeView === 'yoga'} 
@@ -5389,6 +5549,7 @@ function AppContent() {
             icon={<Wind className="w-6 h-6" />}
             label="Yoga"
             isDarkMode={isDarkMode}
+            isGirlyMode={isGirlyMode}
           />
           <NavButton 
             active={activeView === 'quiz'} 
@@ -5396,6 +5557,7 @@ function AppContent() {
             icon={<Brain className="w-6 h-6" />}
             label="Quiz"
             isDarkMode={isDarkMode}
+            isGirlyMode={isGirlyMode}
           />
           <NavButton 
             active={activeView === 'chat'} 
@@ -5403,6 +5565,7 @@ function AppContent() {
             icon={<MessageSquare className="w-6 h-6" />}
             label="Stoic"
             isDarkMode={isDarkMode}
+            isGirlyMode={isGirlyMode}
           />
           <NavButton 
             active={activeView === 'library'} 
@@ -5410,6 +5573,7 @@ function AppContent() {
             icon={<BookOpen className="w-6 h-6" />}
             label="Library"
             isDarkMode={isDarkMode}
+            isGirlyMode={isGirlyMode}
           />
           <NavButton 
             active={activeView === 'profile'} 
@@ -5417,6 +5581,7 @@ function AppContent() {
             icon={<User className="w-6 h-6" />}
             label="Profile"
             isDarkMode={isDarkMode}
+            isGirlyMode={isGirlyMode}
           />
         </div>
       </nav>
@@ -5437,13 +5602,13 @@ function AppContent() {
               exit={{ y: "100%" }}
               className={cn(
                 "w-full max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden border transition-colors duration-500",
-                isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-2xl"
+                isGirlyMode ? "bg-white border-pink-100 shadow-2xl" : isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-2xl"
               )}
             >
               <div className="p-6 space-y-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold">Edit Profile</h3>
-                  <button onClick={() => setIsEditingProfile(false)} className={isDarkMode ? "text-zinc-500" : "text-zinc-400"}>
+                  <h3 className={cn("text-xl font-bold", isGirlyMode ? "text-pink-900" : "")}>Edit Profile</h3>
+                  <button onClick={() => setIsEditingProfile(false)} className={isGirlyMode ? "text-pink-300" : isDarkMode ? "text-zinc-500" : "text-zinc-400"}>
                     <ChevronLeft className="w-6 h-6 rotate-[-90deg]" />
                   </button>
                 </div>
@@ -5452,45 +5617,45 @@ function AppContent() {
                   <div>
                     <label className={cn(
                       "text-xs font-bold uppercase mb-1 block transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                      isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
                     )}>Height (cm)</label>
                     <input 
                       type="number" 
                       value={userProfile.height}
                       onChange={(e) => setUserProfile({ ...userProfile, height: Number(e.target.value) })}
                       className={cn(
-                        "w-full border rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-all",
-                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                        "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                        isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
                       )}
                     />
                   </div>
                   <div>
                     <label className={cn(
                       "text-xs font-bold uppercase mb-1 block transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                      isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
                     )}>Weight (kg)</label>
                     <input 
                       type="number" 
                       value={userProfile.currentWeight}
                       onChange={(e) => setUserProfile({ ...userProfile, currentWeight: Number(e.target.value) })}
                       className={cn(
-                        "w-full border rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-all",
-                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                        "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                        isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
                       )}
                     />
                   </div>
                   <div>
                     <label className={cn(
                       "text-xs font-bold uppercase mb-1 block transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                      isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
                     )}>Target (kg)</label>
                     <input 
                       type="number" 
                       value={userProfile.targetWeight}
                       onChange={(e) => setUserProfile({ ...userProfile, targetWeight: Number(e.target.value) })}
                       className={cn(
-                        "w-full border rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-all",
-                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                        "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                        isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
                       )}
                     />
                   </div>
@@ -5860,7 +6025,7 @@ function AppContent() {
   );
 }
 
-function StatCard({ icon, label, value, goal, progress, color, index, isDarkMode }: any) {
+function StatCard({ icon, label, value, goal, progress, color, index, isDarkMode, isGirlyMode }: any) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -5868,6 +6033,7 @@ function StatCard({ icon, label, value, goal, progress, color, index, isDarkMode
       transition={{ delay: index * 0.1 }}
       className={cn(
         "backdrop-blur-md border rounded-3xl p-4 space-y-3 transition-all group",
+        isGirlyMode ? "bg-white/40 border-pink-100 shadow-sm shadow-pink-500/5 hover:bg-white/60" :
         isDarkMode 
           ? "bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800/40" 
           : "bg-white/60 border-zinc-200 hover:bg-zinc-50/80 shadow-sm"
@@ -5876,31 +6042,34 @@ function StatCard({ icon, label, value, goal, progress, color, index, isDarkMode
       <div className="flex items-center justify-between">
         <div className={cn(
           "p-2 rounded-xl group-hover:scale-110 transition-transform",
-          isDarkMode ? "bg-zinc-800/50" : "bg-zinc-100"
+          isGirlyMode ? "bg-pink-100" : isDarkMode ? "bg-zinc-800/50" : "bg-zinc-100"
         )}>
           {icon}
         </div>
         <span className={cn(
           "text-[10px] font-bold uppercase tracking-wider",
-          isDarkMode ? "text-zinc-500" : "text-zinc-400"
+          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
         )}>Goal: {goal}</span>
       </div>
       <div>
-        <p className="text-2xl font-bold tabular-nums tracking-tight">{value}</p>
+        <p className={cn(
+          "text-2xl font-bold tabular-nums tracking-tight",
+          isGirlyMode ? "text-pink-600" : ""
+        )}>{value}</p>
         <p className={cn(
           "text-xs font-medium",
-          isDarkMode ? "text-zinc-500" : "text-zinc-400"
+          isGirlyMode ? "text-pink-500/70" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
         )}>{label}</p>
       </div>
       <div className={cn(
         "h-1.5 w-full rounded-full overflow-hidden",
-        isDarkMode ? "bg-zinc-800/50" : "bg-zinc-100"
+        isGirlyMode ? "bg-pink-100" : isDarkMode ? "bg-zinc-800/50" : "bg-zinc-100"
       )}>
         <motion.div 
           initial={{ width: 0 }}
           animate={{ width: `${Math.min(progress * 100, 100)}%` }}
           transition={{ duration: 1, delay: 0.5 + (index * 0.1) }}
-          className={cn("h-full rounded-full", color)}
+          className={cn("h-full rounded-full", isGirlyMode && color === 'bg-emerald-500' ? 'bg-pink-500' : color)}
         />
       </div>
     </motion.div>
@@ -5919,7 +6088,7 @@ interface WorkoutCardProps {
   key?: any;
 }
 
-function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAddComment, onUpdateWorkout, currentUserId }: WorkoutCardProps) {
+function WorkoutCard({ workout, full = false, isDarkMode, isGirlyMode, onDelete, onEdit, onAddComment, onUpdateWorkout, currentUserId }: WorkoutCardProps & { isGirlyMode?: boolean }) {
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
   const [failedThumbnails, setFailedThumbnails] = useState<Record<string, boolean>>({});
@@ -5984,6 +6153,7 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
   return (
     <div className={cn(
       "backdrop-blur-md border rounded-3xl p-5 transition-all group",
+      isGirlyMode ? "bg-white/50 border-pink-100 hover:bg-white/80 shadow-sm" :
       isDarkMode 
         ? "bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800/40" 
         : "bg-white/60 border-zinc-200 hover:bg-zinc-50/80 shadow-sm"
@@ -5992,15 +6162,15 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
         <div className="flex items-center gap-3">
           <div className={cn(
             "p-2 rounded-xl group-hover:scale-110 transition-transform",
-            isDarkMode ? "bg-emerald-500/10" : "bg-emerald-50"
+            isGirlyMode ? "bg-pink-100" : isDarkMode ? "bg-emerald-500/10" : "bg-emerald-50"
           )}>
-            <Dumbbell className="w-5 h-5 text-emerald-500" />
+            <Dumbbell className={cn("w-5 h-5", isGirlyMode ? "text-pink-500" : "text-emerald-500")} />
           </div>
           <div>
-            <h4 className="font-bold">{workout.name}</h4>
+            <h4 className={cn("font-bold", isGirlyMode ? "text-pink-900" : "")}>{workout.name}</h4>
             <p className={cn(
               "text-xs flex items-center gap-1 font-medium",
-              isDarkMode ? "text-zinc-500" : "text-zinc-400"
+              isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
             )}>
               <Calendar className="w-3 h-3" /> {format(new Date(workout.date), 'MMM d, yyyy')}
             </p>
@@ -6010,7 +6180,10 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
           <>
             <button 
               onClick={() => onEdit?.(workout)}
-              className="p-2 rounded-xl hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-500 transition-all"
+              className={cn(
+                "p-2 rounded-xl transition-all",
+                isGirlyMode ? "hover:bg-pink-100 text-pink-300 hover:text-pink-500" : "hover:bg-emerald-500/10 text-zinc-500 hover:text-emerald-500"
+              )}
             >
               <Edit className="w-4 h-4" />
             </button>
@@ -6023,7 +6196,7 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
           </>
           <ChevronRight className={cn(
             "w-5 h-5 transition-colors",
-            isDarkMode ? "text-zinc-600 group-hover:text-emerald-500" : "text-zinc-300 group-hover:text-emerald-500"
+            isGirlyMode ? "text-pink-200 group-hover:text-pink-500" : isDarkMode ? "text-zinc-600 group-hover:text-emerald-500" : "text-zinc-300 group-hover:text-emerald-500"
           )} />
         </div>
       </div>
@@ -6278,21 +6451,24 @@ function WorkoutCard({ workout, full = false, isDarkMode, onDelete, onEdit, onAd
   );
 }
 
-function NavButton({ active, onClick, icon, label, isDarkMode }: any) {
+function NavButton({ active, onClick, icon, label, isDarkMode, isGirlyMode }: any) {
   return (
     <button 
       onClick={onClick}
       className={cn(
         "flex flex-col items-center gap-1 transition-all duration-300 relative",
         active 
-          ? "text-emerald-500" 
-          : (isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600")
+          ? (isGirlyMode ? "text-pink-600 scale-110" : "text-emerald-500 scale-110") 
+          : (isGirlyMode ? "text-pink-300 hover:text-pink-400" : isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600")
       )}
     >
       {active && (
         <motion.div 
           layoutId="nav-pill"
-          className="absolute -top-1 w-1 h-1 bg-emerald-500 rounded-full"
+          className={cn(
+            "absolute -top-1 w-1 h-1 rounded-full",
+            isGirlyMode ? "bg-pink-500" : "bg-emerald-500"
+          )}
         />
       )}
       {icon}
@@ -6301,19 +6477,21 @@ function NavButton({ active, onClick, icon, label, isDarkMode }: any) {
   );
 }
 
-function ProfileItem({ label, value, isDarkMode }: { label: string, value: string, isDarkMode?: boolean }) {
+function ProfileItem({ label, value, isDarkMode, isGirlyMode }: { label: string, value: string, isDarkMode?: boolean, isGirlyMode?: boolean }) {
   return (
     <div className={cn(
       "flex items-center justify-between p-4 backdrop-blur-md border rounded-2xl transition-all hover:bg-opacity-80",
-      isDarkMode 
-        ? "bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800/40" 
-        : "bg-white/60 border-zinc-200 hover:bg-zinc-50/80 shadow-sm"
+      isGirlyMode 
+        ? "bg-white/60 border-pink-100/50 hover:bg-pink-50/80 shadow-sm"
+        : isDarkMode 
+          ? "bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800/40" 
+          : "bg-white/60 border-zinc-200 hover:bg-zinc-50/80 shadow-sm"
     )}>
       <span className={cn(
         "text-sm font-medium",
-        isDarkMode ? "text-zinc-500" : "text-zinc-400"
+        isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
       )}>{label}</span>
-      <span className="text-sm font-bold">{value}</span>
+      <span className={cn("text-sm font-bold", isGirlyMode ? "text-pink-900" : "")}>{value}</span>
     </div>
   );
 }

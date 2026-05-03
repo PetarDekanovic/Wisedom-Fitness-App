@@ -6,20 +6,21 @@ import { cn } from '../lib/utils';
 
 interface HistoryFeedProps {
   isDarkMode: boolean;
+  isGirlyMode: boolean;
   items: VideoHistoryItem[];
 }
 
-export const HistoryFeed: React.FC<HistoryFeedProps> = ({ isDarkMode, items }) => {
+export const HistoryFeed: React.FC<HistoryFeedProps> = ({ isDarkMode, isGirlyMode, items }) => {
   return (
     <div className="space-y-8 pb-24">
       <div className="flex items-center gap-3 px-2">
-        <History className="w-6 h-6 text-emerald-500" />
-        <h2 className="text-2xl font-bold tracking-tight">Ancient Records</h2>
+        <History className={cn("w-6 h-6", isGirlyMode ? "text-pink-500" : "text-emerald-500")} />
+        <h2 className={cn("text-2xl font-bold tracking-tight", isGirlyMode ? "text-pink-950" : "")}>Ancient Records</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {items.map((item, index) => (
-          <VideoCard key={item.id} item={item} isDarkMode={isDarkMode} index={index} />
+          <VideoCard key={item.id} item={item} isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} index={index} />
         ))}
       </div>
 
@@ -39,10 +40,11 @@ export const HistoryFeed: React.FC<HistoryFeedProps> = ({ isDarkMode, items }) =
 interface VideoCardProps {
   item: VideoHistoryItem;
   isDarkMode: boolean;
+  isGirlyMode: boolean;
   index: number;
 }
 
-const VideoCard: React.FC<VideoCardProps> = ({ item, isDarkMode, index }) => {
+const VideoCard: React.FC<VideoCardProps> = ({ item, isDarkMode, isGirlyMode, index }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -80,12 +82,16 @@ const VideoCard: React.FC<VideoCardProps> = ({ item, isDarkMode, index }) => {
       ref={containerRef}
       className={cn(
         "relative rounded-[32px] overflow-hidden aspect-[9/16] w-full border group",
+        isGirlyMode ? "bg-white border-pink-100 shadow-xl shadow-pink-500/5 transition-all hover:shadow-pink-500/10" :
         isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-zinc-100 border-zinc-200 shadow-lg shadow-zinc-200/50"
       )}
     >
       {/* Category Tag */}
       <div className="absolute top-6 left-6 z-30 pointer-events-none">
-        <span className="px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">
+        <span className={cn(
+          "px-3 py-1 rounded-full text-white text-[10px] font-black uppercase tracking-widest shadow-lg",
+          isGirlyMode ? "bg-pink-500 shadow-pink-500/20" : "bg-emerald-500 shadow-emerald-500/20"
+        )}>
           {item.category}
         </span>
       </div>

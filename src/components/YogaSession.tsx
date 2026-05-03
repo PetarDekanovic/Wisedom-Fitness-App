@@ -20,11 +20,12 @@ import { INITIAL_QUOTES } from '../data/initialQuotes';
 interface YogaSessionProps {
   flow: YogaFlow;
   isDarkMode: boolean;
+  isGirlyMode: boolean;
   onClose: () => void;
   onMarkAsWise: (quote: any) => void;
 }
 
-export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }: YogaSessionProps) {
+export default function YogaSession({ flow, isDarkMode, isGirlyMode, onClose, onMarkAsWise }: YogaSessionProps) {
   const [currentPoseIndex, setCurrentPoseIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(flow.poses[0].duration);
   const [isActive, setIsActive] = useState(false);
@@ -183,22 +184,31 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
 
   if (isFinished) {
     return (
-      <div className="fixed inset-0 z-[70] bg-zinc-950 flex items-center justify-center p-6 text-center">
+      <div className={cn(
+        "fixed inset-0 z-[70] flex items-center justify-center p-6 text-center",
+        isGirlyMode ? "bg-[#FFF5F7]" : "bg-zinc-950"
+      )}>
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="max-w-md space-y-8"
         >
-          <div className="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+          <div className={cn(
+            "w-24 h-24 rounded-full flex items-center justify-center mx-auto",
+            isGirlyMode ? "bg-pink-500/10" : "bg-emerald-500/20"
+          )}>
+            <CheckCircle2 className={cn("w-12 h-12", isGirlyMode ? "text-pink-500" : "text-emerald-500")} />
           </div>
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold text-white">Ritual Complete</h1>
-            <p className="text-zinc-400">You have successfully integrated strength and stillness.</p>
+            <h1 className={cn("text-4xl font-bold", isGirlyMode ? "text-pink-900" : "text-white")}>Ritual Complete</h1>
+            <p className={cn(isGirlyMode ? "text-pink-600/80" : "text-zinc-400")}>You have successfully integrated strength and stillness.</p>
           </div>
           <button 
             onClick={onClose}
-            className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+            className={cn(
+              "w-full py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all",
+              isGirlyMode ? "bg-pink-500 text-white shadow-pink-500/20" : "bg-emerald-500 text-zinc-950 shadow-emerald-500/20"
+            )}
           >
             Return to Sanctuary
           </button>
@@ -210,22 +220,24 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
   return (
     <div className={cn(
       "fixed inset-0 z-[100] flex flex-col transition-colors duration-700 overflow-hidden",
+      isGirlyMode ? "bg-[#FFF5F7] text-pink-950" :
       isDarkMode ? "bg-zinc-950 text-white" : "bg-zinc-50 text-zinc-900"
     )}>
       {/* Immersive Nature Background */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
-          src="https://picsum.photos/seed/sacred_forest/1920/1080?blur=2" 
+          src={isGirlyMode ? "https://images.unsplash.com/photo-1490750967868-8864d9519360?auto=format&fit=crop&q=80&w=1080" : "https://picsum.photos/seed/sacred_forest/1920/1080?blur=2"} 
           alt="Yoga Background" 
           className={cn(
             "w-full h-full object-cover transition-opacity duration-1000",
+            isGirlyMode ? "opacity-40 saturate-150 sepia-25 hue-rotate-15" :
             isDarkMode ? "opacity-30" : "opacity-25"
           )}
           referrerPolicy="no-referrer"
         />
         <div className={cn(
           "absolute inset-0",
-          isDarkMode ? "bg-zinc-950/40" : "bg-white/40"
+          isGirlyMode ? "bg-pink-50/20" : isDarkMode ? "bg-zinc-950/40" : "bg-white/40"
         )} />
       </div>
 
@@ -233,17 +245,26 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
       <header className="relative z-10 p-4 md:p-6 flex items-center justify-between">
         <button 
           onClick={onClose}
-          className="p-3 rounded-xl hover:bg-zinc-800/20 transition-colors"
+          className={cn(
+            "p-3 rounded-xl transition-colors",
+            isGirlyMode ? "hover:bg-pink-100 text-pink-600" : "hover:bg-zinc-800/20"
+          )}
         >
           <X className="w-6 h-6" />
         </button>
         <div className="text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-500">Yoga Ritual</p>
+          <p className={cn(
+            "text-[10px] font-bold uppercase tracking-[0.3em]",
+            isGirlyMode ? "text-pink-500" : "text-emerald-500"
+          )}>Yoga Ritual</p>
           <h2 className="text-sm font-bold truncate max-w-[150px] md:max-w-[200px]">{flow.name}</h2>
         </div>
         <button 
           onClick={() => setIsMuted(!isMuted)}
-          className="p-3 rounded-xl hover:bg-zinc-800/20 transition-colors"
+          className={cn(
+            "p-3 rounded-xl transition-colors",
+            isGirlyMode ? "hover:bg-pink-100 text-pink-600" : "hover:bg-zinc-800/20"
+          )}
         >
           {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
         </button>
@@ -273,7 +294,7 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
               strokeDasharray="283%"
               animate={{ strokeDashoffset: `${283 * (1 - timeLeft / currentPose.duration)}%` }}
               transition={{ duration: 1, ease: "linear" }}
-              className="text-emerald-500"
+              className={isGirlyMode ? "text-pink-500" : "text-emerald-500"}
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -296,7 +317,10 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
           >
             <h3 className="text-2xl md:text-3xl font-bold tracking-tight">{currentPose.name}</h3>
             {currentPose.counterPose && (
-              <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-emerald-500/70">
+              <p className={cn(
+                "text-[10px] md:text-xs font-bold uppercase tracking-widest",
+                isGirlyMode ? "text-pink-500" : "text-emerald-500/70"
+              )}>
                 Counter: {currentPose.counterPose}
               </p>
             )}
@@ -315,8 +339,14 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
                   isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white border-zinc-200 shadow-sm"
                 )}
               >
-                <QuoteIcon className="absolute top-2 left-2 w-6 h-6 md:w-8 md:h-8 text-emerald-500/10" />
-                <p className="text-xs md:text-sm font-serif italic leading-relaxed relative z-10">
+                <QuoteIcon className={cn(
+                  "absolute top-2 left-2 w-6 h-6 md:w-8 md:h-8",
+                  isGirlyMode ? "text-pink-500/10" : "text-emerald-500/10"
+                )} />
+                <p className={cn(
+                  "text-xs md:text-sm font-serif italic leading-relaxed relative z-10",
+                  isGirlyMode ? "text-pink-900" : ""
+                )}>
                   "{currentQuote.text}"
                 </p>
                 <div className="mt-4 flex items-center justify-between">
@@ -326,7 +356,9 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
                       onClick={() => speak(`${currentQuote.text} by ${currentQuote.author}`)}
                       className={cn(
                         "p-2 rounded-lg transition-all",
-                        isSpeaking ? "bg-emerald-500 text-zinc-950 animate-pulse" : "bg-zinc-500/10 text-zinc-500 hover:bg-zinc-500 hover:text-white"
+                        isSpeaking 
+                          ? (isGirlyMode ? "bg-pink-500 text-white animate-pulse" : "bg-emerald-500 text-zinc-950 animate-pulse") 
+                          : (isGirlyMode ? "bg-pink-100 text-pink-500 hover:bg-pink-500 hover:text-white" : "bg-zinc-500/10 text-zinc-500 hover:bg-zinc-500 hover:text-white")
                       )}
                       title="Read Quote"
                     >
@@ -334,7 +366,10 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
                     </button>
                     <button 
                       onClick={() => onMarkAsWise(currentQuote)}
-                      className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-zinc-950 transition-all"
+                      className={cn(
+                        "p-2 rounded-lg transition-all",
+                        isGirlyMode ? "bg-pink-500/10 text-pink-500 hover:bg-pink-500 hover:text-white" : "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-zinc-950"
+                      )}
                     >
                       <Sparkles className="w-3 h-3" />
                     </button>
@@ -350,21 +385,30 @@ export default function YogaSession({ flow, isDarkMode, onClose, onMarkAsWise }:
       <footer className="relative z-10 p-6 md:p-12 flex items-center justify-center gap-6 md:gap-8 pb-12 md:pb-12">
         <button 
           onClick={() => setTimeLeft(currentPose.duration)}
-          className="p-4 rounded-2xl bg-zinc-800/20 hover:bg-zinc-800/40 transition-colors"
+          className={cn(
+            "p-4 rounded-2xl transition-colors",
+            isGirlyMode ? "bg-pink-100 text-pink-500 hover:bg-pink-200" : "bg-zinc-800/20 hover:bg-zinc-800/40"
+          )}
         >
           <RotateCcw className="w-5 h-5 md:w-6 md:h-6" />
         </button>
         
         <button 
           onClick={toggleActive}
-          className="w-16 h-16 md:w-20 md:h-20 bg-emerald-500 text-zinc-950 rounded-full flex items-center justify-center shadow-xl shadow-emerald-500/20 active:scale-90 transition-all"
+          className={cn(
+            "w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-all",
+            isGirlyMode ? "bg-pink-500 text-white shadow-pink-500/20" : "bg-emerald-500 text-zinc-950 shadow-emerald-500/20"
+          )}
         >
           {isActive ? <Pause className="w-6 h-6 md:w-8 md:h-8 fill-current" /> : <Play className="w-6 h-6 md:w-8 md:h-8 fill-current ml-1" />}
         </button>
 
         <button 
           onClick={nextPose}
-          className="p-4 rounded-2xl bg-zinc-800/20 hover:bg-zinc-800/40 transition-colors"
+          className={cn(
+            "p-4 rounded-2xl transition-colors",
+            isGirlyMode ? "bg-pink-100 text-pink-500 hover:bg-pink-200" : "bg-zinc-800/20 hover:bg-zinc-800/40"
+          )}
         >
           <SkipForward className="w-5 h-5 md:w-6 md:h-6" />
         </button>

@@ -24,11 +24,12 @@ import { User } from 'firebase/auth';
 
 interface QuizViewProps {
   isDarkMode: boolean;
+  isGirlyMode: boolean;
   user: User | null;
   onCorrectAnswer?: () => void;
 }
 
-export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, user, onCorrectAnswer }) => {
+export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, isGirlyMode, user, onCorrectAnswer }) => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -133,8 +134,8 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, user, onCorrectA
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <Brain className="w-12 h-12 text-emerald-500 animate-pulse" />
-        <p className={isDarkMode ? "text-zinc-400" : "text-zinc-500"}>Architecting your next trial...</p>
+        <Brain className={cn("w-12 h-12 animate-pulse", isGirlyMode ? "text-pink-500" : "text-emerald-500")} />
+        <p className={isGirlyMode ? "text-pink-600/60" : isDarkMode ? "text-zinc-400" : "text-zinc-500"}>Architecting your next trial...</p>
       </div>
     );
   }
@@ -143,8 +144,11 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, user, onCorrectA
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <Ghost className="w-12 h-12 text-zinc-500" />
-        <p className={isDarkMode ? "text-zinc-400" : "text-zinc-500"}>No wisdom found in the scrolls.</p>
-        <button onClick={initializeQuestions} className="px-6 py-2 bg-emerald-500 text-white rounded-xl">Retry</button>
+        <p className={isGirlyMode ? "text-pink-600/60" : isDarkMode ? "text-zinc-400" : "text-zinc-500"}>No wisdom found in the scrolls.</p>
+        <button onClick={initializeQuestions} className={cn(
+          "px-6 py-2 rounded-xl text-white",
+          isGirlyMode ? "bg-pink-500" : "bg-emerald-500"
+        )}>Retry</button>
       </div>
     );
   }
@@ -183,7 +187,9 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, user, onCorrectA
         
         <div className={cn(
           "flex items-center gap-2 font-mono text-xl tabular-nums transition-colors",
-          timeLeft < 10 ? "text-rose-500 animate-pulse" : isDarkMode ? "text-zinc-400" : "text-zinc-500"
+          timeLeft < 10 ? "text-rose-500 animate-pulse" : 
+          isGirlyMode ? "text-pink-400" : 
+          isDarkMode ? "text-zinc-400" : "text-zinc-500"
         )}>
           <Clock className="w-5 h-5" />
           {timeLeft}s
@@ -199,14 +205,18 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, user, onCorrectA
           exit={{ opacity: 0, scale: 0.95 }}
           className={cn(
             "p-8 rounded-[40px] border relative overflow-hidden",
+            isGirlyMode ? "bg-white/60 border-pink-100 shadow-xl shadow-pink-500/5" :
             isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-200 shadow-xl shadow-zinc-200/50"
           )}
         >
-          <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500 opacity-20" />
+          <div className={cn(
+            "absolute top-0 left-0 w-1 h-full opacity-20",
+            isGirlyMode ? "bg-pink-500" : "bg-emerald-500"
+          )} />
           
           <h2 className={cn(
             "text-2xl font-bold leading-tight mb-8",
-            isDarkMode ? "text-zinc-100" : "text-zinc-900"
+            isGirlyMode ? "text-pink-950" : isDarkMode ? "text-zinc-100" : "text-zinc-900"
           )}>
             {currentQuestion.question}
           </h2>
@@ -216,12 +226,14 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, user, onCorrectA
               const isCorrect = idx === currentQuestion.correctAnswer;
               const isSelected = idx === selectedAnswer;
               
-              let buttonStyle = isDarkMode 
+              let buttonStyle = isGirlyMode
+                ? "bg-white border-pink-50 text-pink-900 hover:bg-pink-50/50 shadow-sm" :
+                isDarkMode 
                 ? "bg-zinc-800/50 border-zinc-700/50 text-zinc-300 hover:bg-zinc-800" 
                 : "bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-100";
 
               if (isAnswered) {
-                if (isCorrect) buttonStyle = "bg-emerald-500/20 border-emerald-500 text-emerald-500";
+                if (isCorrect) buttonStyle = isGirlyMode ? "bg-pink-500/10 border-pink-500 text-pink-600" : "bg-emerald-500/20 border-emerald-500 text-emerald-500";
                 else if (isSelected) buttonStyle = "bg-rose-500/20 border-rose-500 text-rose-500";
                 else buttonStyle = "opacity-40 grayscale pointer-events-none";
               }
@@ -254,23 +266,30 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, user, onCorrectA
             animate={{ opacity: 1, height: 'auto' }}
             className={cn(
               "p-6 rounded-3xl border space-y-3",
+              isGirlyMode ? "bg-pink-500/5 border-pink-500/20" :
               isDarkMode ? "bg-emerald-500/5 border-emerald-500/20" : "bg-emerald-50 border-emerald-100"
             )}
           >
-            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+            <div className={cn(
+              "flex items-center gap-2",
+              isGirlyMode ? "text-pink-600" : "text-emerald-600 dark:text-emerald-400"
+            )}>
               <Sparkles className="w-4 h-4" />
               <span className="text-[10px] font-black uppercase tracking-widest">The Lesson</span>
             </div>
             <p className={cn(
               "text-sm leading-relaxed italic",
-              isDarkMode ? "text-zinc-400" : "text-zinc-600"
+              isGirlyMode ? "text-pink-900/80" : isDarkMode ? "text-zinc-400" : "text-zinc-600"
             )}>
               "{currentQuestion.wisdom}"
             </p>
             
             <button
               onClick={nextQuestion}
-              className="mt-4 w-full py-4 rounded-2xl bg-emerald-500 text-white font-black uppercase tracking-tighter flex items-center justify-center gap-2 hover:bg-emerald-600 transition-colors"
+              className={cn(
+                "mt-4 w-full py-4 rounded-2xl text-white font-black uppercase tracking-tighter flex items-center justify-center gap-2 transition-colors",
+                isGirlyMode ? "bg-pink-500 hover:bg-pink-600" : "bg-emerald-500 hover:bg-emerald-600"
+              )}
             >
               Next Trial <ArrowRight className="w-4 h-4" />
             </button>
