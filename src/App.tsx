@@ -1790,7 +1790,7 @@ function AppContent() {
         const seedStatusRef = doc(db, 'system_metadata', 'seeding_status');
         const seedStatusDoc = await getDoc(seedStatusRef);
         const seededVersion = seedStatusDoc.exists() ? seedStatusDoc.data().version : 0;
-        const CURRENT_VERSION = 5;
+        const CURRENT_VERSION = 6;
 
         if (seededVersion >= CURRENT_VERSION) {
           return;
@@ -1818,7 +1818,12 @@ function AppContent() {
             { id: 'Jewish', field: 'source', value: 'Jewish' },
             { id: 'Latin', field: 'source', value: 'Latin' },
             { id: 'Christian', field: 'source', value: 'Christian' },
-            { id: 'Epictetus', field: 'author', value: 'Epictetus' }
+            { id: 'Epictetus', field: 'author', value: 'Epictetus' },
+            { id: 'Philosophy', field: 'source', value: 'Philosophy' },
+            { id: 'Science', field: 'source', value: 'Science' },
+            { id: 'Leadership', field: 'source', value: 'Leadership' },
+            { id: 'Empowerment', field: 'source', value: 'Empowerment' },
+            { id: 'Literature', field: 'source', value: 'Literature' }
           ];
 
           for (const cat of categories) {
@@ -5129,6 +5134,9 @@ function AppContent() {
                           <option value="Psychology" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Psychology</option>
                           <option value="Doctor's Quote" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Doctor's Quote</option>
                           <option value="Science" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Science</option>
+                          <option value="Literature" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Literature</option>
+                          <option value="Leadership" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Leadership</option>
+                          <option value="Empowerment" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Empowerment</option>
                           <option value="Personal" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Personal</option>
                           <option value="Stoic" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Stoic</option>
                           <option value="Zen" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Zen</option>
