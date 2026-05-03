@@ -194,6 +194,9 @@ const INITIAL_PROFILE: UserProfile = {
   targetWeight: 75,
   currentSteps: 0,
   currentCalories: 0,
+  currentDistance: 0,
+  currentRHR: 0,
+  currentHRV: 0,
   stepGoal: 10000,
   shortTermGoal: '+60 kg',
   longTermGoal: '+100 kg',
@@ -209,7 +212,7 @@ const INITIAL_PROFILE: UserProfile = {
     { id: '2', label: 'Fastest 5K', date: '18 Oct 2025', value: '26 min 9 sec', category: 'speed' },
     { id: '3', label: 'Fastest 10K', date: '26 Jul 2025', value: '56 min 43 sec', category: 'speed' },
     { id: '4', label: 'Fastest half marathon', date: '31 Aug 2025', value: '2 h 11 m', category: 'speed' },
-    { id: '5', label: 'Farthest run', date: '31 Aug 2025', value: '41.24 km', category: 'distance' }
+    { id: '5', label: 'Farthest run', date: '31 Aug 2025', value: '41.24 km (4 h 45 m)', category: 'distance' }
   ]
 };
 
@@ -1112,6 +1115,9 @@ function AppContent() {
         ...userProfile,
         currentSteps: data.steps || userProfile.currentSteps,
         currentCalories: data.calories || userProfile.currentCalories,
+        currentDistance: data.distance || userProfile.currentDistance,
+        currentRHR: data.rhr || userProfile.currentRHR,
+        currentHRV: data.hrv || userProfile.currentHRV,
         currentWeight: data.weight || userProfile.currentWeight,
         weeklyHealthData: weeklyData,
         personalRecords: recordsData,
@@ -1132,6 +1138,9 @@ function AppContent() {
         await updateDoc(userRef, { 
           currentSteps: updatedProfile.currentSteps,
           currentCalories: updatedProfile.currentCalories,
+          currentDistance: updatedProfile.currentDistance,
+          currentRHR: updatedProfile.currentRHR,
+          currentHRV: updatedProfile.currentHRV,
           currentWeight: updatedProfile.currentWeight,
           weeklyHealthData: updatedProfile.weeklyHealthData,
           personalRecords: updatedProfile.personalRecords,
@@ -3831,6 +3840,84 @@ function AppContent() {
                   </motion.div>
                 );
               })()}
+
+              {/* Daily Biometrics / Activity */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className={cn(
+                  "p-4 rounded-[2rem] border transition-all",
+                  isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                )}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+                      <Footprints className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Steps</span>
+                  </div>
+                  <p className="text-xl font-black italic tracking-tighter text-emerald-500">
+                    {userProfile.currentSteps?.toLocaleString() || 0}
+                  </p>
+                </div>
+
+                <div className={cn(
+                  "p-4 rounded-[2rem] border transition-all",
+                  isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                )}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-500">
+                      <Flame className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Calories</span>
+                  </div>
+                  <p className="text-xl font-black italic tracking-tighter text-orange-500">
+                    {userProfile.currentCalories?.toLocaleString() || 0}
+                  </p>
+                </div>
+
+                <div className={cn(
+                  "p-4 rounded-[2rem] border transition-all",
+                  isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                )}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500">
+                      <MapPin className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Distance</span>
+                  </div>
+                  <p className="text-xl font-black italic tracking-tighter text-blue-500">
+                    {userProfile.currentDistance || 0} <span className="text-[10px]">km</span>
+                  </p>
+                </div>
+
+                <div className={cn(
+                  "p-4 rounded-[2rem] border transition-all",
+                  isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                )}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1.5 rounded-lg bg-red-500/10 text-red-500">
+                      <Heart className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Resting HR</span>
+                  </div>
+                  <p className="text-xl font-black italic tracking-tighter text-red-500 line-clamp-1">
+                    {userProfile.currentRHR || '--'} <span className="text-[10px]">bpm</span>
+                  </p>
+                </div>
+
+                <div className={cn(
+                  "p-4 rounded-[2rem] border transition-all",
+                  isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-100 shadow-sm"
+                )}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-500">
+                      <Activity className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">HRV</span>
+                  </div>
+                  <p className="text-xl font-black italic tracking-tighter text-purple-500">
+                    {userProfile.currentHRV || '--'} <span className="text-[10px]">ms</span>
+                  </p>
+                </div>
+              </div>
 
               {/* Today's Plan Preview */}
               <div className="space-y-4">

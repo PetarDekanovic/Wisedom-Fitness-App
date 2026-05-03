@@ -84,6 +84,9 @@ export interface UserProfile {
   targetWeight: number;
   currentSteps?: number;
   currentCalories?: number;
+  currentDistance?: number;
+  currentRHR?: number;
+  currentHRV?: number;
   weeklyHealthData?: {
     day: string;
     date: string;

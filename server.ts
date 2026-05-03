@@ -138,6 +138,22 @@ async function startServer() {
         results.calories = point ? Math.round(point.value[0].fpVal) : 0;
       }
 
+      // Fetch Distance
+      if (types.includes('distance') || types.includes('steps')) {
+        const distanceResponse = await axios.post(
+          "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+          {
+            aggregateBy: [{ dataSourceId: "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta" }],
+            bucketByTime: { durationMillis: 86400000 },
+            startTimeMillis,
+            endTimeMillis: now,
+          },
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const point = distanceResponse.data.bucket[0]?.dataset[0]?.point[0];
+        results.distance = point ? parseFloat((point.value[0].fpVal / 1000).toFixed(2)) : 0;
+      }
+
       // Fetch Weight (Focusing on your 89.0kg data stream)
       if (types.includes('weight')) {
         const weightResponse = await axios.get(
@@ -147,6 +163,37 @@ async function startServer() {
         const points = weightResponse.data.point;
         if (points && points.length > 0) {
           results.weight = points[points.length - 1].value[0].fpVal;
+        }
+      }
+
+      // Fetch Heart Rate (RHR & HRV)
+      if (types.includes('heart_rate') || types.includes('steps')) {
+        try {
+          // RHR
+          const rhrResponse = await axios.post(
+            "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate",
+            {
+              aggregateBy: [{ dataSourceId: "derived:com.google.heart_rate.summary:com.google.android.gms:merge_heart_rate_summary" }],
+              bucketByTime: { durationMillis: 86400000 },
+              startTimeMillis,
+              endTimeMillis: now,
+            },
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          );
+          const rhrPoint = rhrResponse.data.bucket[0]?.dataset[0]?.point[0];
+          results.rhr = rhrPoint ? Math.round(rhrPoint.value[0].fpVal) : 0;
+
+          // HRV (Estimated from health snapshots if available)
+          const hrvResponse = await axios.get(
+            `https://www.googleapis.com/fitness/v1/users/me/dataSources/derived:com.google.heart_rate.variability.summary:com.google.android.gms:merge_heart_rate_variability/datasets/0-${now * 1000000}`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          );
+          const hrvPoints = hrvResponse.data.point;
+          if (hrvPoints && hrvPoints.length > 0) {
+            results.hrv = Math.round(hrvPoints[hrvPoints.length - 1].value[0].fpVal);
+          }
+        } catch (e) {
+          console.log("Heart rate data not available yet for today or scope missing.");
         }
       }
 
@@ -208,7 +255,7 @@ async function startServer() {
       { id: '2', label: 'Fastest 5K', date: '18 Oct 2025', value: '26 min 9 sec', category: 'speed' },
       { id: '3', label: 'Fastest 10K', date: '26 Jul 2025', value: '56 min 43 sec', category: 'speed' },
       { id: '4', label: 'Fastest half marathon', date: '31 Aug 2025', value: '2 h 11 m', category: 'speed' },
-      { id: '5', label: 'Farthest run', date: '31 Aug 2025', value: '41.24 km', category: 'distance' }
+      { id: '5', label: 'Farthest run', date: '31 Aug 2025', value: '41.24 km (4 h 45 m)', category: 'distance' }
     ];
     res.json(records);
   });
