@@ -178,7 +178,11 @@ const AVATARS = [
   { name: 'Marcus Aurelius', url: 'https://compcharity.org/wp-content/uploads/2026/04/images.jpg' },
   { name: 'Seneca', url: 'https://compcharity.org/wp-content/uploads/2026/04/senecaa.jpg' },
   { name: 'Epictetus', url: 'https://compcharity.org/wp-content/uploads/2026/04/web-Epictetus-Bust-750x400-1.jpg' },
-  { name: 'Xunzi', url: 'https://compcharity.org/wp-content/uploads/2026/04/hqdefault.jpg' },
+  { name: 'Hypatia', url: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&q=80&w=200&h=200' },
+  { name: 'Mary Wollstonecraft', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200' },
+  { name: 'Simone de Beauvoir', url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=200&h=200' },
+  { name: 'Marie Curie', url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200' },
+  { name: 'Hannah Arendt', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200&h=200' },
   { name: 'Musonius Rufus', url: 'https://compcharity.org/wp-content/uploads/2026/04/maxresdefault-1.jpg' },
   { name: 'Zeno', url: 'https://compcharity.org/wp-content/uploads/2026/04/zeno_of_citium.jpg' },
 ];
@@ -958,6 +962,7 @@ function AppContent() {
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [stoicReflection, setStoicReflection] = useState<string | null>(null);
   const [isGeneratingReflection, setIsGeneratingReflection] = useState(false);
+  const [isSelectingAvatar, setIsSelectingAvatar] = useState(false);
 
   const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'girly'>(() => {
     try {
@@ -4226,16 +4231,22 @@ function AppContent() {
               className="space-y-8"
             >
               <div className="flex flex-col items-center text-center space-y-4">
-                <div className={cn(
-                  "w-24 h-24 rounded-full border-4 flex items-center justify-center overflow-hidden transition-colors",
-                  isGirlyMode ? "bg-pink-100 border-pink-500/20" : isDarkMode ? "bg-zinc-800 border-emerald-500/20" : "bg-zinc-200 border-emerald-500/10"
-                )}>
+                <div 
+                  onClick={() => setIsSelectingAvatar(true)}
+                  className={cn(
+                    "w-24 h-24 rounded-full border-4 flex items-center justify-center overflow-hidden transition-all cursor-pointer hover:scale-105 active:scale-95 group relative",
+                    isGirlyMode ? "bg-pink-100 border-pink-500/20" : isDarkMode ? "bg-zinc-800 border-emerald-500/20" : "bg-zinc-200 border-emerald-500/10"
+                  )}
+                >
                   <img 
                     src={userProfile.avatarUrl} 
                     alt="Avatar" 
-                    className={cn("w-full h-full object-cover", isGirlyMode && "saturate-150")}
+                    className={cn("w-full h-full object-cover transition-transform group-hover:scale-110", isGirlyMode && "saturate-150")}
                     referrerPolicy="no-referrer"
                   />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Edit className="w-6 h-6 text-white" />
+                  </div>
                 </div>
                 <div>
                   <h2 className={cn("text-2xl font-bold", isGirlyMode ? "text-pink-900" : "")}>{userProfile.name}</h2>
@@ -5594,6 +5605,116 @@ function AppContent() {
         </div>
       </nav>
       )}
+
+      {/* Avatar Selector Modal */}
+      <AnimatePresence>
+        {isSelectingAvatar && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className={cn(
+                "w-full max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden border transition-all duration-500",
+                isGirlyMode ? "bg-white border-pink-100 shadow-2xl" : isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-2xl"
+              )}
+            >
+              <div className="p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className={cn("text-xl font-bold", isGirlyMode ? "text-pink-900" : "")}>Choose Avatar</h3>
+                    <p className={cn("text-xs mt-1", isGirlyMode ? "text-pink-400" : "text-zinc-500")}>Historical Stoics & Philosophers</p>
+                  </div>
+                  <button onClick={() => setIsSelectingAvatar(false)} className={isGirlyMode ? "text-pink-300" : isDarkMode ? "text-zinc-500" : "text-zinc-400"}>
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  {AVATARS.map((avatar) => (
+                    <button
+                      key={avatar.name}
+                      onClick={async () => {
+                        const newProfile = { ...userProfile, avatarUrl: avatar.url };
+                        setUserProfile(newProfile);
+                        if (user) {
+                          try {
+                            await updateDoc(doc(db, 'users', user.uid), { avatarUrl: avatar.url });
+                            setIsSaved(true);
+                            setTimeout(() => setIsSaved(false), 2000);
+                          } catch (error) {
+                            console.error("Error updating avatar:", error);
+                          }
+                        }
+                        setIsSelectingAvatar(false);
+                      }}
+                      className="group flex flex-col items-center gap-2"
+                    >
+                      <div className={cn(
+                        "relative aspect-square w-full rounded-2xl overflow-hidden border-2 transition-all group-hover:scale-105 active:scale-95",
+                        userProfile.avatarUrl === avatar.url 
+                          ? (isGirlyMode ? "border-pink-500 ring-4 ring-pink-500/20" : "border-emerald-500 ring-4 ring-emerald-500/20")
+                          : (isGirlyMode ? "border-pink-50/50 bg-pink-50" : isDarkMode ? "border-zinc-800 bg-zinc-800" : "border-zinc-100 bg-zinc-100")
+                      )}>
+                        <img 
+                          src={avatar.url} 
+                          alt={avatar.name} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                        {userProfile.avatarUrl === avatar.url && (
+                          <div className={cn(
+                            "absolute inset-0 flex items-center justify-center",
+                            isGirlyMode ? "bg-pink-500/20" : "bg-emerald-500/20"
+                          )}>
+                            <CheckCircle2 className={cn("w-6 h-6 drop-shadow-lg", isGirlyMode ? "text-pink-500" : "text-emerald-500")} />
+                          </div>
+                        )}
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-bold text-center leading-tight truncate w-full px-1",
+                        userProfile.avatarUrl === avatar.url 
+                          ? (isGirlyMode ? "text-pink-500" : "text-emerald-500")
+                          : (isGirlyMode ? "text-pink-400" : "text-zinc-500")
+                      )}>{avatar.name}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-2">
+                  <label className={cn(
+                    "text-[10px] font-bold uppercase block tracking-widest",
+                    isGirlyMode ? "text-pink-300" : "text-zinc-500"
+                  )}>Custom URL</label>
+                  <input 
+                    type="text" 
+                    placeholder="https://example.com/image.jpg"
+                    value={userProfile.avatarUrl && !AVATARS.some(a => a.url === userProfile.avatarUrl) ? userProfile.avatarUrl : ''}
+                    onChange={async (e) => {
+                      const url = e.target.value;
+                      setUserProfile({ ...userProfile, avatarUrl: url });
+                      if (user && url.startsWith('http')) {
+                        try {
+                          await updateDoc(doc(db, 'users', user.uid), { avatarUrl: url });
+                        } catch (e) {}
+                      }
+                    }}
+                    className={cn(
+                      "w-full border rounded-xl px-4 py-3 text-xs focus:outline-none transition-all",
+                      isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                    )}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Edit Profile Modal */}
       <AnimatePresence>
