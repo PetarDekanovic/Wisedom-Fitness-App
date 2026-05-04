@@ -78,7 +78,9 @@ import {
   MoreVertical,
   Twitter,
   Facebook,
-  Linkedin
+  Linkedin,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -931,6 +933,31 @@ function ArticleCard({
   const isOwner = currentUserId === article.userId;
   const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const toggleSpeech = () => {
+    const synth = window.speechSynthesis;
+    if (isPlaying) {
+      synth.cancel();
+      setIsPlaying(false);
+    } else {
+      // Basic markdown stripping for smoother reading
+      const plainText = article.content
+        .replace(/[#*`~]/g, '')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [text](url) -> text
+        .replace(/- /g, '');
+      
+      const utterance = new SpeechSynthesisUtterance(`${article.title}. ${plainText}`);
+      utterance.rate = 0.95;
+      utterance.onend = () => setIsPlaying(false);
+      utterance.onerror = () => setIsPlaying(false);
+      
+      // Stop any existing speech
+      synth.cancel();
+      synth.speak(utterance);
+      setIsPlaying(true);
+    }
+  };
 
   const updateEngagement = async (field: 'reads' | 'shares') => {
     try {
@@ -1005,6 +1032,22 @@ function ArticleCard({
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <button 
+            onClick={toggleSpeech}
+            className={cn(
+              "p-2 rounded-lg transition-all flex items-center gap-2",
+              isPlaying 
+                ? "bg-emerald-500/20 text-emerald-500" 
+                : isDarkMode ? "hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300" : "hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600"
+            )}
+            title={isPlaying ? "Stop Listening" : "Listen to Article"}
+          >
+            {isPlaying ? <VolumeX className="w-4 h-4 animate-pulse" /> : <Volume2 className="w-4 h-4" />}
+            <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">
+              {isPlaying ? "Stop" : "Listen"}
+            </span>
+          </button>
+
           <div className="relative">
             <button 
               onClick={() => setIsSharing(!isSharing)}
