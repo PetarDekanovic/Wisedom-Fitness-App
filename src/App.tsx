@@ -935,6 +935,17 @@ function ArticleCard({
   const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (shareRef.current && !shareRef.current.contains(event.target as Node)) {
+        setIsSharing(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const toggleSpeech = () => {
     const synth = window.speechSynthesis;
@@ -1049,7 +1060,7 @@ function ArticleCard({
             </span>
           </button>
 
-          <div className="relative">
+          <div className="relative" ref={shareRef}>
             <button 
               onClick={() => setIsSharing(!isSharing)}
               className={cn(
