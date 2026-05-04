@@ -935,7 +935,14 @@ function ArticleCard({
   const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [copiedContent, setCopiedContent] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
+
+  const copyContent = () => {
+    navigator.clipboard.writeText(article.content);
+    setCopiedContent(true);
+    setTimeout(() => setCopiedContent(false), 2000);
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1044,6 +1051,22 @@ function ArticleCard({
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <button 
+            onClick={copyContent}
+            className={cn(
+              "p-2 rounded-lg transition-all flex items-center gap-2",
+              copiedContent 
+                ? "bg-emerald-500/20 text-emerald-500" 
+                : isDarkMode ? "hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300" : "hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600"
+            )}
+            title="Copy Content"
+          >
+            {copiedContent ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">
+              {copiedContent ? "Copied" : "Copy"}
+            </span>
+          </button>
+
           <button 
             onClick={toggleSpeech}
             className={cn(
