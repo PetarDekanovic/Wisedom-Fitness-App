@@ -83,6 +83,8 @@ export interface Article {
   date: string;
   tags?: string[];
   isAI?: boolean;
+  reads?: number;
+  shares?: number;
 }
 
 export interface UserProfile {

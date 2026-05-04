@@ -75,7 +75,10 @@ import {
   Users,
   Timer,
   MapPin,
-  MoreVertical
+  MoreVertical,
+  Twitter,
+  Facebook,
+  Linkedin
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -127,8 +130,8 @@ import { HistoryFeed } from './components/HistoryFeed';
 import { INITIAL_HISTORY_VIDEOS } from './data/historyVideos';
 
 // Error Boundary Component
-class ErrorBoundary extends (Component as any) {
-  constructor(props: any) {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -916,21 +919,73 @@ function ArticleCard({
   article, 
   isDarkMode, 
   onDelete,
+  onEdit,
   currentUserId 
 }: { 
   article: Article, 
   isDarkMode: boolean, 
   onDelete: (id: string) => void,
+  onEdit: (article: Article) => void,
   currentUserId?: string
 }) {
   const isOwner = currentUserId === article.userId;
+  const [isSharing, setIsSharing] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const updateEngagement = async (field: 'reads' | 'shares') => {
+    try {
+      const q = query(collection(db, 'articles'), where('id', '==', article.id));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const articleDoc = snapshot.docs[0];
+        await updateDoc(doc(db, 'articles', articleDoc.id), {
+          [field]: (article[field] || 0) + 1
+        });
+        // Note: Parent articles state handles re-fetching or we could update locally
+      }
+    } catch (e) {
+      console.error(`Error updating article ${field}:`, e);
+    }
+  };
+
+  useEffect(() => {
+    // Increment read count only once per session for this article
+    const sessionKey = `read_${article.id}`;
+    if (!sessionStorage.getItem(sessionKey)) {
+      sessionStorage.setItem(sessionKey, 'true');
+      updateEngagement('reads');
+    }
+  }, [article.id]);
+
+  const handleShare = async (platform?: string) => {
+    const shareUrl = window.location.href; 
+    const text = `Check out this article on WiseFit: ${article.title}`;
+    
+    // Increment share count
+    await updateEngagement('shares');
+    
+    if (platform === 'twitter') {
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+    } else if (platform === 'facebook') {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+    } else if (platform === 'linkedin') {
+      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+    } else if (platform === 'whatsapp') {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + shareUrl)}`, '_blank');
+    } else {
+      navigator.clipboard.writeText(`${text}\n${shareUrl}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    setIsSharing(false);
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "backdrop-blur-md border rounded-[2rem] p-6 transition-all space-y-4",
+        "backdrop-blur-md border rounded-[2rem] p-6 transition-all space-y-4 relative group",
         isDarkMode ? "bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800/40" : "bg-white border-zinc-100 shadow-sm hover:shadow-md"
       )}
     >
@@ -949,14 +1004,68 @@ function ArticleCard({
             </p>
           </div>
         </div>
-        {isOwner && (
-          <button 
-            onClick={() => onDelete(article.id)}
-            className="p-2 opacity-50 hover:opacity-100 hover:text-red-500 transition-all"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          <div className="relative">
+            <button 
+              onClick={() => setIsSharing(!isSharing)}
+              className={cn(
+                "p-2 rounded-lg transition-all",
+                isDarkMode ? "hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300" : "hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600"
+              )}
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+            
+            <AnimatePresence>
+              {isSharing && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                  className={cn(
+                    "absolute right-0 top-10 z-10 min-w-[160px] p-2 rounded-2xl border shadow-xl backdrop-blur-xl",
+                    isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-white/90 border-zinc-200"
+                  )}
+                >
+                  <button onClick={() => handleShare('twitter')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold">
+                    <Twitter className="w-4 h-4 text-[#1DA1F2]" /> Twitter
+                  </button>
+                  <button onClick={() => handleShare('facebook')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold">
+                    <Facebook className="w-4 h-4 text-[#1877F2]" /> Facebook
+                  </button>
+                  <button onClick={() => handleShare('linkedin')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold">
+                    <Linkedin className="w-4 h-4 text-[#0A66C2]" /> LinkedIn
+                  </button>
+                  <button onClick={() => handleShare('whatsapp')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold">
+                    <MessageCircle className="w-4 h-4 text-[#25D366]" /> WhatsApp
+                  </button>
+                  <div className="h-px bg-zinc-800/50 my-1 mx-2" />
+                  <button onClick={() => handleShare()} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold">
+                    {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />} 
+                    {copied ? 'Copied!' : 'Copy Link'}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {isOwner && (
+            <>
+              <button 
+                onClick={() => onEdit(article)}
+                className="p-2 opacity-50 hover:opacity-100 hover:text-emerald-500 transition-all"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => onDelete(article.id)}
+                className="p-2 opacity-50 hover:opacity-100 hover:text-red-500 transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className={cn(
@@ -966,19 +1075,31 @@ function ArticleCard({
         <ReactMarkdown>{article.content}</ReactMarkdown>
       </div>
 
-      <div className="flex items-center gap-2 pt-2">
-        {article.isAI && (
-          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded-full">
-            <Sparkles className="w-3 h-3" />
-            AI Insight
-          </span>
-        )}
-        <div className="flex -space-x-1">
-          {[1,2,3].map(i => (
-            <div key={i} className={cn("w-5 h-5 rounded-full border-2", isDarkMode ? "bg-zinc-800 border-zinc-900" : "bg-zinc-100 border-white")} />
-          ))}
+      <div className="flex items-center gap-4 pt-2">
+        <div className="flex items-center gap-2">
+          {article.isAI && (
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded-full">
+              <Sparkles className="w-3 h-3" />
+              AI Insight
+            </span>
+          )}
         </div>
-        <span className="text-[10px] text-zinc-500 font-medium">+12 Readers</span>
+        
+        <div className="flex items-center gap-4 ml-auto">
+          <div className="flex items-center gap-1.5 grayscale opacity-50">
+            <BookOpen className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold tracking-tighter">{article.reads || 0}</span>
+          </div>
+          <div className="flex items-center gap-1.5 grayscale opacity-50">
+            <Share2 className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-bold tracking-tighter">{article.shares || 0}</span>
+          </div>
+          <div className="flex -space-x-1">
+            {[1,2,3].map(i => (
+              <div key={i} className={cn("w-5 h-5 rounded-full border-2", isDarkMode ? "bg-zinc-800 border-zinc-900" : "bg-zinc-100 border-white")} />
+            ))}
+          </div>
+        </div>
       </div>
     </motion.div>
   );
@@ -989,51 +1110,81 @@ function AppContent() {
   const [historySubView, setHistorySubView] = useState<'journal' | 'plans' | 'articles'>('journal');
   const [articles, setArticles] = useState<Article[]>([]);
   const [isAddingArticle, setIsAddingArticle] = useState(false);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [articleTitle, setArticleTitle] = useState('');
   const [articleContent, setArticleContent] = useState('');
   const [user, setUser] = useState<FirebaseUser | null>(null);
 
-  const fetchArticles = useCallback(async () => {
+  useEffect(() => {
     if (!user) return;
-    try {
-      const q = query(
-        collection(db, 'articles'), 
-        where('userId', '==', user.uid),
-        orderBy('date', 'desc')
-      );
-      const snapshot = await getDocs(q);
+    
+    // Switch to Real-time Articles
+    const q = query(
+      collection(db, 'articles'), 
+      where('userId', '==', user.uid),
+      orderBy('date', 'desc')
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched = snapshot.docs.map(doc => ({ ...doc.data() } as Article));
       setArticles(fetched);
-    } catch (e) {
-      console.error("Error fetching articles:", e);
-    }
-  }, [user]);
+    }, (error) => {
+      console.error("Real-time articles error:", error);
+    });
 
-  useEffect(() => {
-    fetchArticles();
-  }, [fetchArticles]);
+    return () => unsubscribe();
+  }, [user]);
 
   const handleAddArticle = async () => {
     if (!user || !articleContent.trim() || !articleTitle.trim()) return;
     
-    const newArticle: Article = {
-      id: `art-${Date.now()}`,
-      userId: user.uid,
-      title: articleTitle,
-      content: articleContent,
-      date: new Date().toISOString(),
-      isAI: false
-    };
+    if (editingArticle) {
+      // Update existing article
+      try {
+        const q = query(collection(db, 'articles'), where('id', '==', editingArticle.id));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          await updateDoc(doc(db, 'articles', snapshot.docs[0].id), {
+            title: articleTitle,
+            content: articleContent,
+          });
+        }
+        setArticles(prev => prev.map(a => a.id === editingArticle.id ? { ...a, title: articleTitle, content: articleContent } : a));
+        setArticleTitle('');
+        setArticleContent('');
+        setEditingArticle(null);
+      } catch (e) {
+        console.error("Error updating article:", e);
+      }
+    } else {
+      // Create new article
+      const newArticle: Article = {
+        id: `art-${Date.now()}`,
+        userId: user.uid,
+        title: articleTitle,
+        content: articleContent,
+        date: new Date().toISOString(),
+        isAI: false,
+        reads: 0,
+        shares: 0
+      };
 
-    try {
-      await addDoc(collection(db, 'articles'), newArticle);
-      setArticles(prev => [newArticle, ...prev]);
-      setArticleTitle('');
-      setArticleContent('');
-      setIsAddingArticle(false);
-    } catch (e) {
-      console.error("Error adding article:", e);
+      try {
+        await addDoc(collection(db, 'articles'), newArticle);
+        setArticles(prev => [newArticle, ...prev]);
+        setArticleTitle('');
+        setArticleContent('');
+        setIsAddingArticle(false);
+      } catch (e) {
+        console.error("Error adding article:", e);
+      }
     }
+  };
+
+  const openEditArticle = (article: Article) => {
+    setEditingArticle(article);
+    setArticleTitle(article.title);
+    setArticleContent(article.content);
   };
 
   const deleteArticle = async (id: string) => {
@@ -4436,6 +4587,7 @@ function AppContent() {
                       article={article}
                       isDarkMode={isDarkMode}
                       onDelete={deleteArticle}
+                      onEdit={openEditArticle}
                       currentUserId={user?.uid}
                     />
                   ))}
@@ -6152,9 +6304,9 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      {/* Add Article Modal */}
+      {/* Add/Edit Article Modal */}
       <AnimatePresence>
-        {isAddingArticle && (
+        {(isAddingArticle || editingArticle) && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -6179,9 +6331,17 @@ function AppContent() {
                     )}>
                       <Layout className="w-5 h-5 text-emerald-500" />
                     </div>
-                    <h3 className="text-xl font-bold">New Article</h3>
+                    <h3 className="text-xl font-bold">{editingArticle ? 'Edit Article' : 'New Article'}</h3>
                   </div>
-                  <button onClick={() => setIsAddingArticle(false)} className={isDarkMode ? "text-zinc-500" : "text-zinc-400"}>
+                  <button 
+                    onClick={() => {
+                      setIsAddingArticle(false);
+                      setEditingArticle(null);
+                      setArticleTitle('');
+                      setArticleContent('');
+                    }} 
+                    className={isDarkMode ? "text-zinc-500" : "text-zinc-400"}
+                  >
                     <X className="w-6 h-6" />
                   </button>
                 </div>
@@ -6246,7 +6406,7 @@ function AppContent() {
                       : "bg-emerald-500 text-zinc-950 shadow-emerald-500/20"
                   )}
                 >
-                  Publish Article
+                  {editingArticle ? 'Save Changes' : 'Publish Article'}
                 </button>
               </div>
             </motion.div>
