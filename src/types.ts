@@ -1,6 +1,6 @@
 export interface Attachment {
   id: string;
-  type: 'file' | 'youtube' | 'article' | 'google-drive';
+  type: 'file' | 'youtube' | 'article' | 'google-drive' | 'link';
   name: string;
   url: string;
   fileType?: string;
@@ -75,6 +75,16 @@ export interface YogaFlow {
   poses: YogaPose[];
 }
 
+export interface Article {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  date: string;
+  tags?: string[];
+  isAI?: boolean;
+}
+
 export interface UserProfile {
   uid?: string;
   name: string;
@@ -129,12 +139,14 @@ export interface UserProfile {
       refreshToken?: string;
       expiresAt?: number;
       userId?: string;
+      lastSync?: string;
     };
     googleFit?: {
       connected: boolean;
       accessToken?: string;
       refreshToken?: string;
       expiresAt?: number;
+      lastSync?: string;
     };
   };
 }

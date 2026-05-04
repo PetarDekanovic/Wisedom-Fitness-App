@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, ChangeEvent, Component } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { INITIAL_QUOTES } from './data/initialQuotes';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -91,7 +92,7 @@ import {
 } from 'recharts';
 import { format, subDays, startOfToday, getDay } from 'date-fns';
 import { cn } from './lib/utils';
-import type { Workout, DailyStats, Exercise, WorkoutSet, DayPlan, PlannedExercise, UserProfile, ChatMessage, Quote, WorkoutComment } from './types';
+import type { Workout, DailyStats, Exercise, WorkoutSet, DayPlan, PlannedExercise, UserProfile, ChatMessage, Quote, WorkoutComment, Article } from './types';
 import { auth, db, storage, googleProvider, signInWithPopup, signOut } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { 
@@ -911,10 +912,145 @@ export default function App() {
   );
 }
 
+function ArticleCard({ 
+  article, 
+  isDarkMode, 
+  onDelete,
+  currentUserId 
+}: { 
+  article: Article, 
+  isDarkMode: boolean, 
+  onDelete: (id: string) => void,
+  currentUserId?: string
+}) {
+  const isOwner = currentUserId === article.userId;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "backdrop-blur-md border rounded-[2rem] p-6 transition-all space-y-4",
+        isDarkMode ? "bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800/40" : "bg-white border-zinc-100 shadow-sm hover:shadow-md"
+      )}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "w-10 h-10 rounded-2xl flex items-center justify-center",
+            isDarkMode ? "bg-emerald-500/10 text-emerald-500" : "bg-emerald-50"
+          )}>
+            <FileText className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div>
+            <h4 className="font-bold text-base leading-tight">{article.title}</h4>
+            <p className={cn("text-[10px] uppercase font-bold tracking-widest", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
+              {format(new Date(article.date), 'MMM d, yyyy • HH:mm')}
+            </p>
+          </div>
+        </div>
+        {isOwner && (
+          <button 
+            onClick={() => onDelete(article.id)}
+            className="p-2 opacity-50 hover:opacity-100 hover:text-red-500 transition-all"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      <div className={cn(
+        "markdown-body text-sm leading-relaxed prose prose-sm max-w-none",
+        isDarkMode ? "text-zinc-300 prose-invert" : "text-zinc-700"
+      )}>
+        <ReactMarkdown>{article.content}</ReactMarkdown>
+      </div>
+
+      <div className="flex items-center gap-2 pt-2">
+        {article.isAI && (
+          <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded-full">
+            <Sparkles className="w-3 h-3" />
+            AI Insight
+          </span>
+        )}
+        <div className="flex -space-x-1">
+          {[1,2,3].map(i => (
+            <div key={i} className={cn("w-5 h-5 rounded-full border-2", isDarkMode ? "bg-zinc-800 border-zinc-900" : "bg-zinc-100 border-white")} />
+          ))}
+        </div>
+        <span className="text-[10px] text-zinc-500 font-medium">+12 Readers</span>
+      </div>
+    </motion.div>
+  );
+}
+
 function AppContent() {
   const [activeView, setActiveView] = useState<View>('dashboard');
-  const [historySubView, setHistorySubView] = useState<'journal' | 'plans'>('journal');
+  const [historySubView, setHistorySubView] = useState<'journal' | 'plans' | 'articles'>('journal');
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [isAddingArticle, setIsAddingArticle] = useState(false);
+  const [articleTitle, setArticleTitle] = useState('');
+  const [articleContent, setArticleContent] = useState('');
   const [user, setUser] = useState<FirebaseUser | null>(null);
+
+  const fetchArticles = useCallback(async () => {
+    if (!user) return;
+    try {
+      const q = query(
+        collection(db, 'articles'), 
+        where('userId', '==', user.uid),
+        orderBy('date', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      const fetched = snapshot.docs.map(doc => ({ ...doc.data() } as Article));
+      setArticles(fetched);
+    } catch (e) {
+      console.error("Error fetching articles:", e);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
+
+  const handleAddArticle = async () => {
+    if (!user || !articleContent.trim() || !articleTitle.trim()) return;
+    
+    const newArticle: Article = {
+      id: `art-${Date.now()}`,
+      userId: user.uid,
+      title: articleTitle,
+      content: articleContent,
+      date: new Date().toISOString(),
+      isAI: false
+    };
+
+    try {
+      await addDoc(collection(db, 'articles'), newArticle);
+      setArticles(prev => [newArticle, ...prev]);
+      setArticleTitle('');
+      setArticleContent('');
+      setIsAddingArticle(false);
+    } catch (e) {
+      console.error("Error adding article:", e);
+    }
+  };
+
+  const deleteArticle = async (id: string) => {
+    if (!user) return;
+    if (!confirm("Are you sure you want to delete this article?")) return;
+    try {
+      const q = query(collection(db, 'articles'), where('id', '==', id));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        await deleteDoc(doc(db, 'articles', snapshot.docs[0].id));
+      }
+      setArticles(prev => prev.filter(a => a.id !== id));
+    } catch (e) {
+      console.error("Error deleting article:", e);
+    }
+  };
+
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [weeklyPlan, setWeeklyPlan] = useState<DayPlan[]>(INITIAL_WEEKLY_PLAN);
@@ -2496,9 +2632,10 @@ function AppContent() {
       const customQuotes = customSnapshot.docs.map(doc => ({ 
         id: doc.id, 
         ...doc.data(),
+        randomId: doc.data().randomId || 0,
         isCustom: true,
         markedDate: doc.data().date || new Date().toISOString()
-      } as Quote));
+      } as any));
       console.log('Fetched custom quotes:', customQuotes.length);
         
       // Sort by marked date descending
@@ -4183,10 +4320,26 @@ function AppContent() {
                       <Folder className="w-3.5 h-3.5" />
                       Exercise Plans
                     </button>
+                    <button 
+                      onClick={() => setHistorySubView('articles')}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        historySubView === 'articles' 
+                          ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20" 
+                          : isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
+                      )}
+                    >
+                      <Layout className="w-3.5 h-3.5" />
+                      Articles
+                    </button>
                   </div>
                 </div>
                 <button 
-                  onClick={() => setIsAddingWorkout(true)}
+                  onClick={() => {
+                    if (historySubView === 'journal') setIsAddingWorkout(true);
+                    else if (historySubView === 'articles') setIsAddingArticle(true);
+                    else alert("Please add files through Workout Journal.");
+                  }}
                   className="bg-emerald-500 text-zinc-950 p-2 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
                 >
                   <Plus className="w-6 h-6" />
@@ -4219,7 +4372,7 @@ function AppContent() {
                     </div>
                   )}
                 </div>
-              ) : (
+              ) : historySubView === 'plans' ? (
                 <div className="grid grid-cols-1 gap-3">
                   {/* Exercise Plans Folder (Files & Drive Links) */}
                   {workouts.flatMap(w => (w.attachments || []).map(att => ({ ...att, workoutName: w.name, workoutDate: w.date })))
@@ -4272,6 +4425,28 @@ function AppContent() {
                       <Folder className="w-12 h-12 text-zinc-700 mb-4" />
                       <p className="text-zinc-500 font-medium">No exercise plans saved yet.</p>
                       <p className="text-zinc-600 text-xs mt-1">Upload files to your workouts to see them here.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {articles.map(article => (
+                    <ArticleCard 
+                      key={article.id}
+                      article={article}
+                      isDarkMode={isDarkMode}
+                      onDelete={deleteArticle}
+                      currentUserId={user?.uid}
+                    />
+                  ))}
+                  {articles.length === 0 && (
+                    <div className={cn(
+                      "flex flex-col items-center justify-center p-12 rounded-3xl border-2 border-dashed",
+                      isDarkMode ? "border-zinc-800" : "border-zinc-200"
+                    )}>
+                      <Layout className="w-12 h-12 text-zinc-700 mb-4" />
+                      <p className="text-zinc-500 font-medium">No articles yet.</p>
+                      <p className="text-zinc-600 text-xs mt-1">Share your long-form insights here.</p>
                     </div>
                   )}
                 </div>
@@ -5971,6 +6146,108 @@ function AppContent() {
                     <p>Library Quotes: {libraryQuotes.length}</p>
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Article Modal */}
+      <AnimatePresence>
+        {isAddingArticle && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className={cn(
+                "w-full max-w-2xl h-[90vh] rounded-t-3xl sm:rounded-3xl overflow-hidden border transition-colors duration-500 flex flex-col",
+                isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-2xl"
+              )}
+            >
+              <div className="p-6 flex-1 overflow-y-auto no-scrollbar space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "p-2 rounded-xl",
+                      isDarkMode ? "bg-emerald-500/10 text-emerald-500" : "bg-emerald-50"
+                    )}>
+                      <Layout className="w-5 h-5 text-emerald-500" />
+                    </div>
+                    <h3 className="text-xl font-bold">New Article</h3>
+                  </div>
+                  <button onClick={() => setIsAddingArticle(false)} className={isDarkMode ? "text-zinc-500" : "text-zinc-400"}>
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className={cn(
+                      "text-xs font-bold uppercase mb-1 block transition-colors",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>Title</label>
+                    <input 
+                      type="text" 
+                      value={articleTitle}
+                      onChange={(e) => setArticleTitle(e.target.value)}
+                      placeholder="e.g. The Strategic Path to HRV Mastery"
+                      className={cn(
+                        "w-full border rounded-xl px-4 py-3 text-lg font-bold focus:outline-none focus:border-emerald-500 transition-all",
+                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex-1">
+                    <label className={cn(
+                      "text-xs font-bold uppercase mb-1 block transition-colors",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>Content (Markdown Supported)</label>
+                    <textarea 
+                      value={articleContent}
+                      onChange={(e) => setArticleContent(e.target.value)}
+                      placeholder="Paste your AI insights or write your thoughts here...\n\nUse # for headers\nUse ** for bold\nUse - for lists"
+                      className={cn(
+                        "w-full h-[40vh] border rounded-xl px-4 py-4 focus:outline-none focus:border-emerald-500 transition-all font-sans leading-relaxed resize-none",
+                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                      )}
+                    />
+                  </div>
+
+                  <div className={cn(
+                    "p-4 rounded-2xl border border-dashed",
+                    isDarkMode ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
+                  )}>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 mb-2 flex items-center gap-2">
+                       <CheckCircle2 className="w-3 h-3" />
+                       Automatic Formatting Active
+                    </p>
+                    <p className="text-[10px] text-zinc-500 leading-relaxed">
+                      Your response will be automatically beautified. Headers, subheaders, and lists will be rendered with precision. Perfect for long-form Claude or Gemini exports.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-zinc-800/20 bg-zinc-950/20">
+                <button 
+                  onClick={handleAddArticle}
+                  disabled={!articleTitle.trim() || !articleContent.trim()}
+                  className={cn(
+                    "w-full py-4 rounded-2xl font-black italic tracking-tighter shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 uppercase",
+                    (!articleTitle.trim() || !articleContent.trim())
+                      ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                      : "bg-emerald-500 text-zinc-950 shadow-emerald-500/20"
+                  )}
+                >
+                  Publish Article
+                </button>
               </div>
             </motion.div>
           </motion.div>

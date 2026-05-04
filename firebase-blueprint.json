@@ -108,12 +108,30 @@
         "wisdom": { "type": "string" }
       },
       "required": ["question", "options", "correctAnswer", "category", "wisdom"]
+    },
+    "Article": {
+      "title": "Article",
+      "description": "Stores a long-form article or insight",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "isAI": { "type": "boolean" }
+      },
+      "required": ["id", "userId", "title", "content", "date"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User profile collection"
+    },
+    "/articles/{articleId}": {
+      "schema": "Article",
+      "description": "Long-form articles and insights collection"
     },
     "/workouts/{workoutId}": {
       "schema": "Workout",
