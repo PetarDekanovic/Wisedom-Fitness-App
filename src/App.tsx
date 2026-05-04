@@ -936,6 +936,9 @@ function ArticleCard({
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+  const [totalChunks, setTotalChunks] = useState(0);
+  const speechQueue = useRef<string[]>([]);
   const [copiedContent, setCopiedContent] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
 
@@ -962,47 +965,62 @@ function ArticleCard({
       synth.cancel();
       setIsPlaying(false);
       setIsProcessing(false);
+      setCurrentChunkIndex(0);
       return;
     }
 
-    // Signal processing
     setIsProcessing(true);
 
     try {
-      // Basic markdown stripping for smoother reading
-      const plainText = article.content
+      // 1. Clean and Chunk the text
+      const cleanText = article.content
         .replace(/[#*`~]/g, '')
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [text](url) -> text
-        .replace(/- /g, '')
-        .substring(0, 15000); // Safety limit for one utterance
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/- /g, '');
+
+      // Split into chunks of roughly 200 characters at sentence boundaries
+      const chunks = cleanText.match(/[^.!?]+[.!?]+(?=\s|$)/g) || [cleanText];
       
-      const utterance = new SpeechSynthesisUtterance(`${article.title}. ${plainText}`);
-      utterance.rate = 0.92;
-      utterance.pitch = 1.0;
+      const finalChunks = [article.title, ...chunks.map(c => c.trim()).filter(c => c.length > 0)];
       
-      utterance.onstart = () => {
-        setIsProcessing(false);
-        setIsPlaying(true);
-      };
-      
-      utterance.onend = () => {
-        setIsPlaying(false);
-        setIsProcessing(false);
-      };
-      
-      utterance.onerror = (event) => {
-        console.error("Speech Error:", event);
-        setIsPlaying(false);
-        setIsProcessing(false);
-      };
-      
-      // Stop any existing speech
-      synth.cancel();
-      
-      // Some browsers require a small delay after cancel
-      setTimeout(() => {
+      speechQueue.current = finalChunks;
+      setTotalChunks(finalChunks.length);
+      setCurrentChunkIndex(0);
+
+      const speakChunk = (index: number) => {
+        if (index >= speechQueue.current.length) {
+          setIsPlaying(false);
+          setIsProcessing(false);
+          setCurrentChunkIndex(0);
+          return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(speechQueue.current[index]);
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+        
+        utterance.onstart = () => {
+          setIsProcessing(false);
+          setIsPlaying(true);
+          setCurrentChunkIndex(index + 1);
+        };
+        
+        utterance.onend = () => {
+          speakChunk(index + 1);
+        };
+        
+        utterance.onerror = (e) => {
+          console.error("Speech Chunk Error:", e);
+          setIsPlaying(false);
+          setIsProcessing(false);
+        };
+
         synth.speak(utterance);
-      }, 50);
+      };
+
+      // Start the sequence
+      synth.cancel();
+      setTimeout(() => speakChunk(0), 100);
       
     } catch (e) {
       console.error("Speech Init Error:", e);
@@ -1117,7 +1135,7 @@ function ArticleCard({
               <Volume2 className="w-4 h-4" />
             )}
             <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">
-              {isProcessing ? "Processing..." : isPlaying ? "Stop" : "Listen"}
+              {isProcessing ? "Processing..." : isPlaying ? `Reading ${currentChunkIndex}/${totalChunks}` : "Listen"}
             </span>
           </button>
 
