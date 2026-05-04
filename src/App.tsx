@@ -81,6 +81,7 @@ import {
   Linkedin,
   Volume2,
   VolumeX,
+  MessageCircle,
 } from 'lucide-react';
 import { 
   LineChart, 
