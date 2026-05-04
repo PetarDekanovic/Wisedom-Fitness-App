@@ -111,7 +111,7 @@
     },
     "Article": {
       "title": "Article",
-      "description": "Stores a long-form article or insight",
+      "description": "Stores a long-form article or insight (Max 30,000 chars / 5,000 words)",
       "type": "object",
       "properties": {
         "id": { "type": "string" },

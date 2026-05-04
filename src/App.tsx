@@ -1271,6 +1271,18 @@ function AppContent() {
 
   const handleAddArticle = async () => {
     if (!user || !articleContent.trim() || !articleTitle.trim()) return;
+
+    const wordCount = articleContent.trim().split(/\s+/).filter(Boolean).length;
+    const charCount = articleContent.length;
+
+    if (charCount > 30000) {
+      alert("Article is too long! (Max 30,000 characters)");
+      return;
+    }
+    if (wordCount > 5000) {
+      alert("Article has too many words! (Max 5,000 words)");
+      return;
+    }
     
     if (editingArticle) {
       // Update existing article
@@ -6499,10 +6511,24 @@ function AppContent() {
                   </div>
 
                   <div className="flex-1">
-                    <label className={cn(
-                      "text-xs font-bold uppercase mb-1 block transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>Content (Markdown Supported)</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className={cn(
+                        "text-xs font-bold uppercase block transition-colors",
+                        isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                      )}>Content (Markdown Supported)</label>
+                      <div className="flex gap-3 text-[10px] font-bold">
+                        <span className={cn(
+                          articleContent.length > 30000 ? "text-red-500" : "text-zinc-500"
+                        )}>
+                          {articleContent.length.toLocaleString()} / 30,000 chars
+                        </span>
+                        <span className={cn(
+                          articleContent.trim().split(/\s+/).filter(Boolean).length > 5000 ? "text-red-500" : "text-zinc-500"
+                        )}>
+                          {articleContent.trim().split(/\s+/).filter(Boolean).length.toLocaleString()} / 5,000 words
+                        </span>
+                      </div>
+                    </div>
                     <textarea 
                       value={articleContent}
                       onChange={(e) => setArticleContent(e.target.value)}
@@ -6532,10 +6558,10 @@ function AppContent() {
               <div className="p-6 border-t border-zinc-800/20 bg-zinc-950/20">
                 <button 
                   onClick={handleAddArticle}
-                  disabled={!articleTitle.trim() || !articleContent.trim()}
+                  disabled={!articleTitle.trim() || !articleContent.trim() || articleContent.length > 30000 || articleContent.trim().split(/\s+/).filter(Boolean).length > 5000}
                   className={cn(
                     "w-full py-4 rounded-2xl font-black italic tracking-tighter shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 uppercase",
-                    (!articleTitle.trim() || !articleContent.trim())
+                    (!articleTitle.trim() || !articleContent.trim() || articleContent.length > 30000 || articleContent.trim().split(/\s+/).filter(Boolean).length > 5000)
                       ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
                       : "bg-emerald-500 text-zinc-950 shadow-emerald-500/20"
                   )}
