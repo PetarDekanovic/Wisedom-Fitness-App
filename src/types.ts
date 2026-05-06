@@ -177,7 +177,10 @@ export interface Quote {
   markedDate?: string;
   wisdomGrade?: string;
   comment?: string;
-  category?: 'fitness' | 'wisdom' | 'finance';
+  category?: 'fitness' | 'wisdom' | 'stoic' | 'jewish' | 'psychology' | 'finance' | 'balkan' | 'chinese' | 'japanese';
+  shortExplanation?: string;
+  stoicParallel?: string;
+  jewishParallel?: string;
 }
 
 export interface QuizQuestion {

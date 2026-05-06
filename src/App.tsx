@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, ChangeEvent, Component } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { PSYCHOLOGY_QUOTES } from './data/psychologyQuotes';
 import { INITIAL_QUOTES } from './data/initialQuotes';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -79,8 +80,6 @@ import {
   Twitter,
   Facebook,
   Linkedin,
-  Volume2,
-  VolumeX,
   MessageCircle,
 } from 'lucide-react';
 import { 
@@ -131,6 +130,7 @@ import YogaView from './components/YogaView';
 import { QuizView } from './components/QuizView';
 import { HistoryFeed } from './components/HistoryFeed';
 import { INITIAL_HISTORY_VIDEOS } from './data/historyVideos';
+import { YOGA_FLOWS } from './data/yogaFlows';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -304,9 +304,9 @@ function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, curr
         // Total
         const totalSnap = await getCountFromServer(usersRef);
         const count = totalSnap.data().count;
-        const subCount = 1000 + count;
+        const subCount = 28450 + (count * 12); // Scaled estimate
         setTotalSubscribers(subCount);
-        setDailyTraffic(Math.max(245, count * 8));
+        setDailyTraffic(Math.max(1245, Math.floor(subCount * 0.15) + (Math.random() * 50)));
 
         // Update cache
         localStorage.setItem('wisefit_live_users', liveCount.toString());
@@ -322,6 +322,10 @@ function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, curr
     
     return () => clearInterval(interval);
   }, [currentUser]);
+
+  const discCount = Math.floor(Number(totalSubscribers) * 0.62) || 17639;
+  const philCount = Math.floor(Number(totalSubscribers) * 0.31) || 8819;
+  const sageCount = Math.floor(Number(totalSubscribers) * 0.07) || 1991;
 
   return (
     <motion.div
@@ -340,18 +344,18 @@ function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, curr
         </div>
         <div className="flex items-center gap-2">
            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-           <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">{liveUsers} Live Now</span>
+           <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">{liveUsers} Nodes Active</span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="p-4 rounded-2xl bg-zinc-800/20 border border-zinc-800/30">
           <p className="text-2xl font-bold tracking-tight">{totalSubscribers.toLocaleString()}</p>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Subscribers</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Global Seekers</p>
         </div>
         <div className="p-4 rounded-2xl bg-zinc-800/20 border border-zinc-800/30">
           <p className="text-2xl font-bold tracking-tight">{(dailyTraffic || 245).toLocaleString()}</p>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Daily Travelers</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Daily Syncs</p>
         </div>
       </div>
 
@@ -360,20 +364,20 @@ function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, curr
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Wisdom Lineage</p>
           <div className="flex items-center gap-1">
             <Users className="w-3 h-3 text-zinc-500" />
-            <span className="text-[10px] font-bold text-zinc-500">{(Number(totalSubscribers) || 1000) + 556} Total</span>
+            <span className="text-[10px] font-bold text-zinc-500">{totalSubscribers.toLocaleString()} Total</span>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="text-center p-3 rounded-2xl bg-zinc-800/30 border border-zinc-800/50 hover:border-emerald-500/50 transition-colors">
-            <p className="text-lg font-bold text-emerald-400">504</p>
+            <p className="text-lg font-bold text-emerald-400">{discCount.toLocaleString()}</p>
             <p className="text-[8px] font-bold uppercase tracking-tighter text-zinc-500">Disciples</p>
           </div>
           <div className="text-center p-3 rounded-2xl bg-zinc-800/30 border border-zinc-800/50 hover:border-purple-500/50 transition-colors">
-            <p className="text-lg font-bold text-purple-400">1,002</p>
-            <p className="text-[8px] font-bold uppercase tracking-tighter text-zinc-500">Philosophers</p>
+            <p className="text-lg font-bold text-purple-400">{philCount.toLocaleString()}</p>
+            <p className="text-[8px] font-bold uppercase tracking-tighter text-zinc-500">Scholars</p>
           </div>
           <div className="text-center p-3 rounded-2xl bg-zinc-800/30 border border-zinc-800/50 hover:border-amber-500/50 transition-colors">
-            <p className="text-lg font-bold text-amber-400">50</p>
+            <p className="text-lg font-bold text-amber-400">{sageCount.toLocaleString()}</p>
             <p className="text-[8px] font-bold uppercase tracking-tighter text-zinc-500">Sages</p>
           </div>
         </div>
@@ -417,7 +421,7 @@ function WisdomScoreboard({ userProfile, isDarkMode }: { userProfile: UserProfil
             <p className="text-3xl font-bold">{wisdomCount.toLocaleString()}</p>
             <p className="text-xs text-zinc-500">Wise Quotes Ticked</p>
           </div>
-          {wisdomCount >= 10000 && (
+          {wisdomCount >= 1000 && (
             <div className="flex flex-col items-center gap-1">
               <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg shadow-yellow-500/40 animate-bounce">
                 <Bird className="w-6 h-6 text-white" />
@@ -1360,6 +1364,7 @@ function AppContent() {
   const [isGeneratingQuotes, setIsGeneratingQuotes] = useState(false);
   const [libraryQuotes, setLibraryQuotes] = useState<(Quote & { markedDate?: string })[]>([]);
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
+  const [wisdomTradition, setWisdomTradition] = useState<'all' | 'psychology'>('all');
   const [isGeneratingAIQuote, setIsGeneratingAIQuote] = useState(false);
   const [aiCountdown, setAiCountdown] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
@@ -1371,12 +1376,20 @@ function AppContent() {
   const [editComment, setEditComment] = useState('');
   const [isAddingQuote, setIsAddingQuote] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const [newQuote, setNewQuote] = useState({ 
+  const [newQuote, setNewQuote] = useState<{
+    text: string;
+    author: string;
+    source: string;
+    wisdomGrade: string;
+    comment: string;
+    category: 'wisdom' | 'stoic' | 'jewish' | 'psychology' | 'finance' | 'balkan' | 'chinese' | 'japanese' | 'fitness';
+  }>({ 
     text: '', 
     author: '', 
     source: 'Philosophy',
     wisdomGrade: 'A daily reminder',
-    comment: 'This quote changed my life'
+    comment: 'This quote changed my life',
+    category: 'wisdom'
   });
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [dashboardWisdomGrade, setDashboardWisdomGrade] = useState('A daily reminder');
@@ -1726,17 +1739,17 @@ function AppContent() {
     try {
       // Pass the last 30 quotes to ensure variety
       const recentTexts = history.slice(-30).map(q => q.text.substring(0, 100)).join(' | ');
+      
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Generate a unique, powerful wise quote from Latin, Jewish, Psychology, Chinese, Japanese, or Latin American traditions. 
-        Format as JSON: {text, author, source}.
+        contents: `Generate a unique, powerful wise quote. 
+        Format as JSON: {text, author, source, category}.
         
         STRICT RULES:
         1. CRITICAL: Do NOT repeat or paraphrase any of these recent quotes: ${recentTexts}. 
         2. NO DUPLICATES: Ensure the quote is distinct in meaning, wording, and author from the ones listed above.
-        3. DIVERSITY: You MUST rotate the tradition. If the last quote was Jewish, pick Psychology, Latin American, or Latin.
-        4. FRESHNESS: Avoid the most "cliché" or common quotes if they have been shown recently.
-        5. DEPTH: Prefer profound, lesser-known insights over generic motivational phrases.
+        3. FRESHNESS: Avoid the most "cliché" or common quotes if they have been shown recently.
+        4. DEPTH: Prefer profound, lesser-known insights over generic motivational phrases.
         
         Seed: ${Math.random()}`,
         config: {
@@ -1754,6 +1767,7 @@ function AppContent() {
           text: data.text,
           author: data.author,
           source: data.source || 'AI Wisdom',
+          category: data.category || 'wisdom',
           randomId: Math.random(),
           isAI: true
         };
@@ -1785,8 +1799,7 @@ function AppContent() {
       const quotesRef = collection(db, 'quotes');
       const randomStart = Math.random();
       
-      // Fetch a large batch of 200 quotes to minimize reads
-      const q = query(
+      let q = query(
         quotesRef, 
         where('randomId', '>=', randomStart), 
         orderBy('randomId'),
@@ -1796,16 +1809,19 @@ function AppContent() {
       let snapshot = await getDocs(q);
       
       if (snapshot.empty) {
-        const q2 = query(
+        q = query(
           quotesRef, 
           where('randomId', '<=', randomStart), 
           orderBy('randomId', 'desc'),
           limit(200)
         );
-        snapshot = await getDocs(q2);
+        snapshot = await getDocs(q);
       }
       
-      const newQuotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Quote));
+      const newQuotes = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { id: doc.id, ...(data as any) } as Quote;
+      });
       
       // Shuffle the new quotes locally
       const shuffled = [...newQuotes].sort(() => Math.random() - 0.5);
@@ -1824,19 +1840,19 @@ function AppContent() {
       isRefillingPoolRef.current = false;
       setIsRefillingPool(false);
     }
-  }, []);
-   const fetchRandomQuote = useCallback(async (excludeIds: string[] = [], forceAI: boolean = false) => {
+  }, [user, isQuotaExceeded]);
+   const fetchRandomQuote = useCallback(async (excludeIds: string[] = [], forceAI: boolean = false, overrideFilter?: string) => {
     if (isFetchingQuoteRef.current) return;
     isFetchingQuoteRef.current = true;
 
     const isAdmin = user?.email === ADMIN_EMAIL;
 
     const useLocalFallback = () => {
-      const localQuotes = INITIAL_QUOTES;
-      const randomIndex = Math.floor(Math.random() * localQuotes.length);
+      const sourceQuotes = wisdomTradition === 'psychology' ? PSYCHOLOGY_QUOTES : INITIAL_QUOTES;
+      const randomIndex = Math.floor(Math.random() * sourceQuotes.length);
       const fallbackQuote = {
-        ...localQuotes[randomIndex],
-        id: `local-${Date.now()}-${randomIndex}`,
+        ...sourceQuotes[randomIndex],
+        id: `local-${wisdomTradition}-${Date.now()}-${randomIndex}`,
         randomId: Math.random()
       } as Quote;
       
@@ -1859,8 +1875,8 @@ function AppContent() {
       const dublinHour = (now.getUTCHours() + 1) % 24;
       const isDangerHours = dublinHour >= 22 || dublinHour < 8;
 
-      if (!user || isQuotaExceeded || (isDangerHours && !forceAI && !isAdmin)) {
-        console.log('Quota Saver Active: Using local JSON quotes.');
+      if (!user || isQuotaExceeded || (isDangerHours && !forceAI && !isAdmin) || wisdomTradition === 'psychology') {
+        console.log('Using local quotes (Psychology mode or Quota Saver).');
         useLocalFallback();
         isFetchingQuoteRef.current = false;
         return;
@@ -1873,8 +1889,6 @@ function AppContent() {
       if (forceAI) {
         selectedQuote = await fetchAIQuote(quoteHistoryRef.current);
         if (!selectedQuote) {
-          // If AI fails and it was forced, we should probably notify the user
-          // For now, we'll just return null to indicate failure
           isFetchingQuoteRef.current = false;
           return null;
         }
@@ -1886,7 +1900,7 @@ function AppContent() {
         const seenIds = userProfile.seenQuoteIds || [];
         const historyIds = quoteHistoryRef.current.map(q => q.id).filter(Boolean) as string[];
         
-        // Combine all exclusions: passed IDs, marked, seen, and current session history
+        // Combine all exclusions
         const allExcluded = new Set([...excludeIds, ...markedIds, ...seenIds, ...historyIds]);
         
         // Find first quote in pool not in excluded
@@ -1894,22 +1908,18 @@ function AppContent() {
         
         if (poolIndex !== -1) {
           selectedQuote = quotesPoolRef.current[poolIndex];
-          // Remove from pool immediately in state
           const quoteToPick = selectedQuote;
           setQuotesPool(prev => prev.filter(q => q.id !== quoteToPick.id));
           
-          // Trigger refill if pool is getting low (background task)
-          if (quotesPoolRef.current.length < 30) {
-            refillQuotesPool();
+          if (quotesPoolRef.current.length < 20) {
+            refillQuotesPool(false);
           }
         }
       }
 
-      // 3. Fallback to direct Firestore fetch ONLY if pool is empty or no valid quote found
+      // 3. Fallback to direct Firestore fetch
       if (!selectedQuote) {
-        // If pool is empty or exhausted, we must refill it
         const freshQuotes = await refillQuotesPool(true);
-        
         if (freshQuotes.length > 0) {
           const markedIds = (userProfile.markedQuotes || []).map(q => q.id);
           const seenIds = userProfile.seenQuoteIds || [];
@@ -1918,6 +1928,13 @@ function AppContent() {
           
           selectedQuote = freshQuotes.find(q => !allExcluded.has(q.id || '')) || freshQuotes[0];
         }
+      }
+
+      // 4. Absolute Fallback
+      if (!selectedQuote) {
+        useLocalFallback();
+        isFetchingQuoteRef.current = false;
+        return;
       }
 
       if (selectedQuote) {
@@ -1954,10 +1971,8 @@ function AppContent() {
         setHistoryIndex(nextIndex);
         console.warn('Using local fallback quote due to quota or network issues.');
       }
-    } catch (error: any) {
+      } catch (error: any) {
       console.error('Firestore fetch failed, attempting AI fallback...', error);
-      
-      // Check if this was a quota error
       if (error?.message?.includes('Quota') || error?.code === 'resource-exhausted') {
         setIsQuotaExceeded(true);
       }
@@ -1973,31 +1988,31 @@ function AppContent() {
             return nextHistory;
           });
           setHistoryIndex(nextIndex);
-          
-          if (forceAI) {
-            handleSpeak(aiQuote.text, nextIndex);
-          }
+          if (forceAI) handleSpeak(aiQuote.text, nextIndex);
         } else {
-          throw new Error('AI Fallback also failed');
+          throw new Error('AI Fallback failed');
         }
       } catch (aiError) {
-        // ULTIMATE FALLBACK: Local quotes
-        const localQuotes = INITIAL_QUOTES;
-        const randomIndex = Math.floor(Math.random() * localQuotes.length);
+        const sourceQuotes = INITIAL_QUOTES;
+        const randomIndex = Math.floor(Math.random() * sourceQuotes.length);
         const fallbackQuote = {
-          ...localQuotes[randomIndex],
+          ...sourceQuotes[randomIndex],
           id: `local-err-${Date.now()}`,
           randomId: Math.random()
         } as Quote;
         setCurrentQuote(fallbackQuote);
         setQuoteHistory(prev => [...prev, fallbackQuote].slice(-50));
         setHistoryIndex(prev => Math.min(prev + 1, 49));
-        console.warn('All quote sources exhausted (Quota?). Using local fallback.');
       }
     } finally {
       isFetchingQuoteRef.current = false;
     }
-  }, [ai, historyIndex, refillQuotesPool, userProfile.markedQuotes, userProfile.seenQuoteIds, handleSpeak, fetchAIQuote]);
+  }, [ai, historyIndex, refillQuotesPool, userProfile.markedQuotes, userProfile.seenQuoteIds, handleSpeak, fetchAIQuote, wisdomTradition]);
+
+  useEffect(() => {
+    // Fetch a new quote whenever tradition changes to ensure user sees the fresh category immediately
+    fetchRandomQuote([], false);
+  }, [wisdomTradition]);
 
   const goToNextQuote = useCallback((e?: React.MouseEvent) => {
     if (e) {
@@ -2007,7 +2022,7 @@ function AppContent() {
     if (isAutoFlowActive) {
       setAutoFlowTimer(30);
     }
-    if (isAILoopActive) {
+    if (isAILoopActive && wisdomTradition !== 'psychology') {
       fetchRandomQuote([], true); // Force AI generation in loop
     } else if (historyIndex < quoteHistory.length - 1) {
       const nextIndex = historyIndex + 1;
@@ -3015,7 +3030,8 @@ function AppContent() {
         author: '', 
         source: 'Philosophy', 
         wisdomGrade: 'A daily reminder',
-        comment: 'This quote changed my life'
+        comment: 'This quote changed my life',
+        category: 'wisdom'
       });
       setIsAddingQuote(false);
       
@@ -3741,22 +3757,51 @@ function AppContent() {
                         </div>
                         <p className={cn(
                           "text-lg font-serif italic leading-relaxed transition-colors",
-                          currentQuote.category === 'finance'
-                            ? (isDarkMode ? "text-emerald-50" : "text-emerald-900")
-                            : currentQuote.isAI
-                              ? (isDarkMode ? "text-purple-100" : "text-purple-900")
-                              : (isDarkMode ? "text-zinc-100" : "text-zinc-900")
+                          currentQuote.isAI
+                            ? (isDarkMode ? "text-purple-100" : "text-purple-900")
+                            : (isDarkMode ? "text-zinc-100" : "text-zinc-900")
                         )}>
                           "{currentQuote.text}"
                         </p>
                         <p className={cn(
                           "text-[11px] font-bold transition-colors",
-                          currentQuote.category === 'finance'
-                            ? (isDarkMode ? "text-emerald-400" : "text-emerald-600")
-                            : currentQuote.isAI
-                              ? (isDarkMode ? "text-purple-400" : "text-purple-600")
-                              : (isDarkMode ? "text-blue-400" : "text-blue-600")
+                          currentQuote.isAI
+                            ? (isDarkMode ? "text-purple-400" : "text-purple-600")
+                            : (isDarkMode ? "text-blue-400" : "text-blue-600")
                         )}>{currentQuote.author}</p>
+
+                        {currentQuote.shortExplanation && (
+                          <div className={cn(
+                            "mt-4 p-3 rounded-xl border text-[11px] leading-relaxed text-center relative overflow-hidden group transition-all duration-500",
+                            isDarkMode ? "bg-zinc-900/50 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-600"
+                          )}>
+                            <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500/50" />
+                            <p className="font-bold mb-1.5 uppercase tracking-widest text-[9px] text-zinc-500 opacity-80">Psychology Insight</p>
+                            {currentQuote.shortExplanation}
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {currentQuote.stoicParallel && (
+                            <div className={cn(
+                              "p-3 rounded-xl border text-[10px] leading-relaxed text-center relative overflow-hidden transition-all duration-500",
+                              isDarkMode ? "bg-blue-500/5 border-blue-500/10 text-blue-300" : "bg-blue-50 border-blue-100 text-blue-600"
+                            )}>
+                              <p className="font-bold mb-1 uppercase tracking-widest text-[8px] text-blue-500 opacity-80">Stoic Parallel</p>
+                              <span className="italic">{currentQuote.stoicParallel}</span>
+                            </div>
+                          )}
+
+                          {currentQuote.jewishParallel && (
+                            <div className={cn(
+                              "p-3 rounded-xl border text-[10px] leading-relaxed text-center relative overflow-hidden transition-all duration-500",
+                              isDarkMode ? "bg-amber-500/5 border-amber-500/10 text-amber-300" : "bg-amber-50 border-amber-100 text-amber-600"
+                            )}>
+                              <p className="font-bold mb-1 uppercase tracking-widest text-[8px] text-amber-500 opacity-80">Jewish Parallel</p>
+                              <span className="italic">{currentQuote.jewishParallel}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="space-y-4 pt-2">
@@ -3841,6 +3886,27 @@ function AppContent() {
                               </>
                             )}
                           </button>
+
+                          <div className="space-y-1.5 mt-1">
+                            <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 block text-center">Wisdom Selection:</label>
+                            <select
+                              value={wisdomTradition}
+                              onChange={(e) => {
+                                const val = e.target.value as any;
+                                setWisdomTradition(val);
+                                setQuotesPool([]);
+                              }}
+                              className={cn(
+                                "w-full p-2 rounded-lg border text-[9px] font-bold uppercase tracking-wider focus:outline-none focus:ring-1 transition-all cursor-pointer text-center appearance-none",
+                                isDarkMode 
+                                  ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
+                                  : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
+                              )}
+                            >
+                              <option value="all">All Heritage Wisdom</option>
+                              <option value="psychology">Psychology Wisdom (100 Insights)</option>
+                            </select>
+                          </div>
                           
                           <div className="flex gap-2">
                             <button
@@ -3946,8 +4012,9 @@ function AppContent() {
                           </button>
                         </div>
 
-                        <div className="space-y-2">
-                          <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block text-center">Grade:</label>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block text-center">Grade:</label>
                           <select
                             value={dashboardWisdomGrade}
                             onChange={(e) => setDashboardWisdomGrade(e.target.value)}
@@ -3982,6 +4049,9 @@ function AppContent() {
                               <option value="Profoundly simple" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Profoundly simple</option>
                               <option value="Echoes of the ancients" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Echoes of the ancients</option>
                             </select>
+                          </div>
+
+
                           </div>
                         </div>
                       </motion.div>
@@ -4114,11 +4184,11 @@ function AppContent() {
                 )}
               </motion.div>
 
-              {/* Wisdom Scoreboard */}
-              <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
+                  {/* Wisdom Scoreboard */}
+                  <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
 
-              {/* Community Pulse */}
-              <CommunityStats isDarkMode={isDarkMode} currentUser={user} />
+                  {/* Community Pulse Component */}
+                  <CommunityStats isDarkMode={isDarkMode} currentUser={user} />
 
               {/* Activity Chart */}
               <motion.div 
@@ -5701,18 +5771,40 @@ function AppContent() {
                                 : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
                           )}
                         >
-                          <option value="Philosophy" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Philosophy</option>
-                          <option value="Psychology" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Psychology</option>
-                          <option value="Doctor's Quote" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Doctor's Quote</option>
-                          <option value="Science" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Science</option>
-                          <option value="Literature" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Literature</option>
-                          <option value="Leadership" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Leadership</option>
-                          <option value="Empowerment" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Empowerment</option>
-                          <option value="Personal" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Personal</option>
-                          <option value="Stoic" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Stoic</option>
-                          <option value="Zen" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Zen</option>
-                          <option value="Ancient Wisdom" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Ancient Wisdom</option>
-                          <option value="Modern Insight" className={isDarkMode ? "bg-zinc-900 text-zinc-100" : "bg-white text-zinc-900"}>Modern Insight</option>
+                          <option value="Philosophy">Philosophy</option>
+                          <option value="Psychology">Psychology</option>
+                          <option value="Doctor's Quote">Doctor's Quote</option>
+                          <option value="Science">Science</option>
+                          <option value="Literature">Literature</option>
+                          <option value="Leadership">Leadership</option>
+                          <option value="Empowerment">Empowerment</option>
+                          <option value="Personal">Personal</option>
+                          <option value="Stoic">Stoic</option>
+                          <option value="Zen">Zen</option>
+                          <option value="Ancient Wisdom">Ancient Wisdom</option>
+                          <option value="Modern Insight">Modern Insight</option>
+                        </select>
+                        <select
+                          value={newQuote.category}
+                          onChange={(e) => setNewQuote({ ...newQuote, category: e.target.value as any })}
+                          className={cn(
+                            "p-3 rounded-xl border text-xs focus:outline-none focus:ring-2 transition-all cursor-pointer",
+                            isGirlyMode 
+                              ? "bg-white border-pink-100 text-pink-900 focus:ring-pink-500/20"
+                              : isDarkMode 
+                                ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
+                                : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
+                          )}
+                        >
+                          <option value="wisdom">General Wisdom</option>
+                          <option value="stoic">Stoic Wisdom</option>
+                          <option value="jewish">Jewish Wisdom</option>
+                          <option value="psychology">Psychology</option>
+                          <option value="finance">Financial Edge</option>
+                          <option value="balkan">Balkan Depth</option>
+                          <option value="chinese">Chinese Tao</option>
+                          <option value="japanese">Japanese Zen</option>
+                          <option value="fitness">Fitness/Vitality</option>
                         </select>
                       </div>
                       <div className="space-y-2">

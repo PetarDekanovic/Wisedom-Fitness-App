@@ -43,7 +43,7 @@ service cloud.firestore {
     //   - author: string (required)
     //   - source: string (required)
     //   - randomId: number (required)
-    //   - category: string (optional, enum: ['fitness', 'wisdom', 'finance'])
+    //   - category: string (optional, enum: ['fitness', 'wisdom', 'stoic', 'jewish', 'psychology', 'finance', 'balkan', 'chinese', 'japanese'])
     //
     // ===============================================================
 
@@ -101,7 +101,7 @@ service cloud.firestore {
              data.author is string && data.author.size() > 0 && data.author.size() < 100 &&
              data.source is string && data.source.size() > 0 && data.source.size() < 100 &&
              data.randomId is number &&
-             (!('category' in data) || (data.category in ['fitness', 'wisdom', 'finance']));
+             (!('category' in data) || (data.category in ['fitness', 'wisdom', 'stoic', 'jewish', 'psychology', 'finance', 'balkan', 'chinese', 'japanese']));
     }
 
     // ===============================================================
