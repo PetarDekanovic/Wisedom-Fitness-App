@@ -1968,10 +1968,14 @@ function AppContent() {
         const historyIds = quoteHistoryRef.current.map(q => q.id).filter(Boolean) as string[];
         
         // Combine all exclusions
-        const allExcluded = new Set([...excludeIds, ...markedIds, ...seenIds, ...historyIds]);
+        const excludeSet = new Set([...excludeIds, ...markedIds, ...historyIds]);
+        if (wisdomTradition !== 'psychology') {
+          // Only exclude "seen" quotes for non-psychology traditions to allow the psychology insights to loop
+          seenIds.forEach(id => excludeSet.add(id));
+        }
         
         // Find first quote in pool not in excluded
-        const poolIndex = quotesPoolRef.current.findIndex(q => !allExcluded.has(q.id || ''));
+        const poolIndex = quotesPoolRef.current.findIndex(q => !excludeSet.has(q.id || ''));
         
         if (poolIndex !== -1) {
           selectedQuote = quotesPoolRef.current[poolIndex];
@@ -1991,9 +1995,12 @@ function AppContent() {
           const markedIds = (userProfile.markedQuotes || []).map(q => q.id);
           const seenIds = userProfile.seenQuoteIds || [];
           const historyIds = quoteHistoryRef.current.map(q => q.id).filter(Boolean) as string[];
-          const allExcluded = new Set([...excludeIds, ...markedIds, ...seenIds, ...historyIds]);
+          const excludeSetDirect = new Set([...excludeIds, ...markedIds, ...historyIds]);
+          if (wisdomTradition !== 'psychology') {
+            seenIds.forEach(id => excludeSetDirect.add(id));
+          }
           
-          selectedQuote = freshQuotes.find(q => !allExcluded.has(q.id || '')) || freshQuotes[0];
+          selectedQuote = freshQuotes.find(q => !excludeSetDirect.has(q.id || '')) || freshQuotes[0];
         }
       }
 
@@ -2097,7 +2104,7 @@ function AppContent() {
     if (isAutoFlowActive) {
       setAutoFlowTimer(30);
     }
-    if (isAILoopActive) {
+    if (isAILoopActive && wisdomTradition !== 'psychology') {
       fetchRandomQuote([], true); // Force AI generation in loop
     } else if (historyIndex < quoteHistory.length - 1) {
       const nextIndex = historyIndex + 1;
@@ -2349,6 +2356,8 @@ function AppContent() {
         }
 
         console.log('Verifying quote ecosystem...');
+        
+        // 1. Seed Main Quotes
         const quotesRef = collection(db, 'quotes');
         const snapshot = await getDocs(query(quotesRef, limit(1)));
         
@@ -2387,6 +2396,30 @@ function AppContent() {
               for (const mq of missing) {
                 await addDoc(quotesRef, { ...mq, randomId: Math.random() });
               }
+            }
+          }
+        }
+
+        // 2. Seed Psychology Insights
+        const psychRef = collection(db, 'psychology_insights');
+        const psychSnapshot = await getDocs(query(psychRef, limit(1)));
+        if (psychSnapshot.empty) {
+          console.log('Seeding psychology insights...');
+          // Check if PSYCHOLOGY_QUOTES exists and has items
+          if (Array.isArray(PSYCHOLOGY_QUOTES) && PSYCHOLOGY_QUOTES.length > 0) {
+            // Write in small batches to avoid hitting rate limits or timeouts
+            const batchSize = 25;
+            for (let i = 0; i < PSYCHOLOGY_QUOTES.length; i += batchSize) {
+              const batch = PSYCHOLOGY_QUOTES.slice(i, i + batchSize);
+              await Promise.all(batch.map(q => 
+                addDoc(psychRef, { 
+                  ...q, 
+                  category: 'psychology',
+                  randomId: Math.random(),
+                  createdAt: serverTimestamp()
+                })
+              ));
+              console.log(`Seeded psychology insights ${i + batch.length}/${PSYCHOLOGY_QUOTES.length}`);
             }
           }
         }
