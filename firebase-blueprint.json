@@ -122,6 +122,22 @@
         "isAI": { "type": "boolean" }
       },
       "required": ["id", "userId", "title", "content", "date"]
+    },
+    "PsychologyInsight": {
+      "title": "PsychologyInsight",
+      "description": "Stores a specialized psychology insight with parallels",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "author": { "type": "string" },
+        "source": { "type": "string" },
+        "shortExplanation": { "type": "string" },
+        "stoicParallel": { "type": "string" },
+        "jewishParallel": { "type": "string" },
+        "randomId": { "type": "number" },
+        "category": { "type": "string", "enum": ["psychology"] }
+      },
+      "required": ["text", "author", "source", "randomId", "category"]
     }
   },
   "firestore": {
@@ -144,6 +160,10 @@
     "/quotes/{quoteId}": {
       "schema": "Quote",
       "description": "Wise quotes collection"
+    },
+    "/psychology_insights/{insightId}": {
+      "schema": "PsychologyInsight",
+      "description": "Collection of the 100 psychology insights"
     },
     "/questions/{questionId}": {
       "schema": "QuizQuestion",

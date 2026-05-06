@@ -122,7 +122,8 @@ import {
   getDocFromServer,
   limit,
   getCountFromServer,
-  documentId
+  documentId,
+  writeBatch
 } from 'firebase/firestore';
 import { GoogleGenAI, Modality } from "@google/genai";
 import { generateStoicReflection } from './services/aiService';
@@ -1368,6 +1369,7 @@ function AppContent() {
   const [isGeneratingAIQuote, setIsGeneratingAIQuote] = useState(false);
   const [aiCountdown, setAiCountdown] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
+  const [isSeedingInsights, setIsSeedingInsights] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -1526,6 +1528,33 @@ function AppContent() {
       }
     }
   }, [userProfile.integrations?.googleFit?.connected]);
+
+  const seedPsychologyInsights = async () => {
+    if (!user || user.email !== ADMIN_EMAIL) return;
+    setIsSeedingInsights(true);
+    try {
+      const insightsRef = collection(db, 'psychology_insights');
+      const batch = writeBatch(db);
+      
+      // Use the local PSYCHOLOGY_QUOTES as the seed source
+      for (const quote of PSYCHOLOGY_QUOTES) {
+        const docRef = doc(insightsRef, quote.id || `psy-${Math.random().toString(36).substr(2, 9)}`);
+        const { id, ...quoteData } = quote;
+        batch.set(docRef, {
+          ...quoteData,
+          randomId: Math.random() // Ensure fresh random IDs for better distribution
+        });
+      }
+      
+      await batch.commit();
+      alert('100 Psychology Insights seeded to Firestore successfully!');
+    } catch (error) {
+      console.error('Error seeding insights:', error);
+      alert('Failed to seed insights. Check console.');
+    } finally {
+      setIsSeedingInsights(false);
+    }
+  };
 
   const syncHealthData = async (accessToken: string) => {
     try {
@@ -1791,19 +1820,30 @@ function AppContent() {
 
   const refillQuotesPool = useCallback(async (force = false): Promise<Quote[]> => {
     // GUEST PROTECTION: Guests never refill from database to save quota
-    if (!user || isQuotaExceeded || isRefillingPoolRef.current || (!force && quotesPoolRef.current.length > 50)) return [];
+    if (isRefillingPoolRef.current) return [];
+    
+    // For psychology mode, we always want to refill if pool is small, but we use a different collection
+    const collectionPath = wisdomTradition === 'psychology' ? 'psychology_insights' : 'quotes';
+    
+    if (!user || isQuotaExceeded || (!force && quotesPoolRef.current.length > (wisdomTradition === 'psychology' ? 20 : 50))) {
+       // If psychology and no pool, return local fallback immediately
+       if (wisdomTradition === 'psychology' && quotesPoolRef.current.length === 0) {
+         return PSYCHOLOGY_QUOTES;
+       }
+       return [];
+    }
     
     isRefillingPoolRef.current = true;
     setIsRefillingPool(true);
     try {
-      const quotesRef = collection(db, 'quotes');
+      const quotesRef = collection(db, collectionPath);
       const randomStart = Math.random();
       
       let q = query(
         quotesRef, 
         where('randomId', '>=', randomStart), 
         orderBy('randomId'),
-        limit(200)
+        limit(wisdomTradition === 'psychology' ? 100 : 200)
       );
       
       let snapshot = await getDocs(q);
@@ -1813,7 +1853,7 @@ function AppContent() {
           quotesRef, 
           where('randomId', '<=', randomStart), 
           orderBy('randomId', 'desc'),
-          limit(200)
+          limit(wisdomTradition === 'psychology' ? 100 : 200)
         );
         snapshot = await getDocs(q);
       }
@@ -1822,6 +1862,13 @@ function AppContent() {
         const data = doc.data();
         return { id: doc.id, ...(data as any) } as Quote;
       });
+      
+      // If collection is empty and it's psychology mode, we'll rely on local fallback
+      if (newQuotes.length === 0 && wisdomTradition === 'psychology') {
+        const shuffledLocal = [...PSYCHOLOGY_QUOTES].sort(() => Math.random() - 0.5);
+        setQuotesPool(shuffledLocal);
+        return shuffledLocal;
+      }
       
       // Shuffle the new quotes locally
       const shuffled = [...newQuotes].sort(() => Math.random() - 0.5);
@@ -1835,12 +1882,17 @@ function AppContent() {
       return shuffled;
     } catch (error) {
       console.error('Error refilling quotes pool:', error);
+      if (wisdomTradition === 'psychology') {
+        const shuffledLocal = [...PSYCHOLOGY_QUOTES].sort(() => Math.random() - 0.5);
+        setQuotesPool(shuffledLocal);
+        return shuffledLocal;
+      }
       return [];
     } finally {
       isRefillingPoolRef.current = false;
       setIsRefillingPool(false);
     }
-  }, [user, isQuotaExceeded]);
+  }, [user, isQuotaExceeded, wisdomTradition]);
    const fetchRandomQuote = useCallback(async (excludeIds: string[] = [], forceAI: boolean = false, overrideFilter?: string) => {
     if (isFetchingQuoteRef.current) return;
     isFetchingQuoteRef.current = true;
@@ -1875,8 +1927,8 @@ function AppContent() {
       const dublinHour = (now.getUTCHours() + 1) % 24;
       const isDangerHours = dublinHour >= 22 || dublinHour < 8;
 
-      if (!user || isQuotaExceeded || (isDangerHours && !forceAI && !isAdmin) || wisdomTradition === 'psychology') {
-        console.log('Using local quotes (Psychology mode or Quota Saver).');
+      if (!user || isQuotaExceeded || (isDangerHours && !forceAI && !isAdmin)) {
+        console.log('Using local quotes (Quota Saver).');
         useLocalFallback();
         isFetchingQuoteRef.current = false;
         return;
@@ -1952,8 +2004,8 @@ function AppContent() {
           handleSpeak(selectedQuote.text, nextIndex);
         }
       } else {
-        // FINAL FALLBACK: Use local INITIAL_QUOTES if everything else fails (Quota exceeded)
-        const localQuotes = INITIAL_QUOTES;
+        // FINAL FALLBACK: Use local data if everything else fails (Quota exceeded)
+        const localQuotes = wisdomTradition === 'psychology' ? PSYCHOLOGY_QUOTES : INITIAL_QUOTES;
         const randomIndex = Math.floor(Math.random() * localQuotes.length);
         const fallbackQuote = {
           ...localQuotes[randomIndex],
@@ -1993,7 +2045,7 @@ function AppContent() {
           throw new Error('AI Fallback failed');
         }
       } catch (aiError) {
-        const sourceQuotes = INITIAL_QUOTES;
+        const sourceQuotes = wisdomTradition === 'psychology' ? PSYCHOLOGY_QUOTES : INITIAL_QUOTES;
         const randomIndex = Math.floor(Math.random() * sourceQuotes.length);
         const fallbackQuote = {
           ...sourceQuotes[randomIndex],
@@ -2010,6 +2062,10 @@ function AppContent() {
   }, [ai, historyIndex, refillQuotesPool, userProfile.markedQuotes, userProfile.seenQuoteIds, handleSpeak, fetchAIQuote, wisdomTradition]);
 
   useEffect(() => {
+    // Clear pool when switching traditions to ensure fresh pool for the new category
+    setQuotesPool([]);
+    quotesPoolRef.current = [];
+    
     // Fetch a new quote whenever tradition changes to ensure user sees the fresh category immediately
     fetchRandomQuote([], false);
   }, [wisdomTradition]);
@@ -5440,6 +5496,41 @@ function AppContent() {
                   )}
                 </button>
               </div>
+
+              {/* Admin Management Section */}
+              {user?.email === ADMIN_EMAIL && (
+                <div className={cn(
+                  "backdrop-blur-md border rounded-3xl p-6 space-y-4 transition-colors duration-500",
+                  "bg-purple-900/10 border-purple-500/20 shadow-xl shadow-purple-500/5 ring-1 ring-purple-500/30"
+                )}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center">
+                      <Database className="w-5 h-5 text-purple-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-purple-900">Admin Sanctuary</h3>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-purple-500/70">System Controls</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 pt-2">
+                    <button
+                      onClick={seedPsychologyInsights}
+                      disabled={isSeedingInsights}
+                      className={cn(
+                        "w-full py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg",
+                        "bg-purple-600 text-white hover:bg-purple-500 shadow-purple-950/20"
+                      )}
+                    >
+                      {isSeedingInsights ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                      Seed Psychology Insights (100)
+                    </button>
+                    <p className="text-[9px] text-purple-500/60 font-medium leading-relaxed px-1">
+                      * This will populate the 'psychology_insights' collection in Firestore with the 100 specialized insights for revision.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <button 
                 onClick={handleLogout}
