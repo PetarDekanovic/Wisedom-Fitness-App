@@ -1776,16 +1776,21 @@ function AppContent() {
       // Pass the last 30 quotes to ensure variety
       const recentTexts = history.slice(-30).map(q => q.text.substring(0, 100)).join(' | ');
       
+      const traditionPrompt = wisdomTradition === 'psychology' 
+        ? 'Generate a unique, powerful psychology insight or quote based on modern or classic psychological theory. It should be profound and actionable.'
+        : 'Generate a unique, powerful wise quote.';
+
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: `Generate a unique, powerful wise quote. 
-        Format as JSON: {text, author, source, category}.
+        contents: `${traditionPrompt}
+        Format as JSON: {text, author, source, category, shortExplanation, stoicParallel, jewishParallel}.
         
         STRICT RULES:
         1. CRITICAL: Do NOT repeat or paraphrase any of these recent quotes: ${recentTexts}. 
         2. NO DUPLICATES: Ensure the quote is distinct in meaning, wording, and author from the ones listed above.
         3. FRESHNESS: Avoid the most "cliché" or common quotes if they have been shown recently.
         4. DEPTH: Prefer profound, lesser-known insights over generic motivational phrases.
+        5. If category is psychology, also provide shortExplanation, stoicParallel, and jewishParallel as done in the app's local psychology insights.
         
         Seed: ${Math.random()}`,
         config: {
@@ -1802,8 +1807,11 @@ function AppContent() {
           id: `ai-${Date.now()}`,
           text: data.text,
           author: data.author,
-          source: data.source || 'AI Wisdom',
-          category: data.category || 'wisdom',
+          source: data.source || (wisdomTradition === 'psychology' ? 'Psychology Advisor' : 'AI Wisdom'),
+          category: data.category || (wisdomTradition === 'psychology' ? 'psychology' : 'wisdom'),
+          shortExplanation: data.shortExplanation,
+          stoicParallel: data.stoicParallel,
+          jewishParallel: data.jewishParallel,
           randomId: Math.random(),
           isAI: true
         };
@@ -1823,7 +1831,7 @@ function AppContent() {
       setIsGeneratingAIQuote(false);
       setAiCountdown(0);
     }
-  }, [ai]);
+  }, [ai, wisdomTradition]);
 
   const refillQuotesPool = useCallback(async (force = false): Promise<Quote[]> => {
     // GUEST PROTECTION: Guests never refill from database to save quota
@@ -1904,7 +1912,7 @@ function AppContent() {
     if (isFetchingQuoteRef.current) return;
     isFetchingQuoteRef.current = true;
 
-    const isAdmin = user?.email === ADMIN_EMAIL;
+    const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
 
     const useLocalFallback = () => {
       const sourceQuotes = wisdomTradition === 'psychology' ? PSYCHOLOGY_QUOTES : INITIAL_QUOTES;
@@ -2073,6 +2081,10 @@ function AppContent() {
     setQuotesPool([]);
     quotesPoolRef.current = [];
     
+    // Also clear history to prevent category mixing in the UI and potential loop issues
+    setQuoteHistory([]);
+    setHistoryIndex(-1);
+    
     // Fetch a new quote whenever tradition changes to ensure user sees the fresh category immediately
     fetchRandomQuote([], false);
   }, [wisdomTradition]);
@@ -2085,7 +2097,7 @@ function AppContent() {
     if (isAutoFlowActive) {
       setAutoFlowTimer(30);
     }
-    if (isAILoopActive && wisdomTradition !== 'psychology') {
+    if (isAILoopActive) {
       fetchRandomQuote([], true); // Force AI generation in loop
     } else if (historyIndex < quoteHistory.length - 1) {
       const nextIndex = historyIndex + 1;
@@ -2094,7 +2106,7 @@ function AppContent() {
     } else {
       fetchRandomQuote([], false); // Pull from database by default
     }
-  }, [isAutoFlowActive, isAILoopActive, historyIndex, quoteHistory, fetchRandomQuote]);
+  }, [isAutoFlowActive, isAILoopActive, historyIndex, quoteHistory, fetchRandomQuote, wisdomTradition]);
 
   const goToPreviousQuote = (e?: React.MouseEvent) => {
     if (e) {
@@ -2203,12 +2215,6 @@ function AppContent() {
     }
     return () => clearInterval(interval);
   }, [isAILoopActive, isAutoFlowActive, goToNextQuote]);
-
-  useEffect(() => {
-    if (isAutoFlowActive) {
-      speakQuote(currentQuote);
-    }
-  }, [currentQuote, isAutoFlowActive, speakQuote]);
 
   useEffect(() => {
     return () => {
@@ -2329,7 +2335,7 @@ function AppContent() {
 
     const seedQuotes = async () => {
       // ONLY ADMIN can run seeding logic to prevent thousands of redundant writes/reads
-      if (!user || user.email !== ADMIN_EMAIL) return;
+      if (!user || !ADMIN_EMAILS.includes(user.email || '')) return;
       
       try {
         // Use a metadata document to track seeding version and save massive reads
@@ -2456,7 +2462,7 @@ function AppContent() {
 
   const generateMoreQuotes = async () => {
     if (isGeneratingQuotes || !ai) return;
-    if (user?.email !== ADMIN_EMAIL) {
+    if (!user?.email || !ADMIN_EMAILS.includes(user.email)) {
       alert("AI Generation is restricted to Admin only during development.");
       return;
     }
@@ -2494,7 +2500,7 @@ function AppContent() {
 
   const generateLatinQuotes = async () => {
     if (isGeneratingQuotes || !ai) return;
-    if (user?.email !== ADMIN_EMAIL) {
+    if (!user?.email || !ADMIN_EMAILS.includes(user.email)) {
       alert("AI Generation is restricted to Admin only during development.");
       return;
     }
