@@ -2349,7 +2349,7 @@ function AppContent() {
         const seedStatusRef = doc(db, 'system_metadata', 'seeding_status');
         const seedStatusDoc = await getDoc(seedStatusRef);
         const seededVersion = seedStatusDoc.exists() ? seedStatusDoc.data().version : 0;
-        const CURRENT_VERSION = 6;
+        const CURRENT_VERSION = 8;
 
         if (seededVersion >= CURRENT_VERSION) {
           return;
@@ -2366,49 +2366,21 @@ function AppContent() {
           for (const q of INITIAL_QUOTES) {
             await addDoc(quotesRef, { ...q, randomId: Math.random() });
           }
-        } else {
-          // Check categories efficiently with limit(1)
-          const categories = [
-            { id: 'Balkan', field: 'source', value: 'Balkan' },
-            { id: 'Finance', field: 'category', value: 'finance' },
-            { id: 'Rubenstein', field: 'author', value: 'Richard Rubenstein' },
-            { id: 'Irish', field: 'source', value: 'Irish' },
-            { id: 'Psychology', field: 'source', value: 'Psychology' },
-            { id: 'Machiavelli', field: 'source', value: 'Machiavelli' },
-            { id: 'Legendary', field: 'source', value: 'Legendary' },
-            { id: 'Jewish', field: 'source', value: 'Jewish' },
-            { id: 'Latin', field: 'source', value: 'Latin' },
-            { id: 'Christian', field: 'source', value: 'Christian' },
-            { id: 'Epictetus', field: 'author', value: 'Epictetus' },
-            { id: 'Philosophy', field: 'source', value: 'Philosophy' },
-            { id: 'Science', field: 'source', value: 'Science' },
-            { id: 'Leadership', field: 'source', value: 'Leadership' },
-            { id: 'Empowerment', field: 'source', value: 'Empowerment' },
-            { id: 'Literature', field: 'source', value: 'Literature' }
-          ];
-
-          for (const cat of categories) {
-            const q = query(quotesRef, where(cat.field, '==', cat.value), limit(1));
-            const snap = await getDocs(q);
-            if (snap.empty) {
-              console.log(`Seeding category: ${cat.id}`);
-              const missing = INITIAL_QUOTES.filter(q => (q as any)[cat.field] === cat.value);
-              for (const mq of missing) {
-                await addDoc(quotesRef, { ...mq, randomId: Math.random() });
-              }
-            }
-          }
         }
 
-        // 2. Seed Psychology Insights
+        // 2. Seed Psychology Insights (Clean Purge and Re-seed for v8)
         const psychRef = collection(db, 'psychology_insights');
-        const psychSnapshot = await getDocs(query(psychRef, limit(1)));
-        if (psychSnapshot.empty) {
-          console.log('Seeding psychology insights...');
-          // Check if PSYCHOLOGY_QUOTES exists and has items
+        if (seededVersion < 8) {
+          console.log('Upgrading psychology insights to v8 (Psychologists only)...');
+          const oldPsychDocs = await getDocs(psychRef);
+          // Delete old docs to ensure fresh start with only psychologists
+          for (const docSnap of oldPsychDocs.docs) {
+            await deleteDoc(doc(db, 'psychology_insights', docSnap.id));
+          }
+
+          console.log('Re-seeding psychology insights...');
           if (Array.isArray(PSYCHOLOGY_QUOTES) && PSYCHOLOGY_QUOTES.length > 0) {
-            // Write in small batches to avoid hitting rate limits or timeouts
-            const batchSize = 25;
+            const batchSize = 20;
             for (let i = 0; i < PSYCHOLOGY_QUOTES.length; i += batchSize) {
               const batch = PSYCHOLOGY_QUOTES.slice(i, i + batchSize);
               await Promise.all(batch.map(q => 
