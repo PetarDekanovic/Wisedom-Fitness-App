@@ -246,7 +246,7 @@ const getWisdomLevel = (count: number) => {
   };
 };
 
-const ADMIN_EMAIL = "petar.dekanovic@gmail.com";
+const ADMIN_EMAILS = ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com"];
 
 function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, currentUser: FirebaseUser | null }) {
   const [liveUsers, setLiveUsers] = useState<number | string>('...');
@@ -1537,7 +1537,7 @@ function AppContent() {
   }, [userProfile.integrations?.googleFit?.connected]);
 
   const seedPsychologyInsights = async () => {
-    if (!user || user.email !== ADMIN_EMAIL) return;
+    if (!user || !ADMIN_EMAILS.includes(user.email || '')) return;
     setIsSeedingInsights(true);
     try {
       const insightsRef = collection(db, 'psychology_insights');
@@ -5506,7 +5506,7 @@ function AppContent() {
               </div>
 
               {/* Admin Management Section */}
-              {user?.email === ADMIN_EMAIL && (
+              {user?.email && ADMIN_EMAILS.includes(user.email) && (
                 <div className={cn(
                   "backdrop-blur-md border rounded-3xl p-6 space-y-4 transition-colors duration-500",
                   "bg-purple-900/10 border-purple-500/20 shadow-xl shadow-purple-500/5 ring-1 ring-purple-500/30"
