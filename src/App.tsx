@@ -2082,9 +2082,30 @@ function AppContent() {
       // General case: detect if text looks Croatian or just use English
       const hasCroatianChars = /[čćžšđČĆŽŠĐ]/.test(quote.text);
       const lang = hasCroatianChars ? 'hr-HR' : 'en-US';
-      speakPart(`${quote.text}. By ${quote.author}`, lang);
+      
+      let speechText = `${quote.text}. By ${quote.author}.`;
+      
+      if (quote.category === 'psychology') {
+        if (quote.shortExplanation) {
+          speechText += ` Psychology Insight: ${quote.shortExplanation}.`;
+        }
+        if (quote.stoicParallel) {
+          speechText += ` Stoic Parallel: ${quote.stoicParallel.replace(/—.*$/, '')}.`;
+        }
+        if (quote.jewishParallel) {
+          speechText += ` Jewish Parallel: ${quote.jewishParallel.replace(/—.*$/, '')}.`;
+        }
+      }
+      
+      speakPart(speechText, lang);
     }
   }, []);
+
+  useEffect(() => {
+    if (isAutoFlowActive && currentQuote) {
+      speakQuote(currentQuote);
+    }
+  }, [currentQuote, isAutoFlowActive, speakQuote]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
