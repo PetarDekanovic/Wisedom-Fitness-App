@@ -123,10 +123,10 @@ service cloud.firestore {
     }
     
     match /articles/{articleId} {
-      allow read: if isDocOwner() || isAdmin();
+      allow read: if true;
       allow create: if isAuthenticated() && isValidArticle(request.resource.data);
       allow update: if (isDocOwner() && isValidArticle(request.resource.data) && request.resource.data.userId == resource.data.userId) ||
-                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reads', 'shares']));
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reads', 'shares']));
       allow delete: if isDocOwner() || isAdmin();
     }
 

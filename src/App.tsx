@@ -1255,14 +1255,21 @@ function AppContent() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    
-    // Switch to Real-time Articles
-    const q = query(
-      collection(db, 'articles'), 
-      where('userId', '==', user.uid),
-      orderBy('date', 'desc')
-    );
+    let q;
+    if (user) {
+      q = query(
+        collection(db, 'articles'), 
+        where('userId', '==', user.uid),
+        orderBy('date', 'desc')
+      );
+    } else {
+      // Guests see all articles (or a public subset if we had one)
+      q = query(
+        collection(db, 'articles'),
+        orderBy('date', 'desc'),
+        limit(50)
+      );
+    }
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched = snapshot.docs.map(doc => ({ ...doc.data() } as Article));
@@ -4778,16 +4785,17 @@ function AppContent() {
                     </button>
                   </div>
                 </div>
+                {(historySubView !== 'plans' && (historySubView === 'journal' || historySubView === 'articles') && user) && (
                 <button 
                   onClick={() => {
                     if (historySubView === 'journal') setIsAddingWorkout(true);
                     else if (historySubView === 'articles') setIsAddingArticle(true);
-                    else alert("Please add files through Workout Journal.");
                   }}
                   className="bg-emerald-500 text-zinc-950 p-2 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
                 >
                   <Plus className="w-6 h-6" />
                 </button>
+                )}
               </div>
 
               {historySubView === 'journal' ? (
