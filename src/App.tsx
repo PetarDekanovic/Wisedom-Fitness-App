@@ -1003,6 +1003,13 @@ function ArticleCard({
         const utterance = new SpeechSynthesisUtterance(speechQueue.current[index]);
         utterance.rate = 0.95;
         utterance.pitch = 1.0;
+        utterance.lang = 'en-US';
+        
+        // Try to find a matching English voice
+        const voices = window.speechSynthesis.getVoices();
+        const voice = voices.find(v => v.lang.startsWith('en-US')) || 
+                      voices.find(v => v.lang.startsWith('en-'));
+        if (voice) utterance.voice = voice;
         
         utterance.onstart = () => {
           setIsProcessing(false);
@@ -2146,7 +2153,8 @@ function AppContent() {
       
       // Try to find a matching voice for the language
       const voices = window.speechSynthesis.getVoices();
-      const voice = voices.find(v => v.lang.startsWith(lang));
+      const voice = voices.find(v => v.lang.startsWith(lang)) || 
+                    (lang.startsWith('en') ? voices.find(v => v.lang.startsWith('en-')) : null);
       if (voice) utterance.voice = voice;
 
       if (onEnd) utterance.onend = onEnd;
