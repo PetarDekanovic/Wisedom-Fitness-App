@@ -4681,84 +4681,6 @@ function AppContent() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-8"
             >
-              {/* Daily To-Do List Section */}
-              <div className={cn(
-                "backdrop-blur-md border rounded-3xl p-6 transition-all",
-                isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/80 border-zinc-200 shadow-sm"
-              )}>
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-lg font-bold">Daily Exercises</h3>
-                    <p className="text-xs text-zinc-500">Max 10 per day</p>
-                  </div>
-                  <div className={cn(
-                    "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                    isDarkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-600"
-                  )}>
-                    {userProfile.dailyExercises?.filter(e => e.completed).length || 0} / {userProfile.dailyExercises?.length || 0}
-                  </div>
-                </div>
-
-                <div className="space-y-3 mb-6">
-                  {userProfile.dailyExercises?.map(ex => (
-                    <div key={ex.id} className="flex items-center justify-between group">
-                      <div className="flex items-center gap-3">
-                        <button 
-                          onClick={() => toggleDailyExercise(ex.id)}
-                          className="focus:outline-none"
-                        >
-                          {ex.completed ? (
-                            <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-                          ) : (
-                            <Square className={cn(
-                              "w-6 h-6 transition-colors",
-                              isDarkMode ? "text-zinc-700 group-hover:text-zinc-500" : "text-zinc-300 group-hover:text-zinc-400"
-                            )} />
-                          )}
-                        </button>
-                        <span className={cn(
-                          "text-sm font-medium transition-all",
-                          ex.completed && (isDarkMode ? "text-zinc-600 line-through" : "text-zinc-400 line-through")
-                        )}>{ex.name}</span>
-                      </div>
-                      <button 
-                        onClick={() => deleteDailyExercise(ex.id)}
-                        className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-red-500/50 hover:text-red-500"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                  {(!userProfile.dailyExercises || userProfile.dailyExercises.length === 0) && (
-                    <div className="text-center py-6 border-2 border-dashed border-zinc-800/20 rounded-2xl">
-                      <p className="text-xs text-zinc-500">No exercises added for today.</p>
-                    </div>
-                  )}
-                </div>
-
-                {(userProfile.dailyExercises?.length || 0) < 10 && (
-                  <div className="flex gap-2">
-                    <input 
-                      type="text"
-                      value={newDailyExercise}
-                      onChange={(e) => setNewDailyExercise(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddDailyExercise()}
-                      placeholder="Add exercise..."
-                      className={cn(
-                        "flex-1 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-all",
-                        isDarkMode ? "bg-zinc-900/50 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
-                      )}
-                    />
-                    <button 
-                      onClick={handleAddDailyExercise}
-                      className="bg-emerald-500 text-zinc-950 p-3 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                  </div>
-                )}
-              </div>
-
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <h2 className="text-2xl font-bold">History</h2>
@@ -4844,7 +4766,86 @@ function AppContent() {
                   )}
                 </div>
               ) : historySubView === 'plans' ? (
-                <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-6">
+                  {/* Daily To-Do List Section */}
+                  <div className={cn(
+                    "backdrop-blur-md border rounded-3xl p-6 transition-all",
+                    isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/80 border-zinc-200 shadow-sm"
+                  )}>
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-bold">Daily Exercises</h3>
+                        <p className="text-xs text-zinc-500">Max 10 per day</p>
+                      </div>
+                      <div className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                        isDarkMode ? "bg-emerald-500/20 text-emerald-400" : "bg-emerald-100 text-emerald-600"
+                      )}>
+                        {userProfile.dailyExercises?.filter(e => e.completed).length || 0} / {userProfile.dailyExercises?.length || 0}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 mb-6">
+                      {userProfile.dailyExercises?.map(ex => (
+                        <div key={ex.id} className="flex items-center justify-between group">
+                          <div className="flex items-center gap-3">
+                            <button 
+                              onClick={() => toggleDailyExercise(ex.id)}
+                              className="focus:outline-none"
+                            >
+                              {ex.completed ? (
+                                <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                              ) : (
+                                <Square className={cn(
+                                  "w-6 h-6 transition-colors",
+                                  isDarkMode ? "text-zinc-700 group-hover:text-zinc-500" : "text-zinc-300 group-hover:text-zinc-400"
+                                )} />
+                              )}
+                            </button>
+                            <span className={cn(
+                              "text-sm font-medium transition-all",
+                              ex.completed && (isDarkMode ? "text-zinc-600 line-through" : "text-zinc-400 line-through")
+                            )}>{ex.name}</span>
+                          </div>
+                          <button 
+                            onClick={() => deleteDailyExercise(ex.id)}
+                            className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-red-500/50 hover:text-red-500"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      {(!userProfile.dailyExercises || userProfile.dailyExercises.length === 0) && (
+                        <div className="text-center py-6 border-2 border-dashed border-zinc-800/20 rounded-2xl">
+                          <p className="text-xs text-zinc-500">No exercises added for today.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {(userProfile.dailyExercises?.length || 0) < 10 && (
+                      <div className="flex gap-2">
+                        <input 
+                          type="text"
+                          value={newDailyExercise}
+                          onChange={(e) => setNewDailyExercise(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddDailyExercise()}
+                          placeholder="Add exercise..."
+                          className={cn(
+                            "flex-1 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-all",
+                            isDarkMode ? "bg-zinc-900/50 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          )}
+                        />
+                        <button 
+                          onClick={handleAddDailyExercise}
+                          className="bg-emerald-500 text-zinc-950 p-3 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
+                        >
+                          <Plus className="w-5 h-5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3">
                   {/* Exercise Plans Folder (Files & Drive Links) */}
                   {workouts.flatMap(w => (w.attachments || []).map(att => ({ ...att, workoutName: w.name, workoutDate: w.date })))
                     .filter(att => att.type === 'file' || att.type === 'google-drive' || att.type === 'link')
@@ -4899,7 +4900,8 @@ function AppContent() {
                     </div>
                   )}
                 </div>
-              ) : (
+              </div>
+            ) : (
                 <div className="space-y-6">
                   {articles.map(article => (
                     <ArticleCard 
