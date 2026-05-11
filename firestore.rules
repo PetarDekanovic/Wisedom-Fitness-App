@@ -101,7 +101,13 @@ service cloud.firestore {
              data.author is string && data.author.size() > 0 && data.author.size() < 100 &&
              data.source is string && data.source.size() > 0 && data.source.size() < 100 &&
              data.randomId is number &&
-             (!('category' in data) || (data.category in ['fitness', 'wisdom', 'stoic', 'jewish', 'psychology', 'finance', 'balkan', 'chinese', 'japanese']));
+             (!('category' in data) || (data.category in ['fitness', 'wisdom', 'stoic', 'jewish', 'psychology', 'finance', 'balkan', 'chinese', 'japanese', 'daily']));
+    }
+
+    match /daily_quotes_cache/{quoteId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow delete: if isAdmin();
     }
 
     // ===============================================================

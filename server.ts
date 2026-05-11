@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import axios from "axios";
 import dotenv from "dotenv";
+import * as cheerio from "cheerio";
 
 dotenv.config();
 
@@ -17,6 +18,148 @@ async function startServer() {
 
   app.use(cors());
   app.use(express.json());
+
+  // --- DAILY FRESH QUOTES SCRAPER ---
+  app.get("/api/daily-quotes", async (req, res) => {
+    try {
+      let html = "";
+      try {
+        const response = await axios.get("https://wisefitorg.com/digest/", {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+          },
+          timeout: 10000
+        });
+        html = response.data;
+      } catch (err: any) {
+        console.error("Direct fetch failed, trying WP API...");
+        try {
+          const wpResponse = await axios.get("https://wisefitorg.com/wp-json/wp/v2/pages?slug=digest");
+          if (wpResponse.data && wpResponse.data[0] && wpResponse.data[0].content) {
+            html = wpResponse.data[0].content.rendered;
+          }
+        } catch (wpErr) {
+          console.error("WP API fetch failed too.");
+        }
+      }
+
+      if (!html) throw new Error("Could not fetch page content");
+
+      const $ = cheerio.load(html);
+      let quotes: any[] = [];
+      
+      // Robust Scraper Logic: Identify the wisdom section
+      let sectionContent = "";
+      const wisdomHeader = $("h1, h2, h3, h4").filter((i, el) => {
+        const text = $(el).text().toLowerCase();
+        return text.includes("wise quotes") || text.includes("daily quotes");
+      }).first();
+
+      if (wisdomHeader.length > 0) {
+        // Collect text from all siblings until the next major header
+        let current = wisdomHeader.next();
+        let count = 0;
+        while (current.length > 0 && !current.is("h1, h2, h3") && count < 50) {
+          // If it's a list, extract each item to ensure they are on separate lines
+          if (current.is("ul, ol")) {
+            current.find("li").each((i, li) => {
+              sectionContent += $(li).text().trim() + "\n";
+            });
+          } else if (current.is("p, div, blockquote, tr")) {
+             // Handle elements that might contain multiple lines or patterns
+             const text = $(current).text().trim();
+             if (text) sectionContent += text + "\n";
+          }
+          current = current.next();
+          count++;
+        }
+      }
+
+      // If Strategy 1 failed to identify a specific section, use the whole body
+      if (sectionContent.length < 500) {
+        sectionContent = $("body").text();
+      }
+
+      // Parse the collected text for quote patterns: "Quote Text — Author" or "Number. Quote Text"
+      const lines = sectionContent.split("\n");
+      lines.forEach((line, idx) => {
+        const trimmed = line.trim();
+        if (trimmed.length < 25) return;
+
+        // Try to parse: "Quote — Author"
+        const dashMatch = trimmed.match(/^[\d\s•\-\.\*]*["'“]?(.*?)["'”]?\s*[-—–]\s*(.*)$/);
+        if (dashMatch) {
+          quotes.push({
+            id: `daily-d-${idx}-${Date.now()}`,
+            text: dashMatch[1].trim(),
+            author: dashMatch[2].trim() || "Daily Wisdom",
+            source: "Daily Digest",
+            category: "daily",
+            randomId: Math.random()
+          });
+        } else if (trimmed.match(/^\d+[\.\s]/)) {
+          // Try to parse: "1. Quote text"
+          const numMatch = trimmed.match(/^\d+[\.\s]+(.*)$/);
+          if (numMatch) {
+            quotes.push({
+              id: `daily-n-${idx}-${Date.now()}`,
+              text: numMatch[1].trim(),
+              author: "Daily Wisdom",
+              source: "Daily Digest",
+              category: "daily",
+              randomId: Math.random()
+            });
+          }
+        }
+      });
+
+      function parseQuoteText(text: string) {
+        // This is now redundant but kept as a helper for other potential strategies
+        let cleanText = text.replace(/^[•\d\.\s]+/, "").trim();
+        const separators = ["—", "–", " - "];
+        let parts: string[] = [cleanText];
+        for (const sep of separators) {
+            if (cleanText.includes(sep)) {
+                parts = cleanText.split(sep);
+                break;
+            }
+        }
+        
+        return {
+          id: `daily-${Math.random().toString(36).substr(2, 9)}`,
+          text: parts[0]?.trim() || cleanText,
+          author: parts[1]?.trim() || "Daily Wisdom",
+          source: "Daily Digest",
+          category: "daily",
+          randomId: Math.random()
+        };
+      }
+
+      // Final processing: Shuffle, filter, and de-duplicate
+      const finalQuotes = quotes
+        .filter(q => q && q.text && q.text.length > 15 && q.text.length < 800)
+        .filter((q, index, self) => index === self.findIndex((t) => t.text === q.text))
+        .sort(() => Math.random() - 0.5) // Shuffle for variety
+        .slice(0, 100);
+
+      if (finalQuotes.length === 0) {
+          const debugSnippet = sectionContent.substring(0, 150).replace(/\n/g, " | ");
+          return res.json([{
+              id: "wait",
+              text: "The web is still weaving today's wisdom.",
+              author: "Daily Digest",
+              source: "System",
+              category: "daily",
+              shortExplanation: `Scraper found no quotes in ${html.length} chars. Snippet: "${debugSnippet}"`
+          }]);
+      }
+
+      res.json(finalQuotes);
+    } catch (error: any) {
+      console.error("Scraping error:", error.message);
+      res.status(500).json({ error: "Failed to fetch daily quotes" });
+    }
+  });
 
   // --- GOOGLE FITNESS / PIXEL WATCH INTEGRATION ---
 

@@ -1379,7 +1379,7 @@ function AppContent() {
   const [isGeneratingQuotes, setIsGeneratingQuotes] = useState(false);
   const [libraryQuotes, setLibraryQuotes] = useState<(Quote & { markedDate?: string })[]>([]);
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
-  const [wisdomTradition, setWisdomTradition] = useState<'all' | 'psychology'>('all');
+  const [wisdomTradition, setWisdomTradition] = useState<'all' | 'psychology' | 'daily'>('all');
   const [isGeneratingAIQuote, setIsGeneratingAIQuote] = useState(false);
   const [aiCountdown, setAiCountdown] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
@@ -1845,9 +1845,10 @@ function AppContent() {
     if (isRefillingPoolRef.current) return [];
     
     // For psychology mode, we always want to refill if pool is small, but we use a different collection
-    const collectionPath = wisdomTradition === 'psychology' ? 'psychology_insights' : 'quotes';
+    let collectionPath = wisdomTradition === 'psychology' ? 'psychology_insights' : 'quotes';
+    if (wisdomTradition === 'daily') collectionPath = 'daily_quotes_cache';
     
-    if (!user || isQuotaExceeded || (!force && quotesPoolRef.current.length > (wisdomTradition === 'psychology' ? 20 : 50))) {
+    if (isQuotaExceeded || (!force && quotesPoolRef.current.length > (wisdomTradition === 'psychology' ? 20 : (wisdomTradition === 'daily' ? 10 : 50)))) {
        // If psychology and no pool, return local fallback immediately
        if (wisdomTradition === 'psychology' && quotesPoolRef.current.length === 0) {
          return PSYCHOLOGY_QUOTES;
@@ -1857,7 +1858,36 @@ function AppContent() {
     
     isRefillingPoolRef.current = true;
     setIsRefillingPool(true);
+
     try {
+      // GUEST PROTECTION: Special case for daily quotes where we allow fetching but skip saving
+      if (wisdomTradition === 'daily') {
+        const response = await fetch('/api/daily-quotes');
+        const quotes = await response.json();
+        if (Array.isArray(quotes) && quotes.length > 0) {
+          setQuotesPool(quotes);
+          // Only save to Firebase if logged in AND it's a new day
+          if (user) {
+             const todayStr = format(new Date(), 'yyyy-MM-dd');
+             const dailyRef = collection(db, 'daily_quotes_cache');
+             const qDaily = query(dailyRef, where('fetchDate', '==', todayStr));
+             const snapshotDaily = await getDocs(qDaily);
+             if (snapshotDaily.empty) {
+               const batch = writeBatch(db);
+               quotes.slice(0, 20).forEach((q: any) => { // Limit save to first 20 for quota
+                 const newDoc = doc(dailyRef);
+                 batch.set(newDoc, { ...q, fetchDate: todayStr, createdAt: serverTimestamp() });
+               });
+               await batch.commit();
+             }
+          }
+          return quotes;
+        }
+      }
+
+      if (!user) return []; // Now check user for other traditions
+
+
       const quotesRef = collection(db, collectionPath);
       const randomStart = Math.random();
       
@@ -1922,7 +1952,31 @@ function AppContent() {
     const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
 
     const useLocalFallback = () => {
-      const sourceQuotes = wisdomTradition === 'psychology' ? PSYCHOLOGY_QUOTES : INITIAL_QUOTES;
+      let sourceQuotes = INITIAL_QUOTES;
+      if (wisdomTradition === 'psychology') {
+        sourceQuotes = PSYCHOLOGY_QUOTES;
+      } else if (wisdomTradition === 'daily') {
+        const historyIds = quoteHistoryRef.current.map(q => q.id).filter(Boolean) as string[];
+        const filteredDaily = quotesPoolRef.current.filter(q => !historyIds.includes(q.id));
+        
+        if (filteredDaily.length > 0) {
+          sourceQuotes = filteredDaily;
+        } else if (quotesPoolRef.current.length > 0) {
+          sourceQuotes = quotesPoolRef.current;
+        } else {
+          // Dedicated fallback for daily if scraping failed or is in progress
+          sourceQuotes = [
+            { 
+              text: "The web is still weaving today's wisdom. Check back in a moment.", 
+              author: "Daily Digest", 
+              source: "System", 
+              category: "daily",
+              shortExplanation: "Scraping fresh quotes can take a few seconds on first load."
+            } as Quote
+          ];
+        }
+      }
+      
       const randomIndex = Math.floor(Math.random() * sourceQuotes.length);
       const fallbackQuote = {
         ...sourceQuotes[randomIndex],
@@ -1949,7 +2003,10 @@ function AppContent() {
       const dublinHour = (now.getUTCHours() + 1) % 24;
       const isDangerHours = dublinHour >= 22 || dublinHour < 8;
 
-      if (!user || isQuotaExceeded || (isDangerHours && !forceAI && !isAdmin)) {
+      // EXEMPTION: Daily quotes are allowed for guests and during danger hours as they are light-weight
+      const isDailyExempt = wisdomTradition === 'daily';
+
+      if ((!user || isQuotaExceeded || (isDangerHours && !forceAI && !isAdmin)) && !isDailyExempt) {
         console.log('Using local quotes (Quota Saver).');
         useLocalFallback();
         isFetchingQuoteRef.current = false;
@@ -1976,8 +2033,8 @@ function AppContent() {
         
         // Combine all exclusions
         const excludeSet = new Set([...excludeIds, ...markedIds, ...historyIds]);
-        if (wisdomTradition !== 'psychology') {
-          // Only exclude "seen" quotes for non-psychology traditions to allow the psychology insights to loop
+        if (wisdomTradition !== 'psychology' && wisdomTradition !== 'daily') {
+          // Only exclude "seen" quotes for non-daily/psychology traditions to allow fresh loops
           seenIds.forEach(id => excludeSet.add(id));
         }
         
@@ -2003,7 +2060,7 @@ function AppContent() {
           const seenIds = userProfile.seenQuoteIds || [];
           const historyIds = quoteHistoryRef.current.map(q => q.id).filter(Boolean) as string[];
           const excludeSetDirect = new Set([...excludeIds, ...markedIds, ...historyIds]);
-          if (wisdomTradition !== 'psychology') {
+          if (wisdomTradition !== 'psychology' && wisdomTradition !== 'daily') {
             seenIds.forEach(id => excludeSetDirect.add(id));
           }
           
@@ -3998,6 +4055,7 @@ function AppContent() {
                                 const val = e.target.value as any;
                                 setWisdomTradition(val);
                                 setQuotesPool([]);
+                                quotesPoolRef.current = [];
                               }}
                               className={cn(
                                 "w-full p-2 rounded-lg border text-[9px] font-bold uppercase tracking-wider focus:outline-none focus:ring-1 transition-all cursor-pointer text-center appearance-none",
@@ -4008,6 +4066,7 @@ function AppContent() {
                             >
                               <option value="all">All Heritage Wisdom</option>
                               <option value="psychology">Psychology Wisdom (100 Insights)</option>
+                              <option value="daily">Daily Fresh Quotes (wisefitorg.com)</option>
                             </select>
                           </div>
                           

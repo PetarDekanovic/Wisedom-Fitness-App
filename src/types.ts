@@ -177,7 +177,7 @@ export interface Quote {
   markedDate?: string;
   wisdomGrade?: string;
   comment?: string;
-  category?: 'fitness' | 'wisdom' | 'stoic' | 'jewish' | 'psychology' | 'finance' | 'balkan' | 'chinese' | 'japanese';
+  category?: 'fitness' | 'wisdom' | 'stoic' | 'jewish' | 'psychology' | 'finance' | 'balkan' | 'chinese' | 'japanese' | 'daily';
   shortExplanation?: string;
   stoicParallel?: string;
   jewishParallel?: string;
