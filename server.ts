@@ -54,7 +54,10 @@ async function startServer() {
         if (items.length > 5) {
           items.each((j, li) => {
             const text = $(li).text().trim();
-            if (text.length > 15) quotes.push(parseQuoteText(text));
+            if (text.length > 15) {
+                const parsed = parseQuoteText(text);
+                if (parsed) quotes.push(parsed);
+            }
           });
         }
       });
@@ -65,7 +68,8 @@ async function startServer() {
           if ($(el).children().length > 3) return; // Skip large containers
           const text = $(el).text().trim();
           if (text.length > 40 && text.length < 600 && (text.includes("—") || text.includes("–") || text.includes(" - "))) {
-            quotes.push(parseQuoteText(text));
+            const parsed = parseQuoteText(text);
+            if (parsed) quotes.push(parsed);
           }
         });
       }
@@ -114,7 +118,7 @@ async function startServer() {
         .slice(0, 100);
 
       if (finalQuotes.length === 0) {
-          const debugSnippet = sectionContent.substring(0, 150).replace(/\n/g, " | ");
+          const debugSnippet = $("body").text().substring(0, 150).replace(/\n/g, " | ");
           return res.json([{
               id: "wait",
               text: "The web is still weaving today's wisdom.",

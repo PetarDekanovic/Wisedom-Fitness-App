@@ -1468,6 +1468,11 @@ function AppContent() {
     randomId: 0
   }]);
   const quoteHistoryRef = useRef<Quote[]>(quoteHistory);
+  
+  useEffect(() => {
+    quoteHistoryRef.current = quoteHistory;
+  }, [quoteHistory]);
+
   const [historyIndex, setHistoryIndex] = useState(0);
 
   useEffect(() => {
@@ -1865,8 +1870,12 @@ function AppContent() {
       if (wisdomTradition === 'daily') {
         const response = await fetch('/api/daily-quotes');
         const quotes = await response.json();
-        if (Array.isArray(quotes) && quotes.length > 0) {
-          setQuotesPool(quotes);
+        // Filter out any nulls or invalid quotes from the scraper
+        const validQuotes = Array.isArray(quotes) ? quotes.filter(q => q && q.text) : [];
+        
+        if (validQuotes.length > 0) {
+          setQuotesPool(validQuotes);
+          quotesPoolRef.current = validQuotes;
           // Only save to Firebase if logged in AND it's a new day
           if (user) {
              const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -2149,6 +2158,11 @@ function AppContent() {
   }, [ai, historyIndex, refillQuotesPool, userProfile.markedQuotes, userProfile.seenQuoteIds, handleSpeak, fetchAIQuote, wisdomTradition]);
 
   useEffect(() => {
+    // Stop any existing speech before switching traditions
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
     // Clear pool when switching traditions to ensure fresh pool for the new category
     setQuotesPool([]);
     quotesPoolRef.current = [];
@@ -2156,6 +2170,15 @@ function AppContent() {
     // Also clear history to prevent category mixing in the UI and potential loop issues
     setQuoteHistory([]);
     setHistoryIndex(-1);
+
+    // Set a temporary loading quote so user doesn't see old tradition data
+    setCurrentQuote({
+      text: "Loading fresh wisdom...",
+      author: "WiseFit",
+      source: "System",
+      category: "daily",
+      randomId: 0
+    });
     
     // Fetch a new quote whenever tradition changes to ensure user sees the fresh category immediately
     fetchRandomQuote([], false);
