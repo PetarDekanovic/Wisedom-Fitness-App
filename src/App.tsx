@@ -1415,7 +1415,7 @@ function AppContent() {
   const [isAILoopActive, setIsAILoopActive] = useState(false);
   const [autoFlowTimer, setAutoFlowTimer] = useState(30);
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
-  const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0');
+  const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0?loop=1&playlist=MQKg_O5X1e0');
   const [quotesPool, setQuotesPool] = useState<Quote[]>([]);
   const quotesPoolRef = useRef<Quote[]>([]);
   const isRefillingPoolRef = useRef(false);
@@ -1956,6 +1956,11 @@ function AppContent() {
     }
   }, [user, isQuotaExceeded, wisdomTradition]);
    const fetchRandomQuote = useCallback(async (excludeIds: string[] = [], forceAI: boolean = false, overrideFilter?: string) => {
+    // CANCEL ANY ONGOING SPEECH IMMEDIATELY
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
     if (isFetchingQuoteRef.current) return;
     isFetchingQuoteRef.current = true;
 
@@ -4273,7 +4278,7 @@ function AppContent() {
                   <button
                     onClick={() => setActiveSoundscape('focus')}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
                       activeSoundscape === 'focus'
                         ? (isDarkMode ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
@@ -4285,7 +4290,7 @@ function AppContent() {
                   <button
                     onClick={() => setActiveSoundscape('techno')}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
                       activeSoundscape === 'techno'
                         ? (isDarkMode ? "bg-purple-500/20 border-purple-500/40 text-purple-400" : "bg-purple-50 border-purple-200 text-purple-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
@@ -4297,7 +4302,7 @@ function AppContent() {
                   <button
                     onClick={() => setActiveSoundscape('house')}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
                       activeSoundscape === 'house'
                         ? (isDarkMode ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-400" : "bg-indigo-50 border-indigo-200 text-indigo-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
@@ -4309,7 +4314,7 @@ function AppContent() {
                   <button
                     onClick={() => setActiveSoundscape('spotify-techno')}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
                       activeSoundscape === 'spotify-techno'
                         ? (isDarkMode ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
@@ -4321,7 +4326,7 @@ function AppContent() {
                   <button
                     onClick={() => setActiveSoundscape('jazz')}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
                       activeSoundscape === 'jazz'
                         ? (isDarkMode ? "bg-orange-500/20 border-orange-500/40 text-orange-400" : "bg-orange-50 border-orange-200 text-orange-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
@@ -4333,7 +4338,7 @@ function AppContent() {
                   <button
                     onClick={() => setActiveSoundscape('classical')}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
                       activeSoundscape === 'classical'
                         ? (isDarkMode ? "bg-blue-500/20 border-blue-500/40 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
@@ -4377,50 +4382,50 @@ function AppContent() {
                       </div>
                     ) : (activeSoundscape === 'house' || activeSoundscape === 'spotify-techno') ? (
                       <iframe
-                        style={{ borderRadius: '0px' }}
+                        style={{ borderRadius: '12px' }}
                         src={activeSoundscape === 'house' 
-                          ? "https://open.spotify.com/embed/playlist/37i9dQZF1DXdLEN7Sps42p?utm_source=generator&theme=0"
-                          : "https://open.spotify.com/embed/playlist/37i9dQZF1DX6J5vU4h497S?utm_source=generator&theme=0"
+                          ? "https://open.spotify.com/embed/playlist/37i9dQZF1DXdLEN7Sps42p"
+                          : "https://open.spotify.com/embed/playlist/37i9dQZF1DX6J5vU4h497S"
                         }
                         width="100%"
-                        height="80"
+                        height="152"
                         frameBorder="0"
                         allowFullScreen
                         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                         loading="lazy"
-                        className="grayscale hover:grayscale-0 transition-all duration-500 opacity-90"
+                        className="grayscale hover:grayscale-0 transition-all duration-500 opacity-95"
                       />
                     ) : (
                       <div className="space-y-0 relative">
                         {activeSoundscape === 'techno' && (
                           <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
                             <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-purple-500/10 text-purple-400 text-[7px] font-black uppercase tracking-widest border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?loop=1&playlist=MQKg_O5X1e0')}
+                              className="whitespace-nowrap px-2 py-1 rounded bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase tracking-widest border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
                             >
                               SLAY!
                             </button>
                             <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[7px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10?loop=1&playlist=fW_0N37-J10')}
+                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
                             >
                               BROKEN
                             </button>
                             <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/GZonvFvV5Wc')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[7px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/GZonvFvV5Wc?loop=1&playlist=GZonvFvV5Wc')}
+                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
                             >
                               ENEMIES
                             </button>
                             <button 
                               onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/20 text-indigo-400 text-[7px] font-black uppercase tracking-widest border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors"
+                              className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors"
                             >
                               TRAP RADIO
                             </button>
                             <button 
                               onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[7px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
                             >
                               ETERNXLKZ MIX
                             </button>

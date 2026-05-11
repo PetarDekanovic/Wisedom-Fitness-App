@@ -48,26 +48,42 @@ async function startServer() {
       const $ = cheerio.load(html);
       let quotes: any[] = [];
       
-      // Strategy 1: Find all lists with 5+ items (Highly likely to be the quote list)
-      $("ul, ol").each((i, list) => {
-        const items = $(list).find("li");
-        if (items.length > 5) {
-          items.each((j, li) => {
-            const text = $(li).text().trim();
-            if (text.length > 15) {
+      // Strategy 1: Find major headers and scan their siblings for content
+      let targetHeaders = $("h1, h2, h3, h4").filter((i, el) => {
+        const text = $(el).text().toLowerCase();
+        return text.includes("wise quotes") || text.includes("daily quotes") || text.includes("wisdom");
+      });
+
+      targetHeaders.each((i, header) => {
+        let current = $(header).next();
+        let limit = 0;
+        while (current.length > 0 && !current.is("h1, h2") && limit < 40) {
+          if (current.is("ul, ol")) {
+            current.find("li").each((j, li) => {
+              const text = $(li).text().trim();
+              if (text.length > 15) {
                 const parsed = parseQuoteText(text);
                 if (parsed) quotes.push(parsed);
+              }
+            });
+          } else if (current.is("p, div, blockquote")) {
+            const text = current.text().trim();
+            if (text.length > 30) {
+              const parsed = parseQuoteText(text);
+              if (parsed) quotes.push(parsed);
             }
-          });
+          }
+          current = current.next();
+          limit++;
         }
       });
 
-      // Strategy 2: If few quotes found, scan paragraphs for patterns
+      // Strategy 2: If Strategy 1 was insufficient, look at all list items and paragraphs
       if (quotes.length < 10) {
-        $("p, blockquote, div").each((i, el) => {
-          if ($(el).children().length > 3) return; // Skip large containers
+        $("li, p, blockquote").each((i, el) => {
+          if ($(el).children().length > 3) return;
           const text = $(el).text().trim();
-          if (text.length > 40 && text.length < 600 && (text.includes("—") || text.includes("–") || text.includes(" - "))) {
+          if (text.length > 25 && text.length < 600) {
             const parsed = parseQuoteText(text);
             if (parsed) quotes.push(parsed);
           }
