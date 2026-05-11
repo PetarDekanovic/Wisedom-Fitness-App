@@ -48,87 +48,58 @@ async function startServer() {
       const $ = cheerio.load(html);
       let quotes: any[] = [];
       
-      // Robust Scraper Logic: Identify the wisdom section
-      let sectionContent = "";
-      const wisdomHeader = $("h1, h2, h3, h4").filter((i, el) => {
-        const text = $(el).text().toLowerCase();
-        return text.includes("wise quotes") || text.includes("daily quotes");
-      }).first();
-
-      if (wisdomHeader.length > 0) {
-        // Collect text from all siblings until the next major header
-        let current = wisdomHeader.next();
-        let count = 0;
-        while (current.length > 0 && !current.is("h1, h2, h3") && count < 50) {
-          // If it's a list, extract each item to ensure they are on separate lines
-          if (current.is("ul, ol")) {
-            current.find("li").each((i, li) => {
-              sectionContent += $(li).text().trim() + "\n";
-            });
-          } else if (current.is("p, div, blockquote, tr")) {
-             // Handle elements that might contain multiple lines or patterns
-             const text = $(current).text().trim();
-             if (text) sectionContent += text + "\n";
-          }
-          current = current.next();
-          count++;
-        }
-      }
-
-      // If Strategy 1 failed to identify a specific section, use the whole body
-      if (sectionContent.length < 500) {
-        sectionContent = $("body").text();
-      }
-
-      // Parse the collected text for quote patterns: "Quote Text — Author" or "Number. Quote Text"
-      const lines = sectionContent.split("\n");
-      lines.forEach((line, idx) => {
-        const trimmed = line.trim();
-        if (trimmed.length < 25) return;
-
-        // Try to parse: "Quote — Author"
-        const dashMatch = trimmed.match(/^[\d\s•\-\.\*]*["'“]?(.*?)["'”]?\s*[-—–]\s*(.*)$/);
-        if (dashMatch) {
-          quotes.push({
-            id: `daily-d-${idx}-${Date.now()}`,
-            text: dashMatch[1].trim(),
-            author: dashMatch[2].trim() || "Daily Wisdom",
-            source: "Daily Digest",
-            category: "daily",
-            randomId: Math.random()
+      // Strategy 1: Find all lists with 5+ items (Highly likely to be the quote list)
+      $("ul, ol").each((i, list) => {
+        const items = $(list).find("li");
+        if (items.length > 5) {
+          items.each((j, li) => {
+            const text = $(li).text().trim();
+            if (text.length > 15) quotes.push(parseQuoteText(text));
           });
-        } else if (trimmed.match(/^\d+[\.\s]/)) {
-          // Try to parse: "1. Quote text"
-          const numMatch = trimmed.match(/^\d+[\.\s]+(.*)$/);
-          if (numMatch) {
-            quotes.push({
-              id: `daily-n-${idx}-${Date.now()}`,
-              text: numMatch[1].trim(),
-              author: "Daily Wisdom",
-              source: "Daily Digest",
-              category: "daily",
-              randomId: Math.random()
-            });
-          }
         }
       });
 
+      // Strategy 2: If few quotes found, scan paragraphs for patterns
+      if (quotes.length < 10) {
+        $("p, blockquote, div").each((i, el) => {
+          if ($(el).children().length > 3) return; // Skip large containers
+          const text = $(el).text().trim();
+          if (text.length > 40 && text.length < 600 && (text.includes("—") || text.includes("–") || text.includes(" - "))) {
+            quotes.push(parseQuoteText(text));
+          }
+        });
+      }
+
       function parseQuoteText(text: string) {
-        // This is now redundant but kept as a helper for other potential strategies
-        let cleanText = text.replace(/^[•\d\.\s]+/, "").trim();
-        const separators = ["—", "–", " - "];
-        let parts: string[] = [cleanText];
+        // Remove bullets, numbers, and symbols from the start
+        let cleanText = text.replace(/^[•\d\.\s\*\[\]]+/, "").trim();
+        
+        // Remove common prefixes like "Apr 29, 2026 Earnings"
+        if (cleanText.match(/^(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2},/)) {
+            cleanText = ""; 
+        }
+
+        if (!cleanText) return null;
+
+        const separators = [" — ", " – ", " - ", "—", "–"];
+        let quote = cleanText;
+        let author = "Daily Wisdom";
+
         for (const sep of separators) {
             if (cleanText.includes(sep)) {
-                parts = cleanText.split(sep);
-                break;
+                const parts = cleanText.split(sep);
+                if (parts[0].length > 10) {
+                    quote = parts[0].trim();
+                    author = parts[1]?.trim() || "Daily Wisdom";
+                    break;
+                }
             }
         }
         
         return {
-          id: `daily-${Math.random().toString(36).substr(2, 9)}`,
-          text: parts[0]?.trim() || cleanText,
-          author: parts[1]?.trim() || "Daily Wisdom",
+          id: `daily-sc-${Math.random().toString(36).substr(2, 9)}`,
+          text: quote,
+          author: author,
           source: "Daily Digest",
           category: "daily",
           randomId: Math.random()

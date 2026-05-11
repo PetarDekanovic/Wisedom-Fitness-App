@@ -1415,6 +1415,7 @@ function AppContent() {
   const [isAILoopActive, setIsAILoopActive] = useState(false);
   const [autoFlowTimer, setAutoFlowTimer] = useState(30);
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
+  const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0');
   const [quotesPool, setQuotesPool] = useState<Quote[]>([]);
   const quotesPoolRef = useRef<Quote[]>([]);
   const isRefillingPoolRef = useRef(false);
@@ -4268,7 +4269,31 @@ function AppContent() {
                     )}
                   >
                     <Activity className="w-3 h-3" />
-                    Techno/House
+                    Techno & Phonk
+                  </button>
+                  <button
+                    onClick={() => setActiveSoundscape('house')}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      activeSoundscape === 'house'
+                        ? (isDarkMode ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-400" : "bg-indigo-50 border-indigo-200 text-indigo-600")
+                        : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
+                    )}
+                  >
+                    <Music className="w-3 h-3" />
+                    House (Spotify)
+                  </button>
+                  <button
+                    onClick={() => setActiveSoundscape('spotify-techno')}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      activeSoundscape === 'spotify-techno'
+                        ? (isDarkMode ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-600")
+                        : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
+                    )}
+                  >
+                    <Activity className="w-3 h-3" />
+                    Techno (Spotify)
                   </button>
                   <button
                     onClick={() => setActiveSoundscape('jazz')}
@@ -4327,20 +4352,72 @@ function AppContent() {
                           src={activeSoundscape === 'jazz' ? "https://wrti-live.streamguys1.com/jazz-mp3" : "https://media-ice.musicradio.com/ClassicFMMP3"}
                         />
                       </div>
-                    ) : (
+                    ) : (activeSoundscape === 'house' || activeSoundscape === 'spotify-techno') ? (
                       <iframe
+                        style={{ borderRadius: '0px' }}
+                        src={activeSoundscape === 'house' 
+                          ? "https://open.spotify.com/embed/playlist/37i9dQZF1DXdLEN7Sps42p?utm_source=generator&theme=0"
+                          : "https://open.spotify.com/embed/playlist/37i9dQZF1DX6J5vU4h497S?utm_source=generator&theme=0"
+                        }
                         width="100%"
                         height="80"
-                        src={
-                          activeSoundscape === 'focus' ? "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1" :
-                          "https://www.youtube.com/embed/4xDzrJKXOOY?autoplay=1"
-                        }
-                        title="Ritual Soundscape"
                         frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
-                        className="opacity-80 grayscale hover:grayscale-0 transition-all duration-500"
+                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                        loading="lazy"
+                        className="grayscale hover:grayscale-0 transition-all duration-500 opacity-90"
                       />
+                    ) : (
+                      <div className="space-y-0 relative">
+                        {activeSoundscape === 'techno' && (
+                          <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                            <button 
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0')}
+                              className="whitespace-nowrap px-2 py-1 rounded bg-purple-500/10 text-purple-400 text-[7px] font-black uppercase tracking-widest border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
+                            >
+                              SLAY!
+                            </button>
+                            <button 
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10')}
+                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[7px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                            >
+                              BROKEN
+                            </button>
+                            <button 
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/GZonvFvV5Wc')}
+                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[7px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                            >
+                              ENEMIES
+                            </button>
+                            <button 
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0')}
+                              className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/20 text-indigo-400 text-[7px] font-black uppercase tracking-widest border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors"
+                            >
+                              TRAP RADIO
+                            </button>
+                            <button 
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA')}
+                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[7px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                            >
+                              ETERNXLKZ MIX
+                            </button>
+                          </div>
+                        )}
+                        <iframe
+                          key={activeSoundscape === 'techno' ? technoTrack : activeSoundscape}
+                          width="100%"
+                          height="120"
+                          src={
+                            activeSoundscape === 'focus' ? "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0&controls=1" :
+                            `${technoTrack}${technoTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1`
+                          }
+                          title="Ritual Soundscape"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          className="opacity-80 grayscale hover:grayscale-0 transition-all duration-500"
+                        />
+                      </div>
                     )}
                   </motion.div>
                 )}
