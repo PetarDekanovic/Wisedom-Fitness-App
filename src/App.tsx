@@ -1773,8 +1773,8 @@ function AppContent() {
         body: JSON.stringify({ traditionPrompt, recentTexts, userEmail: user?.email })
       });
       
-      if (!response.ok) throw new Error("Quote Request failed");
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Quote Request failed");
       
       if (data.text && data.author) {
         return {
@@ -3349,14 +3349,14 @@ function AppContent() {
         })
       });
       
-      if (!resp.ok) throw new Error("Chat Request failed");
       const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error || "Chat Request failed");
 
       const modelMessage: ChatMessage = { role: 'model', parts: [{ text: result.text || 'Sorry, I could not generate a response.' }] };
       setChatMessages(prev => [...prev, modelMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gemini Error:', error);
-      setChatMessages(prev => [...prev, { role: 'model', parts: [{ text: 'Error connecting to the Force. Please try again.' }] }]);
+      setChatMessages(prev => [...prev, { role: 'model', parts: [{ text: error.message === "Failed to fetch" ? "Error connecting to the server. Check your connection." : error.message || 'Error connecting to the Force. Please try again.' }] }]);
     } finally {
       setIsChatLoading(false);
     }
