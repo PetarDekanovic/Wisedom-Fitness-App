@@ -42,6 +42,16 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      status: "ok", 
+      geminiKey: !!process.env.GEMINI_API_KEY,
+      nodeEnv: process.env.NODE_ENV,
+      port: PORT,
+      authorizedCount: AUTHORIZED_EMAILS.length
+    });
+  });
+
   // --- GEMINI AI ENDPOINTS ---
 
   app.post("/api/ai/tts", async (req, res) => {
@@ -53,7 +63,7 @@ async function startServer() {
       if (!text) return res.status(400).json({ error: "Text is required" });
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-tts-preview",
+        model: "gemini-1.5-flash",
         contents: [{ parts: [{ text: `Say in a calm, stoic, and authoritative voice: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
@@ -79,11 +89,8 @@ async function startServer() {
     try {
       const { traditionPrompt, recentTexts, userEmail } = req.body;
       
-      // If it's a guest or unauthorized, we can either block or just let them use local fallback
-      // For quotes, we'll allow guests to try but prioritize the whitelist
-      
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: `${traditionPrompt}
         Format as JSON: {text, author, source, category, shortExplanation, stoicParallel, jewishParallel}.
         
@@ -118,7 +125,7 @@ async function startServer() {
       }
       
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview", // Note: Pro requires billing enabled usually
+        model: "gemini-1.5-flash",
         contents: messages,
         config: {
           systemInstruction: `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
@@ -171,7 +178,7 @@ async function startServer() {
       `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: [{ role: "user", parts: [{ text: prompt }] }]
       });
 
@@ -194,7 +201,7 @@ async function startServer() {
       }
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash",
         contents: prompt,
         config: {
           responseMimeType: "application/json"

@@ -3349,7 +3349,14 @@ function AppContent() {
         })
       });
       
-      const result = await resp.json();
+      const text = await resp.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        throw new Error("Invalid response from server. The Stoic Chamber might be undergoing maintenance.");
+      }
+      
       if (!resp.ok) throw new Error(result.error || "Chat Request failed");
 
       const modelMessage: ChatMessage = { role: 'model', parts: [{ text: result.text || 'Sorry, I could not generate a response.' }] };
