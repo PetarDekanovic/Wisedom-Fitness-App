@@ -23,6 +23,18 @@ const ai = new GoogleGenAI({
   }
 });
 
+// --- AUTHORIZATION WHITELIST ---
+const AUTHORIZED_EMAILS = [
+  "petar.dekanovic@gmail.com",
+  "stjepan.dekanovic@gmail.com",
+  "esmeraldadarkomanila@gmail.com"
+];
+
+function isAuthorized(email: string | undefined) {
+  if (!email) return false;
+  return AUTHORIZED_EMAILS.includes(email.toLowerCase());
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -34,7 +46,10 @@ async function startServer() {
 
   app.post("/api/ai/tts", async (req, res) => {
     try {
-      const { text } = req.body;
+      const { text, userEmail } = req.body;
+      if (!isAuthorized(userEmail)) {
+        return res.status(403).json({ error: "Your spirit is not yet ready for this transmission." });
+      }
       if (!text) return res.status(400).json({ error: "Text is required" });
 
       const response = await ai.models.generateContent({
@@ -62,7 +77,10 @@ async function startServer() {
 
   app.post("/api/ai/quote", async (req, res) => {
     try {
-      const { traditionPrompt, recentTexts } = req.body;
+      const { traditionPrompt, recentTexts, userEmail } = req.body;
+      
+      // If it's a guest or unauthorized, we can either block or just let them use local fallback
+      // For quotes, we'll allow guests to try but prioritize the whitelist
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -93,7 +111,11 @@ async function startServer() {
 
   app.post("/api/ai/chat", async (req, res) => {
     try {
-      const { messages } = req.body;
+      const { messages, userEmail } = req.body;
+      
+      if (!isAuthorized(userEmail)) {
+        return res.status(403).json({ error: "The Stoic Chamber is private. Please contact the administrator." });
+      }
       
       const response = await ai.models.generateContent({
         model: "gemini-3.1-pro-preview", // Note: Pro requires billing enabled usually
@@ -124,7 +146,12 @@ async function startServer() {
 
   app.post("/api/ai/reflect", async (req, res) => {
     try {
-      const { data } = req.body;
+      const { data, userEmail } = req.body;
+      
+      if (!isAuthorized(userEmail)) {
+        return res.status(403).json({ error: "Reflection requires a Higher Key." });
+      }
+
       const prompt = `
         You are a Stoic Philosopher and Fitness Coach. 
         Analyze the following health metrics for ${data.userName}:

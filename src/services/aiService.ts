@@ -5,12 +5,12 @@ export interface HealthReflectionInput {
   userName: string;
 }
 
-export async function generateStoicReflection(data: HealthReflectionInput): Promise<string> {
+export async function generateStoicReflection(data: HealthReflectionInput, userEmail: string | null): Promise<string> {
   try {
     const response = await fetch('/api/ai/reflect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data })
+      body: JSON.stringify({ data, userEmail })
     });
     
     if (!response.ok) {

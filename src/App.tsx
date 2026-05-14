@@ -245,7 +245,7 @@ const getWisdomLevel = (count: number) => {
   };
 };
 
-const ADMIN_EMAILS = ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com"];
+const ADMIN_EMAILS = ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com", "stjepan.dekanovic@gmail.com"];
 
 function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, currentUser: FirebaseUser | null }) {
   const [liveUsers, setLiveUsers] = useState<number | string>('...');
@@ -1653,7 +1653,7 @@ function AppContent() {
           weight: updatedProfile.currentWeight || 89,
           calories: updatedProfile.currentCalories || 0,
           userName: userProfile.name
-        });
+        }, user?.email || null);
         setStoicReflection(reflection);
       } catch (err) {
         console.error("Reflection error:", err);
@@ -1678,6 +1678,14 @@ function AppContent() {
     }
   };
 
+  // AI AUTHORIZATION
+  const AUTHORIZED_EMAILS = [
+    "petar.dekanovic@gmail.com",
+    "stjepan.dekanovic@gmail.com",
+    "esmeraldadarkomanila@gmail.com"
+  ];
+  const isAuthorized = user && user.email && AUTHORIZED_EMAILS.includes(user.email.toLowerCase());
+
   // Audio State
   const [isSpeaking, setIsSpeaking] = useState<string | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -1695,7 +1703,7 @@ function AppContent() {
       const response = await fetch('/api/ai/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text, userEmail: user?.email })
       });
 
       if (!response.ok) throw new Error("TTS Request failed");
@@ -1739,6 +1747,10 @@ function AppContent() {
   }, [isSpeaking]);
 
   const fetchAIQuote = useCallback(async (history: Quote[] = []): Promise<Quote | null> => {
+    if (!isAuthorized) {
+      console.warn('AI functionality is restricted to authorized seekers.');
+      return null;
+    }
     setIsGeneratingAIQuote(true);
     setAiCountdown(12);
     
@@ -1758,7 +1770,7 @@ function AppContent() {
       const response = await fetch('/api/ai/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ traditionPrompt, recentTexts })
+        body: JSON.stringify({ traditionPrompt, recentTexts, userEmail: user?.email })
       });
       
       if (!response.ok) throw new Error("Quote Request failed");
@@ -1787,7 +1799,7 @@ function AppContent() {
       setIsGeneratingAIQuote(false);
       setAiCountdown(0);
     }
-  }, [wisdomTradition]);
+  }, [wisdomTradition, isAuthorized, user]);
 
   const refillQuotesPool = useCallback(async (force = false): Promise<Quote[]> => {
     // GUEST PROTECTION: Guests never refill from database to save quota
@@ -3314,7 +3326,7 @@ function AppContent() {
   };
 
   const handleSendMessage = async () => {
-    if (!chatInput.trim() || isChatLoading) return;
+    if (!chatInput.trim() || isChatLoading || !isAuthorized) return;
 
     const userMessage: ChatMessage = { role: 'user', parts: [{ text: chatInput }] };
     setChatMessages(prev => [...prev, userMessage]);
@@ -3331,7 +3343,10 @@ function AppContent() {
       const resp = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: chatMessages.concat(userMessage) })
+        body: JSON.stringify({ 
+          messages: chatMessages.concat(userMessage),
+          userEmail: user?.email
+        })
       });
       
       if (!resp.ok) throw new Error("Chat Request failed");
@@ -4316,8 +4331,8 @@ function AppContent() {
                       <iframe
                         style={{ borderRadius: '12px' }}
                         src={activeSoundscape === 'house' 
-                          ? "https://open.spotify.com/embed/playlist/37i9dQZF1DXdLEN7Sps42p"
-                          : "https://open.spotify.com/embed/playlist/37i9dQZF1DX6J5vU4h497S"
+                          ? "https://open.spotify.com/embed/playlist/37i9dQZF1DXdLEN7Sps42p?utm_source=generator"
+                          : "https://open.spotify.com/embed/playlist/37i9dQZF1DX6J5vU4h497S?utm_source=generator"
                         }
                         width="100%"
                         height="152"
@@ -4332,37 +4347,37 @@ function AppContent() {
                         {activeSoundscape === 'techno' && (
                           <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
                             <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?loop=1&playlist=MQKg_O5X1e0')}
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
                               className="whitespace-nowrap px-2 py-1 rounded bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase tracking-widest border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
                             >
                               SLAY!
                             </button>
                             <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1')}
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
                               className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
                             >
                               ETERNXLKZ RADIO
                             </button>
                             <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10?loop=1&playlist=fW_0N37-J10')}
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10?autoplay=1&loop=1&playlist=fW_0N37-J10')}
                               className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
                             >
                               BROKEN
                             </button>
                             <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/GZonvFvV5Wc?loop=1&playlist=GZonvFvV5Wc')}
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/GZonvFvV5Wc?autoplay=1&loop=1&playlist=GZonvFvV5Wc')}
                               className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
                             >
                               ENEMIES
                             </button>
                             <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0')}
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
                               className="whitespace-nowrap px-2 py-1 rounded bg-teal-500/20 text-teal-400 text-[10px] font-black uppercase tracking-widest border border-teal-500/30 hover:bg-teal-500/30 transition-colors"
                             >
                               TRAP MIX
                             </button>
                             <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA&autoplay=1&loop=1')}
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
                               className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
                             >
                               ETERNXLKZ MIX
@@ -5684,7 +5699,7 @@ function AppContent() {
               exit={{ opacity: 0, x: -20 }}
               className="flex flex-col h-[calc(100vh-180px)] relative"
             >
-              {!user && (
+              {!isAuthorized && (
                 <div className="absolute inset-0 z-50 backdrop-blur-md bg-zinc-950/20 rounded-3xl flex flex-col items-center justify-center p-8 text-center space-y-6">
                   <div className={cn(
                     "w-20 h-20 rounded-full flex items-center justify-center border transition-colors",
@@ -5696,17 +5711,33 @@ function AppContent() {
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-xl font-black uppercase tracking-tight text-white">Consult the Sage</h3>
-                    <p className="text-sm text-zinc-300">The AI Stoic requires a deeper connection. Sign in to unlock personal coaching and wisdom logs.</p>
+                    <p className="text-sm text-zinc-300">
+                      {!user 
+                        ? "The AI Stoic requires a deeper connection. Sign in to unlock personal coaching." 
+                        : "Your spirit is not yet ready for this transmission. AI features are currently restricted to authorized seekers."}
+                    </p>
                   </div>
-                  <button 
-                    onClick={handleLogin}
-                    className={cn(
-                      "px-8 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform",
-                      isGirlyMode ? "bg-pink-500 text-white" : "bg-emerald-500 text-zinc-950"
-                    )}
-                  >
-                    Enter the Sanctuary
-                  </button>
+                  {!user ? (
+                    <button 
+                      onClick={handleLogin}
+                      className={cn(
+                        "px-8 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform",
+                        isGirlyMode ? "bg-pink-500 text-white" : "bg-emerald-500 text-zinc-950"
+                      )}
+                    >
+                      Enter the Sanctuary
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => setActiveView('home')}
+                      className={cn(
+                        "px-8 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform",
+                        isGirlyMode ? "bg-pink-500 text-white" : "bg-emerald-500 text-zinc-950"
+                      )}
+                    >
+                      Return to Discipline
+                    </button>
+                  )}
                 </div>
               )}
               <div className="flex items-center gap-3 mb-6">
