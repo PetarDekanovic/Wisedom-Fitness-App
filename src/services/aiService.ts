@@ -1,11 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
-
-// Initialize Gemini
-// Note: In Vite, we should not expose process.env.GEMINI_API_KEY to the client 
-// if it's sensitive, but since this is an AI Coding agent environment, 
-// we assume the key is available via the environment.
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-
 export interface HealthReflectionInput {
   steps: number;
   weight: number;
@@ -14,36 +6,21 @@ export interface HealthReflectionInput {
 }
 
 export async function generateStoicReflection(data: HealthReflectionInput): Promise<string> {
-  if (!process.env.GEMINI_API_KEY) {
-    return "The oracle is silent. Add a GEMINI_API_KEY to receive Stoic insights.";
-  }
-
-  const prompt = `
-    You are a Stoic Philosopher and Fitness Coach. 
-    Analyze the following health metrics for ${data.userName}:
-    - Steps Today: ${data.steps}
-    - Current Weight: ${data.weight}kg
-    - Calories Expended: ${data.calories}
-
-    Wait! Before you respond, remember:
-    - If steps are high (over 8000), praise their "Discipline" and "Momentum".
-    - If steps are low, remind them that "Wealth is the ability to fully experience life" and encourage a short walk for "Clarity".
-    - Regarding weight (${data.weight}kg), focus on "Consistency over Perfection".
-    - Use a tone that is: Cinematic, Encouraging, Grave yet Inspiring.
-    - Keep it short (max 2-3 sentences).
-    - End with a short original Stoic quote.
-
-    Respond in raw text.
-  `;
-
   try {
-    const response = await genAI.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [{ role: "user", parts: [{ text: prompt }] }]
+    const response = await fetch('/api/ai/reflect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data })
     });
-    return response.text || "Nature does not hurry, yet everything is accomplished...";
+    
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result.text || "Nature does not hurry, yet everything is accomplished...";
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini Proxy Error:", error);
     return "Nature does not hurry, yet everything is accomplished... and so it is with our connection to the AI. Please try again later.";
   }
 }

@@ -125,7 +125,6 @@ import {
   documentId,
   writeBatch
 } from 'firebase/firestore';
-import { GoogleGenAI, Modality } from "@google/genai";
 import { generateStoicReflection } from './services/aiService';
 import YogaView from './components/YogaView';
 import { QuizView } from './components/QuizView';
@@ -1679,53 +1678,29 @@ function AppContent() {
     }
   };
 
-  // Initialize Gemini lazily
-  const ai = React.useMemo(() => {
-    try {
-      // Check standard and Vite-prefixed environment variables
-      const key = (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || 
-                  ((import.meta as any).env?.VITE_GEMINI_API_KEY);
-      
-      if (!key) {
-        console.warn('GEMINI_API_KEY is missing. AI features will be disabled.');
-        return null;
-      }
-      return new GoogleGenAI({ apiKey: key as string });
-    } catch (e) {
-      console.error('Failed to initialize Gemini:', e);
-      return null;
-    }
-  }, []);
-
   // Audio State
-  const [isSpeaking, setIsSpeaking] = useState<number | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState<string | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  const handleSpeak = useCallback(async (text: string, index: number) => {
-    if (isSpeaking === index) {
+  const handleSpeak = useCallback(async (text: string, quoteId: string) => {
+    if (isSpeaking === quoteId) {
       currentSourceRef.current?.stop();
       setIsSpeaking(null);
       return;
     }
 
-    if (!ai) return;
-    setIsSpeaking(index);
+    setIsSpeaking(quoteId);
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Say in a calm, stoic, and authoritative voice: ${text}` }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Zephyr' },
-            },
-          },
-        },
+      const response = await fetch('/api/ai/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
       });
 
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (!response.ok) throw new Error("TTS Request failed");
+      const { audio: base64Audio } = await response.json();
+
       if (base64Audio) {
         const binaryString = atob(base64Audio);
         const bytes = new Uint8Array(binaryString.length);
@@ -1759,20 +1734,11 @@ function AppContent() {
       }
     } catch (error: any) {
       console.error('TTS failed:', error);
-      // Check for quota error (429)
-      if (error?.message?.includes('429') || error?.status === 'RESOURCE_EXHAUSTED' || JSON.stringify(error).includes('429')) {
-        console.warn('Daily voice limit reached (Quota 429).');
-        // Optional: Show a user-friendly message in the UI if you have a toast system
-      }
       setIsSpeaking(null);
     }
-  }, [ai, isSpeaking]);
+  }, [isSpeaking]);
 
   const fetchAIQuote = useCallback(async (history: Quote[] = []): Promise<Quote | null> => {
-    if (!ai) {
-      console.warn('AI not initialized - skipping AI quote generation');
-      return null;
-    }
     setIsGeneratingAIQuote(true);
     setAiCountdown(12);
     
@@ -1781,10 +1747,6 @@ function AppContent() {
       setAiCountdown(prev => Math.max(0, prev - 1));
     }, 1000);
 
-    console.log('--- GEMINI API CALL START ---');
-    console.log('Model: gemini-3-flash-preview');
-    console.log('Timestamp:', new Date().toISOString());
-    
     try {
       // Pass the last 30 quotes to ensure variety
       const recentTexts = history.slice(-30).map(q => q.text.substring(0, 100)).join(' | ');
@@ -1793,28 +1755,15 @@ function AppContent() {
         ? 'Generate a unique, powerful psychology insight or quote based on modern or classic psychological theory. It should be profound and actionable.'
         : 'Generate a unique, powerful wise quote.';
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `${traditionPrompt}
-        Format as JSON: {text, author, source, category, shortExplanation, stoicParallel, jewishParallel}.
-        
-        STRICT RULES:
-        1. CRITICAL: Do NOT repeat or paraphrase any of these recent quotes: ${recentTexts}. 
-        2. NO DUPLICATES: Ensure the quote is distinct in meaning, wording, and author from the ones listed above.
-        3. FRESHNESS: Avoid the most "cliché" or common quotes if they have been shown recently.
-        4. DEPTH: Prefer profound, lesser-known insights over generic motivational phrases.
-        5. If category is psychology, also provide shortExplanation, stoicParallel, and jewishParallel as done in the app's local psychology insights.
-        
-        Seed: ${Math.random()}`,
-        config: {
-          responseMimeType: "application/json",
-          temperature: 1.0,
-          topP: 0.95
-        }
+      const response = await fetch('/api/ai/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ traditionPrompt, recentTexts })
       });
       
-      console.log('--- GEMINI API CALL SUCCESS ---');
-      const data = JSON.parse(response.text || '{}');
+      if (!response.ok) throw new Error("Quote Request failed");
+      const data = await response.json();
+      
       if (data.text && data.author) {
         return {
           id: `ai-${Date.now()}`,
@@ -1830,21 +1779,15 @@ function AppContent() {
         };
       }
       return null;
-    } catch (error: any) {
-      console.error('--- GEMINI API CALL FAILED ---');
-      console.error('Error generating AI quote:', error);
-      
-      if (error?.message?.includes('429') || error?.status === 'RESOURCE_EXHAUSTED' || JSON.stringify(error).includes('429')) {
-        console.warn('Daily AI generation limit reached (Quota 429).');
-      }
-      
+    } catch (e) {
+      console.error('AI Quote Generation failed:', e);
       return null;
     } finally {
       clearInterval(timer);
       setIsGeneratingAIQuote(false);
       setAiCountdown(0);
     }
-  }, [ai, wisdomTradition]);
+  }, [wisdomTradition]);
 
   const refillQuotesPool = useCallback(async (force = false): Promise<Quote[]> => {
     // GUEST PROTECTION: Guests never refill from database to save quota
@@ -2102,7 +2045,7 @@ function AppContent() {
 
         // Auto-speak if it's a forced AI generation
         if (selectedQuote.isAI && forceAI) {
-          handleSpeak(selectedQuote.text, nextIndex);
+          handleSpeak(selectedQuote.text, selectedQuote.id || 'current');
         }
       } else {
         // FINAL FALLBACK: Use local data if everything else fails (Quota exceeded)
@@ -2141,7 +2084,7 @@ function AppContent() {
             return nextHistory;
           });
           setHistoryIndex(nextIndex);
-          if (forceAI) handleSpeak(aiQuote.text, nextIndex);
+          if (forceAI) handleSpeak(aiQuote.text, aiQuote.id || 'ai-fallback');
         } else {
           throw new Error('AI Fallback failed');
         }
@@ -2160,7 +2103,7 @@ function AppContent() {
     } finally {
       isFetchingQuoteRef.current = false;
     }
-  }, [ai, historyIndex, refillQuotesPool, userProfile.markedQuotes, userProfile.seenQuoteIds, handleSpeak, fetchAIQuote, wisdomTradition]);
+  }, [historyIndex, refillQuotesPool, userProfile.markedQuotes, userProfile.seenQuoteIds, handleSpeak, fetchAIQuote, wisdomTradition]);
 
   useEffect(() => {
     // Stop any existing speech before switching traditions
@@ -2560,22 +2503,22 @@ function AppContent() {
   }, [userProfile.markedQuotes, currentQuote.id]);
 
   const generateMoreQuotes = async () => {
-    if (isGeneratingQuotes || !ai) return;
+    if (isGeneratingQuotes) return;
     if (!user?.email || !ADMIN_EMAILS.includes(user.email)) {
       alert("AI Generation is restricted to Admin only during development.");
       return;
     }
     setIsGeneratingQuotes(true);
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: "Generate 50 unique, powerful wise quotes from Stoic, Chinese, Japanese, Jewish, and Christian traditions. Format as JSON array: [{text, author, source}]. No markdown formatting, just the raw JSON array.",
-        config: {
-          responseMimeType: "application/json"
-        }
+      const resp = await fetch('/api/ai/admin/generate-quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'standard' })
       });
-
-      const newQuotes = JSON.parse(response.text || '[]');
+      
+      if (!resp.ok) throw new Error("Admin Quote Generation failed");
+      const newQuotes = await resp.json();
+      
       const quotesRef = collection(db, 'quotes');
       
       for (const q of newQuotes) {
@@ -2598,22 +2541,22 @@ function AppContent() {
   };
 
   const generateLatinQuotes = async () => {
-    if (isGeneratingQuotes || !ai) return;
+    if (isGeneratingQuotes) return;
     if (!user?.email || !ADMIN_EMAILS.includes(user.email)) {
       alert("AI Generation is restricted to Admin only during development.");
       return;
     }
     setIsGeneratingQuotes(true);
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: "Generate 50 unique, powerful Latin expressions and philosophical quotes with their English translations. Format as JSON array: [{text, author, source}]. The 'text' field should contain the Latin expression followed by the English translation in parentheses. The 'author' should be the historical figure or 'Ancient Proverb'. The 'source' should be 'Latin'. No markdown formatting, just the raw JSON array.",
-        config: {
-          responseMimeType: "application/json"
-        }
+      const resp = await fetch('/api/ai/admin/generate-quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'latin' })
       });
-
-      const newQuotes = JSON.parse(response.text || '[]');
+      
+      if (!resp.ok) throw new Error("Admin Latin Generation failed");
+      const newQuotes = await resp.json();
+      
       const quotesRef = collection(db, 'quotes');
       
       for (const q of newQuotes) {
@@ -3371,7 +3314,7 @@ function AppContent() {
   };
 
   const handleSendMessage = async () => {
-    if (!chatInput.trim() || isChatLoading || !ai) return;
+    if (!chatInput.trim() || isChatLoading) return;
 
     const userMessage: ChatMessage = { role: 'user', parts: [{ text: chatInput }] };
     setChatMessages(prev => [...prev, userMessage]);
@@ -3385,27 +3328,16 @@ function AppContent() {
     }
 
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
-        contents: chatMessages.concat(userMessage),
-        config: {
-          systemInstruction: `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
-          Your coaching style is deeply rooted in:
-          1. Stoicism (Marcus Aurelius, Seneca, Epictetus): Focus on what you can control, endurance, and mental fortitude.
-          2. Chinese Philosophy (especially Xunzi): Emphasize that human nature can be refined through deliberate effort and discipline.
-          3. Japanese Wisdom (Bushido, Zen): Focus on precision, mindfulness, and the way of the warrior.
-          4. Jewish Wisdom: Emphasize community, resilience, and the value of every small action.
-          5. Teachings of Jesus Christ: Focus on compassion, humility, and inner transformation.
-          
-          Help the user (Petar) with their workout plan (pull-ups and dips), nutrition, and motivation. 
-          Integrate quotes and principles from these traditions naturally into your advice. 
-          Be encouraging but firm in the pursuit of excellence.
-          
-          Always start your response with a short, powerful quote from one of these traditions that relates to the user's current situation or question.`,
-        }
+      const resp = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: chatMessages.concat(userMessage) })
       });
+      
+      if (!resp.ok) throw new Error("Chat Request failed");
+      const result = await resp.json();
 
-      const modelMessage: ChatMessage = { role: 'model', parts: [{ text: response.text || 'Sorry, I could not generate a response.' }] };
+      const modelMessage: ChatMessage = { role: 'model', parts: [{ text: result.text || 'Sorry, I could not generate a response.' }] };
       setChatMessages(prev => [...prev, modelMessage]);
     } catch (error) {
       console.error('Gemini Error:', error);
@@ -4406,6 +4338,12 @@ function AppContent() {
                               SLAY!
                             </button>
                             <button 
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1')}
+                              className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
+                            >
+                              ETERNXLKZ RADIO
+                            </button>
+                            <button 
                               onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10?loop=1&playlist=fW_0N37-J10')}
                               className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
                             >
@@ -4419,12 +4357,12 @@ function AppContent() {
                             </button>
                             <button 
                               onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors"
+                              className="whitespace-nowrap px-2 py-1 rounded bg-teal-500/20 text-teal-400 text-[10px] font-black uppercase tracking-widest border border-teal-500/30 hover:bg-teal-500/30 transition-colors"
                             >
-                              TRAP RADIO
+                              TRAP MIX
                             </button>
                             <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA')}
+                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA&autoplay=1&loop=1')}
                               className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
                             >
                               ETERNXLKZ MIX
@@ -5830,16 +5768,16 @@ function AppContent() {
                       {msg.role === 'model' && (
                         <div className="absolute top-2 right-2 flex items-center gap-2">
                           <button
-                            onClick={() => handleSpeak(msg.parts[0].text, idx)}
+                            onClick={() => handleSpeak(msg.parts[0].text, `chat-${idx}`)}
                             className={cn(
                               "p-2 rounded-xl transition-all shadow-sm",
-                              isSpeaking === idx 
+                              isSpeaking === `chat-${idx}` 
                                 ? "bg-emerald-500 text-zinc-950" 
                                 : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300")
                             )}
                             title="Listen"
                           >
-                            {isSpeaking === idx ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                            {isSpeaking === `chat-${idx}` ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                           </button>
                           <button
                             onClick={() => handleCopy(msg.parts[0].text, idx)}
