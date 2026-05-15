@@ -6651,7 +6651,7 @@ function AppContent() {
           isGirlyMode ? "bg-white/90 border-pink-100 shadow-[0_-8px_32px_rgba(244,63,94,0.1)]" :
           isDarkMode ? "bg-zinc-950/90 border-zinc-800/50" : "bg-white/90 border-zinc-200 shadow-lg"
         )}>
-        <div className="flex items-center justify-start min-w-max px-4 gap-2 sm:justify-between sm:max-w-md sm:mx-auto sm:w-full">
+        <div className="flex items-center justify-start min-w-max px-2 gap-1 sm:justify-between sm:max-w-md sm:mx-auto sm:w-full sm:gap-2">
           <NavButton 
             active={activeView === 'dashboard'} 
             onClick={() => setActiveView('dashboard')}
@@ -6696,7 +6696,7 @@ function AppContent() {
             active={activeView === 'chat'} 
             onClick={() => setActiveView('chat')}
             icon={<MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />}
-            label="Stoic"
+            label="Sage"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
           />
@@ -6704,7 +6704,7 @@ function AppContent() {
             active={activeView === 'psychologist'} 
             onClick={() => setActiveView('psychologist')}
             icon={<Stethoscope className="w-5 h-5 sm:w-6 sm:h-6" />}
-            label="Psych"
+            label="Clinic"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
           />
@@ -6720,7 +6720,7 @@ function AppContent() {
             active={activeView === 'profile'} 
             onClick={() => setActiveView('profile')}
             icon={<User className="w-5 h-5 sm:w-6 sm:h-6" />}
-            label="Prof"
+            label="User"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
           />
@@ -7831,23 +7831,33 @@ function NavButton({ active, onClick, icon, label, isDarkMode, isGirlyMode }: an
     <button 
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-1 transition-all duration-300 relative flex-shrink-0 min-w-[50px] sm:min-w-[64px]",
+        "flex flex-col items-center gap-0.5 transition-all duration-300 relative flex-shrink-0 min-w-[38px] sm:min-w-[64px] py-1",
         active 
-          ? (isGirlyMode ? "text-pink-600 scale-105" : "text-emerald-500 scale-105") 
-          : (isGirlyMode ? "text-pink-300 hover:text-pink-400" : isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600")
+          ? (isGirlyMode ? "text-pink-600 scale-105 font-bold" : "text-emerald-500 scale-110 font-black") 
+          : (isGirlyMode ? "text-pink-300 hover:text-pink-400" : isDarkMode ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600")
       )}
     >
       {active && (
         <motion.div 
           layoutId="nav-pill"
           className={cn(
-            "absolute -top-1 w-1 h-1 rounded-full",
-            isGirlyMode ? "bg-pink-500" : "bg-emerald-500"
+            "absolute -top-1.5 w-1.5 h-1.5 rounded-full",
+            isGirlyMode ? "bg-pink-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
           )}
         />
       )}
-      {icon}
-      <span className="text-[10px] font-bold uppercase tracking-tighter">{label}</span>
+      <div className={cn(
+        "transition-transform duration-300",
+        active ? "scale-110" : "scale-100 opacity-60"
+      )}>
+        {icon}
+      </div>
+      <span className={cn(
+        "text-[8px] sm:text-[10px] font-bold uppercase tracking-tighter sm:tracking-widest transition-all",
+        active ? "opacity-100 translate-y-0" : "opacity-40 -translate-y-0.5"
+      )}>
+        {label}
+      </span>
     </button>
   );
 }
