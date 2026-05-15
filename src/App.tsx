@@ -5752,7 +5752,7 @@ function AppContent() {
                     </button>
                   ) : (
                     <button 
-                      onClick={() => setActiveView('home')}
+                      onClick={() => setActiveView('dashboard')}
                       className={cn(
                         "px-8 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform",
                         isGirlyMode ? "bg-pink-500 text-white" : "bg-emerald-500 text-zinc-950"

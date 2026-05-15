@@ -62,18 +62,12 @@ async function startServer() {
 
       const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
-        generationConfig: {
-          responseModalities: ["AUDIO"], // Standard SDK uses string
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Zephyr' },
-            },
-          },
-        },
       });
 
-      const result = await model.generateContent([{ parts: [{ text: `Say in a calm, stoic, and authoritative voice: ${text}` }] }]);
+      const prompt = `Say in a calm, stoic, and authoritative voice: ${text}`;
+      const result = await model.generateContent([prompt]);
       const response = await result.response;
+      // In @google/generative-ai, audio is often in candidates[0].content.parts[0].inlineData
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (!base64Audio) throw new Error("No audio generated");
 
@@ -182,7 +176,7 @@ async function startServer() {
         model: "gemini-1.5-flash",
       });
 
-      const result = await model.generateContent([{ role: "user", parts: [{ text: prompt }] }]);
+      const result = await model.generateContent(prompt);
       const response = await result.response;
 
       res.json({ text: response.text() || "Nature does not hurry, yet everything is accomplished..." });
@@ -595,22 +589,39 @@ async function startServer() {
     res.json(records);
   });
 
-  // --- API ERROR CATCH-ALL ---
-  // This prevents failed API calls from returning the index.html (SPA fallback)
-  app.all("/api/*", (req, res, next) => {
-    // If we reached here, it means no API route matched
-    res.status(404).json({ 
-      error: `Endpoint not found: ${req.method} ${req.url}`,
-      message: "The Stoic Chamber does not recognize this path." 
-    });
-  });
-
-  // --- VITE MIDDLEWARE ---
-
-  // Improved production check
+  // --- VITE / STATIC SERVING ---
   const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
   
-  if (!isProd) {
+  if (isProd) {
+    // In production, we serve from the dist folder.
+    // We use process.cwd() as it is standard across environments for the project root.
+    const rootDir = process.cwd();
+    const distPath = path.resolve(rootDir, "dist");
+    
+    console.log(`[WiseFit] Production mode detected.`);
+    console.log(`[WiseFit] Project Root: ${rootDir}`);
+    console.log(`[WiseFit] Dist Path: ${distPath}`);
+    
+    app.use(express.static(distPath));
+    
+    // API routes are already defined above.
+    // This catch-all handles SPA routing (returning index.html for unknown routes).
+    app.get("*", (req, res, next) => {
+      // Important: ignore API calls
+      if (req.path.startsWith('/api/')) return next();
+      
+      const indexPath = path.join(distPath, "index.html");
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error(`[WiseFit] Static Error: ${err.message}`);
+          // If index.html is missing, it's a build issue.
+          res.status(500).send("The Stoic Chamber is closed for renovations. (Build artifact missing)");
+        }
+      });
+    });
+  } else {
+    // Development mode
+    console.log("[WiseFit] Development mode detected. Mounting Vite...");
     try {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
@@ -618,24 +629,22 @@ async function startServer() {
         appType: "spa",
       });
       app.use(vite.middlewares);
-    } catch (e) {
-      console.warn("Vite middleware failed to load, falling back to static serving:", e);
-      serveStatic(app);
+    } catch (e: any) {
+      console.error("[WiseFit] Vite middleware failed:", e.message);
     }
-  } else {
-    serveStatic(app);
   }
 
-  function serveStatic(app: any) {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+  // --- API ERROR CATCH-ALL ---
+  // If an /api request gets here, it means no route matched.
+  app.all("/api/*", (req, res) => {
+    res.status(404).json({ 
+      error: `Endpoint not found: ${req.method} ${req.url}`,
+      message: "The Stoic Chamber does not recognize this path." 
     });
-  }
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`[WiseFit] Server active on port ${PORT}`);
   });
 }
 
