@@ -83,7 +83,12 @@ async function startServer() {
   const generateWithFallback = async (prompt: string, config?: any, systemInstruction?: string) => {
     // Priority order for models
     const geminiModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest"];
-    const claudeModels = ["claude-3-5-sonnet-20240620", "claude-3-haiku-20240307"];
+    const claudeModels = [
+      "claude-3-5-sonnet-20241022", // Sonnet 3.5 New
+      "claude-3-5-sonnet-20240620", // Sonnet 3.5 Old
+      "claude-3-opus-20240229",    // Opus
+      "claude-3-haiku-20240307"     // Haiku
+    ];
     
     let lastError = null;
 
@@ -100,7 +105,9 @@ async function startServer() {
       } catch (e: any) {
         lastError = e;
         console.warn(`Gemini Model ${modelName} failed: ${e.message}`);
-        if (e.message?.includes("404") || e.message?.includes("not found")) continue;
+        // Model not found or not supported
+        if (e.message?.toLowerCase().includes("not found") || e.message?.includes("404")) continue;
+        // Quota is usually project-wide, but we might still try Claude
         if (e.message?.includes("quota") || e.message?.includes("429")) break; 
       }
     }
@@ -124,6 +131,8 @@ async function startServer() {
         } catch (e: any) {
           lastError = e;
           console.warn(`Claude Model ${modelName} failed: ${e.message}`);
+          // If model not found, try next Claude model
+          if (e.message?.toLowerCase().includes("not found") || e.message?.includes("404")) continue;
           continue;
         }
       }
@@ -134,7 +143,12 @@ async function startServer() {
 
   const generateMessagesWithFallback = async (messages: any[], config?: any, systemInstruction?: string) => {
     const geminiModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest"];
-    const claudeModels = ["claude-3-5-sonnet-20240620", "claude-3-haiku-20240307"];
+    const claudeModels = [
+      "claude-3-5-sonnet-20241022",
+      "claude-3-5-sonnet-20240620",
+      "claude-3-opus-20240229",
+      "claude-3-haiku-20240307"
+    ];
     let lastError = null;
 
     for (const modelName of geminiModels) {
@@ -149,7 +163,7 @@ async function startServer() {
       } catch (e: any) {
         lastError = e;
         console.warn(`Gemini Model ${modelName} (Messages) failed: ${e.message}`);
-        if (e.message?.includes("404") || e.message?.includes("not found")) continue;
+        if (e.message?.toLowerCase().includes("not found") || e.message?.includes("404")) continue;
         break; 
       }
     }
@@ -178,6 +192,7 @@ async function startServer() {
         } catch (e: any) {
           lastError = e;
           console.warn(`Claude Model ${modelName} (Messages) failed: ${e.message}`);
+          if (e.message?.toLowerCase().includes("not found") || e.message?.includes("404")) continue;
           continue;
         }
       }
