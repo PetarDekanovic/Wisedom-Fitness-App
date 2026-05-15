@@ -6,7 +6,7 @@ import { createServer as createViteServer } from "vite";
 import axios from "axios";
 import dotenv from "dotenv";
 import * as cheerio from "cheerio";
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 
@@ -23,7 +23,7 @@ const getGeminiKey = () => {
 };
 
 // Initialize Gemini
-const ai = new GoogleGenAI(getGeminiKey());
+const genAI = new GoogleGenerativeAI(getGeminiKey());
 
 // --- AUTHORIZATION WHITELIST ---
 const AUTHORIZED_EMAILS = [
@@ -64,10 +64,10 @@ async function startServer() {
       }
       if (!text) return res.status(400).json({ error: "Text is required" });
 
-      const model = ai.getGenerativeModel({
+      const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
         generationConfig: {
-          responseModalities: [Modality.AUDIO],
+          responseModalities: ["AUDIO"], // Standard SDK uses string
           speechConfig: {
             voiceConfig: {
               prebuiltVoiceConfig: { voiceName: 'Zephyr' },
@@ -76,9 +76,9 @@ async function startServer() {
         },
       });
 
-      const response = await model.generateContent([{ parts: [{ text: `Say in a calm, stoic, and authoritative voice: ${text}` }] }]);
-      const result = await response.response;
-      const base64Audio = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      const result = await model.generateContent([{ parts: [{ text: `Say in a calm, stoic, and authoritative voice: ${text}` }] }]);
+      const response = await result.response;
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (!base64Audio) throw new Error("No audio generated");
 
       res.json({ audio: base64Audio });
@@ -92,7 +92,7 @@ async function startServer() {
     try {
       const { traditionPrompt, recentTexts, userEmail } = req.body;
       
-      const model = ai.getGenerativeModel({
+      const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
         generationConfig: {
           responseMimeType: "application/json",
@@ -101,7 +101,7 @@ async function startServer() {
         }
       });
 
-      const response = await model.generateContent(`${traditionPrompt}
+      const result = await model.generateContent(`${traditionPrompt}
         Format as JSON: {text, author, source, category, shortExplanation, stoicParallel, jewishParallel}.
         
         STRICT RULES:
@@ -113,8 +113,8 @@ async function startServer() {
         
         Seed: ${Math.random()}`);
 
-      const result = await response.response;
-      res.json(JSON.parse(result.text() || "{}"));
+      const response = await result.response;
+      res.json(JSON.parse(response.text() || "{}"));
     } catch (error: any) {
       console.error("Gemini Quote Error:", error);
       res.status(500).json({ error: "Failed to generate quote" });
@@ -129,7 +129,7 @@ async function startServer() {
         return res.status(403).json({ error: "The Stoic Chamber is private. Please contact the administrator." });
       }
       
-      const model = ai.getGenerativeModel({
+      const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
         systemInstruction: `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
           Your coaching style is deeply rooted in:
@@ -182,7 +182,7 @@ async function startServer() {
         Respond in raw text.
       `;
 
-      const model = ai.getGenerativeModel({
+      const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
       });
 
@@ -207,7 +207,7 @@ async function startServer() {
         prompt = "Generate 50 unique, powerful wise quotes from Stoic, Chinese, Japanese, Jewish, and Christian traditions. Format as JSON array: [{text, author, source}]. No markdown formatting, just the raw JSON array.";
       }
 
-      const model = ai.getGenerativeModel({
+      const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
         generationConfig: {
           responseMimeType: "application/json"

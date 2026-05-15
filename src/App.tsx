@@ -3367,7 +3367,13 @@ function AppContent() {
         throw new Error(`The Stoic Chamber returned an invalid response (not JSON). Please check the server logs.`);
       }
       
-      if (!resp.ok) throw new Error(result.error || "Chat Request failed");
+      if (!resp.ok) {
+        let errorMsg = result.error || `Server responded with status ${resp.status}`;
+        if (resp.status === 404) {
+          errorMsg = "The Stoic Chamber is currently out of reach (404). Please ensure the backend is deployed correctly.";
+        }
+        throw new Error(errorMsg);
+      }
 
       const modelMessage: ChatMessage = { role: 'model', parts: [{ text: result.text || 'Sorry, I could not generate a response.' }] };
       setChatMessages(prev => [...prev, modelMessage]);
