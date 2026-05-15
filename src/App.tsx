@@ -266,14 +266,17 @@ function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, curr
     }
 
     const updatePresenceAndFetch = async () => {
+      // 0. STOP ALL if quota exceeded
+      if (isQuotaExceeded) return;
+
       try {
         // Only Admin or specific members contribute to writes to save credits
-        if (currentUser) {
+        if (currentUser && !isQuotaExceeded) {
           const userRef = doc(db, 'users', currentUser.uid);
           await updateDoc(userRef, {
             lastActive: serverTimestamp()
-          }).catch(() => {
-            // Silence
+          }).catch((err) => {
+            if (err?.message?.includes('quota')) setIsQuotaExceeded(true);
           });
         }
 
@@ -281,8 +284,8 @@ function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, curr
         const lastFetchTime = localStorage.getItem('wisefit_community_fetch_time');
         const now = Date.now();
         
-        // Increase cache time to 4 hours to save quota
-        const CACHE_DURATION = 4 * 60 * 60 * 1000;
+    // Increase cache time to 24 hours if quota is tight, or just 12 hours
+    const CACHE_DURATION = 12 * 60 * 60 * 1000;
         
         if (lastFetchTime && now - Number(lastFetchTime) < CACHE_DURATION) {
           const cachedLive = localStorage.getItem('wisefit_live_users');
@@ -1276,13 +1279,13 @@ function AppContent() {
 
   useEffect(() => {
     let q: any;
-    if (user) {
+    if (user && !isQuotaExceeded) {
       q = query(
         collection(db, 'articles'), 
         where('userId', '==', user.uid),
         orderBy('date', 'desc')
       );
-    } else {
+    } else if (!isQuotaExceeded) {
       // Guests see all articles (or a public subset if we had one)
       q = query(
         collection(db, 'articles'),
@@ -1291,9 +1294,17 @@ function AppContent() {
       );
     }
     
+    // If quota exceeded, just use empty list or cached list
+    if (isQuotaExceeded) {
+       const cached = localStorage.getItem('wisefit_articles_backup');
+       if (cached) setArticles(JSON.parse(cached));
+       return;
+    }
+
     const unsubscribe = onSnapshot(q, (snapshot: any) => {
       const fetched = snapshot.docs.map((doc: any) => ({ ...doc.data() } as Article));
       setArticles(fetched);
+      localStorage.setItem('wisefit_articles_backup', JSON.stringify(fetched));
     }, (error: any) => {
       if (error?.message?.includes('quota')) {
         setIsQuotaExceeded(true);
