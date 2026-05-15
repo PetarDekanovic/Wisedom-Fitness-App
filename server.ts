@@ -68,7 +68,7 @@ async function startServer() {
       if (!text) return res.status(400).json({ error: "Text is required" });
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
       });
 
       const prompt = `Say in a calm, stoic, and authoritative voice: ${text}`;
@@ -89,7 +89,7 @@ async function startServer() {
       const { traditionPrompt, recentTexts } = req.body;
       
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 1.0,
@@ -126,16 +126,7 @@ async function startServer() {
       }
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
-      });
-
-      const history = messages.slice(0, -1).map((m: any) => ({
-        role: m.role,
-        parts: m.parts,
-      }));
-
-      const chat = model.startChat({
-        history: history,
+        model: "gemini-1.5-flash",
         generationConfig: {
           maxOutputTokens: 512,
         },
@@ -143,9 +134,9 @@ async function startServer() {
 
       const userMsg = messages[messages.length - 1].parts[0].text;
       const contextPrompt = `
-        You are a warm, empathetic Clinical Psychologist specializing in Cognitive Behavioral Therapy and the Mind-Body connection.
-        User: ${healthData?.name || 'Petar'}
-        Health Context: ${healthData?.currentSteps || 0} steps today, weight ${healthData?.currentWeight || 0}kg.
+        System: You are a warm, empathetic Clinical Psychologist specializing in Cognitive Behavioral Therapy and the Mind-Body connection.
+        Patient Name: ${healthData?.name || 'Petar'}
+        Recent Health Data: ${healthData?.currentSteps || 0} steps today, weight ${healthData?.currentWeight || 0}kg.
         
         Rules:
         - Be deeply empathetic but clinically grounded.
@@ -154,16 +145,16 @@ async function startServer() {
         - Keep it to 3-4 powerful sentences.
         - If they mention stress, suggest a simple breathing exercise.
         
-        User's input: ${userMsg}
+        Patient Message: ${userMsg}
       `;
 
-      const result = await chat.sendMessage(contextPrompt);
+      const result = await model.generateContent(contextPrompt);
       const response = await result.response;
 
       res.json({ text: response.text() || "I am listening. Tell me more about that." });
     } catch (error: any) {
       console.error("Gemini Psychologist Error:", error);
-      res.status(500).json({ error: "Failed to reach the clinical chamber." });
+      res.status(500).json({ error: `The Clinical Chamber reached an error: ${error.message || "Unknown Failure"}` });
     }
   });
 
@@ -176,13 +167,13 @@ async function startServer() {
       }
       
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         systemInstruction: `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
           Your coaching style is deeply rooted in:
           1. Stoicism (Marcus Aurelius, Seneca, Epictetus): Focus on what you can control, endurance, and mental fortitude.
           2. Chinese Philosophy (especially Xunzi): Emphasize that human nature can be refined through deliberate effort and discipline.
           3. Japanese Wisdom (Bushido, Zen): Focus on precision, mindfulness, and the way of the warrior.
-          4. Jewish Wisdom: Emphasize community, resilience, and the value of every small action.
+          4. Japanese Wisdom: Emphasize community, resilience, and the value of every small action.
           5. Teachings of Jesus Christ: Focus on compassion, humility, and inner transformation.
           
           Help the user (Petar) with their workout plan (pull-ups and dips), nutrition, and motivation. 
@@ -233,7 +224,7 @@ async function startServer() {
       `;
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
       });
 
       const result = await model.generateContent(prompt);
@@ -258,7 +249,7 @@ async function startServer() {
       }
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         generationConfig: {
           responseMimeType: "application/json"
         }

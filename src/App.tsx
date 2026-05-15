@@ -2993,6 +2993,10 @@ function AppContent() {
   const [isPsychLoading, setIsPsychLoading] = useState(false);
   const psychEndRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    psychEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [psychMessages, isPsychLoading]);
+
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isAddingWorkout, setIsAddingWorkout] = useState(false);
   const [newWorkout, setNewWorkout] = useState<Partial<Workout>>({
@@ -5959,7 +5963,7 @@ function AppContent() {
               )}
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border border-blue-500/20 bg-blue-500/10">
-                  <Activity className="w-6 h-6 text-blue-500" />
+                  <Heart className="w-6 h-6 text-blue-500" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">AI Psychologist</h2>
@@ -5992,7 +5996,7 @@ function AppContent() {
                         "w-full h-full flex items-center justify-center",
                         msg.role === 'user' ? "bg-zinc-800" : "bg-blue-500/20"
                       )}>
-                        {msg.role === 'user' ? <User className="w-4 h-4" /> : <Activity className="w-4 h-4 text-blue-400" />}
+                        {msg.role === 'user' ? <User className="w-4 h-4" /> : <Heart className="w-4 h-4 text-blue-400" />}
                       </div>
                     </div>
                     <div className={cn(
@@ -6641,7 +6645,7 @@ function AppContent() {
           isGirlyMode ? "bg-white/90 border-pink-100 shadow-[0_-8px_32px_rgba(244,63,94,0.1)]" :
           isDarkMode ? "bg-zinc-950/90 border-zinc-800/50" : "bg-white/90 border-zinc-200 shadow-lg"
         )}>
-        <div className="flex items-center justify-start min-w-max px-6 gap-6 sm:justify-center sm:max-w-md sm:mx-auto sm:justify-between sm:gap-0">
+        <div className="flex items-center justify-start min-w-max px-6 gap-4 sm:justify-between sm:max-w-md sm:mx-auto sm:w-full sm:gap-2">
           <NavButton 
             active={activeView === 'dashboard'} 
             onClick={() => setActiveView('dashboard')}
@@ -7821,9 +7825,9 @@ function NavButton({ active, onClick, icon, label, isDarkMode, isGirlyMode }: an
     <button 
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-1 transition-all duration-300 relative",
+        "flex flex-col items-center gap-1 transition-all duration-300 relative flex-shrink-0 min-w-[56px]",
         active 
-          ? (isGirlyMode ? "text-pink-600 scale-110" : "text-emerald-500 scale-110") 
+          ? (isGirlyMode ? "text-pink-600 scale-105" : "text-emerald-500 scale-105") 
           : (isGirlyMode ? "text-pink-300 hover:text-pink-400" : isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600")
       )}
     >
