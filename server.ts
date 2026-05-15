@@ -62,10 +62,9 @@ async function startServer() {
       }
       if (!text) return res.status(400).json({ error: "Text is required" });
 
-      const response = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({
         model: "gemini-1.5-flash",
-        contents: [{ parts: [{ text: `Say in a calm, stoic, and authoritative voice: ${text}` }] }],
-        config: {
+        generationConfig: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
             voiceConfig: {
@@ -75,7 +74,9 @@ async function startServer() {
         },
       });
 
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      const response = await model.generateContent([{ parts: [{ text: `Say in a calm, stoic, and authoritative voice: ${text}` }] }]);
+      const result = await response.response;
+      const base64Audio = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (!base64Audio) throw new Error("No audio generated");
 
       res.json({ audio: base64Audio });
@@ -89,9 +90,16 @@ async function startServer() {
     try {
       const { traditionPrompt, recentTexts, userEmail } = req.body;
       
-      const response = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({
         model: "gemini-1.5-flash",
-        contents: `${traditionPrompt}
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 1.0,
+          topP: 0.95
+        }
+      });
+
+      const response = await model.generateContent(`${traditionPrompt}
         Format as JSON: {text, author, source, category, shortExplanation, stoicParallel, jewishParallel}.
         
         STRICT RULES:
@@ -101,15 +109,10 @@ async function startServer() {
         4. DEPTH: Prefer profound, lesser-known insights over generic motivational phrases.
         5. If category is psychology, also provide shortExplanation, stoicParallel, and jewishParallel as done in the app's local psychology insights.
         
-        Seed: ${Math.random()}`,
-        config: {
-          responseMimeType: "application/json",
-          temperature: 1.0,
-          topP: 0.95
-        }
-      });
+        Seed: ${Math.random()}`);
 
-      res.json(JSON.parse(response.text || "{}"));
+      const result = await response.response;
+      res.json(JSON.parse(result.text() || "{}"));
     } catch (error: any) {
       console.error("Gemini Quote Error:", error);
       res.status(500).json({ error: "Failed to generate quote" });
@@ -124,11 +127,9 @@ async function startServer() {
         return res.status(403).json({ error: "The Stoic Chamber is private. Please contact the administrator." });
       }
       
-      const response = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({
         model: "gemini-1.5-flash",
-        contents: messages,
-        config: {
-          systemInstruction: `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
+        systemInstruction: `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
           Your coaching style is deeply rooted in:
           1. Stoicism (Marcus Aurelius, Seneca, Epictetus): Focus on what you can control, endurance, and mental fortitude.
           2. Chinese Philosophy (especially Xunzi): Emphasize that human nature can be refined through deliberate effort and discipline.
@@ -141,10 +142,12 @@ async function startServer() {
           Be encouraging but firm in the pursuit of excellence.
           
           Always start your response with a short, powerful quote from one of these traditions that relates to the user's current situation or question.`,
-        }
       });
 
-      res.json({ text: response.text || "Sorry, I could not generate a response." });
+      const result = await model.generateContent({ contents: messages });
+      const response = await result.response;
+
+      res.json({ text: response.text() || "Sorry, I could not generate a response." });
     } catch (error: any) {
       console.error("Gemini Chat Error:", error);
       res.status(500).json({ error: "Failed to generate response" });
@@ -177,12 +180,14 @@ async function startServer() {
         Respond in raw text.
       `;
 
-      const response = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({
         model: "gemini-1.5-flash",
-        contents: [{ role: "user", parts: [{ text: prompt }] }]
       });
 
-      res.json({ text: response.text || "Nature does not hurry, yet everything is accomplished..." });
+      const result = await model.generateContent([{ role: "user", parts: [{ text: prompt }] }]);
+      const response = await result.response;
+
+      res.json({ text: response.text() || "Nature does not hurry, yet everything is accomplished..." });
     } catch (error: any) {
       console.error("Gemini Reflection Error:", error);
       res.status(500).json({ error: "Failed to generate reflection" });
@@ -200,15 +205,17 @@ async function startServer() {
         prompt = "Generate 50 unique, powerful wise quotes from Stoic, Chinese, Japanese, Jewish, and Christian traditions. Format as JSON array: [{text, author, source}]. No markdown formatting, just the raw JSON array.";
       }
 
-      const response = await ai.models.generateContent({
+      const model = ai.getGenerativeModel({
         model: "gemini-1.5-flash",
-        contents: prompt,
-        config: {
+        generationConfig: {
           responseMimeType: "application/json"
         }
       });
 
-      res.json(JSON.parse(response.text || "[]"));
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+
+      res.json(JSON.parse(response.text() || "[]"));
     } catch (error: any) {
       console.error("Gemini Admin Generation Error:", error);
       res.status(500).json({ error: "Failed to generate quotes" });
