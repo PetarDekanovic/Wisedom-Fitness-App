@@ -76,7 +76,7 @@ async function startServer() {
 
       const prompt = `Say in a calm, stoic, and authoritative voice: ${text}`;
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         contents: [{ parts: [{ text: prompt }] }]
       });
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
@@ -94,7 +94,7 @@ async function startServer() {
       const { traditionPrompt, recentTexts } = req.body;
       
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         contents: [{ parts: [{ text: `${traditionPrompt}
         Format as JSON: {text, author, source, category, shortExplanation, stoicParallel, jewishParallel}.
         
@@ -145,7 +145,7 @@ async function startServer() {
       `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         contents: [{ parts: [{ text: contextPrompt }] }],
         config: {
           maxOutputTokens: 512,
@@ -181,7 +181,7 @@ async function startServer() {
           Always start your response with a short, powerful quote from one of these traditions that relates to the user's current situation or question.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         contents: messages,
         config: {
           systemInstruction
@@ -226,7 +226,7 @@ async function startServer() {
       `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         contents: [{ parts: [{ text: prompt }] }]
       });
 
@@ -249,7 +249,7 @@ async function startServer() {
       }
 
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         contents: [{ parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json"
