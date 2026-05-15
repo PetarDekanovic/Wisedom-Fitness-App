@@ -6,6 +6,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 import * as cheerio from "cheerio";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 
 dotenv.config();
 
@@ -22,6 +23,18 @@ const getGeminiKey = () => {
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(getGeminiKey());
+
+// Initialize Anthropic Lazily
+let anthropicClient: Anthropic | null = null;
+const getAnthropic = () => {
+  if (anthropicClient) return anthropicClient;
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (key) {
+    anthropicClient = new Anthropic({ apiKey: key });
+    return anthropicClient;
+  }
+  return null;
+};
 
 // --- AUTHORIZATION WHITELIST ---
 const AUTHORIZED_EMAILS = [
@@ -69,10 +82,13 @@ async function startServer() {
 
   const generateWithFallback = async (prompt: string, config?: any, systemInstruction?: string) => {
     // Priority order for models
-    const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-pro"];
+    const geminiModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest"];
+    const claudeModels = ["claude-3-5-sonnet-20240620", "claude-3-haiku-20240307"];
+    
     let lastError = null;
 
-    for (const modelName of models) {
+    // Try Gemini First
+    for (const modelName of geminiModels) {
       try {
         const model = genAI.getGenerativeModel({
           model: modelName,
@@ -80,23 +96,48 @@ async function startServer() {
           systemInstruction
         }, { apiVersion: 'v1' });
         const result = await model.generateContent(prompt);
-        return result;
+        return { text: () => result.response.text(), raw: result };
       } catch (e: any) {
         lastError = e;
-        console.warn(`Model ${modelName} failed: ${e.message}`);
-        // If 404, we try next model. If 403/429/quota we might try too, but usually it's project-wide
+        console.warn(`Gemini Model ${modelName} failed: ${e.message}`);
         if (e.message?.includes("404") || e.message?.includes("not found")) continue;
         if (e.message?.includes("quota") || e.message?.includes("429")) break; 
       }
     }
-    throw lastError || new Error("All models failed to generate content.");
+
+    // Try Claude Fallback
+    const anthropic = getAnthropic();
+    if (anthropic) {
+      for (const modelName of claudeModels) {
+        try {
+          console.log(`Attempting Claude Fallback: ${modelName}`);
+          const msg = await anthropic.messages.create({
+            model: modelName,
+            max_tokens: config?.maxOutputTokens || 1024,
+            system: systemInstruction,
+            messages: [{ role: "user", content: prompt }],
+            temperature: config?.temperature || 1.0,
+          });
+          const content = msg.content[0];
+          const text = content.type === 'text' ? content.text : '';
+          return { text: () => text, raw: msg };
+        } catch (e: any) {
+          lastError = e;
+          console.warn(`Claude Model ${modelName} failed: ${e.message}`);
+          continue;
+        }
+      }
+    }
+
+    throw lastError || new Error("All AI models failed to generate content.");
   };
 
   const generateMessagesWithFallback = async (messages: any[], config?: any, systemInstruction?: string) => {
-    const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-pro"];
+    const geminiModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest"];
+    const claudeModels = ["claude-3-5-sonnet-20240620", "claude-3-haiku-20240307"];
     let lastError = null;
 
-    for (const modelName of models) {
+    for (const modelName of geminiModels) {
       try {
         const model = genAI.getGenerativeModel({
           model: modelName,
@@ -104,15 +145,45 @@ async function startServer() {
           systemInstruction
         }, { apiVersion: 'v1' });
         const result = await model.generateContent({ contents: messages });
-        return result;
+        return { text: () => result.response.text(), raw: result };
       } catch (e: any) {
         lastError = e;
-        console.warn(`Model ${modelName} (Messages) failed: ${e.message}`);
+        console.warn(`Gemini Model ${modelName} (Messages) failed: ${e.message}`);
         if (e.message?.includes("404") || e.message?.includes("not found")) continue;
         break; 
       }
     }
-    throw lastError || new Error("All models failed to generate messages.");
+
+    // Claude Messages Fallback
+    const anthropic = getAnthropic();
+    if (anthropic) {
+      // Convert Gemini messages format to Anthropic format
+      const claudeMessages: any[] = messages.map(m => ({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.parts[0].text
+      }));
+
+      for (const modelName of claudeModels) {
+        try {
+          console.log(`Attempting Claude Messages Fallback: ${modelName}`);
+          const msg = await anthropic.messages.create({
+            model: modelName,
+            max_tokens: config?.maxOutputTokens || 1024,
+            system: systemInstruction,
+            messages: claudeMessages,
+          });
+          const content = msg.content[0];
+          const text = content.type === 'text' ? content.text : '';
+          return { text: () => text, raw: msg };
+        } catch (e: any) {
+          lastError = e;
+          console.warn(`Claude Model ${modelName} (Messages) failed: ${e.message}`);
+          continue;
+        }
+      }
+    }
+
+    throw lastError || new Error("All AI models failed to generate messages.");
   };
 
   app.post("/api/ai/tts", async (req, res) => {
@@ -125,9 +196,10 @@ async function startServer() {
 
       const prompt = `Say in a calm, stoic, and authoritative voice: ${text}`;
       const result = await generateWithFallback(prompt);
-      const response = await result.response;
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!base64Audio) throw new Error("No audio generated");
+      // Access safely for Gemini response structure
+      const raw: any = result.raw;
+      const base64Audio = raw?.response?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (!base64Audio) throw new Error("No audio generated (TTS requires Gemini inlineData)");
 
       res.json({ audio: base64Audio });
     } catch (error: any) {
@@ -159,8 +231,7 @@ async function startServer() {
         Seed: ${Math.random()}`;
 
       const result = await generateWithFallback(prompt, config);
-      const response = await result.response;
-      res.json(JSON.parse(response.text() || "{}"));
+      res.json(JSON.parse(result.text() || "{}"));
     } catch (error: any) {
       console.error("Gemini Quote Error:", error);
       res.status(500).json({ error: "Failed to generate quote" });
@@ -192,9 +263,7 @@ async function startServer() {
       `;
 
       const result = await generateWithFallback(contextPrompt, { maxOutputTokens: 512 });
-      const response = await result.response;
-
-      res.json({ text: response.text() || "I am listening. Tell me more about that." });
+      res.json({ text: result.text() || "I am listening. Tell me more about that." });
     } catch (error: any) {
       console.error("Gemini Psychologist Error:", error);
       res.status(500).json({ error: `The Clinical Chamber reached an error: ${error.message || "Unknown Failure"}` });
@@ -223,9 +292,7 @@ async function startServer() {
           Always start your response with a short, powerful quote from one of these traditions that relates to the user's current situation or question.`;
 
       const result = await generateMessagesWithFallback(messages, {}, systemInstruction);
-      const response = await result.response;
-
-      res.json({ text: response.text() || "Sorry, I could not generate a response." });
+      res.json({ text: result.text() || "Sorry, I could not generate a response." });
     } catch (error: any) {
       console.error("Gemini Chat Error:", error);
       res.status(500).json({ error: error.message || "Failed to generate response" });
@@ -259,9 +326,7 @@ async function startServer() {
       `;
 
       const result = await generateWithFallback(prompt);
-      const response = await result.response;
-
-      res.json({ text: response.text() || "Nature does not hurry, yet everything is accomplished..." });
+      res.json({ text: result.text() || "Nature does not hurry, yet everything is accomplished..." });
     } catch (error: any) {
       console.error("Gemini Reflection Error:", error);
       res.status(500).json({ error: "Failed to generate reflection" });
@@ -284,8 +349,7 @@ async function startServer() {
       };
 
       const result = await generateWithFallback(prompt, config);
-      const response = await result.response;
-      let text = response.text() || "[]";
+      let text = result.text() || "[]";
       // Clean potential markdown code blocks
       text = text.replace(/^```json/, '').replace(/```$/, '').trim();
       res.json(JSON.parse(text));
