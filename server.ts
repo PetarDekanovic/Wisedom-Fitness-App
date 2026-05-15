@@ -58,29 +58,60 @@ async function startServer() {
   });
 
   // --- GEMINI AI ENDPOINTS ---
-
-  // Helper for model selection resilience
-  const getModel = (name: string = "gemini-1.5-flash-latest") => {
-    return genAI.getGenerativeModel({ model: name });
-  };
+  app.get("/api/ai/models", async (req, res) => {
+    try {
+      // Note: listModels is not always available on all keys/regions, but good for debug
+      res.json({ message: "Models debug info. Use health for key check." });
+    } catch (e) {
+      res.json({ error: "Could not list models" });
+    }
+  });
 
   const generateWithFallback = async (prompt: string, config?: any, systemInstruction?: string) => {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
-        generationConfig: config,
-        systemInstruction
-      });
-      return await model.generateContent(prompt);
-    } catch (e: any) {
-      console.warn("Retrying with flash-latest due to error:", e.message);
-      const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
-        generationConfig: config,
-        systemInstruction
-      });
-      return await model.generateContent(prompt);
+    // Priority order for models
+    const models = ["gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-pro"];
+    let lastError = null;
+
+    for (const modelName of models) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: config,
+          systemInstruction
+        });
+        const result = await model.generateContent(prompt);
+        return result;
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`Model ${modelName} failed: ${e.message}`);
+        if (e.message?.includes("404")) continue;
+        if (e.message?.includes("quota") || e.message?.includes("429")) break; // Don't spam if quota
+      }
     }
+    throw lastError || new Error("All models failed to generate content.");
+  };
+
+  const generateMessagesWithFallback = async (messages: any[], config?: any, systemInstruction?: string) => {
+    const models = ["gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-pro"];
+    let lastError = null;
+
+    for (const modelName of models) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: config,
+          systemInstruction
+        });
+        const result = await model.generateContent({ contents: messages });
+        return result;
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`Model ${modelName} (Messages) failed: ${e.message}`);
+        if (e.message?.includes("404")) continue;
+        break; 
+      }
+    }
+    throw lastError || new Error("All models failed to generate messages.");
   };
 
   app.post("/api/ai/tts", async (req, res) => {
@@ -190,21 +221,10 @@ async function startServer() {
           
           Always start your response with a short, powerful quote from one of these traditions that relates to the user's current situation or question.`;
 
-      // Fallback for system instruction need manual handling because generateWithFallback expects a string prompt
-      let model;
-      let modelName = "gemini-1.5-flash";
-      try {
-        model = genAI.getGenerativeModel({ model: modelName, systemInstruction });
-        const resObj = await model.generateContent({ contents: messages });
-        const result = await resObj.response;
-        return res.json({ text: result.text() || "Sorry, I could not generate a response." });
-      } catch (e: any) {
-        console.warn("Chat fallback to flash-latest:", e.message);
-        model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest", systemInstruction });
-        const resObj = await model.generateContent({ contents: messages });
-        const result = await resObj.response;
-        return res.json({ text: result.text() || "Sorry, I could not generate a response." });
-      }
+      const result = await generateMessagesWithFallback(messages, {}, systemInstruction);
+      const response = await result.response;
+
+      res.json({ text: response.text() || "Sorry, I could not generate a response." });
     } catch (error: any) {
       console.error("Gemini Chat Error:", error);
       res.status(500).json({ error: error.message || "Failed to generate response" });

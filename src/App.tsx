@@ -248,7 +248,7 @@ const getWisdomLevel = (count: number) => {
 
 const ADMIN_EMAILS = ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com", "stjepan.dekanovic@gmail.com"];
 
-function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, currentUser: FirebaseUser | null }) {
+function CommunityStats({ isDarkMode, currentUser, isQuotaExceeded, setIsQuotaExceeded }: { isDarkMode: boolean, currentUser: FirebaseUser | null, isQuotaExceeded: boolean, setIsQuotaExceeded: (val: boolean) => void }) {
   const [liveUsers, setLiveUsers] = useState<number | string>('...');
   const [totalSubscribers, setTotalSubscribers] = useState<number | string>('...');
   const [dailyTraffic, setDailyTraffic] = useState(0);
@@ -338,7 +338,7 @@ function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, curr
     const interval = setInterval(updatePresenceAndFetch, 1000 * 60 * 15); // Every 15 mins
     
     return () => clearInterval(interval);
-  }, [currentUser]);
+  }, [currentUser, isQuotaExceeded]);
 
   const discCount = Math.floor(Number(totalSubscribers) * 0.62) || 17639;
   const philCount = Math.floor(Number(totalSubscribers) * 0.31) || 8819;
@@ -1269,6 +1269,8 @@ function ArticleCard({
 
 function AppContent() {
   const [activeView, setActiveView] = useState<View>('dashboard');
+  const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
+  const [isQuotaDismissed, setIsQuotaDismissed] = useState(false);
   const [historySubView, setHistorySubView] = useState<'journal' | 'plans' | 'articles'>('journal');
   const [articles, setArticles] = useState<Article[]>([]);
   const [isAddingArticle, setIsAddingArticle] = useState(false);
@@ -1313,7 +1315,7 @@ function AppContent() {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, isQuotaExceeded]);
 
   const handleAddArticle = async () => {
     if (!user || !articleContent.trim() || !articleTitle.trim()) return;
@@ -1448,8 +1450,6 @@ function AppContent() {
   const isRefillingPoolRef = useRef(false);
   const isFetchingQuoteRef = useRef(false);
   const [isRefillingPool, setIsRefillingPool] = useState(false);
-  const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
-  const [isQuotaDismissed, setIsQuotaDismissed] = useState(false);
   const [selectedLibraryIds, setSelectedLibraryIds] = useState<Set<string>>(new Set());
   const [isLibrarySelectMode, setIsLibrarySelectMode] = useState(false);
   const [isConnectingHealth, setIsConnectingHealth] = useState<string | null>(null);
@@ -4527,7 +4527,12 @@ function AppContent() {
                   <WisdomScoreboard userProfile={userProfile} isDarkMode={isDarkMode} />
 
                   {/* Community Pulse Component */}
-                  <CommunityStats isDarkMode={isDarkMode} currentUser={user} />
+                  <CommunityStats 
+                    isDarkMode={isDarkMode} 
+                    currentUser={user} 
+                    isQuotaExceeded={isQuotaExceeded}
+                    setIsQuotaExceeded={setIsQuotaExceeded}
+                  />
 
               {/* Activity Chart */}
               <motion.div 
