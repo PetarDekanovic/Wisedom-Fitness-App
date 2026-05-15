@@ -1268,9 +1268,9 @@ function ArticleCard({
 }
 
 function AppContent() {
-  const [activeView, setActiveView] = useState<View>('dashboard');
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const [isQuotaDismissed, setIsQuotaDismissed] = useState(false);
+  const [activeView, setActiveView] = useState<View>('dashboard');
   const [historySubView, setHistorySubView] = useState<'journal' | 'plans' | 'articles'>('journal');
   const [articles, setArticles] = useState<Article[]>([]);
   const [isAddingArticle, setIsAddingArticle] = useState(false);
@@ -1840,13 +1840,13 @@ function AppContent() {
 
   const refillQuotesPool = useCallback(async (force = false): Promise<Quote[]> => {
     // GUEST PROTECTION: Guests never refill from database to save quota
-    if (isRefillingPoolRef.current) return [];
+    if (isRefillingPoolRef.current || isQuotaExceeded) return [];
     
     // For psychology mode, we always want to refill if pool is small, but we use a different collection
     let collectionPath = wisdomTradition === 'psychology' ? 'psychology_insights' : 'quotes';
     if (wisdomTradition === 'daily') collectionPath = 'daily_quotes_cache';
     
-    if (isQuotaExceeded || (!force && quotesPoolRef.current.length > (wisdomTradition === 'psychology' ? 20 : (wisdomTradition === 'daily' ? 10 : 50)))) {
+    if (!force && quotesPoolRef.current.length > (wisdomTradition === 'psychology' ? 20 : (wisdomTradition === 'daily' ? 10 : 50))) {
        // If psychology and no pool, return local fallback immediately
        if (wisdomTradition === 'psychology' && quotesPoolRef.current.length === 0) {
          return PSYCHOLOGY_QUOTES;
@@ -1869,7 +1869,7 @@ function AppContent() {
           setQuotesPool(validQuotes);
           quotesPoolRef.current = validQuotes;
           // Only save to Firebase if logged in AND it's a new day
-          if (user) {
+          if (user && !isQuotaExceeded) {
              const todayStr = format(new Date(), 'yyyy-MM-dd');
              const dailyRef = collection(db, 'daily_quotes_cache');
              const qDaily = query(dailyRef, where('fetchDate', '==', todayStr));
@@ -1887,7 +1887,7 @@ function AppContent() {
         }
       }
 
-      if (!user) return []; // Now check user for other traditions
+      if (!user || isQuotaExceeded) return []; // Now check user for other traditions
 
 
       const quotesRef = collection(db, collectionPath);
@@ -1934,8 +1934,11 @@ function AppContent() {
       });
       
       return shuffled;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error refilling quotes pool:', error);
+      if (error?.message?.includes('quota')) {
+        setIsQuotaExceeded(true);
+      }
       if (wisdomTradition === 'psychology') {
         const shuffledLocal = [...PSYCHOLOGY_QUOTES].sort(() => Math.random() - 0.5);
         setQuotesPool(shuffledLocal);
@@ -2500,6 +2503,9 @@ function AppContent() {
           console.log('Membership check: Standard seeker (seed logic skipped)');
         } else {
           console.error('Seeding error:', error);
+          if (error?.message?.includes('quota')) {
+            setIsQuotaExceeded(true);
+          }
         }
       }
     };
@@ -3063,14 +3069,14 @@ function AppContent() {
   }, []);
 
   const fetchLibraryQuotes = useCallback(async () => {
-    if (!user) {
-      // GUEST PROTECTION: Show a curated selection of local quotes to save quota
+    if (!user || isQuotaExceeded) {
+      // GUEST PROTECTION / QUOTA PROTECTION: Show a curated selection of local quotes to save quota
       const sampleQuotes = INITIAL_QUOTES.slice(0, 12).map((q, idx) => ({ 
         ...q, 
         id: `sample-${idx}`,
         markedDate: new Date(Date.now() - idx * 86400000).toISOString(),
         wisdomGrade: 'A daily reminder',
-        comment: 'Explore WiseFit to save your own wisdom.'
+        comment: isQuotaExceeded ? 'Daily Firestore quota reached. Showing cached wisdom.' : 'Explore WiseFit to save your own wisdom.'
       }));
       setLibraryQuotes(sampleQuotes as any);
       return;
@@ -3162,12 +3168,18 @@ function AppContent() {
 
       console.log('Total library quotes combined:', combined.length);
       setLibraryQuotes(combined);
-    } catch (error) {
+      localStorage.setItem('wisefit_library_backup', JSON.stringify(combined));
+    } catch (error: any) {
       console.error('Error fetching library quotes:', error);
+      if (error?.message?.includes('quota')) {
+        setIsQuotaExceeded(true);
+      }
+      const cached = localStorage.getItem('wisefit_library_backup');
+      if (cached) setLibraryQuotes(JSON.parse(cached));
     } finally {
       setIsLibraryLoading(false);
     }
-  }, [user, userProfile.markedQuotes]);
+  }, [user, userProfile.markedQuotes, isQuotaExceeded]);
 
   useEffect(() => {
     if (activeView === 'library') {

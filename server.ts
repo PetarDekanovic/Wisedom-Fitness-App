@@ -69,7 +69,7 @@ async function startServer() {
 
   const generateWithFallback = async (prompt: string, config?: any, systemInstruction?: string) => {
     // Priority order for models
-    const models = ["gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-pro"];
+    const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-pro"];
     let lastError = null;
 
     for (const modelName of models) {
@@ -78,21 +78,22 @@ async function startServer() {
           model: modelName,
           generationConfig: config,
           systemInstruction
-        });
+        }, { apiVersion: 'v1' });
         const result = await model.generateContent(prompt);
         return result;
       } catch (e: any) {
         lastError = e;
         console.warn(`Model ${modelName} failed: ${e.message}`);
-        if (e.message?.includes("404")) continue;
-        if (e.message?.includes("quota") || e.message?.includes("429")) break; // Don't spam if quota
+        // If 404, we try next model. If 403/429/quota we might try too, but usually it's project-wide
+        if (e.message?.includes("404") || e.message?.includes("not found")) continue;
+        if (e.message?.includes("quota") || e.message?.includes("429")) break; 
       }
     }
     throw lastError || new Error("All models failed to generate content.");
   };
 
   const generateMessagesWithFallback = async (messages: any[], config?: any, systemInstruction?: string) => {
-    const models = ["gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-pro"];
+    const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest", "gemini-pro"];
     let lastError = null;
 
     for (const modelName of models) {
@@ -101,13 +102,13 @@ async function startServer() {
           model: modelName,
           generationConfig: config,
           systemInstruction
-        });
+        }, { apiVersion: 'v1' });
         const result = await model.generateContent({ contents: messages });
         return result;
       } catch (e: any) {
         lastError = e;
         console.warn(`Model ${modelName} (Messages) failed: ${e.message}`);
-        if (e.message?.includes("404")) continue;
+        if (e.message?.includes("404") || e.message?.includes("not found")) continue;
         break; 
       }
     }
