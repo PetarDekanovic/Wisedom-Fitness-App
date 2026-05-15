@@ -3363,7 +3363,8 @@ function AppContent() {
       try {
         result = JSON.parse(text);
       } catch (e) {
-        throw new Error("Invalid response from server. The Stoic Chamber might be undergoing maintenance.");
+        console.error("Raw response from server (non-JSON):", text.substring(0, 500));
+        throw new Error(`The Stoic Chamber returned an invalid response (not JSON). Please check the server logs.`);
       }
       
       if (!resp.ok) throw new Error(result.error || "Chat Request failed");

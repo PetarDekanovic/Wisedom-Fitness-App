@@ -13,15 +13,17 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize Gemini at the top level
-const ai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY || "",
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
+// Helper to get key from multiple possible names (handling VITE_ prefix if present)
+const getGeminiKey = () => {
+  const key = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  if (!key) {
+    console.warn("WARNING: No Gemini API Key found in environment variables (tried GEMINI_API_KEY and VITE_GEMINI_API_KEY).");
   }
-});
+  return key || "";
+};
+
+// Initialize Gemini
+const ai = new GoogleGenAI(getGeminiKey());
 
 // --- AUTHORIZATION WHITELIST ---
 const AUTHORIZED_EMAILS = [
@@ -597,15 +599,38 @@ async function startServer() {
     res.json(records);
   });
 
+  // --- API ERROR CATCH-ALL ---
+  // This prevents failed API calls from returning the index.html (SPA fallback)
+  app.all("/api/*", (req, res, next) => {
+    // If we reached here, it means no API route matched
+    res.status(404).json({ 
+      error: `Endpoint not found: ${req.method} ${req.url}`,
+      message: "The Stoic Chamber does not recognize this path." 
+    });
+  });
+
   // --- VITE MIDDLEWARE ---
 
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
+  // Improved production check
+  const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
+  
+  if (!isProd) {
+    try {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } catch (e) {
+      console.warn("Vite middleware failed to load, falling back to static serving:", e);
+      serveStatic(app);
+    }
   } else {
+    serveStatic(app);
+  }
+
+  function serveStatic(app: any) {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
