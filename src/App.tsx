@@ -1567,9 +1567,13 @@ function AppContent() {
       
       await batch.commit();
       alert('100 Psychology Insights seeded to Firestore successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error seeding insights:', error);
-      alert('Failed to seed insights. Check console.');
+      const isPermission = error?.message?.toLowerCase().includes('permission') || error?.code === 'permission-denied';
+      alert(isPermission 
+        ? 'Permission Denied: Only authorized keepers can seed systemic insights.' 
+        : `Failed to seed insights: ${error.message || 'Unknown error'}`
+      );
     } finally {
       setIsSeedingInsights(false);
     }
@@ -2448,8 +2452,13 @@ function AppContent() {
         // Update version to prevent re-running this logic
         await setDoc(seedStatusRef, { version: CURRENT_VERSION, updatedAt: new Date().toISOString() });
       } catch (error: any) {
-        if (error?.message?.includes('permission-denied')) {
-          console.log('Membership check: Standard user (skipping seeding logic)');
+        const isPermissionError = 
+          error?.code === 'permission-denied' || 
+          error?.message?.toLowerCase().includes('permission') ||
+          error?.message?.toLowerCase().includes('insufficient');
+
+        if (isPermissionError) {
+          console.log('Membership check: Standard seeker (seed logic skipped)');
         } else {
           console.error('Seeding error:', error);
         }

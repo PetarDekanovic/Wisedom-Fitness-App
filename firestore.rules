@@ -1,6 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
     // ===============================================================
     // Assumed Data Model
     // ===============================================================
@@ -65,7 +70,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email in ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com"] ||
+        (request.auth.token.email in ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com", "stjepan.dekanovic@gmail.com"] ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
@@ -170,6 +175,10 @@ service cloud.firestore {
     match /psychology_insights/{insightId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /system_metadata/{docId} {
+      allow read, write: if isAdmin();
     }
   }
 }
