@@ -10,11 +10,13 @@ dotenv.config();
 
 // Helper to get key from multiple possible names
 const getGeminiKey = () => {
-  const key = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
-  if (!key) {
-    console.warn("WARNING: No Gemini API Key found in environment variables.");
+  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+  if (process.env.VITE_GEMINI_API_KEY) {
+    console.log("INFO: Using VITE_GEMINI_API_KEY (server-side). Recommendation: Use GEMINI_API_KEY.");
+    return process.env.VITE_GEMINI_API_KEY;
   }
-  return key || "";
+  console.warn("CRITICAL: No Gemini API Key found in environment variables (tried GEMINI_API_KEY and VITE_GEMINI_API_KEY).");
+  return "";
 };
 
 // Initialize Gemini
@@ -34,7 +36,7 @@ function isAuthorized(email: string | undefined) {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(cors());
   app.use(express.json());
@@ -46,6 +48,7 @@ async function startServer() {
       geminiKey: !!getGeminiKey(),
       nodeEnv: process.env.NODE_ENV,
       port: PORT,
+      isProduction: process.env.NODE_ENV === "production",
       authorizedCount: AUTHORIZED_EMAILS.length
     });
   });
