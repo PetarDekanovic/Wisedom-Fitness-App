@@ -5,7 +5,7 @@ import path from "path";
 import axios from "axios";
 import dotenv from "dotenv";
 import * as cheerio from "cheerio";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 
@@ -20,15 +20,8 @@ const getGeminiKey = () => {
   return "";
 };
 
-// Initialize Gemini with recommended headers
-const ai = new GoogleGenAI({
-  apiKey: getGeminiKey(),
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
-  }
-});
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(getGeminiKey());
 
 // --- AUTHORIZATION WHITELIST ---
 const AUTHORIZED_EMAILS = [
@@ -66,6 +59,11 @@ async function startServer() {
 
   // --- GEMINI AI ENDPOINTS ---
 
+  // Helper for model selection resilience
+  const getModel = (name: string = "gemini-1.5-flash") => {
+    return genAI.getGenerativeModel({ model: name });
+  };
+
   app.post("/api/ai/tts", async (req, res) => {
     try {
       const { text, userEmail } = req.body;
@@ -75,11 +73,10 @@ async function startServer() {
       if (!text) return res.status(400).json({ error: "Text is required" });
 
       const prompt = `Say in a calm, stoic, and authoritative voice: ${text}`;
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [{ parts: [{ text: prompt }] }]
-      });
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      const model = getModel();
+      const response = await model.generateContent(prompt);
+      const result = await response.response;
+      const base64Audio = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (!base64Audio) throw new Error("No audio generated");
 
       res.json({ audio: base64Audio });
@@ -93,9 +90,14 @@ async function startServer() {
     try {
       const { traditionPrompt, recentTexts } = req.body;
       
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [{ parts: [{ text: `${traditionPrompt}
+      const model = getModel();
+      model.generationConfig = {
+        responseMimeType: "application/json",
+        temperature: 1.0,
+        topP: 0.95
+      };
+
+      const response = await model.generateContent(`${traditionPrompt}
         Format as JSON: {text, author, source, category, shortExplanation, stoicParallel, jewishParallel}.
         
         STRICT RULES:
@@ -105,15 +107,10 @@ async function startServer() {
         4. DEPTH: Prefer profound, lesser-known insights over generic motivational phrases.
         5. If category is psychology, also provide shortExplanation, stoicParallel, and jewishParallel as done in the app's local psychology insights.
         
-        Seed: ${Math.random()}` }] }],
-        config: {
-          responseMimeType: "application/json",
-          temperature: 1.0,
-          topP: 0.95
-        }
-      });
+        Seed: ${Math.random()}`);
 
-      res.json(JSON.parse(response.text || "{}"));
+      const result = await response.response;
+      res.json(JSON.parse(result.text() || "{}"));
     } catch (error: any) {
       console.error("Gemini Quote Error:", error);
       res.status(500).json({ error: "Failed to generate quote" });
@@ -144,15 +141,19 @@ async function startServer() {
         Patient Message: ${userMsg}
       `;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [{ parts: [{ text: contextPrompt }] }],
-        config: {
-          maxOutputTokens: 512,
-        },
-      });
+      let model;
+      try {
+         // Explicitly try gemini-1.5-flash as the primary
+         model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      } catch (e) {
+         // Fallback to latest just in case
+         model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+      }
 
-      res.json({ text: response.text || "I am listening. Tell me more about that." });
+      const result = await model.generateContent(contextPrompt);
+      const response = await result.response;
+
+      res.json({ text: response.text() || "I am listening. Tell me more about that." });
     } catch (error: any) {
       console.error("Gemini Psychologist Error:", error);
       res.status(500).json({ error: `The Clinical Chamber reached an error: ${error.message || "Unknown Failure"}` });
@@ -180,15 +181,23 @@ async function startServer() {
           
           Always start your response with a short, powerful quote from one of these traditions that relates to the user's current situation or question.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: messages,
-        config: {
-          systemInstruction
-        }
-      });
+      let model;
+      try {
+        model = genAI.getGenerativeModel({
+          model: "gemini-1.5-flash",
+          systemInstruction: systemInstruction,
+        });
+      } catch (e) {
+        model = genAI.getGenerativeModel({
+          model: "gemini-1.5-flash-latest",
+          systemInstruction: systemInstruction,
+        });
+      }
 
-      res.json({ text: response.text || "Sorry, I could not generate a response." });
+      const response = await model.generateContent({ contents: messages });
+      const result = await response.response;
+
+      res.json({ text: result.text() || "Sorry, I could not generate a response." });
     } catch (error: any) {
       console.error("Gemini Chat Error:", error);
       // Check if it's an API error that looks like a 404 from Gemini
@@ -225,12 +234,11 @@ async function startServer() {
         Respond in raw text.
       `;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [{ parts: [{ text: prompt }] }]
-      });
+      const model = getModel();
+      const response = await model.generateContent(prompt);
+      const result = await response.response;
 
-      res.json({ text: response.text || "Nature does not hurry, yet everything is accomplished..." });
+      res.json({ text: result.text() || "Nature does not hurry, yet everything is accomplished..." });
     } catch (error: any) {
       console.error("Gemini Reflection Error:", error);
       res.status(500).json({ error: "Failed to generate reflection" });
@@ -248,15 +256,17 @@ async function startServer() {
         prompt = "Generate 50 unique, powerful wise quotes from Stoic, Chinese, Japanese, Jewish, and Christian traditions. Format as JSON array: [{text, author, source}]. No markdown formatting, just the raw JSON array.";
       }
 
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [{ parts: [{ text: prompt }] }],
-        config: {
-          responseMimeType: "application/json"
-        }
-      });
+      const model = getModel();
+      model.generationConfig = {
+        responseMimeType: "application/json"
+      };
 
-      res.json(JSON.parse(response.text || "[]"));
+      const response = await model.generateContent(prompt);
+      const result = await response.response;
+      let text = result.text() || "[]";
+      // Clean potential markdown code blocks
+      text = text.replace(/^```json/, '').replace(/```$/, '').trim();
+      res.json(JSON.parse(text));
     } catch (error: any) {
       console.error("Gemini Admin Generation Error:", error);
       res.status(500).json({ error: "Failed to generate quotes" });

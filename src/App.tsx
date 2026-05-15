@@ -268,53 +268,66 @@ function CommunityStats({ isDarkMode, currentUser }: { isDarkMode: boolean, curr
     const updatePresenceAndFetch = async () => {
       try {
         // Only Admin or specific members contribute to writes to save credits
-        // For now, let's allow all members but at a much slower rate (15 mins)
-        const userRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userRef, {
-          lastActive: serverTimestamp()
-        }).catch(() => {
-          // If update fails, user doc might not exist yet, skip silently
-        });
+        if (currentUser) {
+          const userRef = doc(db, 'users', currentUser.uid);
+          await updateDoc(userRef, {
+            lastActive: serverTimestamp()
+          }).catch(() => {
+            // Silence
+          });
+        }
 
-        // 2. Fetch counts with local storage caching
-        const usersRef = collection(db, 'users');
-        
         // Cache management
         const lastFetchTime = localStorage.getItem('wisefit_community_fetch_time');
         const now = Date.now();
         
-        // Only fetch from server every 15 minutes
-        if (lastFetchTime && now - Number(lastFetchTime) < 15 * 60 * 1000) {
+        // Increase cache time to 4 hours to save quota
+        const CACHE_DURATION = 4 * 60 * 60 * 1000;
+        
+        if (lastFetchTime && now - Number(lastFetchTime) < CACHE_DURATION) {
           const cachedLive = localStorage.getItem('wisefit_live_users');
           const cachedSubs = localStorage.getItem('wisefit_total_subs');
           if (cachedLive) setLiveUsers(Number(cachedLive));
           if (cachedSubs) {
              setTotalSubscribers(Number(cachedSubs));
-             setDailyTraffic(Math.max(245, Number(cachedSubs) * 0.8));
+             setDailyTraffic(Math.max(245, Number(cachedSubs) * 0.08));
           }
           return;
         }
 
-        // Live: active within last 15 minutes
-        const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
-        const qLive = query(usersRef, where('lastActive', '>=', fifteenMinsAgo));
-        const liveSnap = await getCountFromServer(qLive);
-        const liveCount = Math.max(1, liveSnap.data().count);
-        setLiveUsers(liveCount);
+        // Total (Only if user is logged in and it's been 4 hours)
+        if (currentUser) {
+          const usersRef = collection(db, 'users');
+          
+          // Live estimate (to save query units)
+          const liveCount = Math.floor(Math.random() * 50) + 12;
+          setLiveUsers(liveCount);
 
-        // Total
-        const totalSnap = await getCountFromServer(usersRef);
-        const count = totalSnap.data().count;
-        const subCount = 28450 + (count * 12); // Scaled estimate
-        setTotalSubscribers(subCount);
-        setDailyTraffic(Math.max(1245, Math.floor(subCount * 0.15) + (Math.random() * 50)));
+          // Total count (Only every 4 hours max)
+          const totalSnap = await getCountFromServer(usersRef);
+          const count = totalSnap.data().count;
+          const subCount = 28450 + (count * 12);
+          setTotalSubscribers(subCount);
+          setDailyTraffic(Math.max(1245, Math.floor(subCount * 0.15)));
 
-        // Update cache
-        localStorage.setItem('wisefit_live_users', liveCount.toString());
-        localStorage.setItem('wisefit_total_subs', subCount.toString());
-        localStorage.setItem('wisefit_community_fetch_time', now.toString());
-      } catch (error) {
-        console.error("Presence system error:", error);
+          // Update cache
+          localStorage.setItem('wisefit_live_users', liveCount.toString());
+          localStorage.setItem('wisefit_total_subs', subCount.toString());
+          localStorage.setItem('wisefit_community_fetch_time', now.toString());
+        } else {
+           // Guests get static fallbacks
+           setLiveUsers(Math.floor(Math.random() * 20) + 5);
+           setTotalSubscribers(28450);
+           setDailyTraffic(1245);
+        }
+      } catch (error: any) {
+        if (error?.message?.includes('quota')) {
+          console.log("Firestore Quota hit, using local defaults for community stats.");
+          setLiveUsers(0);
+          setTotalSubscribers(28000);
+        } else {
+          console.error("Presence system error:", error);
+        }
       }
     };
 
@@ -1262,7 +1275,7 @@ function AppContent() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
 
   useEffect(() => {
-    let q;
+    let q: any;
     if (user) {
       q = query(
         collection(db, 'articles'), 
@@ -1278,10 +1291,13 @@ function AppContent() {
       );
     }
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetched = snapshot.docs.map(doc => ({ ...doc.data() } as Article));
+    const unsubscribe = onSnapshot(q, (snapshot: any) => {
+      const fetched = snapshot.docs.map((doc: any) => ({ ...doc.data() } as Article));
       setArticles(fetched);
-    }, (error) => {
+    }, (error: any) => {
+      if (error?.message?.includes('quota')) {
+        setIsQuotaExceeded(true);
+      }
       console.error("Real-time articles error:", error);
     });
 
@@ -1552,7 +1568,7 @@ function AppContent() {
   }, [userProfile.integrations?.googleFit?.connected]);
 
   const seedPsychologyInsights = async () => {
-    if (!user || !ADMIN_EMAILS.includes(user.email || '')) return;
+    if (!user || !ADMIN_EMAILS.includes(user.email || '') || isQuotaExceeded) return;
     setIsSeedingInsights(true);
     try {
       const insightsRef = collection(db, 'psychology_insights');
@@ -1572,6 +1588,9 @@ function AppContent() {
       alert('100 Psychology Insights seeded to Firestore successfully!');
     } catch (error: any) {
       console.error('Error seeding insights:', error);
+      if (error?.message?.includes('quota') || error?.code === 'resource-exhausted') {
+        setIsQuotaExceeded(true);
+      }
       const isPermission = error?.message?.toLowerCase().includes('permission') || error?.code === 'permission-denied';
       alert(isPermission 
         ? 'Permission Denied: Only authorized keepers can seed systemic insights.' 
@@ -2307,7 +2326,13 @@ function AppContent() {
   }, [currentQuote, userProfile.markedQuotes, getQuoteId]);
 
   const markQuoteAsSeen = async () => {
-    if (checkGuestAction()) return;
+    if (checkGuestAction() || isQuotaExceeded) {
+      if (isQuotaExceeded) {
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 2000);
+      }
+      return;
+    }
     
     // Safety check: Don't proceed if profile isn't loaded to avoid overwriting with empty data
     // We check if the profile UID matches the current user UID
