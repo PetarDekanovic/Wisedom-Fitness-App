@@ -68,7 +68,7 @@ async function startServer() {
       if (!text) return res.status(400).json({ error: "Text is required" });
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
       });
 
       const prompt = `Say in a calm, stoic, and authoritative voice: ${text}`;
@@ -89,7 +89,7 @@ async function startServer() {
       const { traditionPrompt, recentTexts } = req.body;
       
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 1.0,
@@ -117,6 +117,56 @@ async function startServer() {
     }
   });
 
+  app.post("/api/ai/psychologist", async (req, res) => {
+    try {
+      const { messages, userEmail, healthData } = req.body;
+      
+      if (!isAuthorized(userEmail)) {
+        return res.status(403).json({ error: "Psychology consultation requires a Higher Key." });
+      }
+
+      const model = genAI.getGenerativeModel({
+        model: "gemini-1.5-flash-latest",
+      });
+
+      const history = messages.slice(0, -1).map((m: any) => ({
+        role: m.role,
+        parts: m.parts,
+      }));
+
+      const chat = model.startChat({
+        history: history,
+        generationConfig: {
+          maxOutputTokens: 512,
+        },
+      });
+
+      const userMsg = messages[messages.length - 1].parts[0].text;
+      const contextPrompt = `
+        You are a warm, empathetic Clinical Psychologist specializing in Cognitive Behavioral Therapy and the Mind-Body connection.
+        User: ${healthData?.name || 'Petar'}
+        Health Context: ${healthData?.currentSteps || 0} steps today, weight ${healthData?.currentWeight || 0}kg.
+        
+        Rules:
+        - Be deeply empathetic but clinically grounded.
+        - Help the user identify patterns between their physical activity and mental state.
+        - Use "we" and "our" to foster a therapeutic alliance.
+        - Keep it to 3-4 powerful sentences.
+        - If they mention stress, suggest a simple breathing exercise.
+        
+        User's input: ${userMsg}
+      `;
+
+      const result = await chat.sendMessage(contextPrompt);
+      const response = await result.response;
+
+      res.json({ text: response.text() || "I am listening. Tell me more about that." });
+    } catch (error: any) {
+      console.error("Gemini Psychologist Error:", error);
+      res.status(500).json({ error: "Failed to reach the clinical chamber." });
+    }
+  });
+
   app.post("/api/ai/chat", async (req, res) => {
     try {
       const { messages, userEmail } = req.body;
@@ -126,7 +176,7 @@ async function startServer() {
       }
       
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
         systemInstruction: `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
           Your coaching style is deeply rooted in:
           1. Stoicism (Marcus Aurelius, Seneca, Epictetus): Focus on what you can control, endurance, and mental fortitude.
@@ -183,7 +233,7 @@ async function startServer() {
       `;
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
       });
 
       const result = await model.generateContent(prompt);
@@ -208,7 +258,7 @@ async function startServer() {
       }
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
         generationConfig: {
           responseMimeType: "application/json"
         }

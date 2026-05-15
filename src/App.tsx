@@ -581,7 +581,7 @@ const MOCK_WORKOUTS: Workout[] = [
   }
 ];
 
-type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library' | 'yoga' | 'quiz';
+type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library' | 'yoga' | 'quiz' | 'psychologist';
 
 // Video Utils
 const extractYoutubeId = (url: string) => {
@@ -1452,6 +1452,7 @@ function AppContent() {
   
   // Chat State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [psychMessages, setPsychMessages] = useState<ChatMessage[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const [currentQuote, setCurrentQuote] = useState<Quote>({
@@ -2988,6 +2989,10 @@ function AppContent() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const [psychInput, setPsychInput] = useState('');
+  const [isPsychLoading, setIsPsychLoading] = useState(false);
+  const psychEndRef = useRef<HTMLDivElement>(null);
+
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isAddingWorkout, setIsAddingWorkout] = useState(false);
   const [newWorkout, setNewWorkout] = useState<Partial<Workout>>({
@@ -3382,6 +3387,51 @@ function AppContent() {
       setChatMessages(prev => [...prev, { role: 'model', parts: [{ text: error.message === "Failed to fetch" ? "Error connecting to the server. Check your connection." : error.message || 'Error connecting to the Force. Please try again.' }] }]);
     } finally {
       setIsChatLoading(false);
+    }
+  };
+
+  const handlePsychSendMessage = async () => {
+    if (!psychInput.trim() || isPsychLoading || !isAuthorized) return;
+
+    const userMessage: ChatMessage = { role: 'user', parts: [{ text: psychInput }] };
+    setPsychMessages(prev => [...prev, userMessage]);
+    setPsychInput('');
+    setIsPsychLoading(true);
+    
+    if (isSpeaking !== null) {
+      currentSourceRef.current?.stop();
+      setIsSpeaking(null);
+    }
+
+    try {
+      const resp = await fetch('/api/ai/psychologist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: psychMessages.concat(userMessage),
+          userEmail: user?.email,
+          healthData: userProfile // Pass profile for context
+        })
+      });
+      
+      const text = await resp.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`The Psych Clinic returned an invalid response.`);
+      }
+      
+      if (!resp.ok) {
+        throw new Error(result.error || `Server error`);
+      }
+
+      const modelMessage: ChatMessage = { role: 'model', parts: [{ text: result.text || '...' }] };
+      setPsychMessages(prev => [...prev, modelMessage]);
+    } catch (error: any) {
+      setPsychMessages(prev => [...prev, { role: 'model', parts: [{ text: error.message || 'Connection error' }] }]);
+    } finally {
+      setIsPsychLoading(false);
     }
   };
 
@@ -5886,6 +5936,111 @@ function AppContent() {
             </motion.div>
           )}
 
+          {activeView === 'psychologist' && (
+            <motion.div
+              key="psychologist"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="flex flex-col h-[calc(100vh-180px)] relative"
+            >
+              {!isAuthorized && (
+                <div className="absolute inset-0 z-50 backdrop-blur-md bg-zinc-950/20 rounded-3xl flex flex-col items-center justify-center p-8 text-center space-y-6">
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center border bg-blue-500/20 border-blue-500/30">
+                    <Brain className="w-10 h-10 text-blue-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-black uppercase tracking-tight text-white">Enter the Clinic</h3>
+                    <p className="text-sm text-zinc-300">
+                      The AI Psychologist is available for authorized seekers.
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border border-blue-500/20 bg-blue-500/10">
+                  <Activity className="w-6 h-6 text-blue-500" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">AI Psychologist</h2>
+                  <p className="text-xs font-medium uppercase tracking-widest text-blue-500">Clinical Empathy</p>
+                </div>
+              </div>
+
+              <div className={cn(
+                "flex-1 overflow-y-auto space-y-4 p-4 rounded-3xl border mb-4 no-scrollbar",
+                isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/60 border-zinc-200 shadow-sm"
+              )}>
+                {psychMessages.length === 0 && (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
+                    <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center">
+                      <Heart className="w-8 h-8 text-blue-500/50" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="font-bold text-zinc-500">How are you feeling today, Petar?</p>
+                      <p className="text-sm text-zinc-600">I am here to help you navigate your mental state and behavioral patterns.</p>
+                    </div>
+                   </div>
+                )}
+                {psychMessages.map((msg, idx) => (
+                  <div key={idx} className={cn(
+                    "flex items-end gap-2",
+                    msg.role === 'user' ? "flex-row-reverse" : "flex-row"
+                  )}>
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-zinc-700/30">
+                      <div className={cn(
+                        "w-full h-full flex items-center justify-center",
+                        msg.role === 'user' ? "bg-zinc-800" : "bg-blue-500/20"
+                      )}>
+                        {msg.role === 'user' ? <User className="w-4 h-4" /> : <Activity className="w-4 h-4 text-blue-400" />}
+                      </div>
+                    </div>
+                    <div className={cn(
+                      "max-w-[80%] p-4 rounded-2xl text-sm relative group",
+                      msg.role === 'user' 
+                        ? "bg-blue-600 text-white font-medium rounded-br-none" 
+                        : (isDarkMode ? "bg-zinc-800 text-zinc-100 rounded-bl-none" : "bg-zinc-100 text-zinc-900 rounded-bl-none")
+                    )}>
+                      {msg.parts[0].text}
+                    </div>
+                  </div>
+                ))}
+                {isPsychLoading && (
+                  <div className="flex justify-start">
+                    <div className={cn(
+                      "p-4 rounded-2xl rounded-tl-none",
+                      isDarkMode ? "bg-zinc-800" : "bg-zinc-100"
+                    )}>
+                      <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                    </div>
+                  </div>
+                )}
+                <div ref={psychEndRef} />
+              </div>
+
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  value={psychInput}
+                  onChange={(e) => setPsychInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handlePsychSendMessage()}
+                  placeholder="Tell me what's on your mind..."
+                  className={cn(
+                    "flex-1 border rounded-2xl px-4 py-4 focus:outline-none focus:border-blue-500 transition-all",
+                    isDarkMode ? "bg-zinc-900 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900 shadow-sm"
+                  )}
+                />
+                <button 
+                  onClick={handlePsychSendMessage}
+                  disabled={isPsychLoading || !psychInput.trim()}
+                  className="bg-blue-600 text-white p-4 rounded-2xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  <Send className="w-6 h-6" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           {activeView === 'library' && (
             <motion.div
               key="library"
@@ -6482,11 +6637,11 @@ function AppContent() {
       {/* Bottom Navigation */}
       {!isYogaSessionActive && (
         <nav className={cn(
-          "fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t px-6 py-3 pb-8 transition-colors duration-500",
+          "fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t py-3 pb-8 transition-colors duration-500 overflow-x-auto no-scrollbar",
           isGirlyMode ? "bg-white/90 border-pink-100 shadow-[0_-8px_32px_rgba(244,63,94,0.1)]" :
           isDarkMode ? "bg-zinc-950/90 border-zinc-800/50" : "bg-white/90 border-zinc-200 shadow-lg"
         )}>
-        <div className="max-w-md mx-auto flex items-center justify-between">
+        <div className="flex items-center justify-start min-w-max px-6 gap-6 sm:justify-center sm:max-w-md sm:mx-auto sm:justify-between sm:gap-0">
           <NavButton 
             active={activeView === 'dashboard'} 
             onClick={() => setActiveView('dashboard')}
@@ -6532,6 +6687,14 @@ function AppContent() {
             onClick={() => setActiveView('chat')}
             icon={<MessageSquare className="w-6 h-6" />}
             label="Stoic"
+            isDarkMode={isDarkMode}
+            isGirlyMode={isGirlyMode}
+          />
+          <NavButton 
+            active={activeView === 'psychologist'} 
+            onClick={() => setActiveView('psychologist')}
+            icon={<Heart className="w-6 h-6" />}
+            label="Psych"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
           />
