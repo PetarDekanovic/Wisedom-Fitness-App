@@ -3425,11 +3425,12 @@ function AppContent() {
       try {
         result = JSON.parse(text);
       } catch (e) {
-        throw new Error(`The Psych Clinic returned an invalid response.`);
+        console.error("Parse Error. Body:", text);
+        throw new Error(`The Psych Clinic returned a non-JSON response. Please check server logs.`);
       }
       
       if (!resp.ok) {
-        throw new Error(result.error || `Server error`);
+        throw new Error(result.error || `Server returned error ${resp.status}`);
       }
 
       const modelMessage: ChatMessage = { role: 'model', parts: [{ text: result.text || '...' }] };

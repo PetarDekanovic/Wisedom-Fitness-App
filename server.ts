@@ -68,7 +68,7 @@ async function startServer() {
       if (!text) return res.status(400).json({ error: "Text is required" });
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
       });
 
       const prompt = `Say in a calm, stoic, and authoritative voice: ${text}`;
@@ -89,7 +89,7 @@ async function startServer() {
       const { traditionPrompt, recentTexts } = req.body;
       
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 1.0,
@@ -126,7 +126,7 @@ async function startServer() {
       }
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         generationConfig: {
           maxOutputTokens: 512,
         },
@@ -167,14 +167,13 @@ async function startServer() {
       }
       
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         systemInstruction: `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
           Your coaching style is deeply rooted in:
           1. Stoicism (Marcus Aurelius, Seneca, Epictetus): Focus on what you can control, endurance, and mental fortitude.
           2. Chinese Philosophy (especially Xunzi): Emphasize that human nature can be refined through deliberate effort and discipline.
           3. Japanese Wisdom (Bushido, Zen): Focus on precision, mindfulness, and the way of the warrior.
-          4. Japanese Wisdom: Emphasize community, resilience, and the value of every small action.
-          5. Teachings of Jesus Christ: Focus on compassion, humility, and inner transformation.
+          4. Teachings of Jesus Christ: Focus on compassion, humility, and inner transformation.
           
           Help the user (Petar) with their workout plan (pull-ups and dips), nutrition, and motivation. 
           Integrate quotes and principles from these traditions naturally into your advice. 
@@ -224,7 +223,7 @@ async function startServer() {
       `;
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
       });
 
       const result = await model.generateContent(prompt);
@@ -249,7 +248,7 @@ async function startServer() {
       }
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         generationConfig: {
           responseMimeType: "application/json"
         }
