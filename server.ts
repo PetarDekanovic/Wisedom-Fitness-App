@@ -1,4 +1,5 @@
 import express from "express";
+import fs from "fs";
 import cors from "cors";
 import path from "path";
 import axios from "axios";
@@ -43,12 +44,15 @@ async function startServer() {
 
   // Health check
   app.get("/api/health", (req, res) => {
+    const distPath = path.resolve(process.cwd(), "dist");
     res.json({ 
       status: "ok", 
       geminiKey: !!getGeminiKey(),
       nodeEnv: process.env.NODE_ENV,
       port: PORT,
       isProduction: process.env.NODE_ENV === "production",
+      cwd: process.cwd(),
+      distPathExists: fs.existsSync(distPath),
       authorizedCount: AUTHORIZED_EMAILS.length
     });
   });
