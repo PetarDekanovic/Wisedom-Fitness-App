@@ -73,6 +73,7 @@ import {
   ShieldCheck,
   Smartphone,
   Brain,
+  Stethoscope,
   Users,
   Timer,
   MapPin,
@@ -1421,6 +1422,7 @@ function AppContent() {
   const isFetchingQuoteRef = useRef(false);
   const [isRefillingPool, setIsRefillingPool] = useState(false);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
+  const [isQuotaDismissed, setIsQuotaDismissed] = useState(false);
   const [selectedLibraryIds, setSelectedLibraryIds] = useState<Set<string>>(new Set());
   const [isLibrarySelectMode, setIsLibrarySelectMode] = useState(false);
   const [isConnectingHealth, setIsConnectingHealth] = useState<string | null>(null);
@@ -3692,20 +3694,23 @@ function AppContent() {
 
       {/* Main Content */}
       <main className="relative z-10 pb-24 px-4 pt-6 max-w-md mx-auto">
-        {isQuotaExceeded && (
+        {isQuotaExceeded && !isQuotaDismissed && (
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
-              "mb-6 p-4 rounded-2xl border flex items-center gap-3",
+              "mb-6 p-4 rounded-2xl border flex items-center gap-3 relative",
               isDarkMode ? "bg-orange-500/10 border-orange-500/20 text-orange-400" : "bg-orange-50/50 border-orange-200 text-orange-600"
             )}
           >
             <Database className="w-5 h-5 flex-shrink-0" />
-            <div className="text-xs leading-relaxed">
+            <div className="text-xs leading-relaxed flex-1">
               <p className="font-bold">Quota Saver Active</p>
-              <p className="opacity-80">Daily limit reached. Using local JSON quotes until reset (8am Dublin).</p>
+              <p className="opacity-80">Daily limit reached. Using local JSON quotes until reset.</p>
             </div>
+            <button onClick={() => setIsQuotaDismissed(true)} className="p-1 hover:bg-black/5 rounded-lg transition-colors">
+              <X className="w-4 h-4" />
+            </button>
           </motion.div>
         )}
         <AnimatePresence>
@@ -5963,11 +5968,11 @@ function AppContent() {
               )}
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border border-blue-500/20 bg-blue-500/10">
-                  <Heart className="w-6 h-6 text-blue-500" />
+                  <Stethoscope className="w-6 h-6 text-blue-500" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">AI Psychologist</h2>
-                  <p className="text-xs font-medium uppercase tracking-widest text-blue-500">Clinical Empathy</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-blue-500">Clinical Empathy</p>
                 </div>
               </div>
 
@@ -5978,7 +5983,7 @@ function AppContent() {
                 {psychMessages.length === 0 && (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
                     <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center">
-                      <Heart className="w-8 h-8 text-blue-500/50" />
+                      <Stethoscope className="w-8 h-8 text-blue-500/50" />
                     </div>
                     <div className="space-y-2">
                       <p className="font-bold text-zinc-500">How are you feeling today, Petar?</p>
@@ -5996,7 +6001,7 @@ function AppContent() {
                         "w-full h-full flex items-center justify-center",
                         msg.role === 'user' ? "bg-zinc-800" : "bg-blue-500/20"
                       )}>
-                        {msg.role === 'user' ? <User className="w-4 h-4" /> : <Heart className="w-4 h-4 text-blue-400" />}
+                        {msg.role === 'user' ? <User className="w-4 h-4" /> : <Stethoscope className="w-4 h-4 text-blue-400" />}
                       </div>
                     </div>
                     <div className={cn(
@@ -6645,11 +6650,11 @@ function AppContent() {
           isGirlyMode ? "bg-white/90 border-pink-100 shadow-[0_-8px_32px_rgba(244,63,94,0.1)]" :
           isDarkMode ? "bg-zinc-950/90 border-zinc-800/50" : "bg-white/90 border-zinc-200 shadow-lg"
         )}>
-        <div className="flex items-center justify-start min-w-max px-6 gap-4 sm:justify-between sm:max-w-md sm:mx-auto sm:w-full sm:gap-2">
+        <div className="flex items-center justify-start min-w-max px-4 gap-2 sm:justify-between sm:max-w-md sm:mx-auto sm:w-full">
           <NavButton 
             active={activeView === 'dashboard'} 
             onClick={() => setActiveView('dashboard')}
-            icon={<Activity className="w-6 h-6" />}
+            icon={<Activity className="w-5 h-5 sm:w-6 sm:h-6" />}
             label="Home"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -6657,7 +6662,7 @@ function AppContent() {
           <NavButton 
             active={activeView === 'plan'} 
             onClick={() => setActiveView('plan')}
-            icon={<ListTodo className="w-6 h-6" />}
+            icon={<ListTodo className="w-5 h-5 sm:w-6 sm:h-6" />}
             label="Plan"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -6665,7 +6670,7 @@ function AppContent() {
           <NavButton 
             active={activeView === 'workouts'} 
             onClick={() => setActiveView('workouts')}
-            icon={<Dumbbell className="w-6 h-6" />}
+            icon={<Dumbbell className="w-5 h-5 sm:w-6 sm:h-6" />}
             label="Log"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -6673,7 +6678,7 @@ function AppContent() {
           <NavButton 
             active={activeView === 'yoga'} 
             onClick={() => setActiveView('yoga')}
-            icon={<Wind className="w-6 h-6" />}
+            icon={<Wind className="w-5 h-5 sm:w-6 sm:h-6" />}
             label="Yoga"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -6681,7 +6686,7 @@ function AppContent() {
           <NavButton 
             active={activeView === 'quiz'} 
             onClick={() => setActiveView('quiz')}
-            icon={<Brain className="w-6 h-6" />}
+            icon={<Brain className="w-5 h-5 sm:w-6 sm:h-6" />}
             label="Quiz"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -6689,7 +6694,7 @@ function AppContent() {
           <NavButton 
             active={activeView === 'chat'} 
             onClick={() => setActiveView('chat')}
-            icon={<MessageSquare className="w-6 h-6" />}
+            icon={<MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />}
             label="Stoic"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -6697,7 +6702,7 @@ function AppContent() {
           <NavButton 
             active={activeView === 'psychologist'} 
             onClick={() => setActiveView('psychologist')}
-            icon={<Heart className="w-6 h-6" />}
+            icon={<Stethoscope className="w-5 h-5 sm:w-6 sm:h-6" />}
             label="Psych"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -6705,16 +6710,16 @@ function AppContent() {
           <NavButton 
             active={activeView === 'library'} 
             onClick={() => setActiveView('library')}
-            icon={<BookOpen className="w-6 h-6" />}
-            label="Library"
+            icon={<BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />}
+            label="Ref"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
           />
           <NavButton 
             active={activeView === 'profile'} 
             onClick={() => setActiveView('profile')}
-            icon={<User className="w-6 h-6" />}
-            label="Profile"
+            icon={<User className="w-5 h-5 sm:w-6 sm:h-6" />}
+            label="Prof"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
           />
@@ -7825,7 +7830,7 @@ function NavButton({ active, onClick, icon, label, isDarkMode, isGirlyMode }: an
     <button 
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-1 transition-all duration-300 relative flex-shrink-0 min-w-[56px]",
+        "flex flex-col items-center gap-1 transition-all duration-300 relative flex-shrink-0 min-w-[50px] sm:min-w-[64px]",
         active 
           ? (isGirlyMode ? "text-pink-600 scale-105" : "text-emerald-500 scale-105") 
           : (isGirlyMode ? "text-pink-300 hover:text-pink-400" : isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600")

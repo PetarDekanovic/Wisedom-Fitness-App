@@ -68,7 +68,7 @@ async function startServer() {
       if (!text) return res.status(400).json({ error: "Text is required" });
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
       });
 
       const prompt = `Say in a calm, stoic, and authoritative voice: ${text}`;
@@ -89,7 +89,7 @@ async function startServer() {
       const { traditionPrompt, recentTexts } = req.body;
       
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 1.0,
@@ -126,7 +126,7 @@ async function startServer() {
       }
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
         generationConfig: {
           maxOutputTokens: 512,
         },
@@ -167,7 +167,7 @@ async function startServer() {
       }
       
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
         systemInstruction: `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
           Your coaching style is deeply rooted in:
           1. Stoicism (Marcus Aurelius, Seneca, Epictetus): Focus on what you can control, endurance, and mental fortitude.
@@ -224,7 +224,7 @@ async function startServer() {
       `;
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
       });
 
       const result = await model.generateContent(prompt);
@@ -249,7 +249,7 @@ async function startServer() {
       }
 
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
         generationConfig: {
           responseMimeType: "application/json"
         }
