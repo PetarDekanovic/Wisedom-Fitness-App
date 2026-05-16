@@ -193,6 +193,7 @@ const AVATARS = [
   { name: 'Hannah Arendt', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200&h=200' },
   { name: 'Musonius Rufus', url: 'https://compcharity.org/wp-content/uploads/2026/04/maxresdefault-1.jpg' },
   { name: 'Zeno', url: 'https://compcharity.org/wp-content/uploads/2026/04/zeno_of_citium.jpg' },
+  { name: 'Sigmund Freud', url: 'https://compcharity.org/wp-content/uploads/2026/05/freud.jpg' },
 ];
 
 const INITIAL_PROFILE: UserProfile = {
@@ -6134,12 +6135,23 @@ function AppContent() {
                 </div>
               )}
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border border-blue-500/20 bg-blue-500/10">
-                  <Stethoscope className="w-6 h-6 text-blue-500" />
+                <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border border-blue-500/20 bg-blue-500/10 shadow-lg shadow-blue-500/10 transition-transform hover:scale-105">
+                  <img 
+                    src="https://compcharity.org/wp-content/uploads/2026/05/freud.jpg" 
+                    alt="Sigmund Freud" 
+                    className="w-full h-full object-cover brightness-110 contrast-115 grayscale-[0.2]"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';
+                    }}
+                  />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold">AI Psychologist</h2>
-                  <p className="text-xs font-bold uppercase tracking-widest text-blue-500">Clinical Empathy</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-blue-500 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    Dr. Freud | Clinical Empathy
+                  </p>
                 </div>
               </div>
 
@@ -6163,12 +6175,24 @@ function AppContent() {
                     "flex items-end gap-2",
                     msg.role === 'user' ? "flex-row-reverse" : "flex-row"
                   )}>
-                    <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-zinc-700/30">
+                    <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-zinc-700/30 shadow-md">
                       <div className={cn(
                         "w-full h-full flex items-center justify-center",
-                        msg.role === 'user' ? "bg-zinc-800" : "bg-blue-500/20"
+                        msg.role === 'user' ? "bg-zinc-800" : "bg-blue-900/50"
                       )}>
-                        {msg.role === 'user' ? <User className="w-4 h-4" /> : <Stethoscope className="w-4 h-4 text-blue-400" />}
+                        {msg.role === 'user' ? (
+                          <User className="w-4 h-4 text-zinc-400" />
+                        ) : (
+                          <img 
+                            src="https://compcharity.org/wp-content/uploads/2026/05/freud.jpg" 
+                            alt="Freud" 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';
+                            }}
+                          />
+                        )}
                       </div>
                     </div>
                     <div className={cn(
@@ -6954,6 +6978,9 @@ function AppContent() {
                           alt={avatar.name} 
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';
+                          }}
                         />
                         {userProfile.avatarUrl === avatar.url && (
                           <div className={cn(
@@ -7115,6 +7142,9 @@ function AppContent() {
                           alt={avatar.name} 
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';
+                          }}
                         />
                         {userProfile.avatarUrl === avatar.url && (
                           <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
