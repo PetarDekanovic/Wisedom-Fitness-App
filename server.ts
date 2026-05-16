@@ -48,6 +48,21 @@ function isAuthorized(email: string | undefined) {
   return AUTHORIZED_EMAILS.includes(email.toLowerCase());
 }
 
+// Priority order for models - Using standard IDs and models/ prefix fallback
+const GEMINI_MODELS = [
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
+  "gemini-2.0-flash-exp",
+  "models/gemini-1.5-flash",
+  "models/gemini-1.5-pro"
+];
+
+const CLAUDE_MODELS = [
+  "claude-sonnet-4-6",
+  "claude-haiku-4-5-20251001",
+  "claude-opus-4-7"
+];
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
@@ -81,25 +96,10 @@ async function startServer() {
   });
 
   const generateWithFallback = async (prompt: string, config?: any, systemInstruction?: string) => {
-    // Priority order for models - Using standard IDs and models/ prefix fallback
-    const geminiModels = [
-      "gemini-1.5-flash",
-      "gemini-1.5-pro",
-      "gemini-2.0-flash-exp",
-      "models/gemini-1.5-flash",
-      "models/gemini-1.5-pro"
-    ];
-    const claudeModels = [
-      "claude-3-5-sonnet-20241022",
-      "claude-3-5-haiku-20241022",
-      "claude-3-7-sonnet-20250219",
-      "claude-3-opus-20240229"
-    ];
-    
     let lastError = null;
 
     // Try Gemini First - v1beta is often required for experimental/pre-release models
-    for (const modelName of geminiModels) {
+    for (const modelName of GEMINI_MODELS) {
       try {
         console.log(`[WiseFit AI] Attempting Gemini: ${modelName}`);
         const model = genAI.getGenerativeModel({
@@ -127,7 +127,7 @@ async function startServer() {
     // Try Claude Fallback
     const anthropic = getAnthropic();
     if (anthropic) {
-      for (const modelName of claudeModels) {
+      for (const modelName of CLAUDE_MODELS) {
         try {
           console.log(`[WiseFit AI] Attempting Claude: ${modelName}`);
           const msg = await anthropic.messages.create({
@@ -161,22 +161,9 @@ async function startServer() {
   };
 
   const generateMessagesWithFallback = async (messages: any[], config?: any, systemInstruction?: string) => {
-    const geminiModels = [
-      "gemini-1.5-flash",
-      "gemini-1.5-pro",
-      "gemini-2.0-flash-exp",
-      "models/gemini-1.5-flash",
-      "models/gemini-1.5-pro"
-    ];
-    const claudeModels = [
-      "claude-3-5-sonnet-20241022",
-      "claude-3-5-haiku-20241022",
-      "claude-3-7-sonnet-20250219",
-      "claude-3-opus-20240229"
-    ];
     let lastError = null;
 
-    for (const modelName of geminiModels) {
+    for (const modelName of GEMINI_MODELS) {
       try {
         console.log(`[WiseFit AI] Attempting GeminiMessages: ${modelName}`);
         const model = genAI.getGenerativeModel({
@@ -207,7 +194,7 @@ async function startServer() {
         content: m.parts[0].text
       }));
 
-      for (const modelName of claudeModels) {
+      for (const modelName of CLAUDE_MODELS) {
         try {
           console.log(`[AI] Attempting ClaudeMessages(${modelName})`);
           const msg = await anthropic.messages.create({
@@ -293,13 +280,12 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
     const anthropic = getAnthropic();
     if (anthropic) {
-      for (const modelName of claudeModels) {
+      for (const modelName of CLAUDE_MODELS) {
         try {
-          console.log(`[WiseFit AI] Attempting ClaudeMessages: ${modelName}`);
+          console.log(`[WiseFit AI] Attempting Diagnostic Claude: ${modelName}`);
           const msg = await anthropic.messages.create({
             model: modelName,
-            max_tokens: config?.maxOutputTokens || 1024,
-            system: systemInstruction,
+            max_tokens: 10,
             messages: [{ role: "user", content: "ping" }]
           });
           results.anthropic.status = "ok";
@@ -307,7 +293,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
         } catch (e: any) {
           results.anthropic.status = "error";
           results.anthropic.error = `${modelName}: ${e.message}`;
-          // Continue to next model if it's a 404
+          // Continue to next model if it's a 404 or auth issue
           if (e.message?.includes("404") || e.message?.includes("not found")) continue;
           break;
         }
