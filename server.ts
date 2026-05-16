@@ -81,41 +81,41 @@ async function startServer() {
   });
 
   const generateWithFallback = async (prompt: string, config?: any, systemInstruction?: string) => {
-    // Both bare and prefixed names for maximum compatibility
+    // Priority order for models - Using standard IDs and models/ prefix fallback
     const geminiModels = [
       "gemini-1.5-flash",
       "gemini-1.5-pro",
+      "gemini-2.0-flash-exp",
       "models/gemini-1.5-flash",
-      "models/gemini-1.5-pro",
-      "gemini-2.0-flash-exp"
+      "models/gemini-1.5-pro"
     ];
     const claudeModels = [
-      "claude-3-7-sonnet-20250219",
       "claude-3-5-sonnet-20241022",
-      "claude-3-5-haiku-20241022",
-      "claude-3-haiku-20240307"
+      "claude-3-5-sonnet-latest",
+      "claude-3-haiku-20240307",
+      "claude-3-opus-20240229"
     ];
     
     let lastError = null;
 
-    // Try Gemini First - consistently use v1beta for model support
+    // Try Gemini First - v1beta is often required for experimental/pre-release models
     for (const modelName of geminiModels) {
       try {
-        console.log(`[AI] Attempting Gemini(${modelName})`);
+        console.log(`[WiseFit AI] Attempting Gemini: ${modelName}`);
         const model = genAI.getGenerativeModel({
           model: modelName,
           generationConfig: config,
           systemInstruction
         }, { apiVersion: 'v1beta' }); 
         const result = await model.generateContent(prompt);
-        const text = result.response.text();
-        if (text) return { text: () => text, raw: result };
+        const responseText = result.response.text();
+        if (responseText) return { text: () => responseText, raw: result };
       } catch (e: any) {
         lastError = e;
-        const errLower = e.message?.toLowerCase() || "";
-        console.warn(`[AI] Gemini(${modelName}) failed: ${errLower}`);
-        if (errLower.includes("not found") || errLower.includes("404") || errLower.includes("not supported") || errLower.includes("403")) continue;
-        if (errLower.includes("quota") || errLower.includes("429")) break; 
+        const errStr = e.message?.toLowerCase() || "";
+        console.warn(`[WiseFit AI] Gemini ${modelName} failed: ${errStr}`);
+        if (errStr.includes("not found") || errStr.includes("404") || errStr.includes("not supported")) continue;
+        if (errStr.includes("quota") || errStr.includes("429")) break; 
       }
     }
 
@@ -158,34 +158,34 @@ async function startServer() {
     const geminiModels = [
       "gemini-1.5-flash",
       "gemini-1.5-pro",
+      "gemini-2.0-flash-exp",
       "models/gemini-1.5-flash",
-      "models/gemini-1.5-pro",
-      "gemini-2.0-flash-exp"
+      "models/gemini-1.5-pro"
     ];
     const claudeModels = [
-      "claude-3-7-sonnet-20250219",
       "claude-3-5-sonnet-20241022",
-      "claude-3-5-haiku-20241022",
-      "claude-3-haiku-20240307"
+      "claude-3-5-sonnet-latest",
+      "claude-3-haiku-20240307",
+      "claude-3-opus-20240229"
     ];
     let lastError = null;
 
     for (const modelName of geminiModels) {
       try {
-        console.log(`[AI] Attempting GeminiMessages(${modelName})`);
+        console.log(`[WiseFit AI] Attempting GeminiMessages: ${modelName}`);
         const model = genAI.getGenerativeModel({
           model: modelName,
           generationConfig: config,
           systemInstruction
         }, { apiVersion: 'v1beta' });
         const result = await model.generateContent({ contents: messages });
-        const text = result.response.text();
-        if (text) return { text: () => text, raw: result };
+        const responseText = result.response.text();
+        if (responseText) return { text: () => responseText, raw: result };
       } catch (e: any) {
         lastError = e;
-        const errLower = e.message?.toLowerCase() || "";
-        console.warn(`[AI] GeminiMessages(${modelName}) failed: ${errLower}`);
-        if (errLower.includes("not found") || errLower.includes("404") || errLower.includes("not supported")) continue;
+        const errStr = e.message?.toLowerCase() || "";
+        console.warn(`[WiseFit AI] GeminiMessages ${modelName} failed: ${errStr}`);
+        if (errStr.includes("not found") || errStr.includes("404") || errStr.includes("not supported")) continue;
         break; 
       }
     }
