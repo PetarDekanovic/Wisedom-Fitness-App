@@ -64,28 +64,31 @@ const CLAUDE_MODELS = [
 ];
 
 async function startServer() {
-  console.log("[WiseFit] Initializing Server...");
+  console.log("[WiseFit] --- BOOTING SANCTUARY ---");
   const app = express();
   
-  // Use a port that works in all environments (Hostinger might override this)
   const PORT = Number(process.env.PORT) || 3000;
+  console.log(`[WiseFit] Port selected: ${PORT}`);
 
   app.use(cors());
   app.use(express.json());
+  console.log("[WiseFit] Core middlewares: CORS & JSON enabled.");
 
   // Log incoming requests for debugging production 404s
   app.use((req, res, next) => {
     if (req.path.startsWith('/api/')) {
-      console.log(`[API Request] ${req.method} ${req.path}`);
+      console.log(`[REQ] ${req.method} ${req.path} | IP: ${req.ip}`);
     }
     next();
   });
 
   // Health check - MUST BE FIRST
+  console.log("[WiseFit] Registering /api/health...");
   app.get("/api/health", (req, res) => {
     const distPath = path.resolve(process.cwd(), "dist");
-    res.json({ 
-      status: "ok", 
+    const health = { 
+      status: "online", 
+      message: "WiseFit AI Bridge is active",
       geminiKey: !!getGeminiKey(),
       anthropicKey: !!process.env.ANTHROPIC_API_KEY,
       nodeEnv: process.env.NODE_ENV,
@@ -95,7 +98,9 @@ async function startServer() {
       distPathExists: fs.existsSync(distPath),
       authorizedCount: AUTHORIZED_EMAILS.length,
       timestamp: new Date().toISOString()
-    });
+    };
+    console.log("[WiseFit] Health check requested.");
+    res.json(health);
   });
 
   // --- GEMINI AI ENDPOINTS ---

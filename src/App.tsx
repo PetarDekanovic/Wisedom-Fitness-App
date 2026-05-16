@@ -5906,12 +5906,12 @@ function AppContent() {
                     <div className={cn("p-3 rounded-2xl border", diagnostics.gemini.status === 'ok' ? "bg-emerald-500/10 border-emerald-500/20" : "bg-red-500/10 border-red-500/20")}>
                       <p className="text-[10px] uppercase font-bold opacity-50 mb-1">Gemini</p>
                       <p className="text-sm font-bold">{diagnostics.gemini.status === 'ok' ? 'Online' : 'Error'}</p>
-                      {diagnostics.gemini.error && <p className="text-[8px] opacity-40 mt-1 truncate">{diagnostics.gemini.error}</p>}
+                      {diagnostics.gemini.error && <p className="text-[8px] opacity-40 mt-1 leading-tight break-words">{diagnostics.gemini.error}</p>}
                     </div>
                     <div className={cn("p-3 rounded-2xl border", diagnostics.anthropic.status === 'ok' ? "bg-emerald-500/10 border-emerald-500/20" : "bg-amber-500/10 border-amber-500/20")}>
                       <p className="text-[10px] uppercase font-bold opacity-50 mb-1">Claude</p>
                       <p className="text-sm font-bold">{diagnostics.anthropic.status === 'ok' ? 'Online' : (diagnostics.anthropic.status === 'no_key' ? 'No Key' : 'Error')}</p>
-                      {diagnostics.anthropic.error && <p className="text-[8px] opacity-40 mt-1 truncate">{diagnostics.anthropic.error}</p>}
+                      {diagnostics.anthropic.error && <p className="text-[8px] opacity-40 mt-1 leading-tight break-words">{diagnostics.anthropic.error}</p>}
                     </div>
                   </div>
                 )}
