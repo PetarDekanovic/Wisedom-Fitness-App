@@ -91,8 +91,8 @@ async function startServer() {
     ];
     const claudeModels = [
       "claude-3-5-sonnet-20241022",
-      "claude-3-5-sonnet-latest",
-      "claude-3-haiku-20240307",
+      "claude-3-5-haiku-20241022",
+      "claude-3-7-sonnet-20250219",
       "claude-3-opus-20240229"
     ];
     
@@ -104,7 +104,11 @@ async function startServer() {
         console.log(`[WiseFit AI] Attempting Gemini: ${modelName}`);
         const model = genAI.getGenerativeModel({
           model: modelName,
-          generationConfig: config,
+          generationConfig: {
+            ...config,
+            // Ensure we don't send incompatible fields
+            candidateCount: undefined
+          },
           systemInstruction
         }, { apiVersion: 'v1beta' }); 
         const result = await model.generateContent(prompt);
@@ -114,8 +118,9 @@ async function startServer() {
         lastError = e;
         const errStr = e.message?.toLowerCase() || "";
         console.warn(`[WiseFit AI] Gemini ${modelName} failed: ${errStr}`);
-        if (errStr.includes("not found") || errStr.includes("404") || errStr.includes("not supported")) continue;
-        if (errStr.includes("quota") || errStr.includes("429")) break; 
+        // If it's a structural error (like unauthorized), we might want to continue, but if it's a quota, we hop to Claude
+        if (errStr.includes("not found") || errStr.includes("404") || errStr.includes("not supported") || errStr.includes("403")) continue;
+        if (errStr.includes("quota") || errStr.includes("429") || errStr.includes("limit")) break; 
       }
     }
 
@@ -124,7 +129,7 @@ async function startServer() {
     if (anthropic) {
       for (const modelName of claudeModels) {
         try {
-          console.log(`[AI] Attempting Claude(${modelName})`);
+          console.log(`[WiseFit AI] Attempting Claude: ${modelName}`);
           const msg = await anthropic.messages.create({
             model: modelName,
             max_tokens: config?.maxOutputTokens || 1024,
@@ -139,9 +144,10 @@ async function startServer() {
         } catch (e: any) {
           lastError = e;
           const errLower = e.message?.toLowerCase() || "";
-          console.warn(`[AI] Claude(${modelName}) failed: ${errLower}`);
+          console.warn(`[WiseFit AI] Claude ${modelName} failed: ${errLower}`);
           if (errLower.includes("not found") || errLower.includes("404")) continue;
-          continue;
+          if (errLower.includes("quota") || errLower.includes("429")) continue; // Try next Claude model if quota hit
+          break; 
         }
       }
     }
@@ -164,8 +170,8 @@ async function startServer() {
     ];
     const claudeModels = [
       "claude-3-5-sonnet-20241022",
-      "claude-3-5-sonnet-latest",
-      "claude-3-haiku-20240307",
+      "claude-3-5-haiku-20241022",
+      "claude-3-7-sonnet-20250219",
       "claude-3-opus-20240229"
     ];
     let lastError = null;
@@ -175,7 +181,10 @@ async function startServer() {
         console.log(`[WiseFit AI] Attempting GeminiMessages: ${modelName}`);
         const model = genAI.getGenerativeModel({
           model: modelName,
-          generationConfig: config,
+          generationConfig: {
+            ...config,
+            candidateCount: undefined
+          },
           systemInstruction
         }, { apiVersion: 'v1beta' });
         const result = await model.generateContent({ contents: messages });
@@ -284,16 +293,24 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
     const anthropic = getAnthropic();
     if (anthropic) {
-      try {
-        const msg = await anthropic.messages.create({
-          model: "claude-3-haiku-20240307",
-          max_tokens: 10,
-          messages: [{ role: "user", content: "ping" }]
-        });
-        results.anthropic.status = "ok";
-      } catch (e: any) {
-        results.anthropic.status = "error";
-        results.anthropic.error = e.message;
+      for (const modelName of claudeModels) {
+        try {
+          console.log(`[WiseFit AI] Attempting ClaudeMessages: ${modelName}`);
+          const msg = await anthropic.messages.create({
+            model: modelName,
+            max_tokens: config?.maxOutputTokens || 1024,
+            system: systemInstruction,
+            messages: [{ role: "user", content: "ping" }]
+          });
+          results.anthropic.status = "ok";
+          break; // Test passed
+        } catch (e: any) {
+          results.anthropic.status = "error";
+          results.anthropic.error = `${modelName}: ${e.message}`;
+          // Continue to next model if it's a 404
+          if (e.message?.includes("404") || e.message?.includes("not found")) continue;
+          break;
+        }
       }
     } else {
       results.anthropic.status = "no_key";
