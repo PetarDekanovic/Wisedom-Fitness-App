@@ -1274,6 +1274,8 @@ function AppContent() {
   const [historySubView, setHistorySubView] = useState<'journal' | 'plans' | 'articles'>('journal');
   const [articles, setArticles] = useState<Article[]>([]);
   const [isAddingArticle, setIsAddingArticle] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [articleTitle, setArticleTitle] = useState('');
   const [articleContent, setArticleContent] = useState('');
@@ -3354,6 +3356,19 @@ function AppContent() {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error('Login Error:', error);
+    }
+  };
+
+  const runDiagnostics = async () => {
+    setIsDiagnosing(true);
+    try {
+      const res = await fetch('/api/ai/diagnostics');
+      const data = await res.json();
+      setDiagnostics(data);
+    } catch (e) {
+      console.error('Diagnostics failed:', e);
+    } finally {
+      setIsDiagnosing(false);
     }
   };
 
@@ -5813,6 +5828,56 @@ function AppContent() {
                   </div>
                 </div>
               )}
+
+              {/* System Integrity & Diagnostics */}
+              <div className={cn(
+                "backdrop-blur-md border rounded-3xl p-6 space-y-4 transition-colors duration-500",
+                isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/60 border-zinc-200 shadow-sm"
+              )}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold">AI Bridge Diagnosis</h4>
+                    <p className="text-xs opacity-60">Verify fallback paths to Gemini and Claude.</p>
+                  </div>
+                  <button 
+                    onClick={runDiagnostics}
+                    disabled={isDiagnosing}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                      isDiagnosing ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95",
+                      isGirlyMode ? "bg-pink-500 text-white" : isDarkMode ? "bg-white text-zinc-950" : "bg-zinc-950 text-white"
+                    )}
+                  >
+                    <Activity className={cn("w-3 h-3", isDiagnosing && "animate-spin")} />
+                    {isDiagnosing ? "Analyzing..." : "Check System"}
+                  </button>
+                </div>
+
+                {diagnostics && (
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div className={cn("p-3 rounded-2xl border", diagnostics.gemini.status === 'ok' ? "bg-emerald-500/10 border-emerald-500/20" : "bg-red-500/10 border-red-500/20")}>
+                      <p className="text-[10px] uppercase font-bold opacity-50 mb-1">Gemini</p>
+                      <p className="text-sm font-bold">{diagnostics.gemini.status === 'ok' ? 'Online' : 'Error'}</p>
+                      {diagnostics.gemini.error && <p className="text-[8px] opacity-40 mt-1 truncate">{diagnostics.gemini.error}</p>}
+                    </div>
+                    <div className={cn("p-3 rounded-2xl border", diagnostics.anthropic.status === 'ok' ? "bg-emerald-500/10 border-emerald-500/20" : "bg-amber-500/10 border-amber-500/20")}>
+                      <p className="text-[10px] uppercase font-bold opacity-50 mb-1">Claude</p>
+                      <p className="text-sm font-bold">{diagnostics.anthropic.status === 'ok' ? 'Online' : (diagnostics.anthropic.status === 'no_key' ? 'No Key' : 'Error')}</p>
+                      {diagnostics.anthropic.error && <p className="text-[8px] opacity-40 mt-1 truncate">{diagnostics.anthropic.error}</p>}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-2 border-t border-zinc-500/10">
+                  <div className="flex items-center gap-3">
+                    <Database className={cn("w-4 h-4", isQuotaExceeded ? "text-red-500" : "text-emerald-500")} />
+                    <span className="text-xs font-bold">Firestore Engine</span>
+                  </div>
+                  <div className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", isQuotaExceeded ? "bg-red-500/20 text-red-500" : "bg-emerald-500/20 text-emerald-500")}>
+                    {isQuotaExceeded ? "Quota Limit" : "Stable"}
+                  </div>
+                </div>
+              </div>
 
               <button 
                 onClick={handleLogout}

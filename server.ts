@@ -81,34 +81,40 @@ async function startServer() {
   });
 
   const generateWithFallback = async (prompt: string, config?: any, systemInstruction?: string) => {
-    // Priority order for models - Using exact strings known to work in AI Studio
-    const geminiModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest"];
+    // Both bare and prefixed names for maximum compatibility
+    const geminiModels = [
+      "gemini-1.5-flash",
+      "gemini-1.5-pro",
+      "models/gemini-1.5-flash",
+      "models/gemini-1.5-pro",
+      "gemini-2.0-flash-exp"
+    ];
     const claudeModels = [
+      "claude-3-7-sonnet-20250219",
       "claude-3-5-sonnet-20241022",
-      "claude-3-5-sonnet-20240620",
-      "claude-3-opus-20240229",
+      "claude-3-5-haiku-20241022",
       "claude-3-haiku-20240307"
     ];
     
     let lastError = null;
 
-    // Try Gemini First (v1beta is most reliable for these model names in this environment)
+    // Try Gemini First - consistently use v1beta for model support
     for (const modelName of geminiModels) {
       try {
+        console.log(`[AI] Attempting Gemini(${modelName})`);
         const model = genAI.getGenerativeModel({
           model: modelName,
           generationConfig: config,
           systemInstruction
         }, { apiVersion: 'v1beta' }); 
         const result = await model.generateContent(prompt);
-        return { text: () => result.response.text(), raw: result };
+        const text = result.response.text();
+        if (text) return { text: () => text, raw: result };
       } catch (e: any) {
         lastError = e;
-        console.warn(`Gemini Model ${modelName} failed: ${e.message}`);
-        // If it's a 404 or "not found", continue to next model
         const errLower = e.message?.toLowerCase() || "";
-        if (errLower.includes("not found") || errLower.includes("404") || errLower.includes("not supported")) continue;
-        // If it's a quota issue, we might break and try Claude immediately
+        console.warn(`[AI] Gemini(${modelName}) failed: ${errLower}`);
+        if (errLower.includes("not found") || errLower.includes("404") || errLower.includes("not supported") || errLower.includes("403")) continue;
         if (errLower.includes("quota") || errLower.includes("429")) break; 
       }
     }
@@ -118,57 +124,67 @@ async function startServer() {
     if (anthropic) {
       for (const modelName of claudeModels) {
         try {
-          console.log(`Attempting Claude Fallback: ${modelName}`);
+          console.log(`[AI] Attempting Claude(${modelName})`);
           const msg = await anthropic.messages.create({
             model: modelName,
             max_tokens: config?.maxOutputTokens || 1024,
             system: systemInstruction,
             messages: [{ role: "user", content: prompt }],
-            temperature: config?.temperature || 1.0,
+            temperature: config?.temperature || 0.7,
           });
           const content = msg.content[0];
-          const text = content.type === 'text' ? content.text : '';
-          return { text: () => text, raw: msg };
+          if (content.type === 'text') {
+            return { text: () => content.text, raw: msg };
+          }
         } catch (e: any) {
           lastError = e;
-          console.warn(`Claude Model ${modelName} failed: ${e.message}`);
-          if (e.message?.toLowerCase().includes("not found") || e.message?.includes("404")) continue;
+          const errLower = e.message?.toLowerCase() || "";
+          console.warn(`[AI] Claude(${modelName}) failed: ${errLower}`);
+          if (errLower.includes("not found") || errLower.includes("404")) continue;
           continue;
         }
       }
     }
 
-    // ULTIMATE FAILSAFE: If all AI fails, provide a high-quality static reflection
-    console.error("CRITICAL: ALL AI MODELS FAILED. Using failsafe fallback.");
+    // FINAL FAILSAFE
+    console.error("CRITICAL: ALL AI MODELS EXHAUSTED. Returning synthetic wisdom.");
     return { 
-      text: () => "Nature does not hurry, yet everything is accomplished. Focus on your breath and your discipline; the wisdom you seek is already within you.", 
-      raw: { failsafe: true } 
+      text: () => "Choose to be great. Focus your effort on the things within your control. Even in technical storms, the spirit remains calm.", 
+      raw: { failsafe: true, error: lastError?.message || "Unknown Fail" } 
     };
   };
 
   const generateMessagesWithFallback = async (messages: any[], config?: any, systemInstruction?: string) => {
-    const geminiModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash-latest"];
+    const geminiModels = [
+      "gemini-1.5-flash",
+      "gemini-1.5-pro",
+      "models/gemini-1.5-flash",
+      "models/gemini-1.5-pro",
+      "gemini-2.0-flash-exp"
+    ];
     const claudeModels = [
+      "claude-3-7-sonnet-20250219",
       "claude-3-5-sonnet-20241022",
-      "claude-3-5-sonnet-20240620",
-      "claude-3-opus-20240229",
+      "claude-3-5-haiku-20241022",
       "claude-3-haiku-20240307"
     ];
     let lastError = null;
 
     for (const modelName of geminiModels) {
       try {
+        console.log(`[AI] Attempting GeminiMessages(${modelName})`);
         const model = genAI.getGenerativeModel({
           model: modelName,
           generationConfig: config,
           systemInstruction
         }, { apiVersion: 'v1beta' });
         const result = await model.generateContent({ contents: messages });
-        return { text: () => result.response.text(), raw: result };
+        const text = result.response.text();
+        if (text) return { text: () => text, raw: result };
       } catch (e: any) {
         lastError = e;
-        console.warn(`Gemini Model ${modelName} (Messages) failed: ${e.message}`);
         const errLower = e.message?.toLowerCase() || "";
+        console.warn(`[AI] GeminiMessages(${modelName}) failed: ${errLower}`);
         if (errLower.includes("not found") || errLower.includes("404") || errLower.includes("not supported")) continue;
         break; 
       }
@@ -177,38 +193,80 @@ async function startServer() {
     // Claude Messages Fallback
     const anthropic = getAnthropic();
     if (anthropic) {
-      // Convert Gemini messages format to Anthropic format
       const claudeMessages: any[] = messages.map(m => ({
-        role: m.role === 'model' ? 'assistant' : 'user',
+        role: m.role === 'model' || m.role === 'assistant' ? 'assistant' : 'user',
         content: m.parts[0].text
       }));
 
       for (const modelName of claudeModels) {
         try {
-          console.log(`Attempting Claude Messages Fallback: ${modelName}`);
+          console.log(`[AI] Attempting ClaudeMessages(${modelName})`);
           const msg = await anthropic.messages.create({
             model: modelName,
             max_tokens: config?.maxOutputTokens || 1024,
             system: systemInstruction,
             messages: claudeMessages,
+            temperature: config?.temperature || 0.7,
           });
           const content = msg.content[0];
-          const text = content.type === 'text' ? content.text : '';
-          return { text: () => text, raw: msg };
+          if (content.type === 'text') {
+            return { text: () => content.text, raw: msg };
+          }
         } catch (e: any) {
           lastError = e;
-          console.warn(`Claude Model ${modelName} (Messages) failed: ${e.message}`);
-          if (e.message?.toLowerCase().includes("not found") || e.message?.includes("404")) continue;
+          const errLower = e.message?.toLowerCase() || "";
+          console.warn(`[AI] ClaudeMessages(${modelName}) failed: ${errLower}`);
+          if (errLower.includes("not found") || errLower.includes("404")) continue;
           continue;
         }
       }
     }
 
     return { 
-      text: () => "I am currently reflecting on your words. Discipline and patience are the path to understanding.", 
-      raw: { failsafe: true } 
+      text: () => "I am currently centered in silence. Patience is the greatest strength. We shall speak when the path is clear.", 
+      raw: { failsafe: true, error: lastError?.message || "Unknown Fail" } 
     };
   };
+
+  app.get("/api/ai/diagnostics", async (req, res) => {
+    const results: any = {
+      gemini: { status: "pending", models: [] },
+      anthropic: { status: "pending", models: [] },
+      env: {
+        geminiKey: !!process.env.GEMINI_API_KEY,
+        anthropicKey: !!process.env.ANTHROPIC_API_KEY
+      }
+    };
+
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1beta' });
+      const test = await model.generateContent("ping");
+      results.gemini.status = "ok";
+      results.gemini.ping = "pong";
+    } catch (e: any) {
+      results.gemini.status = "error";
+      results.gemini.error = e.message;
+    }
+
+    const anthropic = getAnthropic();
+    if (anthropic) {
+      try {
+        const msg = await anthropic.messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 10,
+          messages: [{ role: "user", content: "ping" }]
+        });
+        results.anthropic.status = "ok";
+      } catch (e: any) {
+        results.anthropic.status = "error";
+        results.anthropic.error = e.message;
+      }
+    } else {
+      results.anthropic.status = "no_key";
+    }
+
+    res.json(results);
+  });
 
   app.post("/api/ai/tts", async (req, res) => {
     try {
