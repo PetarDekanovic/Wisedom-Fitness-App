@@ -3467,8 +3467,8 @@ function AppContent() {
       try {
         result = JSON.parse(text);
       } catch (e) {
-        console.error("Raw response from server (non-JSON):", text.substring(0, 500));
-        throw new Error(`The Stoic Chamber returned an invalid response (not JSON). Please check the server logs.`);
+        console.error("Parse Error. Body:", text);
+        throw new Error(`The Stoic Chamber returned an invalid response (Status ${resp.status}). This often happens if API keys are missing on your host. Check server logs.`);
       }
       
       if (!resp.ok) {
@@ -3519,7 +3519,7 @@ function AppContent() {
         result = JSON.parse(text);
       } catch (e) {
         console.error("Parse Error. Body:", text);
-        throw new Error(`The Psych Clinic returned a non-JSON response. Please check server logs.`);
+        throw new Error(`The Psych Clinic returned a non-JSON response (Status ${resp.status}). Please check Hostinger environmental variables.`);
       }
       
       if (!resp.ok) {

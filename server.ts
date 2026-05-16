@@ -96,6 +96,13 @@ async function startServer() {
   });
 
   const generateWithFallback = async (prompt: string, config?: any, systemInstruction?: string) => {
+    const geminiKey = getGeminiKey();
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+    if (!geminiKey && !anthropicKey) {
+      throw new Error("No AI API Keys configured. Please add GEMINI_API_KEY or ANTHROPIC_API_KEY to your Hostinger environment variables.");
+    }
+
     let lastError = null;
 
     // Try Gemini First - v1beta is often required for experimental/pre-release models
@@ -161,6 +168,13 @@ async function startServer() {
   };
 
   const generateMessagesWithFallback = async (messages: any[], config?: any, systemInstruction?: string) => {
+    const geminiKey = getGeminiKey();
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+    if (!geminiKey && !anthropicKey) {
+      throw new Error("No AI API Keys configured. Please add GEMINI_API_KEY or ANTHROPIC_API_KEY to your environment.");
+    }
+    
     let lastError = null;
 
     for (const modelName of GEMINI_MODELS) {
