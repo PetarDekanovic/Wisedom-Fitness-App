@@ -228,7 +228,41 @@ async function startServer() {
     };
   };
 
-  app.get("/api/ai/diagnostics", async (req, res) => {
+  // --- WISDOM CACHE ENGINE ---
+let globalQuotesCache: any[] = [];
+let lastCacheUpdate = 0;
+const CACHE_TTL = 1000 * 60 * 60 * 12; // 12 hours
+
+app.get("/api/wisdom/global", async (req, res) => {
+  try {
+    const now = Date.now();
+    // Use cache if fresh
+    if (globalQuotesCache.length > 0 && (now - lastCacheUpdate < CACHE_TTL)) {
+      return res.json({ data: globalQuotesCache, source: 'cache' });
+    }
+
+    // In a real production setup, we'd use the Firebase Admin SDK here.
+    // Since we are in the applet environment, we'll allow the client to request a seed, 
+    // but for this implementation, the server-side proxy will act as a primary source.
+    // If cache is empty, we'll return an empty array and let the first privileged client seed it.
+    res.json({ data: globalQuotesCache, source: 'server_memory' });
+  } catch (error) {
+    res.status(500).json({ error: "Cache failure" });
+  }
+});
+
+app.post("/api/wisdom/sync", express.json(), (req, res) => {
+  const { quotes, secret } = req.body;
+  // Simple guard: Only process if we don't have a huge cache already
+  if (globalQuotesCache.length < 50 && quotes && Array.isArray(quotes)) {
+    globalQuotesCache = quotes;
+    lastCacheUpdate = Date.now();
+    console.log(`[Cache] Synchronized ${quotes.length} quotes to server memory.`);
+  }
+  res.json({ status: "ok" });
+});
+
+app.get("/api/ai/diagnostics", async (req, res) => {
     const results: any = {
       gemini: { status: "pending", models: [] },
       anthropic: { status: "pending", models: [] },

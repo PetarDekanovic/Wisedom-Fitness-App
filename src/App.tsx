@@ -1859,8 +1859,22 @@ function AppContent() {
     isRefillingPoolRef.current = true;
     setIsRefillingPool(true);
 
+    const isAdmin = user && user.email && ADMIN_EMAILS.includes(user.email);
+
     try {
-      // GUEST PROTECTION: Special case for daily quotes where we allow fetching but skip saving
+      // 1. ATTEMPT SERVER-SIDE MEMORY CACHE (Zero Quota Cost)
+      if (wisdomTradition !== 'daily') {
+        const cacheRes = await fetch('/api/wisdom/global');
+        const cacheData = await cacheRes.json();
+        if (cacheData.data && cacheData.data.length > 5 && !force) {
+          console.log('[WiseFit Cache] Using server-side wisdom memory.');
+          setQuotesPool(cacheData.data);
+          quotesPoolRef.current = cacheData.data;
+          return cacheData.data;
+        }
+      }
+
+      // GUEST PROTECTION: Special case for daily quotes
       if (wisdomTradition === 'daily') {
         const response = await fetch('/api/daily-quotes');
         const quotes = await response.json();
@@ -1928,6 +1942,15 @@ function AppContent() {
       
       // Shuffle the new quotes locally
       const shuffled = [...newQuotes].sort(() => Math.random() - 0.5);
+      
+      // 3. SEED THE SERVER CACHE (Only Admin does this to save multi-writes)
+      if (isAdmin && shuffled.length > 10 && wisdomTradition === 'all') {
+        fetch('/api/wisdom/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quotes: shuffled })
+        }).catch(e => console.warn('Cache sync failed', e));
+      }
       
       setQuotesPool(prev => {
         const existingIds = new Set(prev.map(q => q.id));
@@ -3287,13 +3310,20 @@ function AppContent() {
     }
 
     // Listen to user profile
-    const unsubProfile = onSnapshot(doc(db, 'users', user.uid), (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
-        console.log('User profile updated via snapshot:', data.name, 'Marked quotes:', data.markedQuotes?.length || 0);
+    const unsubProfile = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        console.log('User profile synced from cloud.');
         setUserProfile({ ...INITIAL_PROFILE, ...data, markedQuotes: data.markedQuotes || [] } as UserProfile);
+        // Save to local disk as a "shield" against quota loss
+        localStorage.setItem(`wisefit_profile_${user.uid}`, JSON.stringify(data));
       }
-    }, (error) => handleFirestoreError(error, 'get', `users/${user.uid}`));
+    }, (error) => {
+      console.warn("Profile snapshot blocked. Falling back to disk cache.");
+      const cached = localStorage.getItem(`wisefit_profile_${user.uid}`);
+      if (cached) setUserProfile(JSON.parse(cached));
+      handleFirestoreError(error, 'get', `users/${user.uid}`);
+    });
 
     // Listen to workouts
     const qWorkouts = query(collection(db, 'workouts'), where('userId', '==', user.uid), orderBy('date', 'desc'));
