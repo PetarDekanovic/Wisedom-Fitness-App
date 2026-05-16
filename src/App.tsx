@@ -3391,12 +3391,30 @@ function AppContent() {
 
   const runDiagnostics = async () => {
     setIsDiagnosing(true);
+    setDiagnostics(null);
     try {
-      const res = await fetch('/api/ai/diagnostics');
-      const data = await res.json();
+      const resp = await fetch('/api/ai/diagnostics');
+      const contentType = resp.headers.get("content-type");
+      
+      if (!resp.ok) {
+        throw new Error(`Server Error (Status ${resp.status})`);
+      }
+      
+      if (!contentType || !contentType.includes("application/json")) {
+        const bodyText = await resp.text();
+        console.error("Non-JSON Response during diagnosis:", bodyText.substring(0, 200));
+        throw new Error(`Invalid response from AI Bridge. Check Hostinger logs.`);
+      }
+
+      const data = await resp.json();
       setDiagnostics(data);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Diagnostics failed:', e);
+      setDiagnostics({
+        gemini: { status: 'error', error: e.message },
+        anthropic: { status: 'error', error: 'Bridge Offline' },
+        env: { geminiKey: false, anthropicKey: false }
+      });
     } finally {
       setIsDiagnosing(false);
     }

@@ -48,7 +48,7 @@ function isAuthorized(email: string | undefined) {
   return AUTHORIZED_EMAILS.includes(email.toLowerCase());
 }
 
-// Priority order for models - Using standard IDs and models/ prefix fallback
+// Priority order for models - Claude IDs updated to May 2026 lifecycle
 const GEMINI_MODELS = [
   "gemini-1.5-flash",
   "gemini-1.5-pro",
@@ -64,24 +64,37 @@ const CLAUDE_MODELS = [
 ];
 
 async function startServer() {
+  console.log("[WiseFit] Initializing Server...");
   const app = express();
+  
+  // Use a port that works in all environments (Hostinger might override this)
   const PORT = Number(process.env.PORT) || 3000;
 
   app.use(cors());
   app.use(express.json());
 
-  // Health check
+  // Log incoming requests for debugging production 404s
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      console.log(`[API Request] ${req.method} ${req.path}`);
+    }
+    next();
+  });
+
+  // Health check - MUST BE FIRST
   app.get("/api/health", (req, res) => {
     const distPath = path.resolve(process.cwd(), "dist");
     res.json({ 
       status: "ok", 
       geminiKey: !!getGeminiKey(),
+      anthropicKey: !!process.env.ANTHROPIC_API_KEY,
       nodeEnv: process.env.NODE_ENV,
       port: PORT,
-      isProduction: process.env.NODE_ENV === "production",
+      isProduction: process.env.NODE_ENV === "production" || fs.existsSync(distPath),
       cwd: process.cwd(),
       distPathExists: fs.existsSync(distPath),
-      authorizedCount: AUTHORIZED_EMAILS.length
+      authorizedCount: AUTHORIZED_EMAILS.length,
+      timestamp: new Date().toISOString()
     });
   });
 
@@ -592,28 +605,34 @@ app.get("/api/ai/diagnostics", async (req, res) => {
   });
 
   // --- STATIC SERVING ---
-  const isProd = process.env.NODE_ENV === "production";
+  const distPath = path.resolve(process.cwd(), "dist");
+  const isProd = process.env.NODE_ENV === "production" || fs.existsSync(distPath);
   
   if (isProd) {
-    const distPath = path.resolve(process.cwd(), "dist");
+    console.log(`[WiseFit] Production Mode: Serving static files from ${distPath}`);
     app.use(express.static(distPath));
     
+    // SPA Fallback for all non-API paths
     app.get("*", (req, res, next) => {
       if (req.path.startsWith('/api/')) return next();
       res.sendFile(path.join(distPath, "index.html"), (err) => {
-        if (err) res.status(404).send("Stoic sanctuary artifact not found.");
+        if (err) {
+          console.error(`[SPA Error] Failed to send index.html: ${err.message}`);
+          res.status(404).send("WiseFit Sanctuary: Static artifact missing. Please check build logs.");
+        }
       });
     });
   } else {
+    console.log("[WiseFit] Development Mode: Initializing Vite Middleware...");
     try {
-      const { createServer } = await import("vite");
-      const vite = await createServer({
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: "spa",
       });
       app.use(vite.middlewares);
-    } catch (e) {
-      console.error("Vite failed to load:", e);
+    } catch (e: any) {
+      console.error("[Vite Error] Failed to load middleware:", e.message);
     }
   }
 
