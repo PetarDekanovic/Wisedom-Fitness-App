@@ -1486,6 +1486,7 @@ function AppContent() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [psychMessages, setPsychMessages] = useState<ChatMessage[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
 
   const [currentQuote, setCurrentQuote] = useState<Quote>({
     text: "The happiness of your life depends upon the quality of your thoughts.",
@@ -6202,6 +6203,43 @@ function AppContent() {
                         : (isDarkMode ? "bg-zinc-800 text-zinc-100 rounded-bl-none" : "bg-zinc-100 text-zinc-900 rounded-bl-none")
                     )}>
                       {msg.parts[0].text}
+                      
+                      {msg.role === 'model' && (
+                        <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleSpeak(msg.parts[0].text, `psych-${idx}`)}
+                            className={cn(
+                              "p-1.5 rounded-lg transition-colors",
+                              isDarkMode ? "hover:bg-zinc-700 text-zinc-400 hover:text-blue-400" : "hover:bg-zinc-200 text-zinc-500 hover:text-blue-500"
+                            )}
+                            title="Listen to response"
+                          >
+                            {isSpeaking === `psych-${idx}` ? (
+                              <VolumeX className="w-4 h-4 animate-pulse" />
+                            ) : (
+                              <Volume2 className="w-4 h-4" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(msg.parts[0].text);
+                              setCopiedIndex(idx);
+                              setTimeout(() => setCopiedIndex(null), 2000);
+                            }}
+                            className={cn(
+                              "p-1.5 rounded-lg transition-colors",
+                              isDarkMode ? "hover:bg-zinc-700 text-zinc-400 hover:text-emerald-400" : "hover:bg-zinc-200 text-zinc-500 hover:text-emerald-500"
+                            )}
+                            title="Copy to clipboard"
+                          >
+                            {copiedIndex === idx ? (
+                              <Check className="w-4 h-4" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

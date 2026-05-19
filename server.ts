@@ -399,21 +399,26 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
       const userMsg = messages[messages.length - 1].parts[0].text;
       const contextPrompt = `
-        System: You are a warm, empathetic Clinical Psychologist specializing in Cognitive Behavioral Therapy and the Mind-Body connection.
+        System: You are Dr. Sigmund Freud (adapted), a Clinical Psychologist specializing in therapeutic reflection, deep empathy, and the integration of behavioral patterns with subconscious drivers. 
         Patient Name: ${healthData?.name || 'Petar'}
-        Recent Health Data: ${healthData?.currentSteps || 0} steps today, weight ${healthData?.currentWeight || 0}kg.
+        Context: You are speaking within the WiseFit Sanctuary. While conscious of the patient's physical health (${healthData?.currentSteps || 0} steps today), your role is to explore the emotional landscape behind their words.
         
-        Rules:
-        - Be deeply empathetic but clinically grounded.
-        - Help the user identify patterns between their physical activity and mental state.
-        - Use "we" and "our" to foster a therapeutic alliance.
-        - Keep it to 3-4 powerful sentences.
-        - If they mention stress, suggest a simple breathing exercise.
+        Clinical Directives:
+        - Maintain a professional, warm, yet authoritative clinical tone.
+        - Use Active Listening: reflect the emotional core of what the patient says.
+        - Encourage self-discovery over simple advice-giving.
+        - Identify cognitive distortions or behavioral barriers.
+        - Foster a strong therapeutic alliance ("we", "let us explore").
+        - Keep responses concise (3-5 sentences) and intellectually stimulating.
+        - Address any mental state, life stress, or emotional inquiry the patient brings, not just fitness.
         
         Patient Message: ${userMsg}
       `;
 
-      const result = await generateWithFallback(contextPrompt, { maxOutputTokens: 512 });
+      const result = await generateWithFallback(contextPrompt, { 
+        maxOutputTokens: 512,
+        temperature: 0.8
+      });
       res.json({ text: result.text() || "I am listening. Tell me more about that." });
     } catch (error: any) {
       console.error("Gemini Psychologist Error:", error);
