@@ -1486,7 +1486,6 @@ function AppContent() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [psychMessages, setPsychMessages] = useState<ChatMessage[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
 
   const [currentQuote, setCurrentQuote] = useState<Quote>({
     text: "The happiness of your life depends upon the quality of your thoughts.",
@@ -6148,7 +6147,7 @@ function AppContent() {
                   />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">AI Psychologist</h2>
+                  <h2 className="text-2xl font-bold">Dr. Sigmund Freud</h2>
                   <p className="text-xs font-bold uppercase tracking-widest text-blue-500 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                     Dr. Freud | Clinical Empathy
