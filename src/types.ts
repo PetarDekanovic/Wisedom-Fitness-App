@@ -85,6 +85,7 @@ export interface Article {
   isAI?: boolean;
   reads?: number;
   shares?: number;
+  url?: string;
 }
 
 export interface UserProfile {

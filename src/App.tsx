@@ -1231,6 +1231,19 @@ function ArticleCard({
         </div>
       </div>
 
+      {article.url && (
+        <div className="relative rounded-[2rem] overflow-hidden border border-zinc-500/10 bg-black aspect-video mb-4 shadow-xl">
+          <video 
+            src={`${article.url}#t=0.001`}
+            autoPlay
+            controls
+            playsInline
+            muted={false}
+            className="w-full h-full object-contain"
+          />
+        </div>
+      )}
+
       <div className={cn(
         "markdown-body text-sm leading-relaxed prose prose-sm max-w-none",
         isDarkMode ? "text-zinc-300 prose-invert" : "text-zinc-700"
@@ -1280,6 +1293,7 @@ function AppContent() {
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [articleTitle, setArticleTitle] = useState('');
   const [articleContent, setArticleContent] = useState('');
+  const [articleUrl, setArticleUrl] = useState('');
   const [user, setUser] = useState<FirebaseUser | null>(null);
 
   useEffect(() => {
@@ -1344,11 +1358,13 @@ function AppContent() {
           await updateDoc(doc(db, 'articles', snapshot.docs[0].id), {
             title: articleTitle,
             content: articleContent,
+            url: articleUrl,
           });
         }
-        setArticles(prev => prev.map(a => a.id === editingArticle.id ? { ...a, title: articleTitle, content: articleContent } : a));
+        setArticles(prev => prev.map(a => a.id === editingArticle.id ? { ...a, title: articleTitle, content: articleContent, url: articleUrl } : a));
         setArticleTitle('');
         setArticleContent('');
+        setArticleUrl('');
         setEditingArticle(null);
       } catch (e) {
         console.error("Error updating article:", e);
@@ -1360,6 +1376,7 @@ function AppContent() {
         userId: user.uid,
         title: articleTitle,
         content: articleContent,
+        url: articleUrl,
         date: new Date().toISOString(),
         isAI: false,
         reads: 0,
@@ -1371,6 +1388,7 @@ function AppContent() {
         setArticles(prev => [newArticle, ...prev]);
         setArticleTitle('');
         setArticleContent('');
+        setArticleUrl('');
         setIsAddingArticle(false);
       } catch (e) {
         console.error("Error adding article:", e);
@@ -1382,6 +1400,7 @@ function AppContent() {
     setEditingArticle(article);
     setArticleTitle(article.title);
     setArticleContent(article.content);
+    setArticleUrl(article.url || '');
   };
 
   const deleteArticle = async (id: string) => {
@@ -7295,6 +7314,7 @@ function AppContent() {
                       setEditingArticle(null);
                       setArticleTitle('');
                       setArticleContent('');
+                      setArticleUrl('');
                     }} 
                     className={isDarkMode ? "text-zinc-500" : "text-zinc-400"}
                   >
@@ -7315,6 +7335,23 @@ function AppContent() {
                       placeholder="e.g. The Strategic Path to HRV Mastery"
                       className={cn(
                         "w-full border rounded-xl px-4 py-3 text-lg font-bold focus:outline-none focus:border-emerald-500 transition-all",
+                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                      )}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={cn(
+                      "text-xs font-bold uppercase mb-1 block transition-colors",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>Video URL (Optional .mp4)</label>
+                    <input 
+                      type="text" 
+                      value={articleUrl}
+                      onChange={(e) => setArticleUrl(e.target.value)}
+                      placeholder="e.g. https://compcharity.org/wp-content/uploads/video.mp4"
+                      className={cn(
+                        "w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-all font-mono",
                         isDarkMode ? "bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900"
                       )}
                     />
