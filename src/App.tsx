@@ -2470,7 +2470,7 @@ function AppContent() {
         const seedStatusRef = doc(db, 'system_metadata', 'seeding_status');
         const seedStatusDoc = await getDoc(seedStatusRef);
         const seededVersion = seedStatusDoc.exists() ? seedStatusDoc.data().version : 0;
-        const CURRENT_VERSION = 8;
+        const CURRENT_VERSION = 9;
 
         if (seededVersion >= CURRENT_VERSION) {
           return;
@@ -2515,6 +2515,21 @@ function AppContent() {
               console.log(`Seeded psychology insights ${i + batch.length}/${PSYCHOLOGY_QUOTES.length}`);
             }
           }
+        }
+
+        // 3. Seed Custom User-Requested Quotes (v9)
+        if (seededVersion < 9) {
+          console.log('Upgrading quotes to v9 (Adding specialized user-requested quotes)...');
+          const quotesRef = collection(db, 'quotes');
+          const newSpecialQuotes = INITIAL_QUOTES.slice(-53);
+          for (const q of newSpecialQuotes) {
+            const qQuery = query(quotesRef, where("text", "==", q.text));
+            const existing = await getDocs(qQuery);
+            if (existing.empty) {
+              await addDoc(quotesRef, { ...q, randomId: Math.random() });
+            }
+          }
+          console.log('Seeded new user-requested quotes to firestore.');
         }
         
         // Update version to prevent re-running this logic
