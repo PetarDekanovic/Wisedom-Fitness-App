@@ -6233,35 +6233,35 @@ function AppContent() {
                       "max-w-[80%] p-4 rounded-2xl text-sm relative group",
                       msg.role === 'user' 
                         ? "bg-blue-600 text-white font-medium rounded-br-none" 
-                        : (isDarkMode ? "bg-zinc-800 text-zinc-100 rounded-bl-none" : "bg-zinc-100 text-zinc-900 rounded-bl-none")
+                        : (isDarkMode ? "bg-zinc-800 text-zinc-100 rounded-bl-none pr-24" : "bg-zinc-100 text-zinc-900 rounded-bl-none pr-24")
                     )}>
                       {msg.parts[0].text}
                       
                       {msg.role === 'model' && (
-                        <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute top-2 right-2 flex items-center gap-1.5 matches-main-theme">
                           <button
                             onClick={() => handleSpeak(msg.parts[0].text, `psych-${idx}`)}
                             className={cn(
-                              "p-1.5 rounded-lg transition-colors",
-                              isDarkMode ? "hover:bg-zinc-700 text-zinc-400 hover:text-blue-400" : "hover:bg-zinc-200 text-zinc-500 hover:text-blue-500"
+                              "p-2 rounded-xl transition-all shadow-sm",
+                              isSpeaking === `psych-${idx}` 
+                                ? "bg-blue-500 text-white" 
+                                : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300")
                             )}
-                            title="Listen to response"
+                            title="Listen"
                           >
                             {isSpeaking === `psych-${idx}` ? (
-                              <VolumeX className="w-4 h-4 animate-pulse" />
+                              <VolumeX className="w-4 h-4 animate-pulse text-white" />
                             ) : (
                               <Volume2 className="w-4 h-4" />
                             )}
                           </button>
                           <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(msg.parts[0].text);
-                              setCopiedIndex(idx);
-                              setTimeout(() => setCopiedIndex(null), 2000);
-                            }}
+                            onClick={() => handleCopy(msg.parts[0].text, idx)}
                             className={cn(
-                              "p-1.5 rounded-lg transition-colors",
-                              isDarkMode ? "hover:bg-zinc-700 text-zinc-400 hover:text-emerald-400" : "hover:bg-zinc-200 text-zinc-500 hover:text-emerald-500"
+                              "p-2 rounded-xl transition-all shadow-sm",
+                              copiedIndex === idx 
+                                ? "bg-blue-500 text-white" 
+                                : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300")
                             )}
                             title="Copy to clipboard"
                           >
