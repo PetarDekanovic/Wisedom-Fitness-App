@@ -1296,6 +1296,46 @@ function AppContent() {
   const [articleUrl, setArticleUrl] = useState('');
   const [user, setUser] = useState<FirebaseUser | null>(null);
 
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isPwaInstalled, setIsPwaInstalled] = useState<boolean>(false);
+  const [showAndroidInstallGuide, setShowAndroidInstallGuide] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleBeforePrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforePrompt);
+
+    // Initial check for standalone mode
+    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
+      setIsPwaInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforePrompt);
+    };
+  }, []);
+
+  const handleInstallPwa = async () => {
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setIsPwaInstalled(true);
+          setDeferredPrompt(null);
+        }
+      } catch (err) {
+        console.error("PWA prompt error:", err);
+        setShowAndroidInstallGuide(true);
+      }
+    } else {
+      setShowAndroidInstallGuide(true);
+    }
+  };
+
   useEffect(() => {
     let q: any;
     if (user && !isQuotaExceeded) {
@@ -5710,6 +5750,69 @@ function AppContent() {
                 </p>
               </div>
 
+              {/* PWA / Android Download Section */}
+              <div className="space-y-4">
+                <h3 className={cn(
+                  "text-sm font-bold uppercase tracking-widest px-2 transition-colors",
+                  isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                )}>Native System Path</h3>
+
+                <div className={cn(
+                  "p-6 rounded-3xl border transition-all relative overflow-hidden",
+                  isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+                )}>
+                  {/* Decorative faint background phone icon */}
+                  <div className="absolute top-0 right-0 p-4 opacity-[0.03] select-none pointer-events-none">
+                    <Smartphone className="w-48 h-48 rotate-12" />
+                  </div>
+
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                    <div className="space-y-2 max-w-md">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                          <Smartphone className="w-4 h-4 text-emerald-500" />
+                        </div>
+                        <h4 className="font-bold text-base">WiseFit for Android</h4>
+                      </div>
+                      <p className={cn(
+                        "text-xs leading-relaxed",
+                        isDarkMode ? "text-zinc-400" : "text-zinc-500"
+                      )}>
+                        Run WiseFit directly on your Android device as a standalone application. Access premium biometric sync with optimized frame latency, system haptics, and pure distraction-free immersive space.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-2 w-full md:w-auto">
+                      {isPwaInstalled ? (
+                        <div className="flex items-center gap-2 bg-emerald-500/10 px-4 py-3 rounded-2xl border border-emerald-500/20 justify-center">
+                          <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                          <span className="text-xs font-black uppercase tracking-widest text-emerald-500">System Installed</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleInstallPwa}
+                          className="px-6 py-3.5 rounded-2xl bg-emerald-500 text-zinc-950 font-black italic tracking-tighter shadow-lg shadow-emerald-500/10 active:scale-95 transition-transform flex items-center justify-center gap-2 uppercase text-xs"
+                        >
+                          <Smartphone className="w-4 h-4" /> Install WiseFit App
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => setShowAndroidInstallGuide(true)}
+                        className={cn(
+                          "px-4 py-2.5 rounded-xl border text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 uppercase tracking-wider",
+                          isDarkMode 
+                            ? "border-zinc-800 hover:border-zinc-700 bg-zinc-800/25 text-zinc-400 hover:text-white" 
+                            : "border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-500 hover:text-zinc-800"
+                        )}
+                      >
+                        Installation Manual
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Membership Pricing Section */}
               <div className="space-y-4">
                 <h3 className={cn(
@@ -7273,6 +7376,111 @@ function AppContent() {
                     <p>Library Quotes: {libraryQuotes.length}</p>
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Android Installation Guide Modal */}
+      <AnimatePresence>
+        {showAndroidInstallGuide && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className={cn(
+                "w-full max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden border transition-all duration-500 shadow-2xl",
+                isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"
+              )}
+            >
+              <div className="p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="w-5 h-5 text-emerald-500" />
+                    <h3 className={cn("text-lg font-bold uppercase tracking-tight", isDarkMode ? "text-white" : "text-zinc-900")}>
+                      Android Install Guide
+                    </h3>
+                  </div>
+                  <button 
+                    onClick={() => setShowAndroidInstallGuide(false)} 
+                    className={cn(
+                      "p-1.5 rounded-lg transition-colors",
+                      isDarkMode ? "text-zinc-500 hover:text-white hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100"
+                    )}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <p className={cn("text-xs leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                    To launch WiseFit instantly from your launcher and secure full-screen biometric feedback, follow this high-performance layout alignment:
+                  </p>
+
+                  <div className="space-y-3">
+                    {/* Step 1 */}
+                    <div className={cn(
+                      "flex items-start gap-3 p-4 rounded-2xl border",
+                      isDarkMode ? "bg-zinc-800/20 border-zinc-800/60" : "bg-zinc-50 border-zinc-200"
+                    )}>
+                      <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xs font-black italic">
+                        01
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold uppercase tracking-wide">Open Chrome Options</p>
+                        <p className={cn("text-[11px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                          Open <strong className="text-emerald-500 font-bold">Google Chrome</strong> on Android, look at the top-right corner of the address bar, and tap the Menu icon (<strong className="font-mono font-bold">⋮</strong>).
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className={cn(
+                      "flex items-start gap-3 p-4 rounded-2xl border",
+                      isDarkMode ? "bg-zinc-800/20 border-zinc-800/60" : "bg-zinc-50 border-zinc-200"
+                    )}>
+                      <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xs font-black italic">
+                        02
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold uppercase tracking-wide">Select Install Option</p>
+                        <p className={cn("text-[11px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                          Scroll through the menu options list and tap on <strong className="text-emerald-500 font-bold">"Install app"</strong> or <strong className="text-emerald-500 font-bold">"Add to Home screen"</strong>.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className={cn(
+                      "flex items-start gap-3 p-4 rounded-2xl border",
+                      isDarkMode ? "bg-zinc-800/20 border-zinc-800/60" : "bg-zinc-50 border-zinc-200"
+                    )}>
+                      <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xs font-black italic">
+                        03
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold uppercase tracking-wide">Initiate Pure Sanctuary</p>
+                        <p className={cn("text-[11px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                          Tap <strong className="text-emerald-500 font-bold">Add</strong> on the native confirmation tile. Open the app from your drawer to enjoy a distraction-free philosophy experience.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setShowAndroidInstallGuide(false)}
+                  className="w-full py-3.5 bg-emerald-500 text-zinc-950 rounded-2xl font-black italic uppercase tracking-tighter text-xs active:scale-95 transition-transform shadow-lg shadow-emerald-500/20"
+                >
+                  I Understand
+                </button>
               </div>
             </motion.div>
           </motion.div>
