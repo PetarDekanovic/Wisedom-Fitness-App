@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#09090b"/>
+  <!-- Centered emblem scaled to 70% for safe outer mask zone -->
+  <g transform="translate(15, 15) scale(0.7)">
+    <path d="M20 75 Q50 90 80 75 Q90 35 50 15 Q10 35 20 75" fill="#064e3b"/>
+    <circle cx="35" cy="45" r="11" fill="white"/>
+    <circle cx="65" cy="45" r="11" fill="white"/>
+    <circle cx="35" cy="45" r="4.5" fill="#064e3b"/>
+    <circle cx="65" cy="45" r="4.5" fill="#064e3b"/>
+    <path d="M46 55 L54 55 L50 65 Z" fill="#fbbf24"/>
+    <path d="M50 10 Q54 18 50 26 Q46 18 50 10" fill="#f59e0b"/>
+    <path d="M25 30 L15 15 L35 25" fill="#064e3b"/>
+    <path d="M75 30 L85 15 L65 25" fill="#064e3b"/>
+  </g>
+</svg>
