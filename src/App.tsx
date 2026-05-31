@@ -132,6 +132,7 @@ import { QuizView } from './components/QuizView';
 import { HistoryFeed } from './components/HistoryFeed';
 import { INITIAL_HISTORY_VIDEOS } from './data/historyVideos';
 import { YOGA_FLOWS } from './data/yogaFlows';
+import { SocialSanctuary } from './components/SocialSanctuary';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -599,7 +600,7 @@ const MOCK_WORKOUTS: Workout[] = [
   }
 ];
 
-type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library' | 'yoga' | 'quiz' | 'psychologist';
+type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library' | 'yoga' | 'quiz' | 'psychologist' | 'social';
 
 // Video Utils
 const extractYoutubeId = (url: string) => {
@@ -7005,6 +7006,22 @@ function AppContent() {
           )}
         </motion.div>
           )}
+
+          {activeView === 'social' && (
+            <motion.div
+              key="social"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <SocialSanctuary 
+                isDarkMode={isDarkMode} 
+                isGirlyMode={isGirlyMode} 
+                currentUser={user} 
+                userProfile={userProfile} 
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -7077,6 +7094,20 @@ function AppContent() {
             onClick={() => setActiveView('library')}
             icon={<BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />}
             label="Ref"
+            isDarkMode={isDarkMode}
+            isGirlyMode={isGirlyMode}
+          />
+          <NavButton 
+            active={activeView === 'social'} 
+            onClick={() => {
+              if (user) {
+                setActiveView('social');
+              } else {
+                setActiveView('profile'); // Send guests to login first so they don't break database boundaries
+              }
+            }}
+            icon={<Globe className="w-5 h-5 sm:w-6 sm:h-6" />}
+            label="Swarm"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
           />

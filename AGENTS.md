@@ -43,6 +43,13 @@ Each morning, the app computes a **Daily Operating Mode** based on HRV, Sleep, a
 - **Capacitor Hardening:** Polished PWA install flow and native push notifications.
 - **Wear OS / watchOS Native Apps:** Complications showing "Operating Mode" + Haptic "Wisdom Prompts" when high stress is detected.
 
+### D. The Social Sanctuary & Moderated Swarm (Option C Pivot)
+Fusing a community layer into the sanctuary. Instead of standard noise, we deploy a peer-to-peer scholarly commons:
+- **Public Feed & Biography Walls:** Logged-in users share wisdom, reflections, YouTube science breakdowns, or custom motivational media.
+- **Strict Peer Moderation:** To retain high signals, all user posts require manual approval by Petar (with a dedicated Admin Moderation Queue).
+- **Future AI-Grade Gatekeeper:** In the next phase, a Gemini-powered endpoint will analyze drafted posts using Custom Embeddings, automatically evaluating if their "educational or intellectual quotient" exceeds a strict threshold required for public auto-approval.
+- **Direct P2P Encrypted Channels:** Safe, quiet peer messaging channels for seekers to organize, discuss workouts, or share intellectual breakthroughs privately.
+
 ---
 
 ## 4. Growth & Regional Moat
@@ -66,7 +73,7 @@ Each morning, the app computes a **Daily Operating Mode** based on HRV, Sleep, a
 ---
 
 ## 6. Things to Cut/Avoid
-- **No Social Feeds:** Avoid the noise of a "Social Fitness Network." Keep it individual and focused.
+- **No Mindless Social Scroll (No Social Slop):** Avoid empty, unmoderated feeds, dopamine-seeking "likes" loops, or low-intellect chatter. All posts must be approved by Petar (with the future AI-based education gatekeeper) to ensure every contribution feels like custom, high-signal literature.
 - **No Corny Gamification:** Drop terms like "Real Wise Guy." Stick to Seeker → Student → Scholar → Sage.
 - **No Chatty AI:** AI Stoic must be terse (max 4 sentences), declarative, and source-cited. No "Petar, my friend" openers.
 

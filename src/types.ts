@@ -200,3 +200,43 @@ export interface VideoHistoryItem {
   title: string;
   category: 'History' | 'Stoicism' | 'Philosophy' | 'Training';
 }
+
+export interface PublicProfile {
+  uid: string;
+  name: string;
+  avatarUrl?: string;
+  biography?: string;
+  updatedAt?: any; // Server timestamp or string
+}
+
+export interface CommunityPost {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  mediaType: 'none' | 'image' | 'youtube' | 'tiktok';
+  mediaUrl?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: any; // Server timestamp or string
+  likes?: string[]; // array of UIDs
+}
+
+export interface Conversation {
+  id: string;
+  participants: string[];
+  participantNames: string[];
+  participantAvatars?: string[];
+  lastMessage?: string;
+  lastMessageAt?: any;
+}
+
+export interface DMMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  createdAt: any;
+}
+

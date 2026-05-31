@@ -152,12 +152,87 @@
         "category": { "type": "string", "enum": ["psychology"] }
       },
       "required": ["text", "author", "source", "randomId", "category"]
+    },
+    "PublicProfile": {
+      "title": "PublicProfile",
+      "description": "Public user biography and avatar safely isolated from private data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "biography": { "type": "string", "description": "Long form human biography" },
+        "updatedAt": { "type": "string", "description": "Server timestamp of update" }
+      },
+      "required": ["uid", "name"]
+    },
+    "CommunityPost": {
+      "title": "CommunityPost",
+      "description": "A public post in the community feed that requires Petar's approval",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userAvatar": { "type": "string" },
+        "content": { "type": "string" },
+        "mediaType": { "type": "string", "enum": ["none", "image", "youtube", "tiktok"] },
+        "mediaUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string" },
+        "likes": { "type": "array", "items": { "type": "string" }, "description": "UIDs of users who liked this post" }
+      },
+      "required": ["id", "userId", "content", "status", "createdAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "A direct message exchange thread between exactly two users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Usually sorted_uid1_uid2 for secure matching" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "participantNames": { "type": "array", "items": { "type": "string" } },
+        "participantAvatars": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "lastMessageAt": { "type": "string" }
+      },
+      "required": ["id", "participants", "participantNames"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A direct message within a conversation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "conversationId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "conversationId", "senderId", "senderName", "text", "createdAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User profile collection"
+    },
+    "/public_profiles/{userId}": {
+      "schema": "PublicProfile",
+      "description": "Isolated public profiles and bios"
+    },
+    "/social_posts/{postId}": {
+      "schema": "CommunityPost",
+      "description": "Community posts with approval lifecycle"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Direct message head nodes"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages subcollection"
     },
     "/articles/{articleId}": {
       "schema": "Article",
