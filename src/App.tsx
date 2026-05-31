@@ -3881,7 +3881,10 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 pb-24 px-4 pt-6 max-w-md mx-auto">
+      <main className={cn(
+        "relative z-10 pb-24 px-4 pt-6 mx-auto",
+        activeView === 'social' ? "max-w-4xl" : "max-w-md"
+      )}>
         {isQuotaExceeded && !isQuotaDismissed && (
           <motion.div 
             initial={{ opacity: 0, y: -10 }}

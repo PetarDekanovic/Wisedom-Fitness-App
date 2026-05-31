@@ -837,7 +837,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         
         {/* TAB A: SCHOLARLY FEED */}
         {activeTab === 'feed' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 align-start">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
             
             {/* Main feed feed - Column 2 span */}
             <div className="md:col-span-2 space-y-6">
