@@ -207,6 +207,19 @@ export interface PublicProfile {
   avatarUrl?: string;
   biography?: string;
   updatedAt?: any; // Server timestamp or string
+  isOnline?: boolean;
+  lastActive?: string;
+  friends?: string[];
+}
+
+export interface FriendRequest {
+  id: string; // "senderId_receiverId"
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
+  receiverId: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
 }
 
 export interface CommunityPost {

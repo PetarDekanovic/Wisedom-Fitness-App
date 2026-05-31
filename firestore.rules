@@ -114,7 +114,21 @@ service cloud.firestore {
              data.uid == request.auth.uid &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              (!('biography' in data) || (data.biography is string && data.biography.size() < 2000)) &&
-             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() < 1000));
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() < 1000)) &&
+             (!('isOnline' in data) || (data.isOnline is bool)) &&
+             (!('lastActive' in data) || (data.lastActive is string)) &&
+             (!('friends' in data) || (data.friends is list && data.friends.size() <= 1000));
+    }
+
+    function isValidFriendRequest(data) {
+      return data.keys().hasAll(['id', 'senderId', 'senderName', 'receiverId', 'status', 'createdAt']) &&
+             data.id is string && data.id.size() < 150 &&
+             data.senderId == request.auth.uid &&
+             data.senderName is string && data.senderName.size() < 100 &&
+             (!('senderAvatar' in data) || (data.senderAvatar is string && data.senderAvatar.size() < 1000)) &&
+             data.receiverId is string && data.receiverId.size() < 100 &&
+             data.status in ['pending', 'accepted', 'rejected'] &&
+             data.createdAt is string;
     }
 
     function isValidCommunityPost(data) {
@@ -149,6 +163,18 @@ service cloud.firestore {
     match /public_profiles/{userId} {
       allow read: if isAuthenticated();
       allow create, update: if isOwner(userId) && isValidPublicProfile(request.resource.data);
+    }
+
+    match /friend_requests/{requestId} {
+      allow read: if isAuthenticated() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidFriendRequest(request.resource.data);
+      allow update: if isAuthenticated() && (
+        (resource.data.receiverId == request.auth.uid && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) && 
+         request.resource.data.status in ['accepted', 'rejected']) ||
+        (resource.data.senderId == request.auth.uid && isValidFriendRequest(request.resource.data))
+      );
+      allow delete: if isAuthenticated() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid || isAdmin());
     }
 
     match /social_posts/{postId} {
