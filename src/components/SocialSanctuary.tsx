@@ -42,7 +42,8 @@ import {
   UserCheck,
   UserPlus,
   UserX,
-  Clock
+  Clock,
+  ChevronLeft
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
@@ -1193,7 +1194,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             {/* Conversation list pane */}
             <div className={cn(
               "p-4 rounded-3xl border flex flex-col h-full",
-              isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+              isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm",
+              activeChat ? "hidden md:flex" : "flex"
             )}>
               <h3 className="text-xs font-black uppercase tracking-wider mb-3 px-1 text-zinc-400">Conversations</h3>
               <div className="flex-1 overflow-y-auto space-y-2 pr-1">
@@ -1258,7 +1260,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             </div>
 
             {/* Selected Active Chat terminal */}
-            <div className="md:col-span-2 flex flex-col h-full">
+            <div className={cn(
+              "md:col-span-2 flex flex-col h-full",
+              activeChat ? "flex" : "hidden md:flex"
+            )}>
               {activeChat ? (
                 <div className={cn(
                   "p-4 rounded-3xl border flex flex-col h-full relative overflow-hidden",
@@ -1274,6 +1279,14 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         const online = otherPeer ? isPeerOnline(otherPeer) : false;
                         return (
                           <>
+                            <button
+                              type="button"
+                              onClick={() => setActiveChat(null)}
+                              className="md:hidden p-1 mr-1 rounded-xl bg-zinc-850 border border-zinc-800 hover:bg-zinc-800 text-emerald-500 transition-colors"
+                              title="Back to conversation list"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
                             <div className={cn(
                               "w-2.5 h-2.5 rounded-full select-none",
                               online ? "bg-emerald-500 animate-pulse" : "bg-zinc-650"
