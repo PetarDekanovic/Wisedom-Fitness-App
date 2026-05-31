@@ -94,7 +94,14 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [thisPublicProfile, setThisPublicProfile] = useState<PublicProfile | null>(null);
   const [isSettingUpProfile, setIsSettingUpProfile] = useState(false);
   const [setupBiography, setSetupBiography] = useState('');
-  const [setupName, setSetupName] = useState(userProfile.name || '');
+  const [setupName, setSetupName] = useState(userProfile?.name || '');
+
+  // Sync setup name when profile loads
+  useEffect(() => {
+    if (userProfile?.name && !setupName) {
+      setSetupName(userProfile.name);
+    }
+  }, [userProfile]);
 
   // Feed states
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -238,8 +245,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     try {
       const profileData: PublicProfile = {
         uid: currentUser.uid,
-        name: setupName || userProfile.name || 'Anonymous Seeker',
-        avatarUrl: userProfile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        name: setupName || userProfile?.name || 'Anonymous Seeker',
+        avatarUrl: userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
         biography: setupBiography,
         updatedAt: new Date().toISOString()
       };
@@ -411,8 +418,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       const draftPost: CommunityPost = {
         id: postDocRef.id,
         userId: currentUser.uid,
-        userName: thisPublicProfile?.name || userProfile.name || 'Seeker',
-        userAvatar: thisPublicProfile?.avatarUrl || userProfile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        userName: thisPublicProfile?.name || userProfile?.name || 'Seeker',
+        userAvatar: thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
         content: newPostContent,
         mediaType: newPostMediaType,
         mediaUrl: newPostMediaUrl.trim() || undefined,
@@ -458,13 +465,14 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   // Action: Friend Request Operations
   const handleSendFriendRequest = async (peer: PublicProfile) => {
     if (!currentUser) return;
-    const requestId = `${currentUser.uid}_${peer.uid}`;
+    const sortedIds = [currentUser.uid, peer.uid].sort();
+    const requestId = `${sortedIds[0]}_${sortedIds[1]}`;
     try {
       await setDoc(doc(db, 'friend_requests', requestId), {
         id: requestId,
         senderId: currentUser.uid,
-        senderName: thisPublicProfile?.name || userProfile.name || 'Seeker',
-        senderAvatar: thisPublicProfile?.avatarUrl || userProfile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        senderName: thisPublicProfile?.name || userProfile?.name || 'Seeker',
+        senderAvatar: thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
         receiverId: peer.uid,
         status: 'pending',
         createdAt: new Date().toISOString()
@@ -535,12 +543,12 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         id: convoId,
         participants: sortedIds,
         participantNames: [
-          currentUser.uid === sortedIds[0] ? (thisPublicProfile?.name || userProfile.name) : peerProfile.name,
-          currentUser.uid === sortedIds[1] ? (thisPublicProfile?.name || userProfile.name) : peerProfile.name
+          currentUser.uid === sortedIds[0] ? (thisPublicProfile?.name || userProfile?.name || 'Anonymous Seeker') : peerProfile.name,
+          currentUser.uid === sortedIds[1] ? (thisPublicProfile?.name || userProfile?.name || 'Anonymous Seeker') : peerProfile.name
         ],
         participantAvatars: [
-          currentUser.uid === sortedIds[0] ? (thisPublicProfile?.avatarUrl || userProfile.avatarUrl) : peerProfile.avatarUrl,
-          currentUser.uid === sortedIds[1] ? (thisPublicProfile?.avatarUrl || userProfile.avatarUrl) : peerProfile.avatarUrl
+          currentUser.uid === sortedIds[0] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : peerProfile.avatarUrl,
+          currentUser.uid === sortedIds[1] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : peerProfile.avatarUrl
         ]
       };
 
@@ -569,7 +577,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         id: msgRef.id,
         conversationId: activeChat.id,
         senderId: currentUser.uid,
-        senderName: thisPublicProfile?.name || userProfile.name || 'Seeker',
+        senderName: thisPublicProfile?.name || userProfile?.name || 'Seeker',
         text: newMessageText,
         createdAt: new Date().toISOString()
       };
@@ -788,7 +796,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           <button 
             onClick={() => {
               setSetupBiography(thisPublicProfile?.biography || '');
-              setSetupName(thisPublicProfile?.name || userProfile.name || '');
+              setSetupName(thisPublicProfile?.name || userProfile?.name || '');
               setIsSettingUpProfile(true);
             }}
             className={cn(
@@ -850,7 +858,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
               )}>
                 <div className="flex items-start gap-3">
                   <img 
-                    src={thisPublicProfile?.avatarUrl || userProfile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
+                    src={thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
                     className="w-8 h-8 rounded-full object-cover border border-zinc-500/10"
                     alt="avatar"
                     referrerPolicy="no-referrer"
