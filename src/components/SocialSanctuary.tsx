@@ -44,7 +44,9 @@ import {
   UserX,
   Clock,
   ChevronLeft,
-  Check
+  Check,
+  Paperclip,
+  Smile
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
@@ -137,6 +139,199 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
   // Check if current logged in is admin
   const isAdmin = currentUser?.email === 'petar.dekanovic@gmail.com' || userProfile?.role === 'admin';
+
+  // File attachments and upload state
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEngageModal: boolean) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Limit 50MB
+    const MAX_SIZE_MB = 50;
+    const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+    
+    if (file.size > MAX_SIZE_BYTES) {
+      const errMsg = `File exceeds the safe ${MAX_SIZE_MB}MB sanctuary limit.`;
+      if (isEngageModal) setEngageError(errMsg);
+      else alert(errMsg);
+      return;
+    }
+
+    setIsUploadingFile(true);
+    if (isEngageModal) setEngageError(null);
+
+    try {
+      const reader = new FileReader();
+      const fileLoadedPromise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (err) => reject(err);
+      });
+      
+      reader.readAsDataURL(file);
+      const base64Data = await fileLoadedPromise;
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filename: file.name,
+          fileType: file.type,
+          base64Data
+        })
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Server rejected attachment upload.');
+      }
+
+      const uploadResult = await response.json();
+      
+      const attachmentLabel = `[Attachment: ${file.name}](${uploadResult.url})`;
+      if (isEngageModal) {
+        setEngageMessage(prev => prev ? `${prev}\n${attachmentLabel}` : attachmentLabel);
+      } else {
+        setNewMessageText(prev => prev ? `${prev} ${attachmentLabel}` : attachmentLabel);
+      }
+    } catch (uploadErr: any) {
+      console.error('File upload error:', uploadErr);
+      const errMsg = uploadErr?.message || 'Sanctuary channels rejected upload. Try a smaller file.';
+      if (isEngageModal) setEngageError(errMsg);
+      else alert(errMsg);
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  const renderMessageTextWithAttachments = (text: string, isMine: boolean) => {
+    if (!text) return null;
+
+    const regex = /\[Attachment:\s*(.*?)\]\((.*?)\)/gi;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    const mediaMatches: { filename: string; url: string }[] = [];
+
+    while ((match = regex.exec(text)) !== null) {
+      const start = match.index;
+      const end = regex.lastIndex;
+      
+      if (start > lastIndex) {
+        parts.push(text.substring(lastIndex, start));
+      }
+      
+      const filename = match[1];
+      const url = match[2];
+      mediaMatches.push({ filename, url });
+
+      lastIndex = end;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    const remainsText = parts.length > 0 ? parts.join("") : text;
+
+    return (
+      <div className="space-y-2">
+        {remainsText.trim() && (
+          <p className="whitespace-pre-wrap font-handwritten text-lg leading-relaxed pt-0.5 select-text">
+            {remainsText}
+          </p>
+        )}
+        {mediaMatches.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-zinc-500/10 mt-2">
+            {mediaMatches.map((m, i) => {
+              const isImage = /\.(jpe?g|png|gif|webp|svg)/i.test(m.url);
+              const isVideo = /\.(mp4|webm|mov|ogg)/i.test(m.url);
+              const isPdf = /\.pdf/i.test(m.url);
+
+              return (
+                <div key={i} className="rounded-xl overflow-hidden bg-black/10 border border-zinc-550/15 p-2 text-left">
+                  {isImage && (
+                    <div className="space-y-1.5">
+                      <img 
+                        src={m.url} 
+                        alt="attachment" 
+                        className="max-h-56 w-full object-cover rounded-lg border border-white/5" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <a 
+                        href={m.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-[9px] underline font-mono tracking-tight block hover:text-emerald-400 opacity-85"
+                      >
+                        {m.filename}
+                      </a>
+                    </div>
+                  )}
+                  {isVideo && (
+                    <div className="space-y-1.5">
+                      <video 
+                        src={m.url} 
+                        controls 
+                        className="w-full max-h-56 rounded-lg object-contain bg-black" 
+                      />
+                      <a 
+                        href={m.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-[9px] underline font-mono tracking-tight block hover:text-emerald-400 opacity-85"
+                      >
+                        {m.filename}
+                      </a>
+                    </div>
+                  )}
+                  {isPdf && (
+                    <div className="flex items-center justify-between gap-2.5 bg-black/20 p-2 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-rose-400 shrink-0" />
+                        <div className="text-left">
+                          <p className="text-[10px] font-bold truncate max-w-[130px] leading-tight text-zinc-100">{m.filename}</p>
+                          <p className="text-[8px] text-zinc-500 font-mono">PDF Document</p>
+                        </div>
+                      </div>
+                      <a 
+                        href={m.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white rounded-lg text-[8px] uppercase tracking-wider font-bold shrink-0 border border-zinc-700"
+                      >
+                        View
+                      </a>
+                    </div>
+                  )}
+                  {!isImage && !isVideo && !isPdf && (
+                    <div className="flex items-center justify-between gap-2 bg-black/20 p-2 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Paperclip className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <div className="text-left">
+                          <p className="text-[10px] font-bold truncate max-w-[130px] leading-tight text-zinc-100">{m.filename}</p>
+                          <p className="text-[8px] text-zinc-500 font-mono">Payload File</p>
+                        </div>
+                      </div>
+                      <a 
+                        href={m.url} 
+                        download 
+                        className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 rounded-lg text-[8px] uppercase tracking-wider font-bold shrink-0"
+                      >
+                        Download
+                      </a>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Friend requests database sync state
   const [friendRequests, setFriendRequests] = useState<any[]>([]);
@@ -874,7 +1069,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+            className="fixed inset-0 z-[75] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
           >
             <motion.div 
               initial={{ scale: 0.95 }}
@@ -969,13 +1164,56 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         onChange={(e) => setEngageMessage(e.target.value)}
                         rows={4}
                         required
-                        disabled={isSendingEngage}
+                        disabled={isSendingEngage || isUploadingFile}
                         className={cn(
-                          "w-full px-4 py-3 text-xs rounded-xl border font-medium focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-sans",
-                          isDarkMode ? "bg-zinc-800/50 border-zinc-700/50 text-white placeholder-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
+                          "w-full px-4 py-3 text-lg rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-handwritten",
+                          isDarkMode ? "bg-zinc-800/50 border-zinc-700/50 text-white placeholder-zinc-550" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
                         )}
                         placeholder="Establish clarity, speak with discipline, and build intellectual/biometric alignment..."
                       />
+                    </div>
+
+                    {/* Emojis selection & file uploads row bar */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                      <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar">
+                        {['🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => setEngageMessage(prev => prev + emoji)}
+                            className={cn(
+                              "w-7 h-7 flex items-center justify-center text-sm rounded-lg border transition-all active:scale-95 shrink-0",
+                              isDarkMode 
+                                ? "bg-zinc-850 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 text-zinc-300" 
+                                : "bg-zinc-50 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300 text-zinc-700"
+                            )}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                         <label className={cn(
+                          "w-7 h-7 flex items-center justify-center rounded-lg border cursor-pointer transition-all hover:bg-emerald-500/10 active:scale-95 shrink-0",
+                          isUploadingFile ? "animate-pulse" : "",
+                          isDarkMode 
+                            ? "bg-zinc-850 border-zinc-800 text-zinc-400 hover:text-emerald-400" 
+                            : "bg-zinc-50 border-zinc-200 text-zinc-505 hover:text-emerald-600"
+                        )}>
+                          <Paperclip className="w-3.5 h-3.5" />
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            disabled={isUploadingFile || isSendingEngage} 
+                            onChange={(e) => handleFileUpload(e, true)} 
+                            accept="image/*,video/mp4,application/pdf"
+                          />
+                        </label>
+                        {isUploadingFile && (
+                          <span className="text-[9px] font-mono text-emerald-500 animate-pulse">Uploading...</span>
+                        )}
+                      </div>
                     </div>
 
                     {engageError && (
@@ -987,10 +1225,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     <div className="flex gap-2 pt-2">
                       <button 
                         type="submit"
-                        disabled={isSendingEngage || !engageMessage.trim()}
+                        disabled={isSendingEngage || !engageMessage.trim() || isUploadingFile}
                         className={cn(
                           "flex-1 py-3 bg-emerald-500 text-zinc-950 rounded-2xl font-black italic uppercase tracking-tighter text-xs active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20",
-                          (isSendingEngage || !engageMessage.trim()) && "opacity-55 pointer-events-none"
+                          (isSendingEngage || !engageMessage.trim() || isUploadingFile) && "opacity-55 pointer-events-none"
                         )}
                       >
                         {isSendingEngage ? "Transmitting..." : "Transmit Dialogue"} <Send className="w-3.5 h-3.5" />
@@ -1593,7 +1831,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                   : "self-start bg-zinc-55 border-zinc-200 text-zinc-900 rounded-tl-none"
                             )}
                           >
-                            <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                            {renderMessageTextWithAttachments(msg.text, isMine)}
                             <span className={cn(
                               "text-[8px] self-end mt-1 select-none opacity-60 font-mono",
                               isMine ? "text-zinc-950" : isDarkMode ? "text-zinc-500" : "text-zinc-500"
@@ -1607,6 +1845,49 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     <div ref={chatBottomRef} />
                   </div>
 
+                  {/* Emoji selection & file uploads row bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
+                    <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar">
+                      {['🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setNewMessageText(prev => prev + emoji)}
+                          className={cn(
+                            "w-7 h-7 flex items-center justify-center text-sm rounded-lg border transition-all active:scale-95 shrink-0",
+                            isDarkMode 
+                              ? "bg-zinc-850 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 text-zinc-300" 
+                              : "bg-zinc-50 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300 text-zinc-700"
+                          )}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                       <label className={cn(
+                        "w-7 h-7 flex items-center justify-center rounded-lg border cursor-pointer transition-all hover:bg-emerald-500/10 active:scale-95 shrink-0",
+                        isUploadingFile ? "animate-pulse" : "",
+                        isDarkMode 
+                          ? "bg-zinc-850 border-zinc-800 text-zinc-400 hover:text-emerald-400" 
+                          : "bg-zinc-50 border-zinc-200 text-zinc-505 hover:text-emerald-600"
+                      )}>
+                        <Paperclip className="w-3.5 h-3.5" />
+                        <input 
+                          type="file" 
+                          className="hidden" 
+                          disabled={isUploadingFile} 
+                          onChange={(e) => handleFileUpload(e, false)} 
+                          accept="image/*,video/mp4,application/pdf"
+                        />
+                      </label>
+                      {isUploadingFile && (
+                        <span className="text-[9px] font-mono text-emerald-500 animate-pulse">Uploading...</span>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Input sending bottom form */}
                   <form onSubmit={handleSendDMMessage} className="flex gap-2 shrink-0">
                     <input 
@@ -1615,16 +1896,16 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       onChange={(e) => setNewMessageText(e.target.value)}
                       placeholder="Transcribe peaceful thoughts or structured critiques..."
                       className={cn(
-                        "flex-1 px-4 py-3 text-xs rounded-xl border font-medium focus:ring-1 focus:ring-emerald-500 outline-none",
+                        "flex-1 px-4 py-3 text-lg rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none font-handwritten",
                         isDarkMode ? "bg-zinc-850 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
                       )}
                     />
                     <button 
                       type="submit" 
-                      disabled={!newMessageText.trim()}
+                      disabled={!newMessageText.trim() || isUploadingFile}
                       className={cn(
                         "p-3 rounded-xl bg-emerald-500 text-zinc-950 active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-emerald-500/10",
-                        !newMessageText.trim() && "opacity-50 pointer-events-none"
+                        (!newMessageText.trim() || isUploadingFile) && "opacity-50 pointer-events-none"
                       )}
                     >
                       <Send className="w-4 h-4" />

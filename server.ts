@@ -71,8 +71,19 @@ async function startServer() {
   console.log(`[WiseFit] Port selected: ${PORT}`);
 
   app.use(cors());
-  app.use(express.json());
-  console.log("[WiseFit] Core middlewares: CORS & JSON enabled.");
+  app.use(express.json({ limit: "65mb" }));
+  app.use(express.urlencoded({ limit: "65mb", extended: true }));
+  console.log("[WiseFit] Core middlewares: CORS, JSON (65mb) & URLencoded (65mb) enabled.");
+
+  // Ensure uploads directory exists
+  const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    console.log(`[WiseFit] Created uploads directory: ${UPLOADS_DIR}`);
+  }
+  
+  // Serve uploads statically
+  app.use("/uploads", express.static(UPLOADS_DIR));
 
   // Log incoming requests for debugging production 404s
   app.use((req, res, next) => {
@@ -80,6 +91,41 @@ async function startServer() {
       console.log(`[REQ] ${req.method} ${req.path} | IP: ${req.ip}`);
     }
     next();
+  });
+
+  // Safe High-Capacity File Upload API
+  app.post("/api/upload", (req, res) => {
+    try {
+      const { filename, fileType, base64Data } = req.body;
+      if (!filename || !base64Data) {
+        return res.status(400).json({ error: "Missing filename or base64Data." });
+      }
+
+      // Clean base64 prefix if present (e.g., data:image/png;base64,...)
+      const cleanBase64 = base64Data.replace(/^data:.*?;base64,/, "");
+      const buffer = Buffer.from(cleanBase64, 'base64');
+
+      // Reject files larger than 55MB to protect disk and memory space
+      const MAX_SIZE = 55 * 1024 * 1024; 
+      if (buffer.length > MAX_SIZE) {
+        return res.status(400).json({ error: "File size exceeds the 55MB sanctuary limit." });
+      }
+
+      // Create secure, sanitized unique file name
+      const ext = path.extname(filename);
+      const base = path.basename(filename, ext).replace(/[^a-zA-Z0-9]/g, '_');
+      const uniqueFilename = `${base}_${Date.now()}${ext}`;
+      const destinationPath = path.join(UPLOADS_DIR, uniqueFilename);
+
+      console.log(`[WiseFit] Writing uploaded attachment: ${uniqueFilename} (${buffer.length} bytes)`);
+      fs.writeFileSync(destinationPath, buffer);
+
+      const relativeUrl = `/uploads/${uniqueFilename}`;
+      res.json({ url: relativeUrl, filename: uniqueFilename, fileType });
+    } catch (uploadErrString: any) {
+      console.error("[WiseFit] File upload failure:", uploadErrString);
+      res.status(500).json({ error: "Attachment processing crashed. Retain smaller file size." });
+    }
   });
 
   // Health check - MUST BE FIRST

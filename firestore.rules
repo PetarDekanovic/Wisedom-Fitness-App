@@ -207,10 +207,14 @@ service cloud.firestore {
 
     match /conversations/{conversationId}/messages/{messageId} {
       allow read: if isAuthenticated() && 
-                  request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+                  (conversationId.matches(".*" + request.auth.uid + ".*") || 
+                   (exists(/databases/$(database)/documents/conversations/$(conversationId)) && 
+                    request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants));
       allow create: if isAuthenticated() && 
                     request.auth.uid == request.resource.data.senderId &&
-                    request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+                    (conversationId.matches(".*" + request.auth.uid + ".*") || 
+                     (exists(/databases/$(database)/documents/conversations/$(conversationId)) && 
+                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants));
       allow delete: if isAdmin();
     }
 
