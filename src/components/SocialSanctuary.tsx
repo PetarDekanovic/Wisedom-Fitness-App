@@ -169,7 +169,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [dummyTypingState, setDummyTypingState] = useState<string | null>(null);
 
   // Peers directory
-  const [peers, setPeers] = useState<PublicProfile[]>([]);
+  const [peers, setPeers] = useState<PublicProfile[]>(() => DUMMY_SCHOLARS.filter(d => d.uid !== currentUser?.uid));
   const [peerSearchQuery, setPeerSearchQuery] = useState('');
   const [selectedPeerWall, setSelectedPeerWall] = useState<PublicProfile | null>(null);
   const [peerWallPosts, setPeerWallPosts] = useState<CommunityPost[]>([]);
@@ -568,7 +568,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
   // 4. Fetch Public peers directory
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setPeers(DUMMY_SCHOLARS);
+      return;
+    }
 
     const profilesRef = collection(db, 'public_profiles');
     const unsub = onSnapshot(profilesRef, (snap) => {
@@ -589,7 +592,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
       setPeers(fetched);
     }, (err) => {
-      handleFirestoreError(err, OperationType.LIST, 'public_profiles');
+      console.warn("Firestore public_profiles list error, falling back to dummy accounts:", err);
+      // Keep dummy scholars on list error so they are always interactive!
+      setPeers(DUMMY_SCHOLARS.filter(d => d.uid !== currentUser.uid));
     });
 
     return () => unsub();
