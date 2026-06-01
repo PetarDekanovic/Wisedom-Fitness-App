@@ -140,6 +140,11 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   // Check if current logged in is admin
   const isAdmin = currentUser?.email === 'petar.dekanovic@gmail.com' || userProfile?.role === 'admin';
 
+  // Dummy provisioning states for message system validation
+  const [isProvisioningDummy, setIsProvisioningDummy] = useState(false);
+  const [provisionSuccess, setProvisionSuccess] = useState(false);
+  const [provisionError, setProvisionError] = useState<string | null>(null);
+
   // File attachments and upload state
   const [isUploadingFile, setIsUploadingFile] = useState(false);
 
@@ -946,7 +951,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     if (!p.lastActive) return false;
     const lastActiveTime = new Date(p.lastActive).getTime();
     const now = Date.now();
-    return now - lastActiveTime < 120000; // Active within last 2 minutes
+    // Support diverse system clocks with a robust 15-minute window and Math.abs
+    return Math.abs(now - lastActiveTime) < 15 * 60 * 1000;
   };
 
   const getFriendRelation = (peerUid: string) => {
@@ -2257,6 +2263,102 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                 ))}
               </div>
             )}
+
+            {/* Test Seekers Provisioner Card */}
+            <div className={cn(
+              "p-6 rounded-3xl border space-y-4 mt-6",
+              isDarkMode ? "bg-zinc-950 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+            )}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-emerald-500">Test Seekers Provisioner</h4>
+                  <p className={cn("text-[10px] mt-0.5", isDarkMode ? "text-zinc-400" : "text-zinc-550")}>
+                    Instantly deploy historical stoic scholars as active peers for dialog, messaging, and clinical connection testing.
+                  </p>
+                </div>
+                <Users className="w-5 h-5 text-emerald-500 shrink-0" />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsProvisioningDummy(true);
+                    setProvisionError(null);
+                    setProvisionSuccess(false);
+
+                    try {
+                      const dummyUsers = [
+                        {
+                          uid: 'dummy_marcus_aurelius',
+                          name: 'Marcus Aurelius',
+                          avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+                          biography: 'Emperor of Rome. Author of Meditations. Focuses on stoic temperance, deep morning journaling, and body callisthenics.',
+                          isOnline: true,
+                          lastActive: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                          friends: []
+                        },
+                        {
+                          uid: 'dummy_seneca_younger',
+                          name: 'Lucius Seneca',
+                          avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
+                          biography: 'Imperial Advisor and playwright. Writing dialogues on tranquility and mental equilibrium under load.',
+                          isOnline: true,
+                          lastActive: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                          friends: []
+                        },
+                        {
+                          uid: 'dummy_epictetus',
+                          name: 'Epictetus',
+                          avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300',
+                          biography: 'Born a slave, died a master. Teaching that we suffer not from events, but from our judgment of them.',
+                          isOnline: true,
+                          lastActive: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                          friends: []
+                        },
+                        {
+                          uid: 'dummy_hypatia_alex',
+                          name: 'Hypatia',
+                          avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
+                          biography: 'Neoplatonist philosopher, leading astronomer and mathematician. Seeking physical hygiene and structural clarity.',
+                          isOnline: true,
+                          lastActive: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                          friends: []
+                        }
+                      ];
+
+                      for (const u of dummyUsers) {
+                        await setDoc(doc(db, 'public_profiles', u.uid), u);
+                      }
+                      setProvisionSuccess(true);
+                    } catch (err: any) {
+                      setProvisionError(err.message || 'Failed to seed dummy seekers');
+                    } finally {
+                      setIsProvisioningDummy(false);
+                    }
+                  }}
+                  disabled={isProvisioningDummy}
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-zinc-950 text-xs font-black uppercase tracking-tight active:scale-95 transition-transform disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-emerald-500/10 cursor-pointer"
+                >
+                  {isProvisioningDummy ? "Provisioning..." : "Provision 4 Stoic Seekers"}
+                </button>
+              </div>
+
+              {provisionSuccess && (
+                <p className="text-[10px] font-bold text-emerald-400 bg-emerald-500/5 border border-emerald-500/10 px-3 py-2 rounded-xl">
+                  Seekers seeded successfully! Epictetus, Marcus Aurelius, Lucius Seneca, and Hypatia are now active inside the Seeker Swarm.
+                </p>
+              )}
+              {provisionError && (
+                <p className="text-[10px] font-bold text-rose-500 bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-xl">
+                  {provisionError}
+                </p>
+              )}
+            </div>
           </div>
         )}
 

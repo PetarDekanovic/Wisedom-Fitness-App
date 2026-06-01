@@ -3359,6 +3359,11 @@ function AppContent() {
     const userDocRef = doc(db, 'users', firebaseUser.uid);
     const userDoc = await getDoc(userDocRef);
     
+    // Auto-register public profile during login to ensure instant dashboard visibility across all seekers
+    const publicProfileRef = doc(db, 'public_profiles', firebaseUser.uid);
+    let profileName = firebaseUser.displayName || 'Seeker';
+    let profileAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+
     if (!userDoc.exists()) {
       const newProfile: UserProfile = {
         ...INITIAL_PROFILE,
@@ -3372,8 +3377,32 @@ function AppContent() {
       setUserProfile(newProfile);
     } else {
       const data = userDoc.data();
+      if (data.name) profileName = data.name;
+      if (data.avatarUrl) profileAvatar = data.avatarUrl;
       console.log('Loaded existing user profile for:', firebaseUser.uid, 'Marked quotes:', data.markedQuotes?.length || 0);
       setUserProfile({ ...INITIAL_PROFILE, ...data, markedQuotes: data.markedQuotes || [] } as UserProfile);
+    }
+
+    try {
+      const publicSnap = await getDoc(publicProfileRef);
+      if (!publicSnap.exists()) {
+        await setDoc(publicProfileRef, {
+          uid: firebaseUser.uid,
+          name: profileName,
+          avatarUrl: profileAvatar,
+          biography: 'Seeking intellectual and physical discipline.',
+          isOnline: true,
+          lastActive: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      } else {
+        await updateDoc(publicProfileRef, {
+          isOnline: true,
+          lastActive: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      console.warn('Auto-register of public profile skipped or limited:', err);
     }
   };
 
