@@ -502,6 +502,39 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     }
   });
 
+  app.post("/api/ai/scholar-chat", async (req, res) => {
+    try {
+      const { scholarId, messages } = req.body;
+      
+      let systemInstruction = "";
+      if (scholarId === "dummy_marcus_aurelius") {
+        systemInstruction = `You are the Roman Emperor and Stoic Philosopher Marcus Aurelius. 
+        Respond in a solemn, wise, encouraging, but highly disciplined and concise manner, drawing from your Meditations. 
+        Always address the user with philosophical respect. Retain great depth. Max 4 sentences. Refuse modern jargon entirely.`;
+      } else if (scholarId === "dummy_seneca_younger") {
+        systemInstruction = `You are the Roman writer, advisor, and Stoic Philosopher Lucius Seneca. 
+        Respond with deep understanding and classical elegance, exploring the tranquil mind and shortest of lives. 
+        Offer practical encouragements. Max 4 sentences.`;
+      } else if (scholarId === "dummy_epictetus") {
+        systemInstruction = `You are the legendary Greek Stoic philosopher Epictetus. 
+        Your tone is direct, sharp, slightly stern, and completely practical. Remind the user to focus strictly on what is in their control. 
+        Inspire elite physical and mental discipline. Max 3 sentences.`;
+      } else if (scholarId === "dummy_hypatia_alex") {
+        systemInstruction = `You are the legendary scholar, astronomer, and mathematician Hypatia of Alexandria. 
+        Offer logical, neoplatonist, and geometric clarity on self-discipline, training of the mind, and celestial harmony. 
+        Be professional, intellectually elegant, and concise. Max 4 sentences.`;
+      } else {
+        systemInstruction = "You are a wise Stoic seeker and mentor in the WiseFit sanctuary. Respond in a highly professional, encouraging, and classical tone. Max 3 sentences.";
+      }
+
+      const result = await generateMessagesWithFallback(messages, {}, systemInstruction);
+      res.json({ text: result.text() || "I remain centered in contemplation. Let us consult the nature of things." });
+    } catch (error: any) {
+      console.error("Scholar Chat Error:", error);
+      res.status(500).json({ error: error.message || "The scholar is silent." });
+    }
+  });
+
   app.post("/api/ai/reflect", async (req, res) => {
     try {
       const { data, userEmail } = req.body;

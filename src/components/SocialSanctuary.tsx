@@ -90,6 +90,45 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   console.error('Firestore Error in Social Sanctuary:', JSON.stringify(errInfo));
 }
 
+const DUMMY_SCHOLARS: PublicProfile[] = [
+  {
+    uid: 'dummy_marcus_aurelius',
+    name: 'Marcus Aurelius',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+    biography: 'Emperor of Rome. Author of Meditations. Focuses on stoic temperance, deep morning journaling, and body callisthenics.',
+    isOnline: true,
+    lastActive: new Date().toISOString(),
+    friends: []
+  },
+  {
+    uid: 'dummy_seneca_younger',
+    name: 'Lucius Seneca',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
+    biography: 'Imperial Advisor and playwright. Writing dialogues on tranquility and mental equilibrium under load.',
+    isOnline: true,
+    lastActive: new Date().toISOString(),
+    friends: []
+  },
+  {
+    uid: 'dummy_epictetus',
+    name: 'Epictetus',
+    avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300',
+    biography: 'Born a slave, died a master. Teaching that we suffer not from events, but from our judgment of them.',
+    isOnline: true,
+    lastActive: new Date().toISOString(),
+    friends: []
+  },
+  {
+    uid: 'dummy_hypatia_alex',
+    name: 'Hypatia',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
+    biography: 'Neoplatonist philosopher, leading astronomer and mathematician. Seeking physical hygiene and structural clarity.',
+    isOnline: true,
+    lastActive: new Date().toISOString(),
+    friends: []
+  }
+];
+
 export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProfile }: SocialSanctuaryProps) {
   const [activeTab, setActiveTab] = useState<'feed' | 'messages' | 'peers' | 'moderation'>('feed');
   
@@ -127,6 +166,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [chatMessages, setChatMessages] = useState<DMMessage[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const [dummyTypingState, setDummyTypingState] = useState<string | null>(null);
 
   // Peers directory
   const [peers, setPeers] = useState<PublicProfile[]>([]);
@@ -539,6 +579,14 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           fetched.push(u);
         }
       });
+      
+      // Ensure dummy scholars are always present if they don't already exist in the database stream
+      DUMMY_SCHOLARS.forEach(dummy => {
+        if (!fetched.some(p => p.uid === dummy.uid) && dummy.uid !== currentUser.uid) {
+          fetched.push(dummy);
+        }
+      });
+
       setPeers(fetched);
     }, (err) => {
       handleFirestoreError(err, OperationType.LIST, 'public_profiles');
@@ -600,6 +648,94 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
     return () => unsub();
   }, [currentUser, activeChat]);
+
+  // 6b. Auto-responder when sending message to any dummy scholar
+  useEffect(() => {
+    if (!currentUser || !activeChat || chatMessages.length === 0) return;
+    
+    // Find if active participant is a dummy scholar
+    const dummyId = activeChat.participants.find(p => p.startsWith('dummy_'));
+    if (!dummyId) return;
+
+    const lastMsg = chatMessages[chatMessages.length - 1];
+    
+    // Check if the last message is from the user
+    if (lastMsg.senderId === currentUser.uid) {
+      // Trigger reply simulation
+      const replyTimer = setTimeout(async () => {
+        // Prevent typing twice and check states
+        if (dummyTypingState) return;
+        
+        // Find scholar name
+        const otherIndex = activeChat.participants[0] === currentUser.uid ? 1 : 0;
+        const scholarName = activeChat.participantNames[otherIndex] || 'Stoic Mentor';
+        
+        setDummyTypingState(scholarName);
+
+        // Instantly force scroll to typing state
+        setTimeout(() => {
+          chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 50);
+
+        try {
+          // Format messages for Gemini api format
+          // [{ role: 'user', parts: [{ text: '...' }] }, { role: 'model', parts: [{ text: '...' }] }]
+          const formattedHistory = chatMessages.slice(-8).map(m => ({
+            role: m.senderId === currentUser.uid ? 'user' : 'model',
+            parts: [{ text: m.text }]
+          }));
+
+          const response = await fetch('/api/ai/scholar-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              scholarId: dummyId,
+              messages: formattedHistory
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Scholar is in deep meditation. Try later.');
+          }
+
+          const resJson = await response.json();
+          const replyText = resJson.text || "I am currently focused in silence. Focus on what lies in your power.";
+
+          // Now save this auto response in Firestore messages list under the dummy scholar's name
+          const msgRef = doc(collection(db, 'conversations', activeChat.id, 'messages'));
+          const msgPayload: DMMessage = {
+            id: msgRef.id,
+            conversationId: activeChat.id,
+            senderId: dummyId,
+            senderName: scholarName,
+            text: replyText,
+            createdAt: new Date().toISOString()
+          };
+
+          await setDoc(msgRef, msgPayload);
+
+          // Update head conversation document
+          const convoRef = doc(db, 'conversations', activeChat.id);
+          await updateDoc(convoRef, {
+            lastMessage: replyText,
+            lastMessageAt: new Date().toISOString()
+          });
+
+        } catch (err) {
+          console.error("Scholar response generation failed:", err);
+        } finally {
+          setDummyTypingState(null);
+          // Wait brief delay then scroll to reply message
+          setTimeout(() => {
+            chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 150);
+        }
+
+      }, 1500); // 1.5s human-like response delay
+
+      return () => clearTimeout(replyTimer);
+    }
+  }, [chatMessages, activeChat, currentUser]);
 
   // Peer Wall overlay sync
   useEffect(() => {
@@ -688,15 +824,34 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     const sortedIds = [currentUser.uid, peer.uid].sort();
     const requestId = `${sortedIds[0]}_${sortedIds[1]}`;
     try {
-      await setDoc(doc(db, 'friend_requests', requestId), {
-        id: requestId,
-        senderId: currentUser.uid,
-        senderName: thisPublicProfile?.name || userProfile?.name || 'Seeker',
-        senderAvatar: thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-        receiverId: peer.uid,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      });
+      if (peer.uid.startsWith('dummy_')) {
+        // Auto-accept dummy friend requests instantly!
+        await setDoc(doc(db, 'friend_requests', requestId), {
+          id: requestId,
+          senderId: currentUser.uid,
+          senderName: thisPublicProfile?.name || userProfile?.name || 'Seeker',
+          senderAvatar: thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          receiverId: peer.uid,
+          status: 'accepted',
+          createdAt: new Date().toISOString()
+        });
+
+        // Also update my own friends list
+        const myProfileRef = doc(db, 'public_profiles', currentUser.uid);
+        await updateDoc(myProfileRef, {
+          friends: arrayUnion(peer.uid)
+        });
+      } else {
+        await setDoc(doc(db, 'friend_requests', requestId), {
+          id: requestId,
+          senderId: currentUser.uid,
+          senderName: thisPublicProfile?.name || userProfile?.name || 'Seeker',
+          senderAvatar: thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+          receiverId: peer.uid,
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        });
+      }
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `friend_requests/${requestId}`);
     }
@@ -1847,6 +2002,16 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           </div>
                         );
                       })
+                    )}
+                    {dummyTypingState && (
+                      <div className={cn(
+                        "flex items-center gap-2 self-start rounded-2xl px-3.5 py-2.5 text-xs font-semibold border border-dashed rounded-tl-none animate-pulse max-w-[80%] mr-auto w-fit",
+                        isDarkMode
+                          ? "bg-emerald-500/5 text-emerald-400 border-emerald-500/10"
+                          : "bg-emerald-50 text-emerald-600 border-emerald-200"
+                      )}>
+                        <span>{dummyTypingState} is responding...</span>
+                      </div>
                     )}
                     <div ref={chatBottomRef} />
                   </div>
