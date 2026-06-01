@@ -147,12 +147,24 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     if (!currentUser) return;
 
     const profileRef = doc(db, 'public_profiles', currentUser.uid);
-    const unsub = onSnapshot(profileRef, (snap) => {
+    const unsub = onSnapshot(profileRef, async (snap) => {
       if (snap.exists()) {
         setThisPublicProfile(snap.data() as PublicProfile);
       } else {
-        // Automatically provision or launch setup modal
-        setIsSettingUpProfile(true);
+        // Silently provision public profile with defaults to completely prevent blocking the user
+        try {
+          const profileData: PublicProfile = {
+            uid: currentUser.uid,
+            name: userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'Seeker',
+            avatarUrl: userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+            biography: 'Seeking intellectual and physical discipline.',
+            updatedAt: new Date().toISOString()
+          };
+          await setDoc(profileRef, profileData);
+        } catch (e) {
+          console.error('Auto-provision profile failed:', e);
+          setIsSettingUpProfile(true);
+        }
       }
     }, (err) => {
       handleFirestoreError(err, OperationType.GET, `public_profiles/${currentUser.uid}`);
@@ -601,7 +613,11 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       };
 
       if (!convoDoc.exists()) {
-        await setDoc(convoRef, computedConvo);
+        await setDoc(convoRef, {
+          ...computedConvo,
+          lastMessage: engageMessage,
+          lastMessageAt: new Date().toISOString()
+        });
       }
 
       // Add message under collection
@@ -617,11 +633,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
       await setDoc(msgRef, msgPayload);
 
-      // Update head conversation document
-      await updateDoc(convoRef, {
-        lastMessage: engageMessage,
-        lastMessageAt: new Date().toISOString()
-      });
+      // Only update head if it already existed (prevent dual uncommitted write trigger in security rules)
+      if (convoDoc.exists()) {
+        await updateDoc(convoRef, {
+          lastMessage: engageMessage,
+          lastMessageAt: new Date().toISOString()
+        });
+      }
 
       setEngageSuccess(true);
       
