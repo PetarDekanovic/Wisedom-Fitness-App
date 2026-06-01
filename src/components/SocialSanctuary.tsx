@@ -1016,7 +1016,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `conversations/${convoId}/messages`);
-      setEngageError("The scholarly channels are congested. Unable to transmit payload.");
+      setEngageError(`The scholarly channels are congested. Unable to transmit payload: ${err instanceof Error ? err.message : String(err)}`);
       setIsSendingEngage(false);
     }
   };
