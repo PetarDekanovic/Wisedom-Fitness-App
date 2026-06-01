@@ -43,7 +43,8 @@ import {
   UserPlus,
   UserX,
   Clock,
-  ChevronLeft
+  ChevronLeft,
+  Check
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
@@ -95,6 +96,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [isSettingUpProfile, setIsSettingUpProfile] = useState(false);
   const [setupBiography, setSetupBiography] = useState('');
   const [setupName, setSetupName] = useState(userProfile?.name || '');
+
+  // Instant Engage Direct Message dialogue box
+  const [engagePeer, setEngagePeer] = useState<PublicProfile | null>(null);
+  const [engageMessage, setEngageMessage] = useState('');
+  const [isSendingEngage, setIsSendingEngage] = useState(false);
+  const [engageSuccess, setEngageSuccess] = useState(false);
+  const [engageError, setEngageError] = useState<string | null>(null);
 
   // Sync setup name when profile loads
   useEffect(() => {
@@ -564,6 +572,77 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
   };
 
+  // Action: Submit instant dialogue transmission in dialogue box
+  const handleSendInstantEngageMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !engagePeer || !engageMessage.trim()) return;
+
+    setIsSendingEngage(true);
+    setEngageError(null);
+
+    const sortedIds = [currentUser.uid, engagePeer.uid].sort();
+    const convoId = `${sortedIds[0]}_${sortedIds[1]}`;
+
+    try {
+      const convoRef = doc(db, 'conversations', convoId);
+      const convoDoc = await getDoc(convoRef);
+
+      const computedConvo: Conversation = {
+        id: convoId,
+        participants: sortedIds,
+        participantNames: [
+          currentUser.uid === sortedIds[0] ? (thisPublicProfile?.name || userProfile?.name || 'Anonymous Seeker') : engagePeer.name,
+          currentUser.uid === sortedIds[1] ? (thisPublicProfile?.name || userProfile?.name || 'Anonymous Seeker') : engagePeer.name
+        ],
+        participantAvatars: [
+          currentUser.uid === sortedIds[0] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : engagePeer.avatarUrl,
+          currentUser.uid === sortedIds[1] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : engagePeer.avatarUrl
+        ]
+      };
+
+      if (!convoDoc.exists()) {
+        await setDoc(convoRef, computedConvo);
+      }
+
+      // Add message under collection
+      const msgRef = doc(collection(db, 'conversations', convoId, 'messages'));
+      const msgPayload: DMMessage = {
+        id: msgRef.id,
+        conversationId: convoId,
+        senderId: currentUser.uid,
+        senderName: thisPublicProfile?.name || userProfile?.name || 'Seeker',
+        text: engageMessage,
+        createdAt: new Date().toISOString()
+      };
+
+      await setDoc(msgRef, msgPayload);
+
+      // Update head conversation document
+      await updateDoc(convoRef, {
+        lastMessage: engageMessage,
+        lastMessageAt: new Date().toISOString()
+      });
+
+      setEngageSuccess(true);
+      
+      // Navigate and close after a brief triumph delay
+      setTimeout(() => {
+        setActiveChat(computedConvo);
+        setActiveTab('messages');
+        setSelectedPeerWall(null);
+        setEngagePeer(null);
+        setEngageMessage('');
+        setIsSendingEngage(false);
+        setEngageSuccess(false);
+      }, 1500);
+
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `conversations/${convoId}/messages`);
+      setEngageError("The scholarly channels are congested. Unable to transmit payload.");
+      setIsSendingEngage(false);
+    }
+  };
+
   // Action: Send direct message inside active DM channel
   const handleSendDMMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -766,6 +845,151 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     </button>
                   )}
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Instant Engage Dialogue Box Modal */}
+        {engagePeer && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className={cn(
+                "w-full max-w-md p-6 rounded-3xl border shadow-2xl transition-all duration-300 relative",
+                isDarkMode ? "bg-zinc-900 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
+              )}
+            >
+              <button 
+                type="button"
+                onClick={() => setEngagePeer(null)}
+                className={cn(
+                  "absolute top-4 right-4 p-1.5 rounded-lg transition-colors border",
+                  isDarkMode 
+                    ? "border-zinc-800 hover:border-zinc-700 bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white" 
+                    : "border-zinc-200 hover:border-zinc-300 bg-zinc-50 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800"
+                )}
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative shrink-0">
+                    <img 
+                      src={engagePeer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
+                      className="w-10 h-10 rounded-full object-cover border border-zinc-500/10"
+                      alt="avatar"
+                      referrerPolicy="no-referrer"
+                    />
+                    {isPeerOnline(engagePeer) ? (
+                      <span className="absolute bottom-0 right-0 flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-zinc-900"></span>
+                      </span>
+                    ) : (
+                      <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-zinc-655 border border-zinc-900" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5 leading-none">
+                      <h3 className="font-black text-sm uppercase tracking-wider">{engagePeer.name}</h3>
+                      <span className={cn(
+                        "text-[7px] font-mono font-black tracking-widest px-1 py-0.5 rounded border",
+                        isPeerOnline(engagePeer) 
+                          ? "text-emerald-500 bg-emerald-500/5 border-emerald-500/15" 
+                          : "text-zinc-500 bg-zinc-400/5 border-zinc-400/10"
+                      )}>
+                        {isPeerOnline(engagePeer) ? "ONLINE" : "OFFLINE"}
+                      </span>
+                    </div>
+                    <p className="text-[10px] mt-1 font-bold uppercase tracking-widest text-emerald-500">Initiating Scholarly Dialogue</p>
+                  </div>
+                </div>
+
+                {engageSuccess ? (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="py-8 flex flex-col items-center justify-center text-center space-y-3"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500">
+                      <Check className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider text-emerald-500">Dialogue Channel Established</p>
+                      <p className={cn("text-[10px] mt-1 max-w-[280px]", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                        Your message has been safely queued and transmitted. Navigating to personal conversations...
+                      </p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <form onSubmit={handleSendInstantEngageMessage} className="space-y-4 pt-2">
+                    <p className={cn("text-[11px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-550")}>
+                      {!isPeerOnline(engagePeer) ? (
+                        <span>
+                          <strong>{engagePeer.name}</strong> is currently living silently in contemplation. You can transcribe an offline dialogue transmission which they will receive immediately upon re-entering.
+                        </span>
+                      ) : (
+                        <span>
+                          Transcribe immediate thoughts, structured inquiries, or rigorous critiques directly into <strong>{engagePeer.name}</strong>'s private network node.
+                        </span>
+                      )}
+                    </p>
+
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1">Dialogue Transmission</label>
+                      <textarea 
+                        value={engageMessage}
+                        onChange={(e) => setEngageMessage(e.target.value)}
+                        rows={4}
+                        required
+                        disabled={isSendingEngage}
+                        className={cn(
+                          "w-full px-4 py-3 text-xs rounded-xl border font-medium focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-sans",
+                          isDarkMode ? "bg-zinc-800/50 border-zinc-700/50 text-white placeholder-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
+                        )}
+                        placeholder="Establish clarity, speak with discipline, and build intellectual/biometric alignment..."
+                      />
+                    </div>
+
+                    {engageError && (
+                      <p className="text-[10px] font-bold text-rose-500 bg-rose-500/10 border border-rose-500/25 px-3 py-2 rounded-xl">
+                        {engageError}
+                      </p>
+                    )}
+
+                    <div className="flex gap-2 pt-2">
+                      <button 
+                        type="submit"
+                        disabled={isSendingEngage || !engageMessage.trim()}
+                        className={cn(
+                          "flex-1 py-3 bg-emerald-500 text-zinc-950 rounded-2xl font-black italic uppercase tracking-tighter text-xs active:scale-95 transition-transform flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20",
+                          (isSendingEngage || !engageMessage.trim()) && "opacity-55 pointer-events-none"
+                        )}
+                      >
+                        {isSendingEngage ? "Transmitting..." : "Transmit Dialogue"} <Send className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setEngagePeer(null)}
+                        className={cn(
+                          "px-4 py-3 border rounded-2xl font-bold text-xs uppercase tracking-wider",
+                          isDarkMode ? "border-zinc-800 text-zinc-400 hover:text-white" : "border-zinc-200 text-zinc-500 hover:text-zinc-800"
+                        )}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -1155,7 +1379,12 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     return (
                       <button 
                         key={peer.uid}
-                        onClick={() => handleStartDM(peer)}
+                        onClick={() => {
+                          setEngagePeer(peer);
+                          setEngageMessage('');
+                          setEngageSuccess(false);
+                          setEngageError(null);
+                        }}
                         className={cn(
                           "w-full p-2.5 rounded-2xl border text-left flex items-center justify-between gap-2 group transition-all",
                           isDarkMode ? "border-zinc-800/50 hover:bg-zinc-800/20" : "border-zinc-150 hover:bg-zinc-50"
@@ -1634,7 +1863,12 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           Seeker Wall
                         </button>
                         <button
-                          onClick={() => handleStartDM(peer)}
+                          onClick={() => {
+                            setEngagePeer(peer);
+                            setEngageMessage('');
+                            setEngageSuccess(false);
+                            setEngageError(null);
+                          }}
                           className="flex-1 py-2 rounded-xl bg-emerald-500 text-zinc-950 font-black italic uppercase text-[9px] tracking-wider active:scale-95 transition-transform flex items-center justify-center gap-1 hover:bg-emerald-400"
                         >
                           Engage <Send className="w-2.5 h-2.5" />
@@ -1776,7 +2010,12 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   </div>
 
                   <button 
-                    onClick={() => handleStartDM(selectedPeerWall)}
+                    onClick={() => {
+                      setEngagePeer(selectedPeerWall);
+                      setEngageMessage('');
+                      setEngageSuccess(false);
+                      setEngageError(null);
+                    }}
                     className="px-4 py-2.5 bg-emerald-500 text-zinc-950 font-black italic uppercase text-[10px] tracking-wider rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5 self-start sm:self-center"
                   >
                     Secure Dialog <Send className="w-3.5 h-3.5" />
