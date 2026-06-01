@@ -555,8 +555,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           currentUser.uid === sortedIds[1] ? (thisPublicProfile?.name || userProfile?.name || 'Anonymous Seeker') : peerProfile.name
         ],
         participantAvatars: [
-          currentUser.uid === sortedIds[0] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : peerProfile.avatarUrl,
-          currentUser.uid === sortedIds[1] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : peerProfile.avatarUrl
+          currentUser.uid === sortedIds[0] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : (peerProfile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'),
+          currentUser.uid === sortedIds[1] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : (peerProfile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200')
         ]
       };
 
@@ -595,8 +595,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           currentUser.uid === sortedIds[1] ? (thisPublicProfile?.name || userProfile?.name || 'Anonymous Seeker') : engagePeer.name
         ],
         participantAvatars: [
-          currentUser.uid === sortedIds[0] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : engagePeer.avatarUrl,
-          currentUser.uid === sortedIds[1] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : engagePeer.avatarUrl
+          currentUser.uid === sortedIds[0] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : (engagePeer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'),
+          currentUser.uid === sortedIds[1] ? (thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200') : (engagePeer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200')
         ]
       };
 
