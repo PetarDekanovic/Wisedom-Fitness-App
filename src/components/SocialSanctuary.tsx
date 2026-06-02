@@ -286,7 +286,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     return (
       <div className="space-y-2">
         {remainsText.trim() && (
-          <p className="whitespace-pre-wrap font-handwritten text-lg leading-relaxed pt-0.5 select-text">
+          <p className={cn(
+            "whitespace-pre-wrap text-[13px] leading-relaxed pt-0.5 select-text font-semibold",
+            isMine ? "text-zinc-950" : "text-white"
+          )}>
             {remainsText}
           </p>
         )}
@@ -1367,8 +1370,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         required
                         disabled={isSendingEngage || isUploadingFile}
                         className={cn(
-                          "w-full px-4 py-3 text-lg rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-handwritten",
-                          isDarkMode ? "bg-zinc-800/50 border-zinc-700/50 text-white placeholder-zinc-550" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
+                          "w-full px-4 py-3 text-sm rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-sans font-semibold",
+                          isDarkMode ? "bg-zinc-800/80 border-zinc-700/80 text-white placeholder-zinc-550" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
                         )}
                         placeholder="Establish clarity, speak with discipline, and build intellectual/biometric alignment..."
                       />
@@ -1883,7 +1886,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
         {/* TAB B: DIRECT DIALOGS / MESSAGES */}
         {activeTab === 'messages' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[550px] h-[72vh] max-h-[750px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[480px] md:min-h-[550px] h-[65vh] md:h-[72vh] max-h-[750px] mb-20 md:mb-0">
             
             {/* Conversation list pane */}
             <div className={cn(
@@ -1960,7 +1963,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             )}>
               {activeChat ? (
                 <div className={cn(
-                  "p-4 pb-[84px] md:pb-4 rounded-3xl border flex flex-col h-full relative overflow-hidden",
+                  "p-4 md:p-5 rounded-3xl border flex flex-col h-full relative overflow-hidden",
                   isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
                 )}>
                   {/* Active Header user info */}
@@ -2026,12 +2029,12 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           <div 
                             key={msg.id}
                             className={cn(
-                              "flex flex-col max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs font-medium border relative group transition-all",
+                              "flex flex-col max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs font-semibold border relative group transition-all",
                               isMine 
-                                ? "self-end bg-emerald-505 text-zinc-950 font-bold ml-auto border-emerald-400/20 rounded-tr-none" 
+                                ? "self-end bg-emerald-500 text-zinc-950 ml-auto border-emerald-400/30 rounded-tr-none shadow-sm shadow-emerald-500/10" 
                                 : isDarkMode 
-                                  ? "self-start bg-zinc-800/40 border-zinc-800 text-zinc-100 rounded-tl-none" 
-                                  : "self-start bg-zinc-50 border-zinc-200 text-zinc-900 rounded-tl-none"
+                                  ? "self-start bg-zinc-800 border-zinc-700/80 text-zinc-50 rounded-tl-none shadow-sm" 
+                                  : "self-start bg-zinc-100 border-zinc-200 text-zinc-900 rounded-tl-none shadow-sm"
                             )}
                           >
                             {isEditing ? (
@@ -2189,8 +2192,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       onChange={(e) => setNewMessageText(e.target.value)}
                       placeholder="Transcribe peaceful thoughts or structured critiques..."
                       className={cn(
-                        "flex-1 px-4 py-3 text-lg rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none font-handwritten",
-                        isDarkMode ? "bg-zinc-850 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
+                        "flex-1 px-4 py-3 text-sm rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none font-sans font-semibold placeholder:font-sans",
+                        isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
                       )}
                     />
                     <button 
@@ -2346,125 +2349,132 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       key={peer.uid}
                       className={cn(
                         "p-5 rounded-3xl border flex flex-col justify-between gap-4 transition-all duration-300 relative overflow-hidden group/card",
-                        isDarkMode ? "bg-zinc-900/40 border-zinc-800/80 hover:border-emerald-500/30" : "bg-white border-zinc-200 hover:border-emerald-500/20 shadow-sm"
+                        isDarkMode ? "bg-zinc-900/60 border-zinc-800/80 hover:border-emerald-500/45 shadow-lg shadow-black/20" : "bg-white border-zinc-200 hover:border-emerald-500/30 shadow-sm"
                       )}
                     >
-                      {/* Top Right connection node icon */}
-                      <div className="absolute top-4 right-4 z-10">
-                        {relation === 'friend' && (
-                          <button
-                            onClick={() => handleRemoveFriend(peer.uid)}
-                            className="p-1.5 rounded-lg border border-emerald-500/25 text-emerald-500 bg-emerald-500/10 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-colors"
-                            title="Sever Connection"
-                          >
-                            <UserCheck className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {relation === 'pending' && (
-                          <div 
-                            className="p-1.5 rounded-lg border border-zinc-805 text-zinc-500 bg-zinc-950"
-                            title="Request Sent (Pending Approval)"
-                          >
-                            <Clock className="w-3.5 h-3.5 animate-pulse" />
-                          </div>
-                        )}
-                        {relation === 'incoming' && (
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => {
-                                const req = friendRequests.find(r => r.senderId === peer.uid);
-                                if (req) handleDeclineFriendRequest(req);
-                              }}
-                              className="p-1 rounded-lg border border-zinc-800 text-zinc-505 hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/10 transition-colors"
-                              title="Decline"
-                            >
-                              <UserX className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const req = friendRequests.find(r => r.senderId === peer.uid);
-                                if (req) handleAcceptFriendRequest(req);
-                              }}
-                              className="p-1 rounded-lg border border-emerald-500/20 text-emerald-555 bg-emerald-500/10 hover:bg-emerald-500 hover:text-zinc-950 transition-colors"
-                              title="Accept"
-                            >
-                              <UserCheck className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
-                        {relation === 'none' && (
-                          <button
-                            onClick={() => handleSendFriendRequest(peer)}
-                            className="p-1.5 rounded-lg border border-zinc-800 text-zinc-500 hover:text-emerald-400 hover:border-emerald-500/25 hover:bg-emerald-500/10 transition-colors"
-                            title="Send Connection Request"
-                          >
-                            <UserPlus className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 relative z-10 text-xs">
-                        <div className="flex items-center gap-2.5 max-w-[85%]">
+                      <div className="space-y-3 text-xs">
+                        {/* Top Profile Header */}
+                        <div className="flex items-center gap-3">
                           <div className="relative shrink-0">
                             <img 
                               src={peer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                              className="w-10 h-10 rounded-full object-cover border border-zinc-500/10"
+                              className="w-11 h-11 rounded-full object-cover border border-zinc-500/20"
                               alt="peer"
                               referrerPolicy="no-referrer"
                             />
                             {online ? (
-                              <span className="absolute bottom-0 right-0 flex h-2.5 w-2.5">
+                              <span className="absolute bottom-0 right-0 flex h-3 w-3">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-zinc-900 flex-shrink-0"></span>
                               </span>
                             ) : (
-                              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-zinc-600 border border-zinc-900 shrink-0"></span>
+                              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-zinc-600 border-2 border-zinc-900 shrink-0"></span>
                             )}
                           </div>
                           <div className="min-w-0">
-                            <h4 className="font-black uppercase tracking-tight truncate flex items-center gap-1 text-zinc-200">
+                            <h4 className={cn(
+                              "font-black uppercase tracking-tight truncate flex items-center gap-1.5 text-xs",
+                              isDarkMode ? "text-zinc-100" : "text-zinc-900"
+                            )}>
                               {peer.name}
                               {online && (
-                                <span className="text-[7px] font-mono font-black text-emerald-500 px-1 bg-emerald-550/10 rounded animate-pulse">LIVE</span>
+                                <span className="text-[7px] font-mono font-black text-emerald-400 px-1.5 py-0.5 bg-emerald-500/10 rounded animate-pulse">LIVE</span>
                               )}
                             </h4>
-                            <span className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-extrabold uppercase tracking-widest text-center border border-emerald-500/10 inline-block mt-0.5">
+                            <span className="text-[8px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-black uppercase tracking-widest text-center border border-emerald-500/10 inline-block mt-0.5">
                               Seeker
                             </span>
                           </div>
                         </div>
                         
                         <p className={cn(
-                          "text-[11px] leading-relaxed line-clamp-3 font-normal min-h-[42px] pt-1",
-                          isDarkMode ? "text-zinc-400" : "text-zinc-650"
+                          "text-[12px] leading-relaxed line-clamp-3 font-semibold min-h-[50px] pt-1",
+                          isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>
                           {peer.biography || 'No philosopher card established. Living silently in contemplation.'}
                         </p>
                       </div>
 
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setSelectedPeerWall(peer)}
-                          className={cn(
-                            "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors border",
-                            isDarkMode 
-                              ? "border-zinc-805 hover:border-zinc-700 bg-zinc-850 text-zinc-400 hover:text-white" 
-                              : "border-zinc-200 hover:border-zinc-300 bg-zinc-50 text-zinc-500 hover:text-zinc-800"
-                          )}
-                        >
-                          Seeker Wall
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEngagePeer(peer);
-                            setEngageMessage('');
-                            setEngageSuccess(false);
-                            setEngageError(null);
-                          }}
-                          className="flex-1 py-2 rounded-xl bg-emerald-500 text-zinc-950 font-black italic uppercase text-[9px] tracking-wider active:scale-95 transition-transform flex items-center justify-center gap-1 hover:bg-emerald-400"
-                        >
-                          Engage <Send className="w-2.5 h-2.5" />
-                        </button>
+                      <div className="space-y-2.5">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setSelectedPeerWall(peer)}
+                            className={cn(
+                              "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border shrink-0",
+                              isDarkMode 
+                                ? "border-zinc-800 hover:border-zinc-700 bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white" 
+                                : "border-zinc-200 hover:border-zinc-300 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900"
+                            )}
+                          >
+                            Seeker Wall
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEngagePeer(peer);
+                              setEngageMessage('');
+                              setEngageSuccess(false);
+                              setEngageError(null);
+                            }}
+                            className="flex-1 py-2 rounded-xl bg-emerald-500 text-zinc-950 font-black italic uppercase text-[9px] tracking-widest active:scale-95 transition-transform flex items-center justify-center gap-1 hover:bg-emerald-400"
+                          >
+                            Engage <Send className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+
+                        {/* HIGHLY VISIBLE CONNECTION CONTROL ACTIONS */}
+                        {(() => {
+                          if (relation === 'friend') {
+                            return (
+                              <button
+                                onClick={() => handleRemoveFriend(peer.uid)}
+                                className="w-full py-2.5 rounded-xl border border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"
+                              >
+                                <UserX className="w-3.5 h-3.5" /> Sever Connection (Friend)
+                              </button>
+                            );
+                          } else if (relation === 'pending') {
+                            return (
+                              <div className={cn(
+                                "w-full py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm",
+                                isDarkMode ? "border-zinc-800 bg-zinc-950 text-zinc-400" : "border-zinc-200 bg-zinc-50 text-zinc-650"
+                              )}>
+                                <Clock className="w-3.5 h-3.5 animate-pulse text-emerald-400" /> Pending Approval
+                              </div>
+                            );
+                          } else if (relation === 'incoming') {
+                            return (
+                              <div className="flex gap-2 w-full">
+                                <button
+                                  onClick={() => {
+                                    const req = friendRequests.find(r => r.senderId === peer.uid);
+                                    if (req) handleDeclineFriendRequest(req);
+                                  }}
+                                  className="flex-1 py-2.5 rounded-xl border border-red-500/30 bg-red-500/5 text-red-400 hover:bg-red-500/15 hover:text-red-350 text-[9px] font-black uppercase tracking-widest transition-colors"
+                                >
+                                  Decline
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const req = friendRequests.find(r => r.senderId === peer.uid);
+                                    if (req) handleAcceptFriendRequest(req);
+                                  }}
+                                  className="flex-1 py-2.5 rounded-xl bg-emerald-400 text-zinc-950 hover:bg-emerald-300 font-extrabold text-[9px] uppercase tracking-widest transition-all flex items-center justify-center gap-1 shadow-md shadow-emerald-400/10"
+                                >
+                                  <UserCheck className="w-3.5 h-3.5" /> Accept
+                                </button>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <button
+                                onClick={() => handleSendFriendRequest(peer)}
+                                className="w-full py-2.5 rounded-xl border border-emerald-500 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-zinc-950 font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/5"
+                              >
+                                <UserPlus className="w-3.5 h-3.5" /> Connect Seeker
+                              </button>
+                            );
+                          }
+                        })()}
                       </div>
                     </div>
                   );
