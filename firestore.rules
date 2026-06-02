@@ -226,7 +226,13 @@ service cloud.firestore {
                      request.auth.uid in conversationId.split('_') ||
                      (exists(/databases/$(database)/documents/conversations/$(conversationId)) && 
                       request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants));
-      allow delete: if isAdmin();
+      allow update: if isAuthenticated() && 
+                    (resource.data.senderId == request.auth.uid || isAdmin()) &&
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'updatedAt']) &&
+                    request.resource.data.text is string && 
+                    request.resource.data.text.size() > 0 && 
+                    request.resource.data.text.size() < 5000;
+      allow delete: if isAuthenticated() && (resource.data.senderId == request.auth.uid || isAdmin());
     }
 
     match /users/{userId} {

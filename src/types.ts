@@ -251,5 +251,6 @@ export interface DMMessage {
   senderName: string;
   text: string;
   createdAt: any;
+  updatedAt?: any;
 }
 

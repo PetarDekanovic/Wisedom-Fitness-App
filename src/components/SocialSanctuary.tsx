@@ -167,6 +167,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [newMessageText, setNewMessageText] = useState('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const [dummyTypingState, setDummyTypingState] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
 
   // Peers directory
   const [peers, setPeers] = useState<PublicProfile[]>(() => DUMMY_SCHOLARS.filter(d => d.uid !== currentUser?.uid));
@@ -841,11 +843,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           createdAt: new Date().toISOString()
         });
 
-        // Also update my own friends list
+        // Also update my own friends list safely with merged keys to satisfy security rules
         const myProfileRef = doc(db, 'public_profiles', currentUser.uid);
-        await updateDoc(myProfileRef, {
+        await setDoc(myProfileRef, {
+          uid: currentUser.uid,
+          name: thisPublicProfile?.name || userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'Seeker',
           friends: arrayUnion(peer.uid)
-        });
+        }, { merge: true });
       } else {
         await setDoc(doc(db, 'friend_requests', requestId), {
           id: requestId,
@@ -869,11 +873,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         status: 'accepted'
       });
 
-      // Update my own profile friends list for redundancy/backup
+      // Update my own profile friends list safely with merged keys to satisfy rules
       const myProfileRef = doc(db, 'public_profiles', currentUser.uid);
-      await updateDoc(myProfileRef, {
+      await setDoc(myProfileRef, {
+        uid: currentUser.uid,
+        name: thisPublicProfile?.name || userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'Seeker',
         friends: arrayUnion(req.senderId)
-      });
+      }, { merge: true });
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `friend_requests/${req.id}`);
     }
@@ -897,11 +903,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       // Delete request document
       await deleteDoc(doc(db, 'friend_requests', requestId));
 
-      // Sever relation from my own profile list as well
+      // Sever relation from my own profile list safely with merged keys to satisfy rules
       const myProfileRef = doc(db, 'public_profiles', currentUser.uid);
-      await updateDoc(myProfileRef, {
+      await setDoc(myProfileRef, {
+        uid: currentUser.uid,
+        name: thisPublicProfile?.name || userProfile?.name || currentUser.displayName || currentUser.email?.split('@')[0] || 'Seeker',
         friends: arrayRemove(peerId)
-      });
+      }, { merge: true });
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `friend_requests/${requestId}`);
     }
@@ -1051,6 +1059,33 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       setNewMessageText('');
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `conversations/${activeChat.id}/messages`);
+    }
+  };
+
+  // Action: Edit an existing message in DM channel
+  const handleSaveEditMessage = async (messageId: string) => {
+    if (!currentUser || !activeChat || !editingText.trim()) return;
+    try {
+      const msgRef = doc(db, 'conversations', activeChat.id, 'messages', messageId);
+      await updateDoc(msgRef, {
+        text: editingText,
+        updatedAt: new Date().toISOString()
+      });
+      setEditingMessageId(null);
+      setEditingText('');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `conversations/${activeChat.id}/messages/${messageId}`);
+    }
+  };
+
+  // Action: Delete an existing message in DM channel
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!currentUser || !activeChat) return;
+    try {
+      const msgRef = doc(db, 'conversations', activeChat.id, 'messages', messageId);
+      await deleteDoc(msgRef);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `conversations/${activeChat.id}/messages/${messageId}`);
     }
   };
 
@@ -1848,11 +1883,11 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
         {/* TAB B: DIRECT DIALOGS / MESSAGES */}
         {activeTab === 'messages' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[500px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[550px] h-[72vh] max-h-[750px]">
             
             {/* Conversation list pane */}
             <div className={cn(
-              "p-4 rounded-3xl border flex flex-col h-full",
+              "p-4 pb-24 md:pb-4 rounded-3xl border flex flex-col h-full",
               isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm",
               activeChat ? "hidden md:flex" : "flex"
             )}>
@@ -1925,7 +1960,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             )}>
               {activeChat ? (
                 <div className={cn(
-                  "p-4 rounded-3xl border flex flex-col h-full relative overflow-hidden",
+                  "p-4 pb-[84px] md:pb-4 rounded-3xl border flex flex-col h-full relative overflow-hidden",
                   isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
                 )}>
                   {/* Active Header user info */}
@@ -1985,25 +2020,107 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     ) : (
                       chatMessages.map(msg => {
                         const isMine = msg.senderId === currentUser.uid;
+                        const isEditing = editingMessageId === msg.id;
+
                         return (
                           <div 
                             key={msg.id}
                             className={cn(
-                              "flex flex-col max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs font-medium border",
+                              "flex flex-col max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs font-medium border relative group transition-all",
                               isMine 
-                                ? "self-end bg-emerald-500 text-zinc-950 font-bold ml-auto border-emerald-400/20 rounded-tr-none" 
+                                ? "self-end bg-emerald-505 text-zinc-950 font-bold ml-auto border-emerald-400/20 rounded-tr-none" 
                                 : isDarkMode 
                                   ? "self-start bg-zinc-800/40 border-zinc-800 text-zinc-100 rounded-tl-none" 
-                                  : "self-start bg-zinc-55 border-zinc-200 text-zinc-900 rounded-tl-none"
+                                  : "self-start bg-zinc-50 border-zinc-200 text-zinc-900 rounded-tl-none"
                             )}
                           >
-                            {renderMessageTextWithAttachments(msg.text, isMine)}
-                            <span className={cn(
-                              "text-[8px] self-end mt-1 select-none opacity-60 font-mono",
-                              isMine ? "text-zinc-950" : isDarkMode ? "text-zinc-500" : "text-zinc-500"
-                            )}>
-                              {new Date(msg.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            {isEditing ? (
+                              <div className="space-y-2 min-w-[200px]">
+                                <textarea
+                                  value={editingText}
+                                  onChange={(e) => setEditingText(e.target.value)}
+                                  className={cn(
+                                    "w-full p-2 text-xs rounded-lg border outline-none font-medium resize-none",
+                                    isMine 
+                                      ? "bg-emerald-600 text-zinc-950 border-emerald-700 placeholder-emerald-900" 
+                                      : "bg-zinc-700/50 text-white border-zinc-600"
+                                  )}
+                                  rows={2}
+                                />
+                                <div className="flex justify-end gap-1">
+                                  <button
+                                    onClick={() => setEditingMessageId(null)}
+                                    className={cn(
+                                      "px-2 py-1 text-[9px] font-black uppercase rounded-lg border",
+                                      isMine 
+                                        ? "border-zinc-950/20 text-zinc-900 hover:bg-zinc-950/10" 
+                                        : "border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+                                    )}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => handleSaveEditMessage(msg.id)}
+                                    disabled={!editingText.trim()}
+                                    className={cn(
+                                      "px-2 py-1 text-[9px] font-black uppercase rounded-lg shadow-sm",
+                                      isMine 
+                                        ? "bg-zinc-950 text-emerald-400 hover:bg-zinc-900" 
+                                        : "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
+                                    )}
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                {renderMessageTextWithAttachments(msg.text, isMine)}
+                                <div className="flex items-center justify-between gap-3 mt-1.5 leading-none shrink-0">
+                                  <span className={cn(
+                                    "text-[8px] select-none opacity-60 font-mono flex items-center gap-1",
+                                    isMine ? "text-zinc-950" : isDarkMode ? "text-zinc-500" : "text-zinc-500"
+                                  )}>
+                                    <span>
+                                      {new Date(msg.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                    {msg.updatedAt && (
+                                      <span className="text-[7px] italic font-sans opacity-75">(edited)</span>
+                                    )}
+                                  </span>
+
+                                  {isMine && (
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 select-none shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingMessageId(msg.id);
+                                          setEditingText(msg.text);
+                                        }}
+                                        className={cn(
+                                          "p-0.5 rounded transition-colors",
+                                          isMine ? "hover:bg-zinc-950/10 text-zinc-900/80 hover:text-zinc-950" : "hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                                        )}
+                                        title="Edit Message"
+                                      >
+                                        <Edit className="w-2.5 h-2.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteMessage(msg.id)}
+                                        className={cn(
+                                          "p-0.5 rounded transition-colors",
+                                          isMine ? "hover:bg-zinc-950/10 text-red-700 hover:text-red-950" : "hover:bg-zinc-800 text-red-405 hover:text-red-400"
+                                        )}
+                                        title="Delete Message"
+                                      >
+                                        <Trash2 className="w-2.5 h-2.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </>
+                            )}
                           </div>
                         );
                       })
