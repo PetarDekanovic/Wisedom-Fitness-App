@@ -325,11 +325,12 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           href={matchedUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className={cn(
-            "underline break-all transition-colors font-bold",
+            "underline break-all transition-all font-black decoration-2 cursor-pointer z-10 relative px-1 py-0.5 rounded",
             isMine 
-              ? "text-zinc-950 hover:text-zinc-800" 
-              : "text-emerald-400 hover:text-emerald-300"
+              ? "text-white bg-zinc-950/20 hover:bg-zinc-950/30 border border-white/10 hover:text-white" 
+              : "text-emerald-400 hover:text-emerald-300 bg-zinc-950/10 hover:bg-zinc-950/25 border border-zinc-700/50"
           )}
         >
           {matchedUrl}
@@ -367,10 +368,11 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     href={preview.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
                     className={cn(
-                      "flex items-center gap-2.5 p-1.5 rounded-xl border transition-all hover:scale-[1.01] overflow-hidden text-left",
+                      "flex items-center gap-2.5 p-1.5 rounded-xl border transition-all hover:scale-[1.01] overflow-hidden text-left cursor-pointer z-10 relative",
                       isMine 
-                        ? "bg-zinc-950/15 hover:bg-zinc-950/25 border-zinc-950/20 text-zinc-950" 
+                        ? "bg-zinc-950/30 hover:bg-zinc-950/40 border-zinc-950/20 text-white" 
                         : "bg-zinc-950/40 hover:bg-zinc-950/60 border-zinc-850 text-zinc-100"
                     )}
                   >
@@ -393,7 +395,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     <div className="min-w-0 pr-1 select-none">
                       <p className={cn(
                         "text-[9px] font-extrabold uppercase tracking-wide leading-none font-mono opacity-85",
-                        isMine ? "text-zinc-900" : "text-emerald-400"
+                        isMine ? "text-emerald-300" : "text-emerald-400"
                       )}>
                         YouTube Video
                       </p>
@@ -413,10 +415,11 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     href={preview.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
                     className={cn(
-                      "flex items-center gap-2.5 p-1.5 rounded-xl border transition-all hover:scale-[1.01] overflow-hidden text-left",
+                      "flex items-center gap-2.5 p-1.5 rounded-xl border transition-all hover:scale-[1.01] overflow-hidden text-left cursor-pointer z-10 relative",
                       isMine 
-                        ? "bg-zinc-950/15 hover:bg-zinc-950/25 border-zinc-950/20 text-zinc-950" 
+                        ? "bg-zinc-950/30 hover:bg-zinc-950/40 border-zinc-950/20 text-white" 
                         : "bg-zinc-950/40 hover:bg-zinc-950/60 border-zinc-850 text-zinc-100"
                     )}
                   >
@@ -436,7 +439,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     <div className="min-w-0 pr-1 select-none">
                       <p className={cn(
                         "text-[9px] font-extrabold uppercase tracking-wide leading-none font-mono opacity-85",
-                        isMine ? "text-zinc-900" : "text-emerald-400"
+                        isMine ? "text-emerald-300" : "text-emerald-400"
                       )}>
                         TikTok Video
                       </p>
@@ -2047,7 +2050,31 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
         {/* TAB B: DIRECT DIALOGS / MESSAGES */}
         {activeTab === 'messages' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[480px] md:min-h-[550px] h-[65vh] md:h-[72vh] max-h-[750px] mb-20 md:mb-0 overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[440px] md:min-h-[550px] h-[480px] xs:h-[510px] sm:h-[560px] md:h-[72vh] max-h-[525px] md:max-h-[750px] mb-20 md:mb-0 overflow-hidden relative">
+            <style>{`
+              .chat-scrollbar::-webkit-scrollbar {
+                width: 5px !important;
+                display: block !important;
+              }
+              .chat-scrollbar::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.03) !important;
+                border-radius: 99px !important;
+              }
+              .chat-scrollbar::-webkit-scrollbar-thumb {
+                background: rgba(16, 185, 129, 0.45) !important;
+                border-radius: 99px !important;
+                border: 1px solid rgba(255, 255, 255, 0.05) !important;
+              }
+              .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: rgba(16, 185, 129, 0.65) !important;
+              }
+              /* For Firefox */
+              .chat-scrollbar {
+                scrollbar-width: thin !important;
+                scrollbar-color: rgba(16, 185, 129, 0.4) rgba(0, 0, 0, 0.02) !important;
+                scrollbar-gutter: stable;
+              }
+            `}</style>
             
             {/* Conversation list pane */}
             <div className={cn(
@@ -2176,7 +2203,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   </div>
 
                   {/* Messages container list */}
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1 mb-4">
+                  <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1 mb-4 chat-scrollbar">
                     {chatMessages.length === 0 ? (
                       <div className="text-center py-16 text-[10px] text-zinc-500 italic">
                         Channel cleared. Speak with rigor.
@@ -2262,23 +2289,27 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                           setEditingText(msg.text);
                                         }}
                                         className={cn(
-                                          "p-1.5 rounded-lg transition-all active:scale-95 flex items-center justify-center",
-                                          isMine ? "bg-zinc-950/5 hover:bg-zinc-950/15 text-zinc-900" : "bg-zinc-850 hover:bg-zinc-800 text-zinc-300"
+                                          "p-2 rounded-xl transition-all active:scale-[0.93] flex items-center justify-center border shadow-md cursor-pointer",
+                                          isMine 
+                                            ? "bg-zinc-950 border-emerald-450/40 text-emerald-400 hover:bg-zinc-900" 
+                                            : "bg-zinc-850 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
                                         )}
                                         title="Edit Message"
                                       >
-                                        <Edit className="w-3.5 h-3.5" />
+                                        <Edit className="w-4 h-4" />
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => handleDeleteMessage(msg.id)}
                                         className={cn(
-                                          "p-1.5 rounded-lg transition-all active:scale-95 flex items-center justify-center",
-                                          isMine ? "bg-zinc-950/5 hover:bg-zinc-950/15 text-red-700 hover:text-red-900" : "bg-zinc-850 hover:bg-zinc-800 text-red-400 hover:text-red-300"
+                                          "p-2 rounded-xl transition-all active:scale-[0.93] flex items-center justify-center border shadow-md cursor-pointer",
+                                          isMine 
+                                            ? "bg-zinc-950 border-red-500/40 text-red-400 hover:bg-zinc-900 hover:text-red-300" 
+                                            : "bg-zinc-850 border-zinc-700 text-red-405 hover:bg-zinc-800"
                                         )}
                                         title="Delete Message"
                                       >
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <Trash2 className="w-4 h-4" />
                                       </button>
                                     </div>
                                   )}
