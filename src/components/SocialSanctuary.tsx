@@ -952,11 +952,14 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         userAvatar: thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
         content: newPostContent,
         mediaType: newPostMediaType,
-        mediaUrl: newPostMediaUrl.trim() || undefined,
         status: isAdmin ? 'approved' : 'pending',
         createdAt: new Date().toISOString(),
         likes: []
       };
+
+      if (newPostMediaType !== 'none' && newPostMediaUrl.trim()) {
+        draftPost.mediaUrl = newPostMediaUrl.trim();
+      }
 
       await setDoc(postDocRef, draftPost);
       
@@ -971,7 +974,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       }
     } catch (err: any) {
       handleFirestoreError(err, OperationType.WRITE, 'social_posts');
-      setPostError("Failed to transmit post. Schema boundary restrictions occurred.");
+      const errorMsg = err?.message || (err?.code ? `Firebase Code: ${err.code}` : JSON.stringify(err));
+      setPostError(`Failed to transmit post: ${errorMsg}. Please ensure inputs satisfy schema rules.`);
     } finally {
       setIsPosting(false);
     }
