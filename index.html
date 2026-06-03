@@ -30,6 +30,35 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
+    <!-- Global self-healing handler for chunk load failures (common PWA stale cache issue) -->
+    <script>
+      window.addEventListener('error', function(e) {
+        if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+          console.warn('Network resource failed to load:', e.target.src || e.target.href);
+          if (!window.__wisefit_recovery_triggered) {
+            window.__wisefit_recovery_triggered = true;
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (var i = 0; i < registrations.length; i++) {
+                  registrations[i].unregister();
+                }
+              });
+            }
+            if ('caches' in window) {
+              caches.keys().then(function(keys) {
+                keys.forEach(function(key) {
+                  caches.delete(key);
+                });
+              });
+            }
+            setTimeout(function() {
+              window.location.reload(true);
+            }, 300);
+          }
+        }
+      }, true);
+    </script>
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-S79ZY61WCW"></script>
     <script>

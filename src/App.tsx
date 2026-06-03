@@ -1429,7 +1429,13 @@ function AppContent() {
     // If quota exceeded, just use empty list or cached list
     if (isQuotaExceeded) {
        const cached = localStorage.getItem('wisefit_articles_backup');
-       if (cached) setArticles(JSON.parse(cached));
+       if (cached) {
+         try {
+           setArticles(JSON.parse(cached));
+         } catch (e) {
+           console.error("Failed to parse cached articles:", e);
+         }
+       }
        return;
     }
 
@@ -3348,7 +3354,13 @@ function AppContent() {
         setIsQuotaExceeded(true);
       }
       const cached = localStorage.getItem('wisefit_library_backup');
-      if (cached) setLibraryQuotes(JSON.parse(cached));
+      if (cached) {
+        try {
+          setLibraryQuotes(JSON.parse(cached));
+        } catch (e) {
+          console.error("Failed to parse cached library quotes:", e);
+        }
+      }
     } finally {
       setIsLibraryLoading(false);
     }
@@ -3498,7 +3510,13 @@ function AppContent() {
     }, (error) => {
       console.warn("Profile snapshot blocked. Falling back to disk cache.");
       const cached = localStorage.getItem(`wisefit_profile_${user.uid}`);
-      if (cached) setUserProfile(JSON.parse(cached));
+      if (cached) {
+        try {
+          setUserProfile(JSON.parse(cached));
+        } catch (e) {
+          console.error("Failed to parse cached user profile:", e);
+        }
+      }
       handleFirestoreError(error, 'get', `users/${user.uid}`);
     });
 

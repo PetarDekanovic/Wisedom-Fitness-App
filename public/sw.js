@@ -60,7 +60,8 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
           }
           // If both fail and this is an HTML request, offer cached index.html
-          if (event.request.headers.get('accept').includes('text/html')) {
+          const acceptHeader = event.request.headers.get('accept');
+          if (acceptHeader && acceptHeader.includes('text/html')) {
             return caches.match('/index.html');
           }
         });
