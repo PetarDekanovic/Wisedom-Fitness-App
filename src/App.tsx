@@ -5195,20 +5195,20 @@ function AppContent() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-8"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-2xl font-bold">History</h2>
+              <div className="flex items-center justify-between gap-3 w-full">
+                <div className="flex items-center gap-3 overflow-x-auto no-scrollbar scrollbar-none max-w-full w-full">
+                  <span className="hidden md:block text-2xl font-bold tracking-tight">History</span>
                   <div className={cn(
-                    "flex p-1 rounded-xl",
+                    "flex p-1 rounded-xl overflow-x-auto no-scrollbar scrollbar-none whitespace-nowrap gap-1 max-w-full w-full md:w-auto",
                     isDarkMode ? "bg-zinc-900/50" : "bg-zinc-100"
                   )}>
                     <button 
                       onClick={() => setHistorySubView('journal')}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0",
                         historySubView === 'journal' 
                           ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20" 
-                          : isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
+                          : isDarkMode ? "text-zinc-500 hover:text-zinc-350 dark:text-zinc-400" : "text-zinc-500 hover:text-zinc-700"
                       )}
                     >
                       <Layout className="w-3.5 h-3.5" />
@@ -5217,10 +5217,10 @@ function AppContent() {
                     <button 
                       onClick={() => setHistorySubView('plans')}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0",
                         historySubView === 'plans' 
                           ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20" 
-                          : isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
+                          : isDarkMode ? "text-zinc-500 hover:text-zinc-350 dark:text-zinc-400" : "text-zinc-500 hover:text-zinc-700"
                       )}
                     >
                       <Folder className="w-3.5 h-3.5" />
@@ -5229,10 +5229,10 @@ function AppContent() {
                     <button 
                       onClick={() => setHistorySubView('articles')}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0",
                         historySubView === 'articles' 
                           ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20" 
-                          : isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
+                          : isDarkMode ? "text-zinc-500 hover:text-zinc-350 dark:text-zinc-400" : "text-zinc-500 hover:text-zinc-700"
                       )}
                     >
                       <Layout className="w-3.5 h-3.5" />
@@ -5241,10 +5241,10 @@ function AppContent() {
                     <button 
                       onClick={() => setHistorySubView('digest')}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0",
                         historySubView === 'digest' 
                           ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20" 
-                          : isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
+                          : isDarkMode ? "text-zinc-500 hover:text-zinc-350 dark:text-zinc-400" : "text-zinc-500 hover:text-zinc-700"
                       )}
                     >
                       <Newspaper className="w-3.5 h-3.5" />
