@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Activity, 
   Dumbbell, 
+  Newspaper,
   TrendingUp, 
   User, 
   Plus, 
@@ -133,6 +134,7 @@ import { HistoryFeed } from './components/HistoryFeed';
 import { INITIAL_HISTORY_VIDEOS } from './data/historyVideos';
 import { YOGA_FLOWS } from './data/yogaFlows';
 import { SocialSanctuary } from './components/SocialSanctuary';
+import { DigestQuoteCard } from './components/DigestQuoteCard';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -1286,8 +1288,78 @@ function AppContent() {
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const [isQuotaDismissed, setIsQuotaDismissed] = useState(false);
   const [activeView, setActiveView] = useState<View>('dashboard');
-  const [historySubView, setHistorySubView] = useState<'journal' | 'plans' | 'articles'>('journal');
+  const [historySubView, setHistorySubView] = useState<'journal' | 'plans' | 'articles' | 'digest'>('journal');
+  const [digestData, setDigestData] = useState<{
+    lastUpdated: string;
+    news: any[];
+    quotes: any[];
+  } | null>(null);
+  const [isFetchingDigest, setIsFetchingDigest] = useState(false);
+  const [digestError, setDigestError] = useState<string | null>(null);
+  const [digestTab, setDigestTab] = useState<'quotes' | 'news'>('quotes');
+
+  const fetchSanctuaryDigest = useCallback(async (force = false) => {
+    if (digestData && !force) return;
+    setIsFetchingDigest(true);
+    setDigestError(null);
+    try {
+      const res = await fetch("/api/sanctuary-digest");
+      if (!res.ok) throw new Error("Could not retrieve daily digest.");
+      const data = await res.json();
+      if (data.success) {
+        setDigestData({
+          lastUpdated: data.lastUpdated,
+          news: data.news || [],
+          quotes: data.quotes || []
+        });
+      } else {
+        throw new Error(data.error || "Failed to load sanctuary digest.");
+      }
+    } catch (err: any) {
+      console.error("fetchSanctuaryDigest err:", err);
+      setDigestError(err.message || "Failed to load sanctuary digest.");
+    } finally {
+      setIsFetchingDigest(false);
+    }
+  }, [digestData]);
+
+  useEffect(() => {
+    if (historySubView === 'digest') {
+      fetchSanctuaryDigest();
+    }
+  }, [historySubView, fetchSanctuaryDigest]);
+
   const [articles, setArticles] = useState<Article[]>([]);
+  const [expandedQuote, setExpandedQuote] = useState<any | null>(null);
+  const [isExpandingQuote, setIsExpandingQuote] = useState(false);
+  const [expandedQuoteInterpretation, setExpandedQuoteInterpretation] = useState<string>("");
+  const [expansionError, setExpansionError] = useState<string | null>(null);
+
+  const expandQuoteWithStoicAI = useCallback(async (quote: any) => {
+    setExpandedQuote(quote);
+    setIsExpandingQuote(true);
+    setExpandedQuoteInterpretation("");
+    setExpansionError(null);
+    try {
+      const res = await fetch("/api/interpret-quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: quote.text, author: quote.author })
+      });
+      if (!res.ok) throw new Error("Our Stoic servers are deep in thought. Please try again.");
+      const data = await res.json();
+      if (data.success) {
+        setExpandedQuoteInterpretation(data.interpretation);
+      } else {
+        throw new Error(data.error || "Failed to generate interpretation.");
+      }
+    } catch (err: any) {
+      console.error("expandQuoteWithStoicAI err:", err);
+      setExpansionError(err.message || "Failed to interpret quote");
+    } finally {
+      setIsExpandingQuote(false);
+    }
+  }, []);
   const [isAddingArticle, setIsAddingArticle] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
@@ -5148,6 +5220,18 @@ function AppContent() {
                       <Layout className="w-3.5 h-3.5" />
                       Articles
                     </button>
+                    <button 
+                      onClick={() => setHistorySubView('digest')}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                        historySubView === 'digest' 
+                          ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20" 
+                          : isDarkMode ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-400 hover:text-zinc-600"
+                      )}
+                    >
+                      <Newspaper className="w-3.5 h-3.5" />
+                      Daily Digest
+                    </button>
                   </div>
                 </div>
                 {(historySubView !== 'plans' && (historySubView === 'journal' || historySubView === 'articles') && user) && (
@@ -5325,7 +5409,7 @@ function AppContent() {
                   )}
                 </div>
               </div>
-            ) : (
+            ) : historySubView === 'articles' ? (
                 <div className="space-y-6">
                   {articles.map(article => (
                     <ArticleCard 
@@ -5347,6 +5431,249 @@ function AppContent() {
                       <p className="text-zinc-600 text-xs mt-1">Share your long-form insights here.</p>
                     </div>
                   )}
+                </div>
+              ) : (
+                <div className="space-y-6 text-left">
+                  {/* Sanctuary Digest View */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <p className={cn(
+                        "text-xs font-mono font-bold uppercase tracking-wider",
+                        isDarkMode ? "text-emerald-400" : "text-emerald-600"
+                      )}>
+                        Source: wisefitorg.com/digest
+                      </p>
+                      <p className={cn(
+                        "text-[10px] font-mono uppercase tracking-wide mt-0.5",
+                        isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                      )}>
+                        Updated: {digestData?.lastUpdated || "Live Feed"}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      {/* Secondary Switch Selector */}
+                      <div className={cn(
+                        "flex p-1 rounded-xl",
+                        isDarkMode ? "bg-zinc-900/40" : "bg-zinc-200/50"
+                      )}>
+                        <button
+                          onClick={() => setDigestTab('quotes')}
+                          className={cn(
+                            "px-3 py-1 rounded-lg text-xs font-bold transition-all",
+                            digestTab === 'quotes'
+                              ? isDarkMode ? "bg-zinc-800 text-zinc-100" : "bg-white text-zinc-800 shadow"
+                              : "text-zinc-500 hover:text-zinc-300"
+                          )}
+                        >
+                          💡 Wise Quotes ({digestData?.quotes?.length || 0})
+                        </button>
+                        <button
+                          onClick={() => setDigestTab('news')}
+                          className={cn(
+                            "px-3 py-1 rounded-lg text-xs font-bold transition-all",
+                            digestTab === 'news'
+                              ? isDarkMode ? "bg-zinc-800 text-zinc-100" : "bg-white text-zinc-800 shadow"
+                              : "text-zinc-500 hover:text-zinc-300"
+                          )}
+                        >
+                          🛍️ News & Commerce ({digestData?.news?.length || 0})
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => fetchSanctuaryDigest(true)}
+                        disabled={isFetchingDigest}
+                        className={cn(
+                          "p-2 rounded-xl border transition-all active:scale-95",
+                          isDarkMode 
+                            ? "bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:text-zinc-200" 
+                            : "bg-zinc-100 border-zinc-200 text-zinc-600 hover:bg-zinc-200"
+                        )}
+                        title="Force Refresh Data"
+                      >
+                        <RefreshCw className={cn("w-4 h-4", isFetchingDigest && "animate-spin")} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Loading placeholder */}
+                  {isFetchingDigest && !digestData && (
+                    <div className={cn(
+                      "flex flex-col items-center justify-center p-16 rounded-3xl border border-dashed transition-colors",
+                      isDarkMode ? "border-zinc-800 bg-zinc-900/10" : "border-zinc-300 bg-zinc-50"
+                    )}>
+                      <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-4" />
+                      <p className="font-bold text-sm">Harvesting Sanctuary Commons...</p>
+                      <p className="text-xs text-zinc-500 mt-1">Retrieving 100 wise quotes and live research updates...</p>
+                    </div>
+                  )}
+
+                  {/* Error Card */}
+                  {digestError && (
+                    <div className={cn(
+                      "p-6 rounded-3xl border text-center space-y-4",
+                      isDarkMode ? "bg-red-500/5 border-red-500/10" : "bg-red-50 border-red-200"
+                    )}>
+                      <p className="text-red-400 text-sm font-medium">{digestError}</p>
+                      <button
+                        onClick={() => fetchSanctuaryDigest(true)}
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-zinc-950 hover:bg-emerald-600 transition-colors"
+                      >
+                        Try Scraping Again
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {digestData && digestTab === 'quotes' && digestData.quotes.length === 0 && (
+                    <div className="p-12 rounded-3xl text-center border-2 border-dashed border-zinc-800 text-zinc-500">
+                      Empty wisdom pool. Try refreshing.
+                    </div>
+                  )}
+                  {digestData && digestTab === 'news' && digestData.news.length === 0 && (
+                    <div className="p-12 rounded-3xl text-center border-2 border-dashed border-zinc-800 text-zinc-500">
+                      No research news found. Try refreshing.
+                    </div>
+                  )}
+
+                  {/* Quotes Feed */}
+                  {digestData && digestTab === 'quotes' && digestData.quotes.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {digestData.quotes.map((quote: any, idx: number) => (
+                        <DigestQuoteCard
+                          key={quote.id || idx}
+                          quote={quote}
+                          idx={idx}
+                          isDarkMode={isDarkMode}
+                          onExpand={expandQuoteWithStoicAI}
+                          cn={cn}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* News Articles Feed */}
+                  {digestData && digestTab === 'news' && digestData.news.length > 0 && (
+                    <div className="space-y-4">
+                      {digestData.news.map((item: any, idx: number) => (
+                        <a
+                          key={item.id || idx}
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(
+                            "block p-5 rounded-3xl border transition-all duration-300 group hover:-translate-y-0.5 text-left",
+                            isDarkMode 
+                              ? "bg-zinc-900/40 border-zinc-800/60 hover:bg-zinc-900/65 hover:border-emerald-500/30" 
+                              : "bg-white border-zinc-200 hover:bg-zinc-50 hover:border-emerald-500/30 shadow-sm hover:shadow-md"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">
+                                  {item.date}
+                                </span>
+                                <span className={cn(
+                                  "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide",
+                                  isDarkMode ? "bg-zinc-800 text-zinc-400 border border-zinc-700/50" : "bg-zinc-100 text-zinc-600 border border-zinc-200"
+                                )}>
+                                  {item.category}
+                                </span>
+                              </div>
+                              <h3 className={cn(
+                                "text-sm md:text-base font-bold pr-4 transition-colors group-hover:text-emerald-400 leading-snug",
+                                isDarkMode ? "text-zinc-100" : "text-zinc-800"
+                              )}>
+                                {item.title}
+                              </h3>
+                            </div>
+                            <div className={cn(
+                              "p-2.5 rounded-xl transition-all self-start shrink-0",
+                              isDarkMode ? "bg-zinc-805 text-zinc-400 bg-zinc-800/50 hover:bg-zinc-800" : "bg-zinc-100 text-zinc-600 group-hover:bg-emerald-500 group-hover:text-zinc-950"
+                            )}>
+                              <ExternalLink className="w-4 h-4" />
+                            </div>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Stoic Expansion Overlay Dialog */}
+                  <AnimatePresence>
+                    {expandedQuote && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md bg-zinc-950/80 text-left"
+                        onClick={() => setExpandedQuote(null)}
+                      >
+                        <motion.div
+                          initial={{ scale: 0.95, y: 20 }}
+                          animate={{ scale: 1, y: 0 }}
+                          exit={{ scale: 0.95, y: 20 }}
+                          className={cn(
+                            "w-full max-w-lg rounded-3xl border p-6 md:p-8 shadow-2xl relative space-y-6 overflow-hidden",
+                            isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-200" : "bg-white border-zinc-200 text-zinc-800"
+                          )}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* Close Button */}
+                          <button
+                            onClick={() => setExpandedQuote(null)}
+                            className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-zinc-800/10 dark:hover:bg-zinc-800 transition-colors z-20"
+                          >
+                            <X className="w-5 h-5 text-zinc-400" />
+                          </button>
+
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2 text-emerald-400">
+                              <Sparkles className="w-5 h-5 animate-pulse shrink-0" />
+                              <span className="text-[10px] font-mono uppercase tracking-widest font-bold">Stoic AI Mentor Dialogue</span>
+                            </div>
+                            
+                            <blockquote className={cn(
+                              "border-l-2 border-emerald-500/50 pl-4 py-1 italic font-medium text-sm md:text-base leading-relaxed",
+                              isDarkMode ? "text-zinc-350 text-zinc-300" : "text-zinc-600"
+                            )}>
+                              "{expandedQuote.text}"
+                              <span className="block text-xs font-mono font-bold uppercase text-emerald-500 mt-2 not-italic">— {expandedQuote.author}</span>
+                            </blockquote>
+                          </div>
+
+                          <div className={cn(
+                            "p-5 rounded-2xl border min-h-[140px] flex flex-col justify-center relative overflow-hidden",
+                            isDarkMode ? "bg-zinc-950/40 border-zinc-800/60 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-700"
+                          )}>
+                            {isExpandingQuote ? (
+                              <div className="flex flex-col items-center justify-center py-4 space-y-3">
+                                <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+                                <p className="text-[10px] font-mono tracking-wider animate-pulse uppercase">AI Stoic is meditating...</p>
+                              </div>
+                            ) : expansionError ? (
+                              <p className="text-red-400 text-xs font-medium text-center">{expansionError}</p>
+                            ) : (
+                              <p className="text-sm md:text-base leading-relaxed font-sans first-letter:text-emerald-400 first-letter:font-bold first-letter:text-lg">
+                                {expandedQuoteInterpretation}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex justify-end pt-2">
+                            <button
+                              onClick={() => setExpandedQuote(null)}
+                              className="px-6 py-2.5 rounded-2xl text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all active:scale-95"
+                            >
+                              Close Mentor Dialogue
+                            </button>
+                          </div>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
             </motion.div>

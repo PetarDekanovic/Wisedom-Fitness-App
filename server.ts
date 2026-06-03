@@ -669,6 +669,172 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     }
   });
 
+  // --- NEW UNIFIED SANCTUARY DIGEST API ---
+  app.get("/api/sanctuary-digest", async (req, res) => {
+    try {
+      let html = "";
+      try {
+        const response = await axios.get("https://wisefitorg.com/digest/", {
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          timeout: 10000
+        });
+        html = response.data;
+      } catch (err: any) {
+        try {
+          const wpResponse = await axios.get("https://wisefitorg.com/wp-json/wp/v2/pages?slug=digest");
+          if (wpResponse.data && wpResponse.data[0] && wpResponse.data[0].content) {
+            html = wpResponse.data[0].content.rendered;
+          }
+        } catch (wpErr) {
+          console.error("Digest Scraper: failed direct and WP API fetches");
+        }
+      }
+
+      if (!html) throw new Error("Could not fetch page content from wisefitorg");
+
+      const $ = cheerio.load(html);
+      
+      // 1. Parse update timestamp
+      let lastUpdated = "";
+      $("p").each((i, el) => {
+        const text = $(el).text().trim();
+        if (text.startsWith("Updated:")) {
+          lastUpdated = text.replace("Updated:", "").trim();
+        }
+      });
+
+      // 2. Parse News under <header/h2> Commerce & Live News
+      let news: any[] = [];
+      const newsHeader = $("h2").filter((i, el) => $(el).text().includes("Commerce & Live News"));
+      if (newsHeader.length > 0) {
+        const nextElements = newsHeader.nextAll();
+        for (let i = 0; i < nextElements.length; i++) {
+          const el = nextElements[i];
+          const textVal = $(el).text().trim();
+          if (textVal.includes("100 Daily Wise Quotes")) {
+            break; // Stop parsing news when we hit the quotes header
+          }
+          
+          const aTag = $(el).find("a");
+          if (aTag.length > 0) {
+            const url = aTag.attr("href") || "";
+            // Clean up whitespaces inside the link text
+            const linkText = aTag.text().replace(/\s+/g, ' ').trim();
+            // Demarcate date and the rest
+            const dateRegex = /^([A-Z][a-z]+ \d{1,2}, \d{4})/;
+            const dateMatch = linkText.match(dateRegex);
+            let dateStr = "";
+            let remainingText = linkText;
+            if (dateMatch) {
+              dateStr = dateMatch[1];
+              remainingText = linkText.replace(dateRegex, "").trim();
+            }
+            
+            // Try to extract potential catalog keywords
+            const categories = ["Announcements", "eBay Impact", "eBay for Charity", "Press Release", "News Team"];
+            let category = "Research";
+            let cleanTitle = remainingText;
+            for (const cat of categories) {
+              if (remainingText.startsWith(cat)) {
+                category = cat;
+                cleanTitle = remainingText.substring(cat.length).trim();
+                break;
+              }
+            }
+            
+            news.push({
+              id: `news-${i}-${Math.random().toString(36).substring(2, 6)}`,
+              date: dateStr || "Recent",
+              category,
+              title: cleanTitle,
+              url
+            });
+          }
+        }
+      }
+
+      // 3. Parse Quotes under <header/h2> 100 Daily Wise Quotes
+      let quotes: any[] = [];
+      const quotesHeader = $("h2").filter((i, el) => $(el).text().includes("100 Daily Wise Quotes"));
+      if (quotesHeader.length > 0) {
+        const nextElements = quotesHeader.nextAll();
+        nextElements.each((i, el) => {
+          let text = $(el).text().replace(/\s+/g, ' ').trim();
+          if (text.length > 10) {
+            // Strip leading bullet or number like "• 1. ", "1.", "<b>1.</b>" is already text-flattened to "1."
+            const numMatch = text.match(/^•?\s*\d+\.\s*/);
+            if (numMatch) {
+              text = text.substring(numMatch[0].length).trim();
+            }
+
+            // Split into text and author
+            const separators = [" — ", " – ", " - ", "—", "–"];
+            let qText = text;
+            let qAuthor = "Ancient Wisdom";
+            
+            for (const sep of separators) {
+              if (text.includes(sep)) {
+                const parts = text.split(sep);
+                const lastPart = parts[parts.length - 1].trim();
+                // If the last part is reasonable for a name (shorter, capitalized)
+                if (lastPart.length > 1 && lastPart.length < 55) {
+                  qAuthor = lastPart;
+                  qText = parts.slice(0, -1).join(sep).trim();
+                  break;
+                }
+              }
+            }
+            
+            quotes.push({
+              id: `digest-q-${i}`,
+              text: qText,
+              author: qAuthor,
+              source: "Daily Digest"
+            });
+          }
+        });
+      }
+
+      res.json({
+        success: true,
+        lastUpdated: lastUpdated || new Date().toISOString().split('T')[0],
+        news,
+        quotes
+      });
+    } catch (error: any) {
+      console.error("Digest Parse Error:", error);
+      res.status(500).json({ error: error.message || "Failed to parse WiseFit Digest" });
+    }
+  });
+
+  // --- INTERPRET DIGEST QUOTE ENDPOINT ---
+  app.post("/api/interpret-quote", express.json(), async (req, res) => {
+    try {
+      const { text, author } = req.body;
+      if (!text) {
+        return res.status(400).json({ error: "Quote text is required" });
+      }
+
+      const geminiKey = getGeminiKey();
+      if (!geminiKey) {
+        return res.status(500).json({ error: "Gemini API key is not configured" });
+      }
+
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1beta' });
+      const prompt = `You are a wise Stoic mentor. Interpret the following quote in exactly three sentences, drawing on Stoic philosophy, self-discipline, or personal power. Speak directly to a "Seeker" who is pursuing excellence. Do not use conversational padding like "Sure" or "Here is an interpretation". Speak with deep intellectual depth, keep it concise, declarative, and elegant.
+      
+Quote: "${text}"
+Author: ${author || "Unknown"}`;
+
+      const response = await model.generateContent(prompt);
+      const outputText = response.response.text().trim();
+      res.json({ success: true, interpretation: outputText });
+    } catch (e: any) {
+      console.error("Interpret Quote Error:", e);
+      res.status(500).json({ error: e.message || "Failed to generate interpretation" });
+    }
+  });
+
   // --- GOOGLE AUTH & HEALTH ---
   app.get("/api/auth/google/url", (req, res) => {
     const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
