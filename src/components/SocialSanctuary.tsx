@@ -283,6 +283,68 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
     const remainsText = parts.length > 0 ? parts.join("") : text;
 
+    // Separate normal text and find special links
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const textSegments: React.ReactNode[] = [];
+    let textLastIndex = 0;
+    let urlMatch;
+    const richPreviews: { type: 'youtube' | 'tiktok'; url: string; id?: string }[] = [];
+
+    while ((urlMatch = urlRegex.exec(remainsText)) !== null) {
+      const start = urlMatch.index;
+      const end = urlRegex.lastIndex;
+      const matchedUrl = urlMatch[1];
+
+      if (start > textLastIndex) {
+        textSegments.push(remainsText.substring(textLastIndex, start));
+      }
+
+      const isYoutube = /youtube\.com|youtu\.be/i.test(matchedUrl);
+      const isTiktok = /tiktok\.com/i.test(matchedUrl);
+
+      if (isYoutube) {
+        let videoId = null;
+        const ytReg = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const ytMatch = matchedUrl.match(ytReg);
+        if (ytMatch && ytMatch[2].length === 11) {
+          videoId = ytMatch[2];
+        } else {
+          const shortsMatch = matchedUrl.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
+          if (shortsMatch) {
+            videoId = shortsMatch[1];
+          }
+        }
+        richPreviews.push({ type: 'youtube', url: matchedUrl, id: videoId || undefined });
+      } else if (isTiktok) {
+        richPreviews.push({ type: 'tiktok', url: matchedUrl });
+      }
+
+      textSegments.push(
+        <a 
+          key={start}
+          href={matchedUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            "underline break-all transition-colors font-bold",
+            isMine 
+              ? "text-zinc-950 hover:text-zinc-800" 
+              : "text-emerald-400 hover:text-emerald-300"
+          )}
+        >
+          {matchedUrl}
+        </a>
+      );
+
+      textLastIndex = end;
+    }
+
+    if (textLastIndex < remainsText.length) {
+      textSegments.push(remainsText.substring(textLastIndex));
+    }
+
+    const hasUrls = textSegments.length > 0;
+
     return (
       <div className="space-y-2">
         {remainsText.trim() && (
@@ -290,8 +352,107 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             "whitespace-pre-wrap text-[13px] leading-relaxed pt-0.5 select-text font-semibold",
             isMine ? "text-zinc-950" : "text-white"
           )}>
-            {remainsText}
+            {hasUrls ? textSegments : remainsText}
           </p>
+        )}
+
+        {richPreviews.length > 0 && (
+          <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-zinc-550/10">
+            {richPreviews.map((preview, idx) => {
+              if (preview.type === 'youtube' && preview.id) {
+                const thumbUrl = `https://img.youtube.com/vi/${preview.id}/mqdefault.jpg`;
+                return (
+                  <a
+                    key={idx}
+                    href={preview.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "flex items-center gap-2.5 p-1.5 rounded-xl border transition-all hover:scale-[1.01] overflow-hidden text-left",
+                      isMine 
+                        ? "bg-zinc-950/15 hover:bg-zinc-950/25 border-zinc-950/20 text-zinc-950" 
+                        : "bg-zinc-950/40 hover:bg-zinc-950/60 border-zinc-850 text-zinc-100"
+                    )}
+                  >
+                    <div className="relative w-20 h-12 shrink-0 rounded-lg overflow-hidden bg-black/40 border border-white/5 shadow-sm">
+                      <img 
+                        src={thumbUrl} 
+                        alt="YouTube Preview" 
+                        className="w-full h-full object-cover" 
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&q=80&w=200";
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                        <span className="w-5 h-5 flex items-center justify-center rounded-full bg-red-650 text-white shadow-md">
+                          <span className="text-[7px] pl-0.5">▶</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="min-w-0 pr-1 select-none">
+                      <p className={cn(
+                        "text-[9px] font-extrabold uppercase tracking-wide leading-none font-mono opacity-85",
+                        isMine ? "text-zinc-900" : "text-emerald-400"
+                      )}>
+                        YouTube Video
+                      </p>
+                      <p className="text-[10px] font-semibold truncate leading-tight mt-0.5">
+                        Watch details & demonstrations
+                      </p>
+                      <p className="text-[7.5px] font-mono truncate tracking-tight opacity-70 leading-none mt-0.5">
+                        {preview.url}
+                      </p>
+                    </div>
+                  </a>
+                );
+              } else if (preview.type === 'tiktok') {
+                return (
+                  <a
+                    key={idx}
+                    href={preview.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "flex items-center gap-2.5 p-1.5 rounded-xl border transition-all hover:scale-[1.01] overflow-hidden text-left",
+                      isMine 
+                        ? "bg-zinc-950/15 hover:bg-zinc-950/25 border-zinc-950/20 text-zinc-950" 
+                        : "bg-zinc-950/40 hover:bg-zinc-950/60 border-zinc-850 text-zinc-100"
+                    )}
+                  >
+                    <div className="relative w-20 h-12 shrink-0 rounded-lg overflow-hidden bg-zinc-900 border border-white/5 shadow-sm">
+                      <img 
+                        src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=160"
+                        alt="TikTok Preview" 
+                        className="w-full h-full object-cover filter brightness-75 contrast-125" 
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <span className="w-5 h-5 flex items-center justify-center rounded-full bg-zinc-950 border border-emerald-500/40 text-emerald-400 text-[8px] font-black shadow-md">
+                          🎵
+                        </span>
+                      </div>
+                    </div>
+                    <div className="min-w-0 pr-1 select-none">
+                      <p className={cn(
+                        "text-[9px] font-extrabold uppercase tracking-wide leading-none font-mono opacity-85",
+                        isMine ? "text-zinc-900" : "text-emerald-400"
+                      )}>
+                        TikTok Video
+                      </p>
+                      <p className="text-[10px] font-semibold truncate leading-tight mt-0.5">
+                        View routine demonstration
+                      </p>
+                      <p className="text-[7.5px] font-mono truncate tracking-tight opacity-70 leading-none mt-0.5">
+                        {preview.url}
+                      </p>
+                    </div>
+                  </a>
+                );
+              }
+              return null;
+            })}
+          </div>
         )}
         {mediaMatches.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-zinc-500/10 mt-2">
@@ -1886,11 +2047,11 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
         {/* TAB B: DIRECT DIALOGS / MESSAGES */}
         {activeTab === 'messages' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[480px] md:min-h-[550px] h-[65vh] md:h-[72vh] max-h-[750px] mb-20 md:mb-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[480px] md:min-h-[550px] h-[65vh] md:h-[72vh] max-h-[750px] mb-20 md:mb-0 overflow-hidden">
             
             {/* Conversation list pane */}
             <div className={cn(
-              "p-4 pb-24 md:pb-4 rounded-3xl border flex flex-col h-full",
+              "p-4 pb-24 md:pb-4 rounded-3xl border flex flex-col h-full overflow-hidden",
               isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm",
               activeChat ? "hidden md:flex" : "flex"
             )}>
@@ -1958,7 +2119,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
             {/* Selected Active Chat terminal */}
             <div className={cn(
-              "md:col-span-2 flex flex-col h-full",
+              "md:col-span-2 flex flex-col h-full overflow-hidden",
               activeChat ? "flex" : "hidden md:flex"
             )}>
               {activeChat ? (
@@ -2015,7 +2176,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   </div>
 
                   {/* Messages container list */}
-                  <div className="flex-1 overflow-y-auto space-y-3 pr-1 mb-4">
+                  <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1 mb-4">
                     {chatMessages.length === 0 ? (
                       <div className="text-center py-16 text-[10px] text-zinc-500 italic">
                         Channel cleared. Speak with rigor.
@@ -2093,7 +2254,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                   </span>
 
                                   {isMine && (
-                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 select-none shrink-0">
+                                    <div className="md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity flex items-center gap-2 select-none shrink-0 ml-2">
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -2101,23 +2262,23 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                           setEditingText(msg.text);
                                         }}
                                         className={cn(
-                                          "p-0.5 rounded transition-colors",
-                                          isMine ? "hover:bg-zinc-950/10 text-zinc-900/80 hover:text-zinc-950" : "hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                                          "p-1.5 rounded-lg transition-all active:scale-95 flex items-center justify-center",
+                                          isMine ? "bg-zinc-950/5 hover:bg-zinc-950/15 text-zinc-900" : "bg-zinc-850 hover:bg-zinc-800 text-zinc-300"
                                         )}
                                         title="Edit Message"
                                       >
-                                        <Edit className="w-2.5 h-2.5" />
+                                        <Edit className="w-3.5 h-3.5" />
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => handleDeleteMessage(msg.id)}
                                         className={cn(
-                                          "p-0.5 rounded transition-colors",
-                                          isMine ? "hover:bg-zinc-950/10 text-red-700 hover:text-red-950" : "hover:bg-zinc-800 text-red-405 hover:text-red-400"
+                                          "p-1.5 rounded-lg transition-all active:scale-95 flex items-center justify-center",
+                                          isMine ? "bg-zinc-950/5 hover:bg-zinc-950/15 text-red-700 hover:text-red-900" : "bg-zinc-850 hover:bg-zinc-800 text-red-400 hover:text-red-300"
                                         )}
                                         title="Delete Message"
                                       >
-                                        <Trash2 className="w-2.5 h-2.5" />
+                                        <Trash2 className="w-3.5 h-3.5" />
                                       </button>
                                     </div>
                                   )}
