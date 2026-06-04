@@ -155,13 +155,36 @@
     },
     "PublicProfile": {
       "title": "PublicProfile",
-      "description": "Public user biography and avatar safely isolated from private data",
+      "description": "Public user biography and avatar safely isolated from private data with psychology indicators",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "name": { "type": "string" },
         "avatarUrl": { "type": "string" },
         "biography": { "type": "string", "description": "Long form human biography" },
+        "coverUrl": { "type": "string", "description": "Cover background banner image" },
+        "relationshipIntent": { "type": "string", "description": "Target relationship intent" },
+        "location": { "type": "string", "description": "Physical user metropolitan area" },
+        "height": { "type": "string", "description": "User height in cm" },
+        "intellectualInterests": { "type": "array", "items": { "type": "string" }, "description": "Scholarly intellectual dimensions of interest" },
+        "fitnessStyle": { "type": "string", "description": "Dominant calisthenic, yoga, or biological recovery profile style" },
+        "morningEnergy": { "type": "string", "description": "Sleep recovery chronotype" },
+        "mbti": { "type": "string" },
+        "mbtiName": { "type": "string" },
+        "bigFive": {
+          "type": "object",
+          "properties": {
+            "openness": { "type": "number" },
+            "conscientiousness": { "type": "number" },
+            "extraversion": { "type": "number" },
+            "agreeableness": { "type": "number" },
+            "neuroticism": { "type": "number" }
+          }
+        },
+        "mmpiResilience": { "type": "number" },
+        "mmpiTruthScore": { "type": "number" },
+        "mmpiStatus": { "type": "string" },
+        "quizTakenAt": { "type": "string" },
         "updatedAt": { "type": "string", "description": "Server timestamp of update" }
       },
       "required": ["uid", "name"]

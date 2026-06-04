@@ -210,6 +210,30 @@ export interface PublicProfile {
   isOnline?: boolean;
   lastActive?: string;
   friends?: string[];
+  
+  // Dating profile & cover fields
+  coverUrl?: string;
+  relationshipIntent?: string;
+  location?: string;
+  height?: string;
+  intellectualInterests?: string[];
+  fitnessStyle?: string;
+  morningEnergy?: string;
+
+  // Psychology personality metrics
+  mbti?: string;
+  mbtiName?: string;
+  bigFive?: {
+    openness: number;
+    conscientiousness: number;
+    extraversion: number;
+    agreeableness: number;
+    neuroticism: number;
+  };
+  mmpiResilience?: number; // scale 0-100
+  mmpiTruthScore?: number; // lies detected or not
+  mmpiStatus?: string;
+  quizTakenAt?: string;
 }
 
 export interface FriendRequest {

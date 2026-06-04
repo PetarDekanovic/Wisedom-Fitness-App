@@ -46,7 +46,10 @@ import {
   ChevronLeft,
   Check,
   Paperclip,
-  Smile
+  Smile,
+  Brain,
+  Compass,
+  MapPin
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
@@ -90,6 +93,41 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   console.error('Firestore Error in Social Sanctuary:', JSON.stringify(errInfo));
 }
 
+interface QuizQuestionConfig {
+  id: string;
+  category: 'bigfive' | 'mmpi' | 'mbti';
+  subcategory?: 'O' | 'C' | 'E' | 'A' | 'N' | 'IE' | 'SN' | 'TF' | 'JP';
+  text: string;
+  type: 'agree_disagree' | 'true_false';
+}
+
+const PSYCH_QUESTIONS: QuizQuestionConfig[] = [
+  // --- BIG FIVE ---
+  { id: 'ocean_o1', category: 'bigfive', subcategory: 'O', text: "I have a vivid, creative imagination and am deeply drawn to abstract thoughts and speculation.", type: 'agree_disagree' },
+  { id: 'ocean_o2', category: 'bigfive', subcategory: 'O', text: "I heavily prefer strict routine and concrete facts over unconventional aesthetic pursuits.", type: 'agree_disagree' },
+  { id: 'ocean_c1', category: 'bigfive', subcategory: 'C', text: "I am extremely disciplined, efficient, organized, and always stick to firm schedules.", type: 'agree_disagree' },
+  { id: 'ocean_c2', category: 'bigfive', subcategory: 'C', text: "I find myself acting on random impulse, prioritizing zero-commitment spontaneity.", type: 'agree_disagree' },
+  { id: 'ocean_e1', category: 'bigfive', subcategory: 'E', text: "I draw a high degree of energy and expressiveness from participating in group discussions.", type: 'agree_disagree' },
+  { id: 'ocean_e2', category: 'bigfive', subcategory: 'E', text: "I heavily prefer silent, solitary study, quiet recovery, and direct dialogs over social settings.", type: 'agree_disagree' },
+  { id: 'ocean_a1', category: 'bigfive', subcategory: 'A', text: "I default to active compassion, mutual trust, and seeking common ground with fellow seekers.", type: 'agree_disagree' },
+  { id: 'ocean_a2', category: 'bigfive', subcategory: 'A', text: "I prioritize rigorous analytical skepticism and objective logical accuracy over group harmony.", type: 'agree_disagree' },
+  { id: 'ocean_n1', category: 'bigfive', subcategory: 'N', text: "I find myself easily perturbed, anxious, or emotionally sensitive under strain.", type: 'agree_disagree' },
+  { id: 'ocean_n2', category: 'bigfive', subcategory: 'N', text: "I maintain perfect resilience, calm assurance, and internal Stoic control in sudden chaos.", type: 'agree_disagree' },
+
+  // --- MMPI ---
+  { id: 'mmpi_s1', category: 'mmpi', text: "My morning recovery, sleep states, and nervous stability are robustly stable day-to-day.", type: 'true_false' },
+  { id: 'mmpi_s2', category: 'mmpi', text: "I experience abrupt emotional oscillations without any logical physiological explanation.", type: 'true_false' },
+  { id: 'mmpi_s3', category: 'mmpi', text: "I quickly master nervous impulses when subjected to severe physical stress.", type: 'true_false' },
+  { id: 'mmpi_lie1', category: 'mmpi', text: "I have never in my entire life told a single lie, felt any irritation, or complained about any hardship.", type: 'true_false' },
+  { id: 'mmpi_lie2', category: 'mmpi', text: "I have always, without exception, put the comfort and needs of others entirely before my own convenience.", type: 'true_false' },
+
+  // --- MBTI ---
+  { id: 'mbti_ie', category: 'mbti', subcategory: 'IE', text: "Do you gain mental focus and recovery by withdrawing into your quiet inner contemplation (Introversion) rather than outgoing social interaction (Extraversion)?", type: 'true_false' },
+  { id: 'mbti_sn', category: 'mbti', subcategory: 'SN', text: "Do you focus heavily on abstract philosophical connections, future theories, and symbolic logic (Intuition) rather than direct mechanical facts and practical daily reality (Sensing)?", type: 'true_false' },
+  { id: 'mbti_tf', category: 'mbti', subcategory: 'TF', text: "Do you decide complex issues primarily by applying rigorous objective logical principles (Thinking) rather than personal empathy and direct values (Feeling)?", type: 'true_false' },
+  { id: 'mbti_jp', category: 'mbti', subcategory: 'JP', text: "Do you prefer a tightly structured existence with firm commitments and closure (Judging) rather than keeping plans open and highly flexible (Perceiving)?", type: 'true_false' }
+];
+
 const DUMMY_SCHOLARS: PublicProfile[] = [
   {
     uid: 'dummy_marcus_aurelius',
@@ -130,13 +168,46 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
 ];
 
 export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProfile }: SocialSanctuaryProps) {
-  const [activeTab, setActiveTab] = useState<'feed' | 'messages' | 'peers' | 'moderation'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'messages' | 'peers' | 'moderation' | 'personality'>('feed');
   
   // Public profiles
   const [thisPublicProfile, setThisPublicProfile] = useState<PublicProfile | null>(null);
   const [isSettingUpProfile, setIsSettingUpProfile] = useState(false);
   const [setupBiography, setSetupBiography] = useState('');
   const [setupName, setSetupName] = useState(userProfile?.name || '');
+
+  // Dating, matching and personality states
+  const [personalitySubTab, setPersonalitySubTab] = useState<'bio' | 'quiz'>('bio');
+  const [editCoverUrl, setEditCoverUrl] = useState('');
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
+  const [editRelationshipIntent, setEditRelationshipIntent] = useState('Deep philosophical connection');
+  const [editLocation, setEditLocation] = useState('Zagreb, Croatia');
+  const [editHeight, setEditHeight] = useState('180');
+  const [editFitnessStyle, setEditFitnessStyle] = useState('Heavy Calisthenics');
+  const [editMorningEnergy, setEditMorningEnergy] = useState('Sharp morning riser');
+  const [editInterests, setEditInterests] = useState<string[]>(['Stoicism', 'Calisthenics']);
+  
+  // Quiz evaluation states
+  const [quizAnswers, setQuizAnswers] = useState<{ [key: string]: boolean }>({});
+  const [quizCalculated, setQuizCalculated] = useState(false);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+
+  // Preset covers for classical/academic wellness vibe
+  const PRESET_COVERS = [
+    { name: "Slate Wisdom", url: "https://images.unsplash.com/photo-1620121692029-d088224ddc74?auto=format&fit=crop&q=80&w=600" },
+    { name: "Classical Ruins", url: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=600" },
+    { name: "Forest Sanctuary", url: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=600" },
+    { name: "Infinite Cosmos", url: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&q=80&w=600" }
+  ];
+
+  // Preset avatars for classical roles
+  const PRESET_AVATARS = [
+    { name: "Marcus", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300" },
+    { name: "Seneca", url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300" },
+    { name: "Epictetus", url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300" },
+    { name: "Hypatia", url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300" },
+    { name: "Athena", url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300" }
+  ];
 
   // Instant Engage Direct Message dialogue box
   const [engagePeer, setEngagePeer] = useState<PublicProfile | null>(null);
@@ -623,6 +694,148 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       setPresence(false);
     };
   }, [currentUser]);
+
+  // Synchronize persona inputs when the user's public profile is fetched
+  useEffect(() => {
+    if (thisPublicProfile) {
+      setEditCoverUrl(thisPublicProfile.coverUrl || '');
+      setEditAvatarUrl(thisPublicProfile.avatarUrl || '');
+      setEditRelationshipIntent(thisPublicProfile.relationshipIntent || 'Deep philosophical connection');
+      setEditLocation(thisPublicProfile.location || 'Zagreb, Croatia');
+      setEditHeight(thisPublicProfile.height || '180');
+      setEditFitnessStyle(thisPublicProfile.fitnessStyle || 'Heavy Calisthenics');
+      setEditMorningEnergy(thisPublicProfile.morningEnergy || 'Sharp morning riser');
+      setEditInterests(thisPublicProfile.intellectualInterests || ['Stoicism', 'Calisthenics']);
+      setSetupBiography(thisPublicProfile.biography || '');
+      
+      if (thisPublicProfile.bigFive) {
+        setQuizCalculated(true);
+      }
+    }
+  }, [thisPublicProfile]);
+
+  // Update biography and dating-compatible parameters
+  const handleSaveBiographyAndDating = async () => {
+    if (!currentUser) return;
+    try {
+      const profileUpdates: Partial<PublicProfile> = {
+        coverUrl: editCoverUrl,
+        avatarUrl: editAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        relationshipIntent: editRelationshipIntent,
+        location: editLocation,
+        height: editHeight,
+        fitnessStyle: editFitnessStyle,
+        morningEnergy: editMorningEnergy,
+        intellectualInterests: editInterests,
+        biography: setupBiography,
+        updatedAt: new Date().toISOString()
+      };
+      
+      const docRef = doc(db, 'public_profiles', currentUser.uid);
+      await updateDoc(docRef, profileUpdates);
+      setThisPublicProfile(prev => prev ? { ...prev, ...profileUpdates } : null);
+      setSaveSuccessMessage('Your dating & academic biography has been permanently locked!');
+      setTimeout(() => setSaveSuccessMessage(null), 4000);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `public_profiles/${currentUser.uid}`);
+    }
+  };
+
+  // Perform psychometric analysis based on clinical standards
+  const handleCalculatePersonality = async () => {
+    // 1. Calculate Big Five (OCEAN)
+    // 2 questions per trait.
+    const getTraitScore = (qPosId: string, qNegId: string): number => {
+      const posVal = quizAnswers[qPosId] ? 1 : 0;
+      const negVal = quizAnswers[qNegId] ? 1 : 0;
+      if (posVal && !negVal) return 85;
+      if (!posVal && negVal) return 15;
+      if (posVal && negVal) return 55;
+      return 45; // balanced center-low defaults
+    };
+
+    const openness = getTraitScore('ocean_o1', 'ocean_o2');
+    const conscientiousness = getTraitScore('ocean_c1', 'ocean_c2');
+    const extraversion = getTraitScore('ocean_e1', 'ocean_e2');
+    const agreeableness = getTraitScore('ocean_a1', 'ocean_a2');
+    const neuroticism = getTraitScore('ocean_n1', 'ocean_n2');
+
+    // 2. Calculate MMPI Resilience Index (0-100%)
+    let stabilityHits = 0;
+    if (quizAnswers['mmpi_s1'] === true) stabilityHits++;
+    if (quizAnswers['mmpi_s2'] === false) stabilityHits++;
+    if (quizAnswers['mmpi_s3'] === true) stabilityHits++;
+    const mmpiResilience = Math.round((stabilityHits / 3) * 100);
+
+    // Calculate MMPI Lie Tracker Index (0 or 1 or 2 positive perfection answers)
+    let lieHits = 0;
+    if (quizAnswers['mmpi_lie1'] === true) lieHits++;
+    if (quizAnswers['mmpi_lie2'] === true) lieHits++;
+    
+    const mmpiTruthScore = Math.max(0, 100 - (lieHits * 50));
+    let mmpiStatus = "Verified Integrity";
+    if (lieHits === 1) {
+      mmpiStatus = "Minor Idealization Detected (Plausible answers)";
+    } else if (lieHits >= 2) {
+      mmpiStatus = "Amusingly Insincere (Clinical Lie alert: declared perfection)";
+    }
+
+    // 3. Myers-Briggs Typology Mapping
+    const typeI = quizAnswers['mbti_ie'] === true ? 'I' : 'E';
+    const typeN = quizAnswers['mbti_sn'] === true ? 'N' : 'S';
+    const typeT = quizAnswers['mbti_tf'] === true ? 'T' : 'F';
+    const typeJ = quizAnswers['mbti_jp'] === true ? 'J' : 'P';
+    const mbti = `${typeI}${typeN}${typeT}${typeJ}`;
+
+    const MBTI_MAP: { [key: string]: string } = {
+      "INTJ": "The Architect Scholar",
+      "INFJ": "The Seeker Counselor",
+      "INTP": "The Analytical Sage",
+      "INFP": "The Idealist Thinker",
+      "ISTJ": "The Stoic Guardian",
+      "ISFJ": "The Altruistic Protector",
+      "ISTP": "The Operational Virtuoso",
+      "ISFP": "The Tranquil Artist",
+      "ENTJ": "The Strategic Commander",
+      "ENFJ": "The Radiant Mentor",
+      "ENTP": "The Visionary Challenger",
+      "ENFP": "The Inspired Campaigner",
+      "ESTJ": "The Executive Scholar",
+      "ESFJ": "The Caring Coordinator",
+      "ESTP": "The Bold Dynamo",
+      "ESFP": "The Kinesthetic Companion"
+    };
+    const mbtiName = MBTI_MAP[mbti] || "The Scholarly Seeker";
+
+    if (currentUser) {
+      const updatedProfileParts: Partial<PublicProfile> = {
+        mbti,
+        mbtiName,
+        bigFive: {
+          openness,
+          conscientiousness,
+          extraversion,
+          agreeableness,
+          neuroticism
+        },
+        mmpiResilience,
+        mmpiTruthScore,
+        mmpiStatus,
+        quizTakenAt: new Date().toISOString()
+      };
+
+      try {
+        const docRef = doc(db, 'public_profiles', currentUser.uid);
+        await updateDoc(docRef, updatedProfileParts);
+        setQuizCalculated(true);
+        setThisPublicProfile(prev => prev ? { ...prev, ...updatedProfileParts } : null);
+        setSaveSuccessMessage('Psychological assessment calculated successfully and synchronized!');
+        setTimeout(() => setSaveSuccessMessage(null), 4000);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.UPDATE, `public_profiles/${currentUser.uid}`);
+      }
+    }
+  };
 
   // Listen to received friend requests
   useEffect(() => {
@@ -1321,6 +1534,35 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     return Math.abs(now - lastActiveTime) < 15 * 60 * 1000;
   };
 
+  const computeScholarMatchingScore = (me: PublicProfile | null, rawPeer: PublicProfile): number | null => {
+    if (!me || !me.bigFive || !rawPeer.bigFive) return null;
+    let diff = 0;
+    const meB = me.bigFive;
+    const peerB = rawPeer.bigFive;
+    
+    diff += Math.abs((meB.openness || 50) - (peerB.openness || 50));
+    diff += Math.abs((meB.conscientiousness || 50) - (peerB.conscientiousness || 50));
+    diff += Math.abs((meB.extraversion || 50) - (peerB.extraversion || 50));
+    diff += Math.abs((meB.agreeableness || 50) - (peerB.agreeableness || 50));
+    diff += Math.abs((meB.neuroticism || 50) - (peerB.neuroticism || 50));
+    
+    // Maximum possible difference is 500
+    const baseMatch = 100 - (diff / 10);
+    let match = Math.max(60, Math.min(99, Math.round(baseMatch + 25)));
+
+    if (me.intellectualInterests && rawPeer.intellectualInterests) {
+      // Shared interests multiplier
+      const shared = me.intellectualInterests.filter(i => rawPeer.intellectualInterests?.includes(i));
+      match += shared.length * 3;
+    }
+    
+    if (me.relationshipIntent && rawPeer.relationshipIntent && me.relationshipIntent === rawPeer.relationshipIntent) {
+      match += 8;
+    }
+    
+    return Math.min(99, match);
+  };
+
   const getFriendRelation = (peerUid: string) => {
     if (acceptedFriendIds.has(peerUid)) {
       return 'friend';
@@ -1669,6 +1911,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           { id: 'feed', label: 'Scholarly Feed', icon: <Globe className="w-4 h-4" /> },
           { id: 'messages', label: 'Direct Dialogs', icon: <MessageSquare className="w-4 h-4" /> },
           { id: 'peers', label: 'Seekers Swarm', icon: <Users className="w-4 h-4" /> },
+          { id: 'personality', label: 'Personality', icon: <Heart className="w-4 h-4" /> },
           { id: 'moderation', label: `Moderation (${pendingPosts.length})`, icon: <ShieldCheck className="w-4 h-4" />, adminOnly: true }
         ].map(tab => {
           if (tab.adminOnly && !isAdmin) return null;
@@ -2540,15 +2783,25 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   const relation = getFriendRelation(peer.uid);
                   const online = isPeerOnline(peer);
 
+                  const score = computeScholarMatchingScore(thisPublicProfile, peer);
+
                   return (
                     <div
                       key={peer.uid}
                       className={cn(
                         "p-5 rounded-3xl border flex flex-col justify-between gap-4 transition-all duration-300 relative overflow-hidden group/card",
+                        peer.coverUrl ? "pt-14" : "",
                         isDarkMode ? "bg-zinc-900/60 border-zinc-800/80 hover:border-emerald-500/45 shadow-lg shadow-black/20" : "bg-white border-zinc-200 hover:border-emerald-500/30 shadow-sm"
                       )}
                     >
-                      <div className="space-y-3 text-xs">
+                      {peer.coverUrl && (
+                        <div className="absolute top-0 left-0 right-0 h-16 overflow-hidden select-none">
+                          <img src={peer.coverUrl} className="w-full h-full object-cover opacity-45" alt="cover" />
+                          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-950/90"></div>
+                        </div>
+                      )}
+
+                      <div className="space-y-3 text-xs relative z-10">
                         {/* Top Profile Header */}
                         <div className="flex items-center gap-3">
                           <div className="relative shrink-0">
@@ -2577,9 +2830,16 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 <span className="text-[7px] font-mono font-black text-emerald-400 px-1.5 py-0.5 bg-emerald-500/10 rounded animate-pulse">LIVE</span>
                               )}
                             </h4>
-                            <span className="text-[8px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-black uppercase tracking-widest text-center border border-emerald-500/10 inline-block mt-0.5">
-                              Seeker
-                            </span>
+                            <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                              <span className="text-[7.5px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-black uppercase tracking-widest text-center border border-emerald-500/10 inline-block line-clamp-1">
+                                {peer.mbti ? `${peer.mbti} · Archetype` : "Seeker"}
+                              </span>
+                              {score !== null && (
+                                <span className="text-[7.5px] px-1.5 py-0.5 rounded bg-emerald-500 text-zinc-950 font-black tracking-tight animate-pulse shrink-0">
+                                  ⚡ {score}% Match
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
@@ -2589,6 +2849,49 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         )}>
                           {peer.biography || 'No philosopher card established. Living silently in contemplation.'}
                         </p>
+
+                        {/* Dating characteristics mini tags */}
+                        {(peer.location || peer.height || peer.relationshipIntent || peer.fitnessStyle || peer.morningEnergy) && (
+                          <div className="flex flex-wrap gap-1.5 pt-1.5 opacity-85">
+                            {peer.location && (
+                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                                📍 {peer.location}
+                              </span>
+                            )}
+                            {peer.height && (
+                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                                📐 {peer.height} cm
+                              </span>
+                            )}
+                            {peer.relationshipIntent && (
+                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                                ❤️ {peer.relationshipIntent}
+                              </span>
+                            )}
+                            {peer.fitnessStyle && (
+                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                                ⚡ {peer.fitnessStyle}
+                              </span>
+                            )}
+                            {peer.morningEnergy && (
+                              <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                                🌅 {peer.morningEnergy}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Interests pill lists */}
+                        {peer.intellectualInterests && peer.intellectualInterests.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pb-1 pt-1.5 border-t border-zinc-800/10">
+                            {peer.intellectualInterests.map(interest => (
+                              <span key={interest} className="text-[7.5px] font-bold px-1.5 py-0.2 bg-emerald-500/10 border border-emerald-500/15 text-emerald-400 rounded-sm">
+                                {interest}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
                       </div>
 
                       <div className="space-y-2.5">
@@ -2677,6 +2980,645 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB E: PERSONALITY & MATCHING STUDIO */}
+        {activeTab === 'personality' && (
+          <div className="space-y-6">
+            
+            {/* Header section with clinical/academic context */}
+            <div className={cn(
+              "p-6 rounded-3xl border relative overflow-hidden",
+              isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+            )}>
+              {/* Cover presets or background accent */}
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 opacity-40"></div>
+              
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1 max-w-xl">
+                  <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+                    <Compass className="w-5 h-5 text-emerald-400" />
+                    Personality & Compatibility Studio
+                  </h3>
+                  <p className={cn("text-xs leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                    Decades of academic validation over shallow corporate "animal" models. Configure your public dating-compatibility card and evaluate your psychological archetype under the Big Five (OCEAN), MMPI resilience, and Myers-Briggs (MBTI) metrics.
+                  </p>
+                </div>
+                
+                {/* Segments for profile vs quiz */}
+                <div className={cn(
+                  "flex p-1 rounded-xl self-start md:self-center shrink-0",
+                  isDarkMode ? "bg-zinc-950 border border-zinc-850" : "bg-zinc-100 border border-zinc-205"
+                )}>
+                  <button
+                    type="button"
+                    onClick={() => setPersonalitySubTab('bio')}
+                    className={cn(
+                      "px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5",
+                      personalitySubTab === 'bio'
+                        ? "bg-emerald-500 text-zinc-950 font-black italic shadow-md shadow-emerald-500/15"
+                        : isDarkMode ? "text-zinc-500 hover:text-zinc-350" : "text-zinc-500 hover:text-zinc-800"
+                    )}
+                  >
+                    <User className="w-3.5 h-3.5" /> Biography & Presets
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPersonalitySubTab('quiz')}
+                    className={cn(
+                      "px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5",
+                      personalitySubTab === 'quiz'
+                        ? "bg-emerald-500 text-zinc-950 font-black italic shadow-md shadow-emerald-500/15"
+                        : isDarkMode ? "text-zinc-500 hover:text-zinc-350" : "text-zinc-500 hover:text-zinc-800"
+                    )}
+                  >
+                    <Brain className="w-3.5 h-3.5" /> Clinical Psych Quiz
+                  </button>
+                </div>
+              </div>
+
+              {saveSuccessMessage && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-xs font-bold text-center"
+                >
+                  {saveSuccessMessage}
+                </motion.div>
+              )}
+            </div>
+
+            {/* Sub-tab Content: Bio Settings */}
+            {personalitySubTab === 'bio' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                {/* Left Form column */}
+                <div className="md:col-span-2 space-y-6">
+                  <div className={cn(
+                    "p-6 rounded-3xl border space-y-6 animate-fadeIn",
+                    isDarkMode ? "bg-zinc-900/30 border-zinc-805" : "bg-white border-zinc-200 shadow-sm"
+                  )}>
+                    
+                    {/* Presets Block */}
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Preset Academic Covers</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {PRESET_COVERS.map(cover => (
+                          <button
+                            key={cover.name}
+                            type="button"
+                            onClick={() => setEditCoverUrl(cover.url)}
+                            className={cn(
+                              "relative h-14 rounded-xl overflow-hidden border transition-all text-left group",
+                              editCoverUrl === cover.url ? "border-emerald-500 ring-1 ring-emerald-500" : "border-zinc-800/60 hover:border-zinc-700"
+                            )}
+                          >
+                            <img src={cover.url} className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform" />
+                            <div className="absolute inset-0 bg-black/40 flex items-end p-2">
+                              <span className="text-[8px] font-black uppercase tracking-tight text-white line-clamp-1">{cover.name}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {/* Manual input URL */}
+                      <input
+                        type="text"
+                        value={editCoverUrl}
+                        onChange={(e) => setEditCoverUrl(e.target.value)}
+                        placeholder="Or input custom cover Image URL..."
+                        className={cn(
+                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                          isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                        )}
+                      />
+                    </div>
+
+                    {/* Presets Profile Avatars */}
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Preset Seeker Avatars</h4>
+                      <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
+                        {PRESET_AVATARS.map(avatar => (
+                          <button
+                            key={avatar.name}
+                            type="button"
+                            onClick={() => setEditAvatarUrl(avatar.url)}
+                            className={cn(
+                              "relative w-12 h-12 rounded-full overflow-hidden border shrink-0 transition-all",
+                              editAvatarUrl === avatar.url ? "border-emerald-500 ring-2 ring-emerald-500/25 scale-95" : "border-zinc-800 hover:border-zinc-700"
+                            )}
+                          >
+                            <img src={avatar.url} className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        value={editAvatarUrl}
+                        onChange={(e) => setEditAvatarUrl(e.target.value)}
+                        placeholder="Or input custom profile Avatar URL..."
+                        className={cn(
+                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                          isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                        )}
+                      />
+                    </div>
+
+                    {/* Biography Description */}
+                    <div className="space-y-1.5">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Philosophy biography</h4>
+                      <textarea
+                        value={setupBiography}
+                        onChange={(e) => setSetupBiography(e.target.value)}
+                        rows={3}
+                        placeholder="Introduce your intellectual aspirations and recovery priorities..."
+                        className={cn(
+                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500 resize-none",
+                          isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                        )}
+                      />
+                    </div>
+
+                    {/* Dating compatibility specific metrics */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      
+                      {/* Location */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Metropolitan Location</label>
+                        <input
+                          type="text"
+                          value={editLocation}
+                          onChange={(e) => setEditLocation(e.target.value)}
+                          placeholder="e.g. Zagreb, Croatia"
+                          className={cn(
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          )}
+                        />
+                      </div>
+
+                      {/* Stature */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Stature height (cm)</label>
+                        <input
+                          type="number"
+                          value={editHeight}
+                          onChange={(e) => setEditHeight(e.target.value)}
+                          placeholder="e.g. 180"
+                          className={cn(
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          )}
+                        />
+                      </div>
+
+                      {/* Intent */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Relationship Intent</label>
+                        <select
+                          value={editRelationshipIntent}
+                          onChange={(e) => setEditRelationshipIntent(e.target.value)}
+                          className={cn(
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                          )}
+                        >
+                          <option value="Long-term partnership">Long-term partnership</option>
+                          <option value="Deep philosophical connection">Deep philosophical connection</option>
+                          <option value="Intellectual calisthenic dyads">Intellectual calisthenic dyads</option>
+                          <option value="Mindful companionship">Mindful companionship</option>
+                        </select>
+                      </div>
+
+                      {/* Training Focus */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Workout & Recovery Focus</label>
+                        <select
+                          value={editFitnessStyle}
+                          onChange={(e) => setEditFitnessStyle(e.target.value)}
+                          className={cn(
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                          )}
+                        >
+                          <option value="Heavy Calisthenics">Heavy Calisthenics</option>
+                          <option value="Tranquil Vinyasa Flow">Tranquil Vinyasa Flow</option>
+                          <option value="Biological Recovery Optimization">Biological Recovery Optimization</option>
+                          <option value="VO2 Max / Running">VO2 Max / Running</option>
+                          <option value="Strength Powerlifting">Strength Powerlifting</option>
+                        </select>
+                      </div>
+
+                      {/* Morning energy */}
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Chronotype Chronology</label>
+                        <select
+                          value={editMorningEnergy}
+                          onChange={(e) => setEditMorningEnergy(e.target.value)}
+                          className={cn(
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                          )}
+                        >
+                          <option value="Sharp morning riser">Sharp morning riser (Oura optimized)</option>
+                          <option value="Midnight scholar">Midnight scholar (Midnight reading rituals)</option>
+                          <option value="Balanced daily rhythm">Balanced equanimity (Flexible daily rhythm)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Intellectual Interests checklists checklist */}
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block">Intellectual Core Axes</label>
+                      <div className="flex flex-wrap gap-2">
+                        {["Stoicism", "Neuroscience", "Classical Rome", "Slavic Poetry", "Calisthenics", "Biophysics", "Quantum Philosophy", "Cognitive Therapy"].map(item => {
+                          const active = editInterests.includes(item);
+                          return (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => {
+                                if (active) {
+                                  setEditInterests(editInterests.filter(i => i !== item));
+                                } else {
+                                  setEditInterests([...editInterests, item]);
+                                }
+                              }}
+                              className={cn(
+                                "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all border",
+                                active
+                                  ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 font-extrabold"
+                                  : isDarkMode 
+                                    ? "bg-zinc-955 border-zinc-800 text-zinc-400 hover:border-zinc-700" 
+                                    : "bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-450"
+                              )}
+                            >
+                              {active && <Check className="w-2.5 h-2.5 inline mr-1.5 text-emerald-400" />}
+                              {item}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                      type="button"
+                      onClick={handleSaveBiographyAndDating}
+                      className="w-full py-3 bg-emerald-500 text-zinc-950 font-black italic uppercase tracking-tighter text-xs rounded-2xl active:scale-95 transition-transform shadow-lg shadow-emerald-500/15 flex items-center justify-center gap-1.5 shadow-teal-500/5 cursor-pointer"
+                    >
+                      Lock Seeker Compatibility Biography <Check className="w-4 h-4" />
+                    </button>
+                    
+                  </div>
+                </div>
+
+                {/* Right Preview column */}
+                <div className="space-y-6">
+                  <div className={cn(
+                    "p-6 rounded-3xl border space-y-4 text-xs relative overflow-hidden",
+                    isDarkMode ? "bg-zinc-900/30 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+                  )}>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Live Card Render</h4>
+                    
+                    {/* Render active mock card corresponding to the biography edits */}
+                    <div className={cn(
+                      "rounded-3xl border overflow-hidden relative flex flex-col justify-between gap-4 transition-all duration-300 min-h-[350px]",
+                      isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-lg shadow-zinc-200/10"
+                    )}>
+                      {/* Cover Photo banner */}
+                      <div className="h-20 w-full relative bg-zinc-800 overflow-hidden shrink-0">
+                        {editCoverUrl ? (
+                          <img src={editCoverUrl} className="w-full h-full object-cover opacity-75" />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-teal-500/20"></div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60"></div>
+                      </div>
+
+                      {/* Body section overlapping cover */}
+                      <div className="px-5 pb-5 -mt-10 relative flex-1 flex flex-col justify-between gap-4">
+                        <div className="space-y-3">
+                          
+                          {/* Avatar Offset */}
+                          <div className="relative w-14 h-14 rounded-full border-2 border-zinc-900 overflow-hidden bg-zinc-800 shadow-lg shrink-0">
+                            {editAvatarUrl ? (
+                              <img src={editAvatarUrl} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-zinc-400"><User className="w-6 h-6" /></div>
+                            )}
+                          </div>
+
+                          {/* Profile Details */}
+                          <div>
+                            <h4 className={cn("font-black capitalize text-sm tracking-tight", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
+                              {setupName || "Anonymous Seeker"}
+                            </h4>
+                            <span className="text-[7.5px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-black uppercase tracking-widest border border-emerald-500/10 inline-block mt-0.5">
+                              {thisPublicProfile?.mbti ? `${thisPublicProfile.mbti} · Archetype` : "Academically Verified Seeker"}
+                            </span>
+                          </div>
+
+                          <p className={cn("text-[11px] leading-relaxed line-clamp-3 font-semibold", isDarkMode ? "text-zinc-400" : "text-zinc-650")}>
+                            {setupBiography || "No biography established yet. Living silently in contemplation."}
+                          </p>
+
+                          {/* Chips Grid */}
+                          <div className="flex flex-wrap gap-1 pb-1 pt-1">
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800 flex items-center gap-1">
+                              📍 {editLocation || "Zagreb, Croatia"}
+                            </span>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800">
+                              📐 {editHeight || "180"} cm
+                            </span>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800">
+                              ❤️ {editRelationshipIntent}
+                            </span>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800">
+                              ⚡ {editFitnessStyle}
+                            </span>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800">
+                              🌅 {editMorningEnergy}
+                            </span>
+                          </div>
+
+                          {/* Interests */}
+                          {editInterests.length > 0 && (
+                            <div className="space-y-1 pt-1 border-t border-zinc-800/10">
+                              <span className="text-[7.5px] font-black uppercase text-zinc-500 tracking-widest block">Intellectual Core</span>
+                              <div className="flex flex-wrap gap-1">
+                                {editInterests.map(i => (
+                                  <span key={i} className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 border border-emerald-500/10 text-emerald-400">{i}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* Sub-tab Content: Psychologist Quiz */}
+            {personalitySubTab === 'quiz' && (
+              <div className="space-y-6">
+                
+                {/* Intro clinical citation block */}
+                <div className={cn(
+                  "p-5 rounded-3xl border space-y-3 animate-fadeIn",
+                  isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                )}>
+                  <p className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 shrink-0" /> Academic Psychologist Assessment Standards (OCEAN & MMPI)
+                  </p>
+                  <p className={cn("text-[11px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                    When actual research psychologists want to evaluate traits, they use standardized questionnaires validated across decades of peer-reviewed statistical data. Instead of placing you in corporate "animal boxes," they score you along a spectrum of values. Taking this quiz registers your <strong>Big Five (NEO-PI)</strong>, <strong>MMPI Clinical Resilience tracker</strong>, and <strong>Myers-Briggs Type Indicator (MBTI)</strong> in your public seekership profile.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                  
+                  {/* Left Questionnaire Column */}
+                  <div className="md:col-span-2 space-y-6">
+                    <div className={cn(
+                      "p-6 rounded-3xl border space-y-6",
+                      isDarkMode ? "bg-zinc-900/30 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+                    )}>
+                      
+                      {/* Section 1: The Big Five NEO-PI (OCEAN) */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 border-b border-zinc-800/10 pb-2">
+                          <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                          <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-350 dark:text-zinc-300">Phase 1: The Big Five Traits (OCEAN)</h4>
+                        </div>
+                        <div className="space-y-4">
+                          {PSYCH_QUESTIONS.filter(q => q.category === 'bigfive').map((q) => (
+                            <div key={q.id} className="space-y-2 pb-2">
+                              <p className={cn("text-xs font-semibold leading-relaxed", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>{q.text}</p>
+                              <div className="flex gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
+                                  <input
+                                    type="radio"
+                                    name={q.id}
+                                    checked={quizAnswers[q.id] === true}
+                                    onChange={() => setQuizAnswers(prev => ({ ...prev, [q.id]: true }))}
+                                    className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
+                                  />
+                                  In Full Agreement (Yes)
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
+                                  <input
+                                    type="radio"
+                                    name={q.id}
+                                    checked={quizAnswers[q.id] === false}
+                                    onChange={() => setQuizAnswers(prev => ({ ...prev, [q.id]: false }))}
+                                    className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
+                                  />
+                                  In Disagreement (No)
+                                </label>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Section 2: MMPI True/False clinical screener */}
+                      <div className="space-y-4 pt-4 border-t border-zinc-800/10">
+                        <div className="flex items-center gap-2 border-b border-zinc-800/10 pb-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-350 dark:text-zinc-300">Phase 2: MMPI Clinical Resilience & Truth scale</h4>
+                        </div>
+                        <div className="space-y-4">
+                          {PSYCH_QUESTIONS.filter(q => q.category === 'mmpi').map((q) => (
+                            <div key={q.id} className="space-y-2 pb-2">
+                              <p className={cn("text-xs font-semibold leading-relaxed", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>{q.text}</p>
+                              <div className="flex gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
+                                  <input
+                                    type="radio"
+                                    name={q.id}
+                                    checked={quizAnswers[q.id] === true}
+                                    onChange={() => setQuizAnswers(prev => ({ ...prev, [q.id]: true }))}
+                                    className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
+                                  />
+                                  TRUE (Verified)
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
+                                  <input
+                                    type="radio"
+                                    name={q.id}
+                                    checked={quizAnswers[q.id] === false}
+                                    onChange={() => setQuizAnswers(prev => ({ ...prev, [q.id]: false }))}
+                                    className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
+                                  />
+                                  FALSE (Disagreed)
+                                </label>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Section 3: MBTI Duality checklist */}
+                      <div className="space-y-4 pt-4 border-t border-zinc-800/10">
+                        <div className="flex items-center gap-2 border-b border-zinc-800/10 pb-2">
+                          <CheckCircle2 className="w-4 h-4 text-violet-400" />
+                          <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-350 dark:text-zinc-300">Phase 3: MBTI Cognitive Preferences</h4>
+                        </div>
+                        <div className="space-y-4">
+                          {PSYCH_QUESTIONS.filter(q => q.category === 'mbti').map((q) => (
+                            <div key={q.id} className="space-y-2 pb-2">
+                              <p className={cn("text-xs font-semibold leading-relaxed", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>{q.text}</p>
+                              <div className="flex gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
+                                  <input
+                                    type="radio"
+                                    name={q.id}
+                                    checked={quizAnswers[q.id] === true}
+                                    onChange={() => setQuizAnswers(prev => ({ ...prev, [q.id]: true }))}
+                                    className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
+                                  />
+                                  TRUE (Affirmative)
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
+                                  <input
+                                    type="radio"
+                                    name={q.id}
+                                    checked={quizAnswers[q.id] === false}
+                                    onChange={() => setQuizAnswers(prev => ({ ...prev, [q.id]: false }))}
+                                    className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
+                                  />
+                                  FALSE (Opposing)
+                                </label>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Calculate Action */}
+                      <button
+                        type="button"
+                        onClick={handleCalculatePersonality}
+                        className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-zinc-950 font-black italic uppercase tracking-widest text-[11px] rounded-2xl active:scale-95 transition-transform shadow-lg shadow-emerald-500/15 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        Evaluate & Publish Personality Diagnostics <Brain className="w-4 h-4 animate-pulse" />
+                      </button>
+
+                    </div>
+                  </div>
+
+                  {/* Right Diagnostics Dashboard Column */}
+                  <div className="space-y-6">
+                    <div className={cn(
+                      "p-6 rounded-3xl border space-y-6 text-xs",
+                      isDarkMode ? "bg-zinc-900/30 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+                    )}>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Diagnostics Report Card</h4>
+                      
+                      {quizCalculated && thisPublicProfile?.bigFive ? (
+                        <div className="space-y-6">
+                          
+                          {/* MBTI Avatar badge card */}
+                          <div className={cn(
+                            "p-5 rounded-2xl border text-center relative overflow-hidden",
+                            isDarkMode ? "bg-zinc-950/70 border-zinc-800" : "bg-zinc-50 border-zinc-150 shadow-sm"
+                          )}>
+                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-violet-500"></div>
+                            
+                            <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-violet-400 tracking-widest block uppercase font-mono">
+                              {thisPublicProfile.mbti}
+                            </span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block mt-1.5 leading-none">
+                              {thisPublicProfile.mbtiName}
+                            </span>
+                            
+                            <p className="text-[9.5px] leading-relaxed text-zinc-500 mt-2">
+                              A profoundly verified archetype representing specific cognitive approaches to learning, recovery, and coupling compatibility.
+                            </p>
+                          </div>
+
+                          {/* Big Five OCEAN spectrum indicators */}
+                          <div className="space-y-3.5">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block">The Big Five (OCEAN) spectrum</span>
+                            
+                            {[
+                              { label: "O - Openness", key: "openness", desc: "Imagination / Complexity Focus", color: "from-sky-500 to-blue-500" },
+                              { label: "C - Conscientiousness", key: "conscientiousness", desc: "Organization / Routine Discipline", color: "from-emerald-500 to-teal-500" },
+                              { label: "E - Extraversion", key: "extraversion", desc: "Sociability / Core Vitality Offset", color: "from-amber-500 to-orange-500" },
+                              { label: "A - Agreeableness", key: "agreeableness", desc: "Altruism / Skeptical Rationality", color: "from-pink-500 to-rose-500" },
+                              { label: "N - Neuroticism", key: "neuroticism", desc: "Biological Strain Resilience", color: "from-purple-500 to-indigo-500" }
+                            ].map(item => {
+                              const score = (thisPublicProfile.bigFive as any)?.[item.key] || 50;
+                              return (
+                                <div key={item.key} className="space-y-1">
+                                  <div className="flex justify-between text-[10px] font-bold tracking-tight">
+                                    <span className={cn("capitalize", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>{item.label}</span>
+                                    <span className={cn("font-semibold", isDarkMode ? "text-zinc-400" : "text-zinc-650")}>{score}%</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                                    <div className={cn("h-full rounded-full bg-gradient-to-r", item.color)} style={{ width: `${score}%` }} />
+                                  </div>
+                                  <span className="text-[8px] text-zinc-500 block leading-none">{item.desc}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* MMPI Diagnostics report */}
+                          <div className={cn(
+                            "p-4 rounded-2xl border space-y-3",
+                            isDarkMode ? "bg-zinc-950/40 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                          )}>
+                            <div className="flex items-center gap-1.5">
+                              <ShieldCheck className="w-4 h-4 text-teal-400" />
+                              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">MMPI Clinical Stability</span>
+                            </div>
+
+                            <div className="space-y-1 text-[10px] font-bold">
+                              <div className="flex justify-between">
+                                <span className={isDarkMode ? "text-zinc-400" : "text-zinc-600"}>Resilience Index:</span>
+                                <span className="text-emerald-400">{thisPublicProfile.mmpiResilience}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className={isDarkMode ? "text-zinc-400" : "text-zinc-600"}>Lie-Scale Validity:</span>
+                                <span className={cn(
+                                  thisPublicProfile.mmpiTruthScore && thisPublicProfile.mmpiTruthScore >= 100 
+                                    ? "text-emerald-400" 
+                                    : thisPublicProfile.mmpiTruthScore && thisPublicProfile.mmpiTruthScore >= 50 
+                                      ? "text-amber-400" 
+                                      : "text-rose-500"
+                                )}>{thisPublicProfile.mmpiTruthScore}% Truthful</span>
+                              </div>
+                              <div className={cn("text-[8.5px] mt-1 leading-relaxed leading-normal", isDarkMode ? "text-zinc-500" : "text-zinc-600")}>
+                                <strong>Status:</strong> {thisPublicProfile.mmpiStatus}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className={cn("text-[8px] font-black uppercase tracking-widest text-center mt-3", isDarkMode ? "text-zinc-600" : "text-zinc-400")}>
+                            Diagnostics computed at {thisPublicProfile.quizTakenAt ? new Date(thisPublicProfile.quizTakenAt).toLocaleDateString() : ""}
+                          </div>
+
+                        </div>
+                      ) : (
+                        <div className="text-center py-16 border border-dashed border-zinc-700/50 rounded-2xl text-zinc-500 text-xs italic">
+                          No diagnostics recorded yet. Agree or disagree to clinical segments on the left and trigger analysis.
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
