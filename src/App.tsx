@@ -5196,16 +5196,15 @@ function AppContent() {
               className="space-y-8"
             >
               <div className="flex items-center justify-between gap-3 w-full">
-                <div className="flex items-center gap-3 overflow-x-auto no-scrollbar scrollbar-none max-w-full w-full">
-                  <span className="hidden md:block text-2xl font-bold tracking-tight">History</span>
+                <div className="flex items-center gap-3 max-w-full w-full">
                   <div className={cn(
-                    "flex p-1 rounded-xl overflow-x-auto no-scrollbar scrollbar-none whitespace-nowrap gap-1 max-w-full w-full md:w-auto",
+                    "flex p-1 rounded-xl whitespace-nowrap gap-1 w-full justify-between items-center",
                     isDarkMode ? "bg-zinc-900/50" : "bg-zinc-100"
                   )}>
                     <button 
                       onClick={() => setHistorySubView('journal')}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0",
+                        "flex items-center gap-1.5 px-2 md:px-2.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all shrink-0 justify-center flex-1",
                         historySubView === 'journal' 
                           ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20" 
                           : isDarkMode ? "text-zinc-500 hover:text-zinc-350 dark:text-zinc-400" : "text-zinc-500 hover:text-zinc-700"
@@ -5217,7 +5216,7 @@ function AppContent() {
                     <button 
                       onClick={() => setHistorySubView('plans')}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0",
+                        "flex items-center gap-1.5 px-2 md:px-2.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all shrink-0 justify-center flex-1",
                         historySubView === 'plans' 
                           ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20" 
                           : isDarkMode ? "text-zinc-500 hover:text-zinc-350 dark:text-zinc-400" : "text-zinc-500 hover:text-zinc-700"
@@ -5229,7 +5228,7 @@ function AppContent() {
                     <button 
                       onClick={() => setHistorySubView('articles')}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0",
+                        "flex items-center gap-1.5 px-2 md:px-2.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all shrink-0 justify-center flex-1",
                         historySubView === 'articles' 
                           ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20" 
                           : isDarkMode ? "text-zinc-500 hover:text-zinc-350 dark:text-zinc-400" : "text-zinc-500 hover:text-zinc-700"
@@ -5241,7 +5240,7 @@ function AppContent() {
                     <button 
                       onClick={() => setHistorySubView('digest')}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0",
+                        "flex items-center gap-1.5 px-2 md:px-2.5 py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all shrink-0 justify-center flex-1",
                         historySubView === 'digest' 
                           ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20" 
                           : isDarkMode ? "text-zinc-500 hover:text-zinc-350 dark:text-zinc-400" : "text-zinc-500 hover:text-zinc-700"
