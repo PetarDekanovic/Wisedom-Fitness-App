@@ -44,6 +44,7 @@ import {
   UserX,
   Clock,
   ChevronLeft,
+  ChevronRight,
   Check,
   Paperclip,
   Smile,
@@ -249,6 +250,38 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
   // Admin moderation queue
   const [pendingPosts, setPendingPosts] = useState<CommunityPost[]>([]);
+
+  // Sub-tabs horizontal scrolling & mobile view visibility states
+  const tabContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftFade, setShowLeftFade] = useState(false);
+  const [showRightFade, setShowRightFade] = useState(true);
+
+  const handleTabScroll = () => {
+    const el = tabContainerRef.current;
+    if (!el) return;
+    const scrollLeft = el.scrollLeft;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    // Set a tiny 5px buffer to account for rounding/zoom layouts
+    setShowLeftFade(scrollLeft > 5);
+    setShowRightFade(scrollLeft < maxScroll - 5);
+  };
+
+  useEffect(() => {
+    const el = tabContainerRef.current;
+    if (el) {
+      el.addEventListener('scroll', handleTabScroll);
+      // Run immediately
+      handleTabScroll();
+      // Schedule a staggered update to capture full rendered layout sizes
+      const timer = setTimeout(handleTabScroll, 600);
+      window.addEventListener('resize', handleTabScroll);
+      return () => {
+        el.removeEventListener('scroll', handleTabScroll);
+        window.removeEventListener('resize', handleTabScroll);
+        clearTimeout(timer);
+      };
+    }
+  }, [pendingPosts.length]);
 
   // Check if current logged in is admin
   const isAdmin = currentUser?.email === 'petar.dekanovic@gmail.com' || userProfile?.role === 'admin';
@@ -1905,35 +1938,82 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         </div>
       </div>
 
-      {/* 3. Segment Tab Switcher */}
-      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 border-b border-zinc-800/20">
-        {[
-          { id: 'feed', label: 'Scholarly Feed', icon: <Globe className="w-4 h-4" /> },
-          { id: 'messages', label: 'Direct Dialogs', icon: <MessageSquare className="w-4 h-4" /> },
-          { id: 'peers', label: 'Seekers Swarm', icon: <Users className="w-4 h-4" /> },
-          { id: 'personality', label: 'Personality', icon: <Heart className="w-4 h-4" /> },
-          { id: 'moderation', label: `Moderation (${pendingPosts.length})`, icon: <ShieldCheck className="w-4 h-4" />, adminOnly: true }
-        ].map(tab => {
-          if (tab.adminOnly && !isAdmin) return null;
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+      {/* 3. Segment Tab Switcher with Horizon Cues */}
+      <div className="relative w-full overflow-hidden">
+        {/* Left Fading edge overlay with dynamic state */}
+        <AnimatePresence>
+          {showLeftFade && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap",
-                active 
-                  ? "bg-emerald-500 text-zinc-950 font-black italic scale-[0.98]" 
-                  : isDarkMode
-                    ? "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30"
-                    : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
+                "absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r pointer-events-none z-20 flex items-center justify-start pl-1",
+                isDarkMode ? "from-zinc-950 to-transparent" : "from-white to-transparent"
               )}
             >
-              {tab.icon}
-              {tab.label}
-            </button>
-          );
-        })}
+              <div className="p-1 rounded-full bg-zinc-900/60 border border-zinc-800 backdrop-blur-sm shadow text-zinc-400">
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Right Fading edge overlay with dynamic state */}
+        <AnimatePresence>
+          {showRightFade && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className={cn(
+                "absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l pointer-events-none z-20 flex items-center justify-end pr-1",
+                isDarkMode ? "from-zinc-950 to-transparent" : "from-white to-transparent"
+              )}
+            >
+              <div className="flex items-center gap-1 animate-pulse bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 rounded-lg text-[8px] font-black tracking-widest text-emerald-400 uppercase shadow-lg shadow-black/40 backdrop-blur-sm">
+                <span>More</span>
+                <ChevronRight className="w-3 h-3" />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Scrollable Container with ref */}
+        <div 
+          ref={tabContainerRef}
+          onScroll={handleTabScroll}
+          className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1.5 border-b border-zinc-800/10 scroll-smooth pr-14"
+        >
+          {[
+            { id: 'feed', label: 'Scholarly Feed', mobileLabel: 'Feed', icon: <Globe className="w-3.5 h-3.5" /> },
+            { id: 'messages', label: 'Direct Dialogs', mobileLabel: 'Dialogs', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+            { id: 'peers', label: 'Seekers Swarm', mobileLabel: 'Swarm', icon: <Users className="w-3.5 h-3.5" /> },
+            { id: 'personality', label: 'Personality', mobileLabel: 'Personality', icon: <Heart className="w-3.5 h-3.5" /> },
+            { id: 'moderation', label: `Moderation (${pendingPosts.length})`, mobileLabel: `Mod (${pendingPosts.length})`, icon: <ShieldCheck className="w-3.5 h-3.5" />, adminOnly: true }
+          ].map(tab => {
+            if (tab.adminOnly && !isAdmin) return null;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap shrink-0 active:scale-95 select-none",
+                  active 
+                    ? "bg-emerald-500 text-zinc-950 font-black italic scale-[0.98] shadow-md shadow-emerald-500/15" 
+                    : isDarkMode
+                      ? "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30"
+                      : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
+                )}
+              >
+                {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="inline sm:hidden">{tab.mobileLabel}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* 4. Tab Context Views */}
