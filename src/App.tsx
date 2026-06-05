@@ -1879,6 +1879,8 @@ function AppContent() {
 
   // Audio State
   const [isSpeaking, setIsSpeaking] = useState<string | null>(null);
+  const [isHomeSpeechPlaying, setIsHomeSpeechPlaying] = useState(false);
+  const activeUtterances = useRef<SpeechSynthesisUtterance[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
@@ -2400,39 +2402,32 @@ function AppContent() {
 
   const speakQuote = useCallback((quote: Quote) => {
     if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
+    
+    const synth = window.speechSynthesis;
+    
+    if (isHomeSpeechPlaying) {
+      synth.cancel();
+      setIsHomeSpeechPlaying(false);
+      activeUtterances.current = [];
+      return;
+    }
+
+    synth.cancel();
+    activeUtterances.current = [];
 
     // Check if it's a Balkan proverb which usually follows "Croatian — English" format
     const isBalkan = quote.source === 'Balkan';
     const parts = quote.text.split(/[—–-]/); // Split by various dash types
     
-    const speakPart = (text: string, lang: string, onEnd?: () => void) => {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.lang = lang;
-      
-      // Try to find a matching voice for the language
-      const voices = window.speechSynthesis.getVoices();
-      const voice = voices.find(v => v.lang.startsWith(lang)) || 
-                    (lang.startsWith('en') ? voices.find(v => v.lang.startsWith('en-')) : null);
-      if (voice) utterance.voice = voice;
-
-      if (onEnd) utterance.onend = onEnd;
-      window.speechSynthesis.speak(utterance);
-    };
+    const chunks: { text: string; lang: string }[] = [];
 
     if (isBalkan && parts.length > 1) {
-      // Speak Croatian part first, then English
-      speakPart(parts[0].trim(), 'hr-HR', () => {
-        speakPart(parts[1].trim(), 'en-US', () => {
-          speakPart(`By ${quote.author}`, 'en-US');
-        });
-      });
+      chunks.push({ text: parts[0].trim(), lang: 'hr-HR' });
+      chunks.push({ text: parts[1].trim(), lang: 'en-US' });
+      chunks.push({ text: `By ${quote.author}`, lang: 'en-US' });
     } else {
-      // General case: detect if text looks Croatian or just use English
       const hasCroatianChars = /[čćžšđČĆŽŠĐ]/.test(quote.text);
-      const lang = hasCroatianChars ? 'hr-HR' : 'en-US';
+      const mainLang = hasCroatianChars ? 'hr-HR' : 'en-US';
       
       let speechText = `${quote.text}. By ${quote.author}.`;
       
@@ -2448,9 +2443,42 @@ function AppContent() {
         }
       }
       
-      speakPart(speechText, lang);
+      chunks.push({ text: speechText, lang: mainLang });
     }
-  }, []);
+
+    if (chunks.length === 0) return;
+
+    setIsHomeSpeechPlaying(true);
+
+    chunks.forEach((chunk, index) => {
+      const utterance = new SpeechSynthesisUtterance(chunk.text);
+      utterance.rate = 0.92;
+      utterance.pitch = 1.0;
+      utterance.lang = chunk.lang;
+
+      const voices = synth.getVoices();
+      const voice = voices.find(v => v.lang.startsWith(chunk.lang)) || 
+                    (chunk.lang.startsWith('en') ? voices.find(v => v.lang.startsWith('en-')) : null);
+      if (voice) utterance.voice = voice;
+
+      // Keep reference of utterance object to bypass browser garbage collection bug
+      activeUtterances.current.push(utterance);
+
+      if (index === chunks.length - 1) {
+        utterance.onend = () => {
+          setIsHomeSpeechPlaying(false);
+          activeUtterances.current = [];
+        };
+        utterance.onerror = (e) => {
+          console.error("Home TTS ended with error or was stopped:", e);
+          setIsHomeSpeechPlaying(false);
+          activeUtterances.current = [];
+        };
+      }
+
+      synth.speak(utterance);
+    });
+  }, [isHomeSpeechPlaying]);
 
   useEffect(() => {
     if (isAutoFlowActive && currentQuote) {
@@ -4517,11 +4545,13 @@ function AppContent() {
                             onClick={() => speakQuote(currentQuote)}
                             className={cn(
                               "p-2 rounded-lg transition-all active:scale-95",
-                              isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                              isHomeSpeechPlaying 
+                                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 animate-pulse"
+                                : (isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200")
                             )}
-                            title="Listen to Quote"
+                            title={isHomeSpeechPlaying ? "Stop Speaking" : "Listen to Quote"}
                           >
-                            <Volume2 className="w-3.5 h-3.5" />
+                            <Volume2 className={cn("w-3.5 h-3.5", isHomeSpeechPlaying && "text-emerald-400")} />
                           </button>
                           <button
                             onClick={handleShareQuote}
