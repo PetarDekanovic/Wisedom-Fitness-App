@@ -964,6 +964,7 @@ function ArticleCard({
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
   const [totalChunks, setTotalChunks] = useState(0);
   const speechQueue = useRef<string[]>([]);
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [copiedContent, setCopiedContent] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
 
@@ -983,11 +984,20 @@ function ArticleCard({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   const toggleSpeech = () => {
     const synth = window.speechSynthesis;
     
     if (isPlaying || isProcessing) {
       synth.cancel();
+      activeUtteranceRef.current = null;
       setIsPlaying(false);
       setIsProcessing(false);
       setCurrentChunkIndex(0);
@@ -1014,6 +1024,7 @@ function ArticleCard({
 
       const speakChunk = (index: number) => {
         if (index >= speechQueue.current.length) {
+          activeUtteranceRef.current = null;
           setIsPlaying(false);
           setIsProcessing(false);
           setCurrentChunkIndex(0);
@@ -1021,6 +1032,7 @@ function ArticleCard({
         }
 
         const utterance = new SpeechSynthesisUtterance(speechQueue.current[index]);
+        activeUtteranceRef.current = utterance; // Retain active utterance to bypass browser GC garbage collection bugs
         utterance.rate = 0.95;
         utterance.pitch = 1.0;
         utterance.lang = 'en-US';
@@ -1043,6 +1055,7 @@ function ArticleCard({
         
         utterance.onerror = (e) => {
           console.error("Speech Chunk Error:", e);
+          activeUtteranceRef.current = null;
           setIsPlaying(false);
           setIsProcessing(false);
         };
@@ -1902,6 +1915,9 @@ function AppContent() {
 
         if (!audioContextRef.current) {
           audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        if (audioContextRef.current.state === 'suspended') {
+          await audioContextRef.current.resume();
         }
         
         const buffer = audioContextRef.current.createBuffer(1, float32Data.length, 24000);
