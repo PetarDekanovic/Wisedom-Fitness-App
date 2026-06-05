@@ -106,27 +106,60 @@ const PSYCH_QUESTIONS: QuizQuestionConfig[] = [
   // --- BIG FIVE ---
   { id: 'ocean_o1', category: 'bigfive', subcategory: 'O', text: "I have a vivid, creative imagination and am deeply drawn to abstract thoughts and speculation.", type: 'agree_disagree' },
   { id: 'ocean_o2', category: 'bigfive', subcategory: 'O', text: "I heavily prefer strict routine and concrete facts over unconventional aesthetic pursuits.", type: 'agree_disagree' },
+  { id: 'ocean_o3', category: 'bigfive', subcategory: 'O', text: "I find deep excitement in hearing complex philosophical, scientific, or cosmological ideas.", type: 'agree_disagree' },
+  { id: 'ocean_o4', category: 'bigfive', subcategory: 'O', text: "I tend to avoid overly theoretical discussions and prefer a focus on immediate, practical realities.", type: 'agree_disagree' },
+
   { id: 'ocean_c1', category: 'bigfive', subcategory: 'C', text: "I am extremely disciplined, efficient, organized, and always stick to firm schedules.", type: 'agree_disagree' },
   { id: 'ocean_c2', category: 'bigfive', subcategory: 'C', text: "I find myself acting on random impulse, prioritizing zero-commitment spontaneity.", type: 'agree_disagree' },
+  { id: 'ocean_c3', category: 'bigfive', subcategory: 'C', text: "I am highly diligent, double-check my work for errors, and keep my environments immaculate.", type: 'agree_disagree' },
+  { id: 'ocean_c4', category: 'bigfive', subcategory: 'C', text: "I frequently postpone tedious obligations and run behind on scheduled target deadlines.", type: 'agree_disagree' },
+
   { id: 'ocean_e1', category: 'bigfive', subcategory: 'E', text: "I draw a high degree of energy and expressiveness from participating in group discussions.", type: 'agree_disagree' },
   { id: 'ocean_e2', category: 'bigfive', subcategory: 'E', text: "I heavily prefer silent, solitary study, quiet recovery, and direct dialogs over social settings.", type: 'agree_disagree' },
+  { id: 'ocean_e3', category: 'bigfive', subcategory: 'E', text: "I actively seek out vibrant environments, express my thoughts eagerly, and like taking the lead.", type: 'agree_disagree' },
+  { id: 'ocean_e4', category: 'bigfive', subcategory: 'E', text: "I often remain quiet in large groups and find high-stimulus gatherings physiologically draining.", type: 'agree_disagree' },
+
   { id: 'ocean_a1', category: 'bigfive', subcategory: 'A', text: "I default to active compassion, mutual trust, and seeking common ground with fellow seekers.", type: 'agree_disagree' },
   { id: 'ocean_a2', category: 'bigfive', subcategory: 'A', text: "I prioritize rigorous analytical skepticism and objective logical accuracy over group harmony.", type: 'agree_disagree' },
+  { id: 'ocean_a3', category: 'bigfive', subcategory: 'A', text: "I sympathize deeply with others' emotions and go out of my way to support peers in distress.", type: 'agree_disagree' },
+  { id: 'ocean_a4', category: 'bigfive', subcategory: 'A', text: "I am perfectly willing to engage in tough arguments and express dissent when others are mistaken.", type: 'agree_disagree' },
+
   { id: 'ocean_n1', category: 'bigfive', subcategory: 'N', text: "I find myself easily perturbed, anxious, or emotionally sensitive under strain.", type: 'agree_disagree' },
   { id: 'ocean_n2', category: 'bigfive', subcategory: 'N', text: "I maintain perfect resilience, calm assurance, and internal Stoic control in sudden chaos.", type: 'agree_disagree' },
+  { id: 'ocean_n3', category: 'bigfive', subcategory: 'N', text: "I worry frequently about minor errors and feel a sense of psychological fatigue when tired.", type: 'agree_disagree' },
+  { id: 'ocean_n4', category: 'bigfive', subcategory: 'N', text: "My emotional mood remains exceptionally stable, and I rarely dwell on regrets or fear.", type: 'agree_disagree' },
 
   // --- MMPI ---
   { id: 'mmpi_s1', category: 'mmpi', text: "My morning recovery, sleep states, and nervous stability are robustly stable day-to-day.", type: 'true_false' },
   { id: 'mmpi_s2', category: 'mmpi', text: "I experience abrupt emotional oscillations without any logical physiological explanation.", type: 'true_false' },
   { id: 'mmpi_s3', category: 'mmpi', text: "I quickly master nervous impulses when subjected to severe physical stress.", type: 'true_false' },
+  { id: 'mmpi_s4', category: 'mmpi', text: "I frequently struggle with unexplained physical fatigue, brain fog, or low cognitive drive.", type: 'true_false' },
+  { id: 'mmpi_s5', category: 'mmpi', text: "I feel totally confident in my mental stamina and ability to endure critical life stress.", type: 'true_false' },
+  { id: 'mmpi_s6', category: 'mmpi', text: "I experience excessive muscular tension, heart pounding, or tension headaches under tight deadlines.", type: 'true_false' },
+
   { id: 'mmpi_lie1', category: 'mmpi', text: "I have never in my entire life told a single lie, felt any irritation, or complained about any hardship.", type: 'true_false' },
   { id: 'mmpi_lie2', category: 'mmpi', text: "I have always, without exception, put the comfort and needs of others entirely before my own convenience.", type: 'true_false' },
+  { id: 'mmpi_lie3', category: 'mmpi', text: "I have never felt any urge to gossip, laugh at an inappropriate joke, or judge another seeker.", type: 'true_false' },
+  { id: 'mmpi_lie4', category: 'mmpi', text: "I always admit my mistakes immediately and completely without ever feeling defensive or seeking an excuse.", type: 'true_false' },
+  { id: 'mmpi_lie5', category: 'mmpi', text: "I have never felt a single moment of jealousy, resentment, or competitiveness toward anyone else's progress.", type: 'true_false' },
+  { id: 'mmpi_lie6', category: 'mmpi', text: "I have never procrastinated on a duty, wasted time on unconstructive activities, or broken a promise.", type: 'true_false' },
 
   // --- MBTI ---
-  { id: 'mbti_ie', category: 'mbti', subcategory: 'IE', text: "Do you gain mental focus and recovery by withdrawing into your quiet inner contemplation (Introversion) rather than outgoing social interaction (Extraversion)?", type: 'true_false' },
-  { id: 'mbti_sn', category: 'mbti', subcategory: 'SN', text: "Do you focus heavily on abstract philosophical connections, future theories, and symbolic logic (Intuition) rather than direct mechanical facts and practical daily reality (Sensing)?", type: 'true_false' },
-  { id: 'mbti_tf', category: 'mbti', subcategory: 'TF', text: "Do you decide complex issues primarily by applying rigorous objective logical principles (Thinking) rather than personal empathy and direct values (Feeling)?", type: 'true_false' },
-  { id: 'mbti_jp', category: 'mbti', subcategory: 'JP', text: "Do you prefer a tightly structured existence with firm commitments and closure (Judging) rather than keeping plans open and highly flexible (Perceiving)?", type: 'true_false' }
+  { id: 'mbti_ie1', category: 'mbti', subcategory: 'IE', text: "Do you gain mental focus and recovery by withdrawing into your quiet inner contemplation rather than outgoing social interaction?", type: 'true_false' },
+  { id: 'mbti_ie2', category: 'mbti', subcategory: 'IE', text: "In a collaborative academic workspace, do you feel more creative and clear-headed working alone rather than in a brainstorming crowd?", type: 'true_false' },
+  { id: 'mbti_ie3', category: 'mbti', subcategory: 'IE', text: "Do you prefer expressing your deepest breakthroughs through rigorous writing and static posts rather than oral presentations?", type: 'true_false' },
+
+  { id: 'mbti_sn1', category: 'mbti', subcategory: 'SN', text: "Do you focus heavily on abstract philosophical connections, future theories, and symbolic logic rather than direct mechanical facts and practical daily reality?", type: 'true_false' },
+  { id: 'mbti_sn2', category: 'mbti', subcategory: 'SN', text: "Are you more inspired by what could be—focusing on prospective visions, poetry, or deep speculative science—rather than what is here and now?", type: 'true_false' },
+  { id: 'mbti_sn3', category: 'mbti', subcategory: 'SN', text: "Do you naturally search for hidden symbolic connections, patterns, and underlying principles rather than trusting surface level observable evidence?", type: 'true_false' },
+
+  { id: 'mbti_tf1', category: 'mbti', subcategory: 'TF', text: "Do you decide complex issues primarily by applying rigorous objective logical principles rather than personal empathy and direct values?", type: 'true_false' },
+  { id: 'mbti_tf2', category: 'mbti', subcategory: 'TF', text: "In an academic debate, do you value unvarnished truth and critical accuracy far more than preserving social consensus and guarding egos?", type: 'true_false' },
+  { id: 'mbti_tf3', category: 'mbti', subcategory: 'TF', text: "Do you analyze policies, ideas, and human behaviors using cause-and-effect consistency rather than its emotional value or moral warmth?", type: 'true_false' },
+
+  { id: 'mbti_jp1', category: 'mbti', subcategory: 'JP', text: "Do you prefer a tightly structured existence with firm commitments, clear timelines, and analytical closure rather than keeping plans open and highly flexible?", type: 'true_false' },
+  { id: 'mbti_jp2', category: 'mbti', subcategory: 'JP', text: "Do you feel unsettled when projects or schedules remain unresolved, and feel strong satisfaction once an action plan is settled?", type: 'true_false' },
+  { id: 'mbti_jp3', category: 'mbti', subcategory: 'JP', text: "Do you habitually rely on strict guidelines, structured task lists, and systematic boundaries to govern your daily recovery?", type: 'true_false' }
 ];
 
 const DUMMY_SCHOLARS: PublicProfile[] = [
@@ -187,6 +220,15 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [editFitnessStyle, setEditFitnessStyle] = useState('Heavy Calisthenics');
   const [editMorningEnergy, setEditMorningEnergy] = useState('Sharp morning riser');
   const [editInterests, setEditInterests] = useState<string[]>(['Stoicism', 'Calisthenics']);
+  
+  const [editFavoritePhilosophers, setEditFavoritePhilosophers] = useState('');
+  const [editFavoritePsychologists, setEditFavoritePsychologists] = useState('');
+
+  // Interactive scientific-philosophical compatibility simulator states
+  const [selectedPartnerArchetype, setSelectedPartnerArchetype] = useState('');
+  const [archetypeCompatibilityScore, setArchetypeCompatibilityScore] = useState<number | null>(null);
+  const [compatibilityAnalysis, setCompatibilityAnalysis] = useState('');
+
   
   // Quiz evaluation states
   const [quizAnswers, setQuizAnswers] = useState<{ [key: string]: boolean }>({});
@@ -731,6 +773,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   // Synchronize persona inputs when the user's public profile is fetched
   useEffect(() => {
     if (thisPublicProfile) {
+      setSetupName(thisPublicProfile.name || userProfile?.name || '');
       setEditCoverUrl(thisPublicProfile.coverUrl || '');
       setEditAvatarUrl(thisPublicProfile.avatarUrl || '');
       setEditRelationshipIntent(thisPublicProfile.relationshipIntent || 'Deep philosophical connection');
@@ -740,18 +783,21 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       setEditMorningEnergy(thisPublicProfile.morningEnergy || 'Sharp morning riser');
       setEditInterests(thisPublicProfile.intellectualInterests || ['Stoicism', 'Calisthenics']);
       setSetupBiography(thisPublicProfile.biography || '');
+      setEditFavoritePhilosophers(thisPublicProfile.favoritePhilosophers || '');
+      setEditFavoritePsychologists(thisPublicProfile.favoritePsychologists || '');
       
       if (thisPublicProfile.bigFive) {
         setQuizCalculated(true);
       }
     }
-  }, [thisPublicProfile]);
+  }, [thisPublicProfile, userProfile]);
 
   // Update biography and dating-compatible parameters
   const handleSaveBiographyAndDating = async () => {
     if (!currentUser) return;
     try {
       const profileUpdates: Partial<PublicProfile> = {
+        name: setupName || currentUser.displayName || currentUser.email?.split('@')[0] || 'Seeker',
         coverUrl: editCoverUrl,
         avatarUrl: editAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
         relationshipIntent: editRelationshipIntent,
@@ -761,6 +807,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         morningEnergy: editMorningEnergy,
         intellectualInterests: editInterests,
         biography: setupBiography,
+        favoritePhilosophers: editFavoritePhilosophers,
+        favoritePsychologists: editFavoritePsychologists,
         updatedAt: new Date().toISOString()
       };
       
@@ -776,48 +824,78 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
   // Perform psychometric analysis based on clinical standards
   const handleCalculatePersonality = async () => {
-    // 1. Calculate Big Five (OCEAN)
-    // 2 questions per trait.
-    const getTraitScore = (qPosId: string, qNegId: string): number => {
-      const posVal = quizAnswers[qPosId] ? 1 : 0;
-      const negVal = quizAnswers[qNegId] ? 1 : 0;
-      if (posVal && !negVal) return 85;
-      if (!posVal && negVal) return 15;
-      if (posVal && negVal) return 55;
-      return 45; // balanced center-low defaults
+    // 1. Calculate Big Five (OCEAN) with BFI-20 scoring
+    const calculateBigFiveTrait = (posIds: string[], negIds: string[]): number => {
+      let score = 10; // baseline minimum score
+      posIds.forEach(id => {
+        if (quizAnswers[id] === true) score += 20;
+      });
+      negIds.forEach(id => {
+        if (quizAnswers[id] === false) score += 25;
+      });
+      return score;
     };
 
-    const openness = getTraitScore('ocean_o1', 'ocean_o2');
-    const conscientiousness = getTraitScore('ocean_c1', 'ocean_c2');
-    const extraversion = getTraitScore('ocean_e1', 'ocean_e2');
-    const agreeableness = getTraitScore('ocean_a1', 'ocean_a2');
-    const neuroticism = getTraitScore('ocean_n1', 'ocean_n2');
+    const openness = calculateBigFiveTrait(['ocean_o1', 'ocean_o3'], ['ocean_o2', 'ocean_o4']);
+    const conscientiousness = calculateBigFiveTrait(['ocean_c1', 'ocean_c3'], ['ocean_c2', 'ocean_c4']);
+    const extraversion = calculateBigFiveTrait(['ocean_e1', 'ocean_e3'], ['ocean_e2', 'ocean_e4']);
+    const agreeableness = calculateBigFiveTrait(['ocean_a1', 'ocean_a3'], ['ocean_a2', 'ocean_a4']);
+    const neuroticism = calculateBigFiveTrait(['ocean_n1', 'ocean_n3'], ['ocean_n2', 'ocean_n4']);
 
-    // 2. Calculate MMPI Resilience Index (0-100%)
+    // 2. Calculate MMPI Resilience Index (0-100%) - 6 items
     let stabilityHits = 0;
     if (quizAnswers['mmpi_s1'] === true) stabilityHits++;
     if (quizAnswers['mmpi_s2'] === false) stabilityHits++;
     if (quizAnswers['mmpi_s3'] === true) stabilityHits++;
-    const mmpiResilience = Math.round((stabilityHits / 3) * 100);
+    if (quizAnswers['mmpi_s4'] === false) stabilityHits++;
+    if (quizAnswers['mmpi_s5'] === true) stabilityHits++;
+    if (quizAnswers['mmpi_s6'] === false) stabilityHits++;
+    const mmpiResilience = Math.round((stabilityHits / 6) * 100);
 
-    // Calculate MMPI Lie Tracker Index (0 or 1 or 2 positive perfection answers)
+    // Calculate MMPI Lie Tracker Index (0 to 6 positive perfection answers)
     let lieHits = 0;
     if (quizAnswers['mmpi_lie1'] === true) lieHits++;
     if (quizAnswers['mmpi_lie2'] === true) lieHits++;
+    if (quizAnswers['mmpi_lie3'] === true) lieHits++;
+    if (quizAnswers['mmpi_lie4'] === true) lieHits++;
+    if (quizAnswers['mmpi_lie5'] === true) lieHits++;
+    if (quizAnswers['mmpi_lie6'] === true) lieHits++;
     
-    const mmpiTruthScore = Math.max(0, 100 - (lieHits * 50));
+    const mmpiTruthScore = Math.round(((6 - lieHits) / 6) * 100);
     let mmpiStatus = "Verified Integrity";
-    if (lieHits === 1) {
+    if (lieHits >= 1 && lieHits <= 2) {
       mmpiStatus = "Minor Idealization Detected (Plausible answers)";
-    } else if (lieHits >= 2) {
-      mmpiStatus = "Amusingly Insincere (Clinical Lie alert: declared perfection)";
+    } else if (lieHits >= 3 && lieHits <= 4) {
+      mmpiStatus = "Major Defense Mechanism (Substantial need to project ideal self)";
+    } else if (lieHits >= 5) {
+      mmpiStatus = "Amusingly Insincere (Clinical Lie alerts: extreme declared perfection)";
     }
 
-    // 3. Myers-Briggs Typology Mapping
-    const typeI = quizAnswers['mbti_ie'] === true ? 'I' : 'E';
-    const typeN = quizAnswers['mbti_sn'] === true ? 'N' : 'S';
-    const typeT = quizAnswers['mbti_tf'] === true ? 'T' : 'F';
-    const typeJ = quizAnswers['mbti_jp'] === true ? 'J' : 'P';
+    // 3. Myers-Briggs Typology Mapping - 3 items per axis
+    let ieScore = 0;
+    if (quizAnswers['mbti_ie1'] === true) ieScore++;
+    if (quizAnswers['mbti_ie2'] === true) ieScore++;
+    if (quizAnswers['mbti_ie3'] === true) ieScore++;
+    const typeI = ieScore >= 2 ? 'I' : 'E';
+
+    let snScore = 0;
+    if (quizAnswers['mbti_sn1'] === true) snScore++;
+    if (quizAnswers['mbti_sn2'] === true) snScore++;
+    if (quizAnswers['mbti_sn3'] === true) snScore++;
+    const typeN = snScore >= 2 ? 'N' : 'S';
+
+    let tfScore = 0;
+    if (quizAnswers['mbti_tf1'] === true) tfScore++;
+    if (quizAnswers['mbti_tf2'] === true) tfScore++;
+    if (quizAnswers['mbti_tf3'] === true) tfScore++;
+    const typeT = tfScore >= 2 ? 'T' : 'F';
+
+    let jpScore = 0;
+    if (quizAnswers['mbti_jp1'] === true) jpScore++;
+    if (quizAnswers['mbti_jp2'] === true) jpScore++;
+    if (quizAnswers['mbti_jp3'] === true) jpScore++;
+    const typeJ = jpScore >= 2 ? 'J' : 'P';
+
     const mbti = `${typeI}${typeN}${typeT}${typeJ}`;
 
     const MBTI_MAP: { [key: string]: string } = {
@@ -3137,9 +3215,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                 <div className="md:col-span-2 space-y-6">
                   <div className={cn(
                     "p-6 rounded-3xl border space-y-6 animate-fadeIn",
-                    isDarkMode ? "bg-zinc-900/30 border-zinc-805" : "bg-white border-zinc-200 shadow-sm"
+                    isDarkMode ? "bg-zinc-900/30 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
                   )}>
-                    
                     {/* Presets Block */}
                     <div className="space-y-3">
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Preset Academic Covers</h4>
@@ -3151,12 +3228,20 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             onClick={() => setEditCoverUrl(cover.url)}
                             className={cn(
                               "relative h-14 rounded-xl overflow-hidden border transition-all text-left group",
-                              editCoverUrl === cover.url ? "border-emerald-500 ring-1 ring-emerald-500" : "border-zinc-800/60 hover:border-zinc-700"
+                              editCoverUrl === cover.url ? "border-emerald-500 ring-1 ring-emerald-500" : "border-zinc-800 hover:border-zinc-700/50"
                             )}
                           >
-                            <img src={cover.url} className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform" />
-                            <div className="absolute inset-0 bg-black/40 flex items-end p-2">
-                              <span className="text-[8px] font-black uppercase tracking-tight text-white line-clamp-1">{cover.name}</span>
+                            <img src={cover.url} className="w-full h-full object-cover opacity-70 group-hover:scale-105 transition-transform" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/30 to-transparent flex items-end p-1">
+                              <span className={cn(
+                                "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md shadow-sm border block w-full text-center truncate",
+                                cover.name === "Slate Wisdom" && "bg-slate-900/95 text-slate-350 border-slate-700/50",
+                                cover.name === "Classical Ruins" && "bg-amber-950/95 text-amber-300 border-amber-900/40",
+                                cover.name === "Forest Sanctuary" && "bg-emerald-950/95 text-emerald-350 border-emerald-800/40",
+                                cover.name === "Infinite Cosmos" && "bg-purple-950/95 text-purple-300 border-purple-800/40"
+                              )}>
+                                {cover.name}
+                              </span>
                             </div>
                           </button>
                         ))}
@@ -3170,7 +3255,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         placeholder="Or input custom cover Image URL..."
                         className={cn(
                           "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                          isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
                         )}
                       />
                     </div>
@@ -3186,7 +3271,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             onClick={() => setEditAvatarUrl(avatar.url)}
                             className={cn(
                               "relative w-12 h-12 rounded-full overflow-hidden border shrink-0 transition-all",
-                              editAvatarUrl === avatar.url ? "border-emerald-500 ring-2 ring-emerald-500/25 scale-95" : "border-zinc-800 hover:border-zinc-700"
+                              editAvatarUrl === avatar.url ? "border-emerald-500 ring-2 ring-emerald-500/25 scale-95" : "border-zinc-805 hover:border-zinc-700"
                             )}
                           >
                             <img src={avatar.url} className="w-full h-full object-cover" />
@@ -3200,7 +3285,22 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         placeholder="Or input custom profile Avatar URL..."
                         className={cn(
                           "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                          isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                        )}
+                      />
+                    </div>
+
+                    {/* Display Name and Academic Title */}
+                    <div className="space-y-1.5">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Display Name / Pseudonym</h4>
+                      <input
+                        type="text"
+                        value={setupName}
+                        onChange={(e) => setSetupName(e.target.value)}
+                        placeholder="Your physical name or chosen seeker title..."
+                        className={cn(
+                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                          isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
                         )}
                       />
                     </div>
@@ -3215,7 +3315,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         placeholder="Introduce your intellectual aspirations and recovery priorities..."
                         className={cn(
                           "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500 resize-none",
-                          isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
                         )}
                       />
                     </div>
@@ -3308,11 +3408,44 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       </div>
                     </div>
 
+                    {/* Academic Favorites (Philosophers & Psychologists) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-4">
+                      {/* Favorite Philosophers */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Favorite Philosophers</label>
+                        <input
+                          type="text"
+                          value={editFavoritePhilosophers}
+                          onChange={(e) => setEditFavoritePhilosophers(e.target.value)}
+                          placeholder="e.g. Seneca, Marcus Aurelius, Nietzsche"
+                          className={cn(
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          )}
+                        />
+                      </div>
+
+                      {/* Favorite Psychologists */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Favorite Psychologists</label>
+                        <input
+                          type="text"
+                          value={editFavoritePsychologists}
+                          onChange={(e) => setEditFavoritePsychologists(e.target.value)}
+                          placeholder="e.g. Carl Jung, Viktor Frankl, William James"
+                          className={cn(
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          )}
+                        />
+                      </div>
+                    </div>
+
                     {/* Intellectual Interests checklists checklist */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 pt-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block">Intellectual Core Axes</label>
                       <div className="flex flex-wrap gap-2">
-                        {["Stoicism", "Neuroscience", "Classical Rome", "Slavic Poetry", "Calisthenics", "Biophysics", "Quantum Philosophy", "Cognitive Therapy"].map(item => {
+                        {["Stoicism", "Neuroscience", "Classical Rome", "Slavic Poetry", "Calisthenics", "Biophysics", "Quantum Philosophy", "Cognitive Therapy", "Jewish Wisdom", "Chinese Wisdom", "Balkan Wisdom"].map(item => {
                           const active = editInterests.includes(item);
                           return (
                             <button
@@ -3331,7 +3464,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                   ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 font-extrabold"
                                   : isDarkMode 
                                     ? "bg-zinc-955 border-zinc-800 text-zinc-400 hover:border-zinc-700" 
-                                    : "bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-450"
+                                    : "bg-zinc-50 border-zinc-200 text-zinc-500 hover:border-zinc-400"
                               )}
                             >
                               {active && <Check className="w-2.5 h-2.5 inline mr-1.5 text-emerald-400" />}
@@ -3339,6 +3472,39 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             </button>
                           );
                         })}
+                      </div>
+
+                      {/* Dropdown for other Wisdoms */}
+                      <div className="space-y-1.5 mt-3 pt-2 border-t border-zinc-800/10 dark:border-zinc-800/30">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block">Integrate Specialized Wisdom School</label>
+                        <select
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val && !editInterests.includes(val)) {
+                              setEditInterests([...editInterests, val]);
+                            }
+                            // Reset select value
+                            e.target.value = "";
+                          }}
+                          className={cn(
+                            "w-full px-3.5 py-2 text-xs rounded-xl border outline-none font-semibold focus:ring-1 focus:ring-emerald-500",
+                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-700"
+                          )}
+                          defaultValue=""
+                        >
+                          <option value="" disabled>-- Access additional academic philosophies --</option>
+                          <option value="Ancient Greek Philosophy">Ancient Greek Philosophy</option>
+                          <option value="Japanese Zen Buddhism">Japanese Zen Buddhism</option>
+                          <option value="Vedic Non-Duality">Vedic Non-Duality (Advaita)</option>
+                          <option value="Islamic Sufi Mysticism">Islamic Sufi Mysticism</option>
+                          <option value="Existential Phenomenology">Existential Phenomenology</option>
+                          <option value="Renaissance Hermeticism">Renaissance Hermeticism</option>
+                          <option value="Taois Classical Wisdom">Taoist Classical Wisdom</option>
+                          <option value="Balkan Gnosticism">Balkan Gnosticism</option>
+                          <option value="Analytical Jungianism">Analytical Jungianism</option>
+                          <option value="Frankl Logotherapy">Frankl Logotherapy</option>
+                        </select>
+                        <p className="text-[9px] text-zinc-500 font-medium">Adds supplementary wisdom pathways directly into your live profile card.</p>
                       </div>
                     </div>
 
@@ -3406,26 +3572,63 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                           {/* Chips Grid */}
                           <div className="flex flex-wrap gap-1 pb-1 pt-1">
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800 flex items-center gap-1">
+                            <span className={cn(
+                              "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                              isDarkMode ? "bg-zinc-850 border-zinc-800 text-zinc-305" : "bg-zinc-100 border-zinc-200 text-zinc-700"
+                            )}>
                               📍 {editLocation || "Zagreb, Croatia"}
                             </span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800">
+                            <span className={cn(
+                              "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                              isDarkMode ? "bg-zinc-850 border-zinc-800 text-zinc-305" : "bg-zinc-100 border-zinc-200 text-zinc-700"
+                            )}>
                               📐 {editHeight || "180"} cm
                             </span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800">
+                            <span className={cn(
+                              "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                              isDarkMode ? "bg-zinc-850 border-zinc-800 text-zinc-350" : "bg-zinc-100 border-zinc-200 text-zinc-700"
+                            )}>
                               ❤️ {editRelationshipIntent}
                             </span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800">
+                            <span className={cn(
+                              "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                              isDarkMode ? "bg-zinc-850 border-zinc-800 text-zinc-350" : "bg-zinc-100 border-zinc-200 text-zinc-700"
+                            )}>
                               ⚡ {editFitnessStyle}
                             </span>
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-850 text-zinc-400 border border-zinc-800">
+                            <span className={cn(
+                              "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                              isDarkMode ? "bg-zinc-850 border-zinc-800 text-zinc-350" : "bg-zinc-100 border-zinc-200 text-zinc-700"
+                            )}>
                               🌅 {editMorningEnergy}
                             </span>
                           </div>
 
+                          {/* Scholarly Favorites */}
+                          {(editFavoritePhilosophers || editFavoritePsychologists) && (
+                            <div className="space-y-1.5 pt-1.5 border-t border-zinc-800/10 dark:border-zinc-800/35">
+                              {editFavoritePhilosophers && (
+                                <div className="flex items-start gap-1">
+                                  <span className="text-emerald-500 text-[10px]">📜</span>
+                                  <span className="text-[9px] leading-tight">
+                                    <strong className={isDarkMode ? "text-zinc-500" : "text-zinc-750"}>Philosophers:</strong> <span className={isDarkMode ? "text-zinc-300 font-semibold" : "text-zinc-650 font-semibold"}>{editFavoritePhilosophers}</span>
+                                  </span>
+                                </div>
+                              )}
+                              {editFavoritePsychologists && (
+                                <div className="flex items-start gap-1">
+                                  <span className="text-teal-400 text-[10px]">🧠</span>
+                                  <span className="text-[9px] leading-tight">
+                                    <strong className={isDarkMode ? "text-zinc-500" : "text-zinc-750"}>Psychologists:</strong> <span className={isDarkMode ? "text-zinc-300 font-semibold" : "text-zinc-650 font-semibold"}>{editFavoritePsychologists}</span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {/* Interests */}
                           {editInterests.length > 0 && (
-                            <div className="space-y-1 pt-1 border-t border-zinc-800/10">
+                            <div className="space-y-1 pt-1.5 border-t border-zinc-800/10 dark:border-zinc-800/35">
                               <span className="text-[7.5px] font-black uppercase text-zinc-500 tracking-widest block">Intellectual Core</span>
                               <div className="flex flex-wrap gap-1">
                                 {editInterests.map(i => (
@@ -3439,6 +3642,114 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       </div>
                     </div>
                   </div>
+
+                  {/* Philosophical Match Evaluator */}
+                  <div className={cn(
+                    "p-6 rounded-3xl border space-y-4 animate-fadeIn relative overflow-hidden",
+                    isDarkMode ? "bg-zinc-900/30 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+                  )}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                        <Compass className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Academic Compatibility Simulator</h4>
+                        <p className={cn("text-[9px] font-medium", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>Evaluate intellectual & biological synchrony with standard peer archetypes</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
+                      <div>
+                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block mb-1">Select Target Peer Archetype</label>
+                        <select
+                          value={selectedPartnerArchetype}
+                          onChange={(e) => {
+                            setSelectedPartnerArchetype(e.target.value);
+                            // Run calculation automatically on select change
+                            const archetype = e.target.value;
+                            let score = 70;
+                            let analysis = "";
+                            
+                            const userHasStoicism = editInterests.includes("Stoicism") || editInterests.includes("Transcendental Stoic Meditations") || editInterests.includes("Jewish Wisdom") || editInterests.includes("Chinese Wisdom") || editInterests.includes("Balkan Wisdom");
+                            const userHasCalisthenics = editInterests.includes("Calisthenics");
+                            
+                            switch (archetype) {
+                              case "The Zen Biophysicist":
+                                score = userHasStoicism ? 89 : 76;
+                                analysis = `Zen mindfulness paired with ${editFitnessStyle || "your workouts"} yields high physiological equanimity. Your selection of themes matches their research-grade biological rigor.`;
+                                break;
+                              case "The Stoic Calisthenics Athlete":
+                                score = userHasCalisthenics ? 96 : 82;
+                                analysis = `Optimal muscular-philosophical synergy detected. Shared athletic dedication triggers direct biochemical fellowship. A path of bodyweight mastery and deep focus.`;
+                                break;
+                              case "The Existential Nihilist":
+                                score = userHasStoicism ? 64 : 85;
+                                analysis = `A sharp dialectical tension. Your structured profile directly challenges their void-centric skepticism. Prompts active debate and intense dialogue, but presents recovery coordination friction.`;
+                                break;
+                              case "The Classical Roman Polymath":
+                                score = userHasStoicism ? 93 : 79;
+                                analysis = `High-signal academic compatibility. Mutual focus on classical literature and high-density logic forms an imperial alliance. Ideal for mutual reading rituals.`;
+                                break;
+                              case "The Slavic Romantic Scholar":
+                                score = editLocation.toLowerCase().includes("croatia") || editLocation.toLowerCase().includes("zagreb") ? 92 : 75;
+                                analysis = `Melancholic literary pairing. Reflects high Slavic cultural resonance and deep poetic alignment in Croatia. Strong for late-night coffee discussions, but demands deliberate morning discipline.`;
+                                break;
+                              default:
+                                score = 80;
+                                analysis = `Balanced companionship with medium-high philosophical symmetry. Excellent baseline for collaborative workouts.`;
+                            }
+                            setArchetypeCompatibilityScore(score);
+                            setCompatibilityAnalysis(analysis);
+                          }}
+                          className={cn(
+                            "w-full px-3.5 py-2 text-xs rounded-xl border outline-none font-semibold focus:ring-1 focus:ring-emerald-500",
+                            isDarkMode ? "bg-zinc-950 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-700"
+                          )}
+                        >
+                          <option value="" disabled>-- Select target peer archetype --</option>
+                          <option value="The Zen Biophysicist">The Zen Biophysicist</option>
+                          <option value="The Stoic Calisthenics Athlete">The Stoic Calisthenics Athlete</option>
+                          <option value="The Existential Nihilist">The Existential Nihilist</option>
+                          <option value="The Classical Roman Polymath">The Classical Roman Polymath</option>
+                          <option value="The Slavic Romantic Scholar">The Slavic Romantic Scholar</option>
+                        </select>
+                      </div>
+
+                      {archetypeCompatibilityScore !== null && selectedPartnerArchetype && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={cn(
+                            "p-3.5 rounded-2xl border space-y-2.5",
+                            isDarkMode ? "bg-zinc-950/80 border-zinc-800/60" : "bg-zinc-50 border-zinc-200"
+                          )}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider">Dialectical Match Score</span>
+                            <span className={cn(
+                              "text-xs font-black px-2 py-0.5 rounded-lg border",
+                              isDarkMode ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/25" : "bg-emerald-50 border-emerald-200 text-emerald-600"
+                            )}>
+                              {archetypeCompatibilityScore}% Synced
+                            </span>
+                          </div>
+
+                          {/* Score Bar */}
+                          <div className={cn("w-full h-1.5 rounded-full overflow-hidden", isDarkMode ? "bg-zinc-800" : "bg-zinc-200")}>
+                            <div 
+                              className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-500"
+                              style={{ width: `${archetypeCompatibilityScore}%` }}
+                            ></div>
+                          </div>
+
+                          <p className={cn("text-[9.5px] leading-relaxed font-semibold", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                            {compatibilityAnalysis}
+                          </p>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+
                 </div>
 
               </div>

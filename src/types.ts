@@ -234,6 +234,10 @@ export interface PublicProfile {
   mmpiTruthScore?: number; // lies detected or not
   mmpiStatus?: string;
   quizTakenAt?: string;
+
+  // Custom favorite academics
+  favoritePhilosophers?: string;
+  favoritePsychologists?: string;
 }
 
 export interface FriendRequest {
