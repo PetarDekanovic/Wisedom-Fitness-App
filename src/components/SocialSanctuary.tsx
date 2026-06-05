@@ -231,7 +231,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
   
   // Quiz evaluation states
-  const [quizAnswers, setQuizAnswers] = useState<{ [key: string]: boolean }>({});
+  const [quizAnswers, setQuizAnswers] = useState<{ [key: string]: boolean | number }>({});
   const [quizCalculated, setQuizCalculated] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
 
@@ -824,16 +824,25 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
   // Perform psychometric analysis based on clinical standards
   const handleCalculatePersonality = async () => {
-    // 1. Calculate Big Five (OCEAN) with BFI-20 scoring
+    // 1. Calculate Big Five (OCEAN) with BFI-25 standard scoring (1 to 5 Likert scale)
     const calculateBigFiveTrait = (posIds: string[], negIds: string[]): number => {
-      let score = 10; // baseline minimum score
+      let sum = 0;
+      let count = 0;
       posIds.forEach(id => {
-        if (quizAnswers[id] === true) score += 20;
+        const val = quizAnswers[id];
+        const numVal = typeof val === 'number' ? val : (val === true ? 5 : (val === false ? 1 : 3));
+        sum += numVal;
+        count++;
       });
       negIds.forEach(id => {
-        if (quizAnswers[id] === false) score += 25;
+        const val = quizAnswers[id];
+        const numVal = typeof val === 'number' ? val : (val === true ? 5 : (val === false ? 1 : 3));
+        sum += (6 - numVal); // Reverse key scoring
+        count++;
       });
-      return score;
+      const minPossible = count * 1;
+      const maxPossible = count * 5;
+      return Math.round(((sum - minPossible) / (maxPossible - minPossible)) * 100);
     };
 
     const openness = calculateBigFiveTrait(['ocean_o1', 'ocean_o3'], ['ocean_o2', 'ocean_o4']);
@@ -842,7 +851,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     const agreeableness = calculateBigFiveTrait(['ocean_a1', 'ocean_a3'], ['ocean_a2', 'ocean_a4']);
     const neuroticism = calculateBigFiveTrait(['ocean_n1', 'ocean_n3'], ['ocean_n2', 'ocean_n4']);
 
-    // 2. Calculate MMPI Resilience Index (0-100%) - 6 items
+    // 2. Calculate MMPI Resilience Index (0-100%) - 6 items (Classic True/False diagnostic scale)
     let stabilityHits = 0;
     if (quizAnswers['mmpi_s1'] === true) stabilityHits++;
     if (quizAnswers['mmpi_s2'] === false) stabilityHits++;
@@ -871,30 +880,28 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       mmpiStatus = "Amusingly Insincere (Clinical Lie alerts: extreme declared perfection)";
     }
 
-    // 3. Myers-Briggs Typology Mapping - 3 items per axis
-    let ieScore = 0;
-    if (quizAnswers['mbti_ie1'] === true) ieScore++;
-    if (quizAnswers['mbti_ie2'] === true) ieScore++;
-    if (quizAnswers['mbti_ie3'] === true) ieScore++;
-    const typeI = ieScore >= 2 ? 'I' : 'E';
+    // 3. Myers-Briggs Typology Mapping - 3 items per axis (5-point Likert scale)
+    const calculateMbtiAxis = (ids: string[]): number => {
+      let sum = 0;
+      ids.forEach(id => {
+        const val = quizAnswers[id];
+        const numVal = typeof val === 'number' ? val : (val === true ? 5 : (val === false ? 1 : 3));
+        sum += numVal;
+      });
+      return sum;
+    };
 
-    let snScore = 0;
-    if (quizAnswers['mbti_sn1'] === true) snScore++;
-    if (quizAnswers['mbti_sn2'] === true) snScore++;
-    if (quizAnswers['mbti_sn3'] === true) snScore++;
-    const typeN = snScore >= 2 ? 'N' : 'S';
+    const ieScoreValue = calculateMbtiAxis(['mbti_ie1', 'mbti_ie2', 'mbti_ie3']);
+    const typeI = ieScoreValue >= 9 ? 'I' : 'E';
 
-    let tfScore = 0;
-    if (quizAnswers['mbti_tf1'] === true) tfScore++;
-    if (quizAnswers['mbti_tf2'] === true) tfScore++;
-    if (quizAnswers['mbti_tf3'] === true) tfScore++;
-    const typeT = tfScore >= 2 ? 'T' : 'F';
+    const snScoreValue = calculateMbtiAxis(['mbti_sn1', 'mbti_sn2', 'mbti_sn3']);
+    const typeN = snScoreValue >= 9 ? 'N' : 'S';
 
-    let jpScore = 0;
-    if (quizAnswers['mbti_jp1'] === true) jpScore++;
-    if (quizAnswers['mbti_jp2'] === true) jpScore++;
-    if (quizAnswers['mbti_jp3'] === true) jpScore++;
-    const typeJ = jpScore >= 2 ? 'J' : 'P';
+    const tfScoreValue = calculateMbtiAxis(['mbti_tf1', 'mbti_tf2', 'mbti_tf3']);
+    const typeT = tfScoreValue >= 9 ? 'T' : 'F';
+
+    const jpScoreValue = calculateMbtiAxis(['mbti_jp1', 'mbti_jp2', 'mbti_jp3']);
+    const typeJ = jpScoreValue >= 9 ? 'J' : 'P';
 
     const mbti = `${typeI}${typeN}${typeT}${typeJ}`;
 
@@ -3782,36 +3789,116 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     )}>
                       
                       {/* Section 1: The Big Five NEO-PI (OCEAN) */}
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2 border-b border-zinc-800/10 pb-2">
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-2 border-b border-zinc-800/10 dark:border-zinc-850 pb-2">
                           <CheckCircle2 className="w-4 h-4 text-teal-400" />
                           <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-350 dark:text-zinc-300">Phase 1: The Big Five Traits (OCEAN)</h4>
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {PSYCH_QUESTIONS.filter(q => q.category === 'bigfive').map((q) => (
-                            <div key={q.id} className="space-y-2 pb-2">
-                              <p className={cn("text-xs font-semibold leading-relaxed", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>{q.text}</p>
-                              <div className="flex gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
-                                  <input
-                                    type="radio"
-                                    name={q.id}
-                                    checked={quizAnswers[q.id] === true}
-                                    onChange={() => setQuizAnswers(prev => ({ ...prev, [q.id]: true }))}
-                                    className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
-                                  />
-                                  In Full Agreement (Yes)
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
-                                  <input
-                                    type="radio"
-                                    name={q.id}
-                                    checked={quizAnswers[q.id] === false}
-                                    onChange={() => setQuizAnswers(prev => ({ ...prev, [q.id]: false }))}
-                                    className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
-                                  />
-                                  In Disagreement (No)
-                                </label>
+                            <div key={q.id} className="space-y-3 pb-5 border-b border-zinc-800/5 dark:border-zinc-850/50 last:border-0 last:pb-0">
+                              <p className={cn("text-xs font-bold leading-relaxed", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>{q.text}</p>
+                              
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                                <span className={cn("text-[8px] font-black uppercase tracking-widest hidden sm:inline shrink-0", isDarkMode ? "text-rose-500/80" : "text-rose-600")}>
+                                  Disagree
+                                </span>
+                                
+                                <div className="flex items-center justify-between sm:justify-center gap-1 sm:gap-4 w-full sm:w-auto">
+                                  <span className={cn("text-[8px] font-black uppercase tracking-widest sm:hidden", isDarkMode ? "text-rose-500/85" : "text-rose-600")}>
+                                    Disagree
+                                  </span>
+                                  
+                                  <div className="flex items-center gap-2.5 sm:gap-4 mx-2">
+                                    {[1, 2, 3, 4, 5].map((val) => {
+                                      const isActive = quizAnswers[q.id] === val;
+                                      
+                                      let sizeClass = "w-7 h-7 sm:w-8 sm:h-8";
+                                      let activeStyle = "";
+                                      let hoverStyle = "";
+                                      let label = "";
+                                      
+                                      if (val === 1) {
+                                        sizeClass = "w-8 h-8 sm:w-8.5 sm:h-8.5";
+                                        hoverStyle = "hover:border-rose-400/50 hover:bg-rose-500/5";
+                                        activeStyle = isDarkMode 
+                                          ? "bg-rose-500/20 border-rose-505 text-rose-450 ring-2 ring-rose-500/15" 
+                                          : "bg-rose-50 border-rose-500 text-rose-600 ring-4 ring-rose-50";
+                                        label = "Strongly Disagree";
+                                      } else if (val === 2) {
+                                        sizeClass = "w-7 h-7 sm:w-7.5 sm:h-7.5";
+                                        hoverStyle = "hover:border-amber-400/50 hover:bg-amber-500/5";
+                                        activeStyle = isDarkMode 
+                                          ? "bg-amber-500/15 border-amber-505 text-amber-450 ring-2 ring-amber-500/15" 
+                                          : "bg-amber-50 border-amber-500 text-amber-600 ring-4 ring-amber-50";
+                                        label = "Somewhat Disagree";
+                                      } else if (val === 3) {
+                                        sizeClass = "w-6 h-6 sm:w-6.5 sm:h-6.5";
+                                        hoverStyle = "hover:border-zinc-400/50 hover:bg-zinc-500/5";
+                                        activeStyle = isDarkMode 
+                                          ? "bg-zinc-800/60 border-zinc-500 text-zinc-300 ring-2 ring-zinc-500/10" 
+                                          : "bg-zinc-100 border-zinc-400 text-zinc-700 ring-4 ring-zinc-100";
+                                        label = "Neutral";
+                                      } else if (val === 4) {
+                                        sizeClass = "w-7 h-7 sm:w-7.5 sm:h-7.5";
+                                        hoverStyle = "hover:border-teal-400/50 hover:bg-teal-500/5";
+                                        activeStyle = isDarkMode 
+                                          ? "bg-teal-500/15 border-teal-505 text-teal-450 ring-2 ring-teal-500/15" 
+                                          : "bg-teal-50 border-teal-500 text-teal-650 ring-4 ring-teal-50";
+                                        label = "Somewhat Agree";
+                                      } else if (val === 5) {
+                                        sizeClass = "w-8 h-8 sm:w-8.5 sm:h-8.5";
+                                        hoverStyle = "hover:border-emerald-400/50 hover:bg-emerald-500/5";
+                                        activeStyle = isDarkMode 
+                                          ? "bg-emerald-500/20 border-emerald-505 text-emerald-450 ring-2 ring-emerald-500/15" 
+                                          : "bg-emerald-50 border-emerald-500 text-emerald-650 ring-4 ring-emerald-50";
+                                        label = "Strongly Agree";
+                                      }
+                                      
+                                      return (
+                                        <button
+                                          key={val}
+                                          type="button"
+                                          title={label}
+                                          onClick={() => setQuizAnswers(prev => ({ ...prev, [q.id]: val }))}
+                                          className={cn(
+                                            "rounded-full border transition-all duration-200 flex items-center justify-center cursor-pointer shrink-0 relative group/btn",
+                                            isActive 
+                                              ? activeStyle 
+                                              : isDarkMode 
+                                                ? "bg-zinc-950/20 border-zinc-800 text-zinc-600 hover:text-zinc-400" 
+                                                : "bg-zinc-50 border-zinc-200 text-zinc-400 hover:text-zinc-650",
+                                            hoverStyle,
+                                            sizeClass
+                                          )}
+                                        >
+                                          <span className={cn(
+                                            "w-1.5 h-1.5 rounded-full transition-transform duration-200 scale-0",
+                                            isActive && "scale-100",
+                                            val === 1 && "bg-rose-450",
+                                            val === 2 && "bg-amber-450",
+                                            val === 3 && "bg-zinc-400",
+                                            val === 4 && "bg-teal-450",
+                                            val === 5 && "bg-emerald-450"
+                                          )}></span>
+                                          
+                                          {/* Label Tooltip */}
+                                          <span className="absolute bottom-full mb-1.5 scale-0 group-hover/btn:scale-100 transition-transform duration-100 bg-zinc-950 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow pointer-events-none z-30 whitespace-nowrap border border-zinc-800">
+                                            {label}
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  
+                                  <span className={cn("text-[8px] font-black uppercase tracking-widest sm:hidden", isDarkMode ? "text-emerald-500/85" : "text-emerald-600")}>
+                                    Agree
+                                  </span>
+                                </div>
+                                
+                                <span className={cn("text-[8px] font-black uppercase tracking-widest hidden sm:inline shrink-0", isDarkMode ? "text-emerald-500/80" : "text-emerald-600")}>
+                                  Agree
+                                </span>
                               </div>
                             </div>
                           ))}
@@ -3819,15 +3906,15 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       </div>
 
                       {/* Section 2: MMPI True/False clinical screener */}
-                      <div className="space-y-4 pt-4 border-t border-zinc-800/10">
-                        <div className="flex items-center gap-2 border-b border-zinc-800/10 pb-2">
+                      <div className="space-y-4 pt-4 border-t border-zinc-800/10 dark:border-zinc-850">
+                        <div className="flex items-center gap-2 border-b border-zinc-800/10 dark:border-zinc-850 pb-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                           <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-350 dark:text-zinc-300">Phase 2: MMPI Clinical Resilience & Truth scale</h4>
                         </div>
                         <div className="space-y-4">
                           {PSYCH_QUESTIONS.filter(q => q.category === 'mmpi').map((q) => (
                             <div key={q.id} className="space-y-2 pb-2">
-                              <p className={cn("text-xs font-semibold leading-relaxed", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>{q.text}</p>
+                              <p className={cn("text-xs font-semibold leading-relaxed", isDarkMode ? "text-zinc-200" : "text-zinc-805")}>{q.text}</p>
                               <div className="flex gap-4">
                                 <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
                                   <input
@@ -3856,36 +3943,116 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       </div>
 
                       {/* Section 3: MBTI Duality checklist */}
-                      <div className="space-y-4 pt-4 border-t border-zinc-800/10">
-                        <div className="flex items-center gap-2 border-b border-zinc-800/10 pb-2">
+                      <div className="space-y-6 pt-4 border-t border-zinc-800/10 dark:border-zinc-850">
+                        <div className="flex items-center gap-2 border-b border-zinc-800/10 dark:border-zinc-850 pb-2">
                           <CheckCircle2 className="w-4 h-4 text-violet-400" />
                           <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-350 dark:text-zinc-300">Phase 3: MBTI Cognitive Preferences</h4>
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           {PSYCH_QUESTIONS.filter(q => q.category === 'mbti').map((q) => (
-                            <div key={q.id} className="space-y-2 pb-2">
-                              <p className={cn("text-xs font-semibold leading-relaxed", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>{q.text}</p>
-                              <div className="flex gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
-                                  <input
-                                    type="radio"
-                                    name={q.id}
-                                    checked={quizAnswers[q.id] === true}
-                                    onChange={() => setQuizAnswers(prev => ({ ...prev, [q.id]: true }))}
-                                    className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
-                                  />
-                                  TRUE (Affirmative)
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer text-[10px] font-black uppercase tracking-wider text-zinc-500 select-none">
-                                  <input
-                                    type="radio"
-                                    name={q.id}
-                                    checked={quizAnswers[q.id] === false}
-                                    onChange={() => setQuizAnswers(prev => ({ ...prev, [q.id]: false }))}
-                                    className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
-                                  />
-                                  FALSE (Opposing)
-                                </label>
+                            <div key={q.id} className="space-y-3 pb-5 border-b border-zinc-800/5 dark:border-zinc-850/50 last:border-0 last:pb-0">
+                              <p className={cn("text-xs font-bold leading-relaxed", isDarkMode ? "text-zinc-200" : "text-zinc-855")}>{q.text}</p>
+                              
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                                <span className={cn("text-[8px] font-black uppercase tracking-widest hidden sm:inline shrink-0", isDarkMode ? "text-rose-500/80" : "text-rose-600")}>
+                                  Disagree
+                                </span>
+                                
+                                <div className="flex items-center justify-between sm:justify-center gap-1 sm:gap-4 w-full sm:w-auto">
+                                  <span className={cn("text-[8px] font-black uppercase tracking-widest sm:hidden", isDarkMode ? "text-rose-500/85" : "text-rose-600")}>
+                                    Disagree
+                                  </span>
+                                  
+                                  <div className="flex items-center gap-2.5 sm:gap-4 mx-2">
+                                    {[1, 2, 3, 4, 5].map((val) => {
+                                      const isActive = quizAnswers[q.id] === val;
+                                      
+                                      let sizeClass = "w-7 h-7 sm:w-8 sm:h-8";
+                                      let activeStyle = "";
+                                      let hoverStyle = "";
+                                      let label = "";
+                                      
+                                      if (val === 1) {
+                                        sizeClass = "w-8 h-8 sm:w-8.5 sm:h-8.5";
+                                        hoverStyle = "hover:border-rose-400/50 hover:bg-rose-500/5";
+                                        activeStyle = isDarkMode 
+                                          ? "bg-rose-500/20 border-rose-505 text-rose-450 ring-2 ring-rose-500/15" 
+                                          : "bg-rose-50 border-rose-500 text-rose-600 ring-4 ring-rose-50";
+                                        label = "Strongly Disagree";
+                                      } else if (val === 2) {
+                                        sizeClass = "w-7 h-7 sm:w-7.5 sm:h-7.5";
+                                        hoverStyle = "hover:border-amber-400/50 hover:bg-amber-500/5";
+                                        activeStyle = isDarkMode 
+                                          ? "bg-amber-500/15 border-amber-505 text-amber-450 ring-2 ring-amber-500/15" 
+                                          : "bg-amber-50 border-amber-500 text-amber-600 ring-4 ring-amber-50";
+                                        label = "Somewhat Disagree";
+                                      } else if (val === 3) {
+                                        sizeClass = "w-6 h-6 sm:w-6.5 sm:h-6.5";
+                                        hoverStyle = "hover:border-zinc-400/50 hover:bg-zinc-500/5";
+                                        activeStyle = isDarkMode 
+                                          ? "bg-zinc-800/60 border-zinc-500 text-zinc-305 ring-2 ring-zinc-500/10" 
+                                          : "bg-zinc-100 border-zinc-400 text-zinc-700 ring-4 ring-zinc-100";
+                                        label = "Neutral";
+                                      } else if (val === 4) {
+                                        sizeClass = "w-7 h-7 sm:w-7.5 sm:h-7.5";
+                                        hoverStyle = "hover:border-teal-400/50 hover:bg-teal-500/5";
+                                        activeStyle = isDarkMode 
+                                          ? "bg-teal-500/15 border-teal-505 text-teal-450 ring-2 ring-teal-500/15" 
+                                          : "bg-teal-50 border-teal-500 text-teal-650 ring-4 ring-teal-50";
+                                        label = "Somewhat Agree";
+                                      } else if (val === 5) {
+                                        sizeClass = "w-8 h-8 sm:w-8.5 sm:h-8.5";
+                                        hoverStyle = "hover:border-emerald-400/50 hover:bg-emerald-500/5";
+                                        activeStyle = isDarkMode 
+                                          ? "bg-emerald-500/20 border-emerald-505 text-emerald-450 ring-2 ring-emerald-500/15" 
+                                          : "bg-emerald-50 border-emerald-500 text-emerald-650 ring-4 ring-emerald-50";
+                                        label = "Strongly Agree";
+                                      }
+                                      
+                                      return (
+                                        <button
+                                          key={val}
+                                          type="button"
+                                          title={label}
+                                          onClick={() => setQuizAnswers(prev => ({ ...prev, [q.id]: val }))}
+                                          className={cn(
+                                            "rounded-full border transition-all duration-200 flex items-center justify-center cursor-pointer shrink-0 relative group/btn",
+                                            isActive 
+                                              ? activeStyle 
+                                              : isDarkMode 
+                                                ? "bg-zinc-950/20 border-zinc-800 text-zinc-650 hover:text-zinc-400" 
+                                                : "bg-zinc-50 border-zinc-200 text-zinc-400 hover:text-zinc-650",
+                                            hoverStyle,
+                                            sizeClass
+                                          )}
+                                        >
+                                          <span className={cn(
+                                            "w-1.5 h-1.5 rounded-full transition-transform duration-200 scale-0",
+                                            isActive && "scale-100",
+                                            val === 1 && "bg-rose-450",
+                                            val === 2 && "bg-amber-450",
+                                            val === 3 && "bg-zinc-400",
+                                            val === 4 && "bg-teal-450",
+                                            val === 5 && "bg-emerald-450"
+                                          )}></span>
+                                          
+                                          {/* Label Tooltip */}
+                                          <span className="absolute bottom-full mb-1.5 scale-0 group-hover/btn:scale-100 transition-transform duration-105 bg-zinc-950 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow pointer-events-none z-30 whitespace-nowrap border border-zinc-800">
+                                            {label}
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  
+                                  <span className={cn("text-[8px] font-black uppercase tracking-widest sm:hidden", isDarkMode ? "text-emerald-500/85" : "text-emerald-600")}>
+                                    Agree
+                                  </span>
+                                </div>
+                                
+                                <span className={cn("text-[8px] font-black uppercase tracking-widest hidden sm:inline shrink-0", isDarkMode ? "text-emerald-500/80" : "text-emerald-600")}>
+                                  Agree
+                                </span>
                               </div>
                             </div>
                           ))}
