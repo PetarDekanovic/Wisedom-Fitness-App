@@ -2404,14 +2404,6 @@ function AppContent() {
     if (!('speechSynthesis' in window)) return;
     
     const synth = window.speechSynthesis;
-    
-    if (isHomeSpeechPlaying) {
-      synth.cancel();
-      setIsHomeSpeechPlaying(false);
-      activeUtterances.current = [];
-      return;
-    }
-
     synth.cancel();
     activeUtterances.current = [];
 
@@ -2478,7 +2470,18 @@ function AppContent() {
 
       synth.speak(utterance);
     });
-  }, [isHomeSpeechPlaying]);
+  }, []);
+
+  const toggleSpeakQuote = useCallback(() => {
+    if (!('speechSynthesis' in window)) return;
+    if (isHomeSpeechPlaying) {
+      window.speechSynthesis.cancel();
+      setIsHomeSpeechPlaying(false);
+      activeUtterances.current = [];
+    } else if (currentQuote) {
+      speakQuote(currentQuote);
+    }
+  }, [currentQuote, isHomeSpeechPlaying, speakQuote]);
 
   useEffect(() => {
     if (isAutoFlowActive && currentQuote) {
@@ -4542,7 +4545,7 @@ function AppContent() {
                             {copiedQuote ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                           <button
-                            onClick={() => speakQuote(currentQuote)}
+                            onClick={toggleSpeakQuote}
                             className={cn(
                               "p-2 rounded-lg transition-all active:scale-95",
                               isHomeSpeechPlaying 
