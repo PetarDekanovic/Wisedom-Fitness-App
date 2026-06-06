@@ -50,7 +50,9 @@ import {
   Smile,
   Brain,
   Compass,
-  MapPin
+  MapPin,
+  Play,
+  Save
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
@@ -292,6 +294,11 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
   // Admin moderation queue
   const [pendingPosts, setPendingPosts] = useState<CommunityPost[]>([]);
+
+  // Post edit / delete state
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editingPostContent, setEditingPostContent] = useState<string>('');
+  const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
 
   // Sub-tabs horizontal scrolling & mobile view visibility states
   const tabContainerRef = useRef<HTMLDivElement>(null);
@@ -1327,6 +1334,42 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
   };
 
+  // Action: Start Editing Post
+  const handleEditPostStart = (post: CommunityPost) => {
+    setEditingPostId(post.id);
+    setEditingPostContent(post.content);
+  };
+
+  // Action: Save Edited Post to Firestore
+  const handleSaveEditedPost = async (postId: string) => {
+    if (!editingPostContent.trim()) return;
+    setIsSavingEdit(true);
+    try {
+      const postRef = doc(db, 'social_posts', postId);
+      await updateDoc(postRef, {
+        content: editingPostContent,
+        updatedAt: new Date().toISOString()
+      });
+      setEditingPostId(null);
+      setEditingPostContent('');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `social_posts/${postId}`);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  // Action: Delete Post from Firestore
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this scholarly reflection?")) return;
+    try {
+      const postRef = doc(db, 'social_posts', postId);
+      await deleteDoc(postRef);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `social_posts/${postId}`);
+    }
+  };
+
   // Action: Friend Request Operations
   const handleSendFriendRequest = async (peer: PublicProfile) => {
     if (!currentUser) return;
@@ -2286,33 +2329,112 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             </div>
                           </button>
 
-                          {/* Like heart metrics */}
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleToggleLike(post)}
-                              className={cn(
-                                "p-2 rounded-lg transition-colors",
-                                hasLiked 
-                                  ? "text-red-500 bg-red-500/10" 
-                                  : isDarkMode 
-                                    ? "text-zinc-500 hover:text-white hover:bg-zinc-800" 
-                                    : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
-                              )}
-                            >
-                              <Heart className={cn("w-4 h-4", hasLiked && "fill-current animate-ping-once")} />
-                            </button>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                              {post.likes?.length || 0}
-                            </span>
+                          {/* Like, edit, delete actions */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleToggleLike(post)}
+                                className={cn(
+                                  "p-2 rounded-lg transition-colors",
+                                  hasLiked 
+                                    ? "text-red-500 bg-red-500/10" 
+                                    : isDarkMode 
+                                      ? "text-zinc-500 hover:text-white hover:bg-zinc-800" 
+                                      : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+                                )}
+                              >
+                                <Heart className={cn("w-4 h-4", hasLiked && "fill-current animate-ping-once")} />
+                              </button>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                {post.likes?.length || 0}
+                              </span>
+                            </div>
+
+                            {/* Edit & Delete Actions */}
+                            {(post.userId === currentUser?.uid || isAdmin) && (
+                              <div className="flex items-center gap-1 border-l border-zinc-500/15 pl-2 ml-1">
+                                <button
+                                  onClick={() => handleEditPostStart(post)}
+                                  className={cn(
+                                    "p-2 rounded-lg transition-colors",
+                                    isDarkMode 
+                                      ? "text-zinc-500 hover:text-white hover:bg-zinc-800" 
+                                      : "text-zinc-400 hover:text-emerald-600 hover:bg-zinc-100"
+                                  )}
+                                  title="Edit reflection"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePost(post.id)}
+                                  className={cn(
+                                    "p-2 rounded-lg transition-colors",
+                                    isDarkMode
+                                      ? "text-zinc-500 hover:text-red-400 hover:bg-zinc-800"
+                                      : "text-zinc-400 hover:text-red-600 hover:bg-zinc-100"
+                                  )}
+                                  title="Delete reflection"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {/* Middle Text Area */}
-                        <p className={cn("text-xs leading-relaxed font-normal whitespace-pre-wrap", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>
-                          {post.content}
-                        </p>
+                        {/* Middle Text Area / Inline Edit Box */}
+                        {editingPostId === post.id ? (
+                          <div className="space-y-2 mt-2">
+                            <textarea
+                              value={editingPostContent}
+                              onChange={(e) => setEditingPostContent(e.target.value)}
+                              rows={3}
+                              className={cn(
+                                "w-full text-xs p-3 rounded-2xl border outline-none font-sans resize-none transition-all duration-300",
+                                isDarkMode 
+                                  ? "bg-zinc-950 border-zinc-850 text-zinc-200 focus:border-emerald-500/50" 
+                                  : "bg-zinc-50 border-zinc-200 text-zinc-850 focus:border-emerald-500/50 shadow-inner"
+                              )}
+                              placeholder="Edit your scholarly reflection..."
+                            />
+                            <div className="flex justify-end gap-2 text-[10px] font-black uppercase tracking-wider">
+                              <button
+                                onClick={() => {
+                                  setEditingPostId(null);
+                                  setEditingPostContent('');
+                                }}
+                                disabled={isSavingEdit}
+                                className={cn(
+                                  "px-3.5 py-1.5 rounded-lg border transition-colors",
+                                  isDarkMode 
+                                    ? "border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800" 
+                                    : "border-zinc-250 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100"
+                                )}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleSaveEditedPost(post.id)}
+                                disabled={isSavingEdit || !editingPostContent.trim()}
+                                className="px-3.5 py-1.5 rounded-lg bg-emerald-500 text-zinc-950 font-black flex items-center gap-1 active:scale-95 disabled:opacity-50 transition-all shadow shadow-emerald-500/10"
+                              >
+                                {isSavingEdit ? (
+                                  <span>Saving...</span>
+                                ) : (
+                                  <>
+                                    <Save className="w-3 h-3" /> Save Changes
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className={cn("text-xs leading-relaxed font-normal whitespace-pre-wrap", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>
+                            {post.content}
+                          </p>
+                        )}
 
-                        {/* Media rendering section */}
+                        {/* Media rendering section */}       {/* Media rendering section */}
                         {post.mediaType === 'image' && post.mediaUrl && (
                           <div className="rounded-2xl overflow-hidden border border-zinc-800/20 max-h-80 bg-zinc-950">
                             <img 
@@ -2363,6 +2485,26 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             </a>
                           </div>
                         )}
+
+                        {/* Dynamic URL Previews & Thumbnails */}
+                        {(() => {
+                          const previewUrls = Array.from(new Set([
+                            ...extractUrls(post.content),
+                            ...(post.mediaUrl ? [post.mediaUrl] : [])
+                          ]));
+                          if (previewUrls.length === 0) return null;
+                          return (
+                            <div className="space-y-2 pt-1 pointer-events-auto">
+                              {previewUrls.map((url, idx) => (
+                                <LinkPreviewCard 
+                                  key={`${post.id}-preview-${idx}`} 
+                                  url={url} 
+                                  isDarkMode={isDarkMode} 
+                                />
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </motion.div>
                     );
                   })
@@ -4446,11 +4588,58 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           <div
                             key={p.id}
                             className={cn(
-                              "p-4 rounded-2xl border text-xs font-medium space-y-3 transition-colors",
-                              isDarkMode ? "bg-zinc-850/30 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-150 text-zinc-700"
+                              "p-4 rounded-2xl border text-xs font-medium space-y-3 transition-colors relative",
+                              isDarkMode ? "bg-zinc-855/30 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-150 text-zinc-700"
                             )}
                           >
-                            <p className="leading-relaxed whitespace-pre-wrap">{p.content}</p>
+                            {editingPostId === p.id ? (
+                              <div className="space-y-2 mt-2 text-left">
+                                <textarea
+                                  value={editingPostContent}
+                                  onChange={(e) => setEditingPostContent(e.target.value)}
+                                  rows={3}
+                                  className={cn(
+                                    "w-full text-xs p-3 rounded-2xl border outline-none font-sans resize-none transition-all duration-300",
+                                    isDarkMode 
+                                      ? "bg-zinc-950 border-zinc-850 text-zinc-200 focus:border-emerald-500/50" 
+                                      : "bg-zinc-50 border-zinc-200 text-zinc-850 focus:border-emerald-500/50 shadow-inner"
+                                  )}
+                                  placeholder="Edit your scholarly reflection..."
+                                />
+                                <div className="flex justify-end gap-2 text-[10px] font-black uppercase tracking-wider">
+                                  <button
+                                    onClick={() => {
+                                      setEditingPostId(null);
+                                      setEditingPostContent('');
+                                    }}
+                                    disabled={isSavingEdit}
+                                    className={cn(
+                                      "px-3.5 py-1.5 rounded-lg border transition-colors",
+                                      isDarkMode 
+                                        ? "border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800" 
+                                        : "border-zinc-250 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100"
+                                    )}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => handleSaveEditedPost(p.id)}
+                                    disabled={isSavingEdit || !editingPostContent.trim()}
+                                    className="px-3.5 py-1.5 rounded-lg bg-emerald-500 text-zinc-950 font-black flex items-center gap-1 active:scale-95 disabled:opacity-50 transition-all shadow shadow-emerald-500/10"
+                                  >
+                                    {isSavingEdit ? (
+                                      <span>Saving...</span>
+                                    ) : (
+                                      <>
+                                        <Save className="w-3 h-3" /> Save Changes
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="leading-relaxed whitespace-pre-wrap">{p.content}</p>
+                            )}
 
                             {/* Optional post image rendering */}
                             {p.mediaType === 'image' && p.mediaUrl && (
@@ -4465,13 +4654,55 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               </div>
                             )}
 
+                            {/* Dynamic URL Previews & Thumbnails on Peer Wall */}
+                            {(() => {
+                              const pUrls = Array.from(new Set([
+                                ...extractUrls(p.content),
+                                ...(p.mediaUrl ? [p.mediaUrl] : [])
+                              ]));
+                              if (pUrls.length === 0) return null;
+                              return (
+                                <div className="space-y-2 pt-1 pointer-events-auto">
+                                  {pUrls.map((url, idx) => (
+                                    <LinkPreviewCard 
+                                      key={`${p.id}-wall-preview-${idx}`} 
+                                      url={url} 
+                                      isDarkMode={isDarkMode} 
+                                    />
+                                  ))}
+                                </div>
+                              );
+                            })()}
+
                             <div className="flex items-center justify-between pt-1 text-[9px] font-mono text-zinc-500">
                               <span>Published {new Date(p.createdAt).toLocaleDateString()}</span>
-                              <div className="flex items-center gap-2">
-                                <button onClick={() => handleToggleLike(p)} className="p-1 text-zinc-400 hover:text-red-500 transition-colors">
-                                  <Heart className={cn("w-3.5 h-3.5", hasLiked && "fill-current text-red-500 animate-ping-once")} />
-                                </button>
-                                <span>{p.likes?.length || 0} Likes</span>
+                              <div className="flex items-center gap-3">
+                                {/* Edit & Delete inline actions for Peer Wall */}
+                                {(p.userId === currentUser?.uid || isAdmin) && (
+                                  <div className="flex items-center gap-1.5 border-r border-zinc-500/15 pr-2 mr-1">
+                                    <button
+                                      onClick={() => handleEditPostStart(p)}
+                                      className="p-1 hover:text-emerald-500 transition-colors"
+                                      title="Edit reflection"
+                                    >
+                                      <Edit className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeletePost(p.id)}
+                                      className="p-1 hover:text-red-500 transition-colors"
+                                      title="Delete reflection"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => handleToggleLike(p)} className="p-1 text-zinc-400 hover:text-red-500 transition-colors">
+                                    <Heart className={cn("w-3.5 h-3.5", hasLiked && "fill-current text-red-500 animate-ping-once")} />
+                                  </button>
+                                  <span>{p.likes?.length || 0} Likes</span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -4511,5 +4742,229 @@ function ExternalLinkIcon(props: React.SVGProps<SVGSVGElement>) {
       <path d="M10 14 21 3" />
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
     </svg>
+  );
+}
+
+// URL extraction helper
+const extractUrls = (text: string): string[] => {
+  if (!text) return [];
+  const urlRegex = /(https?:\/\/[^\s]+)/gi;
+  const matches = text.match(urlRegex) || [];
+  // Clean trailing punctuation
+  return Array.from(new Set(matches.map(url => url.replace(/[.,;!?)]$/, ''))));
+};
+
+const getGoogleDriveId = (url: string) => {
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/) || url.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+  return match ? match[1] : null;
+};
+
+const getYouTubeId = (url: string) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const getDomain = (url: string) => {
+  try {
+    return new URL(url).hostname.replace('www.', '');
+  } catch (e) {
+    return 'external';
+  }
+};
+
+interface LinkPreviewData {
+  title?: string;
+  description?: string;
+  image?: string;
+  logo?: string;
+  publisher?: string;
+}
+
+// Memory cache for session to avoid repetitive network requests
+const previewCache: { [url: string]: LinkPreviewData } = {};
+
+function LinkPreviewCard({ url, isDarkMode }: { url: string; isDarkMode: boolean }) {
+  const [data, setData] = useState<LinkPreviewData | null>(previewCache[url] || null);
+  const [loading, setLoading] = useState(!previewCache[url]);
+
+  useEffect(() => {
+    if (data) return;
+
+    let isMounted = true;
+    const fetchMeta = async () => {
+      try {
+        setLoading(true);
+
+        // Google Drive local high-speed preview
+        const driveId = getGoogleDriveId(url);
+        if (driveId) {
+          const mData = {
+            title: "Shared Google Drive Asset",
+            description: "Click to open and inspect this collaborative cloud document.",
+            image: `https://drive.google.com/thumbnail?sz=w600&id=${driveId}`,
+            publisher: "Google Drive"
+          };
+          previewCache[url] = mData;
+          if (isMounted) {
+            setData(mData);
+            setLoading(false);
+          }
+          return;
+        }
+
+        // YouTube local high-speed preview
+        const ytId = getYouTubeId(url);
+        if (ytId) {
+          const mData = {
+            title: "YouTube Scholarly Video",
+            description: "Click to view this connected multimedia resource.",
+            image: `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
+            publisher: "YouTube"
+          };
+          previewCache[url] = mData;
+          if (isMounted) {
+            setData(mData);
+            setLoading(false);
+          }
+          return;
+        }
+
+        // Generic URL fetching (including TikTok and arbitrary domains) using Microlink
+        const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error();
+        const json = await response.json();
+        
+        if (json.status === "success" && json.data) {
+          const mData: LinkPreviewData = {
+            title: json.data.title || "",
+            description: json.data.description || "",
+            image: json.data.image?.url || "",
+            logo: json.data.logo?.url || "",
+            publisher: json.data.publisher || ""
+          };
+          previewCache[url] = mData;
+          if (isMounted) {
+            setData(mData);
+          }
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        // Aesthetic fallbacks
+        const domain = getDomain(url);
+        let titleFallback = `Resource from ${domain}`;
+        let descFallback = "Access this connected hyperlink to view external documents and clinical insights.";
+        let imgFallback = "https://images.unsplash.com/photo-1546074177-3df148018795?auto=format&fit=crop&q=80&w=600";
+
+        if (url.includes("tiktok.com")) {
+          titleFallback = "TikTok Shared Insight";
+          descFallback = "Check out this physical training or scholarly breakdown on TikTok.";
+          imgFallback = "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600";
+        }
+
+        const fbData: LinkPreviewData = {
+          title: titleFallback,
+          description: descFallback,
+          image: imgFallback,
+          publisher: domain
+        };
+        previewCache[url] = fbData;
+        if (isMounted) {
+          setData(fbData);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchMeta();
+    return () => {
+      isMounted = false;
+    };
+  }, [url]);
+
+  if (loading) {
+    return (
+      <div className={cn(
+        "p-4 rounded-2xl border flex flex-col sm:flex-row gap-3 animate-pulse bg-zinc-950/5 border-zinc-500/10 pointer-events-none mt-2",
+        isDarkMode ? "bg-zinc-900/20" : "bg-zinc-50 border-zinc-200"
+      )}>
+        <div className="w-full sm:w-28 h-20 bg-zinc-700/10 rounded-xl shrink-0" />
+        <div className="space-y-2 flex-1 py-1">
+          <div className="h-3.5 bg-zinc-700/10 rounded w-1/2" />
+          <div className="h-3 bg-zinc-700/10 rounded w-full" />
+          <div className="h-2 bg-zinc-700/10 rounded w-1/4" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  const displayImage = data.image || "https://images.unsplash.com/photo-1546074177-3df148018795?auto=format&fit=crop&q=80&w=600";
+  const domain = getDomain(url);
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "group p-3 rounded-2xl border flex flex-col sm:flex-row gap-3.5 hover:border-emerald-500/30 transition-all duration-300 pointer-events-auto text-left mt-2 shadow-sm",
+        isDarkMode 
+          ? "bg-zinc-950/40 border-zinc-800/80 hover:bg-zinc-900/40" 
+          : "bg-zinc-50/50 border-zinc-200 hover:bg-zinc-100"
+      )}
+    >
+      <div className="w-full sm:w-28 h-20 rounded-xl overflow-hidden border border-zinc-500/10 bg-zinc-900 shrink-0 relative flex items-center justify-center">
+        <img
+          src={displayImage}
+          alt={data.title || "thumbnail"}
+          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            (e.target as any).src = "https://images.unsplash.com/photo-1546074177-3df148018795?auto=format&fit=crop&q=80&w=600";
+          }}
+        />
+        {(getYouTubeId(url) || url.includes("tiktok.com")) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-colors">
+            <div className="w-8 h-8 rounded-full bg-emerald-500/95 flex items-center justify-center shadow">
+              <Play className="w-3.5 h-3.5 text-zinc-950 fill-current ml-0.5" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-1 py-0.5 min-w-0 flex-1 flex flex-col justify-center">
+        <div className="flex items-center gap-1.5">
+          {data.logo ? (
+            <img src={data.logo} alt="logo" className="w-3 h-3 rounded object-contain bg-white" referrerPolicy="no-referrer" />
+          ) : (
+            <div className={cn(
+              "w-3 h-3 rounded flex items-center justify-center text-[7px] font-black uppercase",
+              isDarkMode ? "bg-zinc-800 text-zinc-400" : "bg-zinc-200 text-zinc-600"
+            )}>
+              {domain.charAt(0)}
+            </div>
+          )}
+          <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500">
+            {data.publisher || domain}
+          </span>
+        </div>
+        <h5 className={cn("text-[11px] font-bold truncate tracking-tight group-hover:text-emerald-500 transition-colors", isDarkMode ? "text-zinc-200" : "text-zinc-850")}>
+          {data.title || "Scholarly Resource"}
+        </h5>
+        <p className={cn("text-[10px] leading-snug line-clamp-2", isDarkMode ? "text-zinc-450" : "text-zinc-500")}>
+          {data.description || "Stream or read external resource code, video tutorials, or public clinical spreadsheets."}
+        </p>
+      </div>
+
+      <div className="self-center pr-1 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block shrink-0">
+        <ExternalLinkIcon className="w-3.5 h-3.5 text-emerald-500" />
+      </div>
+    </a>
   );
 }
