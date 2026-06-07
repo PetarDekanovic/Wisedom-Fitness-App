@@ -3199,6 +3199,39 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           </div>
                         )}
 
+                        {/* Psychometrics block on Peer Card */}
+                        {peer.bigFive ? (
+                          <div className={cn(
+                            "pt-2 border-t text-[9px] space-y-1.5 my-1",
+                            isDarkMode ? "border-zinc-800/60" : "border-zinc-200"
+                          )}>
+                            <div className="flex justify-between items-center text-[7px] font-black uppercase tracking-widest text-zinc-500">
+                              <span>Psychologist Profile</span>
+                              <span className="text-emerald-400 font-mono">{peer.mbti || 'MBTI'}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1 leading-none font-semibold">
+                              <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 text-[8px]">O: {peer.bigFive.openness}%</span>
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[8px]">C: {peer.bigFive.conscientiousness}%</span>
+                              <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[8px]">E: {peer.bigFive.extraversion}%</span>
+                              <span className="px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-400 text-[8px]">A: {peer.bigFive.agreeableness}%</span>
+                              <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[8px]">N: {peer.bigFive.neuroticism}%</span>
+                            </div>
+                            {peer.mmpiResilience !== undefined && (
+                              <div className="flex items-center justify-between text-[7px] text-zinc-500 font-semibold uppercase leading-tight pt-1">
+                                <span>Resilience: <strong className="text-emerald-400">{peer.mmpiResilience}%</strong></span>
+                                <span>Lie Scale: <strong className="text-teal-400">{peer.mmpiTruthScore || 100}%</strong></span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className={cn(
+                            "pt-2 border-t text-[7.5px] italic text-zinc-500 my-1",
+                            isDarkMode ? "border-zinc-800/60" : "border-zinc-200"
+                          )}>
+                            Mental diagnostics unrecorded by seeker.
+                          </div>
+                        )}
+
                       </div>
 
                       <div className="space-y-2.5">
@@ -3784,6 +3817,33 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                   <span key={i} className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 border border-emerald-500/10 text-emerald-400">{i}</span>
                                 ))}
                               </div>
+                            </div>
+                          )}
+
+                          {/* Psychometrics block on Live Card Render */}
+                          {thisPublicProfile?.bigFive ? (
+                            <div className="space-y-1.5 pt-1.5 border-t border-zinc-800/10 dark:border-zinc-800/35">
+                              <div className="flex justify-between items-center text-[7.5px] font-black uppercase tracking-widest text-zinc-500">
+                                <span>Psychometric Spectrum</span>
+                                <span className="text-emerald-400 font-mono font-black">{thisPublicProfile.mbti}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/10 text-sky-400">O: {thisPublicProfile.bigFive.openness}%</span>
+                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/10 text-emerald-400">C: {thisPublicProfile.bigFive.conscientiousness}%</span>
+                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/10 text-amber-500">E: {thisPublicProfile.bigFive.extraversion}%</span>
+                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/10 text-pink-400">A: {thisPublicProfile.bigFive.agreeableness}%</span>
+                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/10 text-purple-400">N: {thisPublicProfile.bigFive.neuroticism}%</span>
+                              </div>
+                              {thisPublicProfile.mmpiResilience !== undefined && (
+                                <div className="flex items-center justify-between text-[7px] text-zinc-500 font-semibold uppercase leading-none pt-0.5">
+                                  <span>Stability: <strong className="text-emerald-400 font-bold">{thisPublicProfile.mmpiResilience}%</strong></span>
+                                  <span>Lie Factor: <strong className="text-teal-400 font-bold">{thisPublicProfile.mmpiTruthScore || 100}%</strong></span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="space-y-1 pt-1.5 border-t border-zinc-800/10 dark:border-zinc-800/35 text-[7.5px] italic text-zinc-500">
+                              Take "Academic Psychologist Assessment" in the Personality tab to populate psychometrics.
                             </div>
                           )}
 
@@ -4567,6 +4627,87 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   )}>
                     {selectedPeerWall.biography || 'This seeker choice was deep contemplation. No biography documented.'}
                   </p>
+                </div>
+
+                {/* Academic Psychologist Assessment Results */}
+                <div className={cn(
+                  "p-5 rounded-2xl border space-y-4 text-xs",
+                  isDarkMode ? "bg-zinc-950/70 border-zinc-850" : "bg-zinc-50 border-zinc-200 shadow-sm"
+                )}>
+                  <div className="flex items-center justify-between border-b border-zinc-800/10 dark:border-zinc-800/35 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Brain className="w-4 h-4 text-emerald-450" />
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Academic Psychologist Assessment</h4>
+                    </div>
+                    {selectedPeerWall.quizTakenAt && (
+                      <span className="text-[8px] font-mono text-zinc-500">
+                        Tested: {new Date(selectedPeerWall.quizTakenAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+
+                  {selectedPeerWall.bigFive ? (
+                    <div className="space-y-4">
+                      {/* MBTI Archetype badge */}
+                      <div className={cn(
+                        "p-3.5 rounded-xl border text-center relative overflow-hidden",
+                        isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-150 shadow-sm"
+                      )}>
+                        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-violet-500"></div>
+                        <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-violet-400 tracking-widest block uppercase font-mono leading-none py-1">
+                          {selectedPeerWall.mbti}
+                        </span>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 block mt-1 leading-none">
+                          {selectedPeerWall.mbtiName || "Scholarly Archetype"}
+                        </span>
+                      </div>
+
+                      {/* Big Five Spectrums */}
+                      <div className="space-y-2.5">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500 block leading-none">Big Five Spectrum (OCEAN)</span>
+                        {[
+                          { label: "O - Openness", key: "openness", desc: "Imagination / Complexity Focus", color: "from-sky-500 to-blue-500" },
+                          { label: "C - Conscientiousness", key: "conscientiousness", desc: "Organization / Routine Discipline", color: "from-emerald-500 to-teal-500" },
+                          { label: "E - Extraversion", key: "extraversion", desc: "Sociability / Core Vitality Offset", color: "from-amber-500 to-orange-500" },
+                          { label: "A - Agreeableness", key: "agreeableness", desc: "Altruism / Skeptical Rationality", color: "from-pink-500 to-rose-500" },
+                          { label: "N - Neuroticism", key: "neuroticism", desc: "Biological Strain Resilience", color: "from-purple-500 to-indigo-500" }
+                        ].map(item => {
+                          const score = (selectedPeerWall.bigFive as any)?.[item.key] || 50;
+                          return (
+                            <div key={item.key} className="space-y-1">
+                              <div className="flex justify-between text-[9px] font-bold tracking-tight leading-none">
+                                <span className={cn("capitalize", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>{item.label}</span>
+                                <span className={cn("font-semibold", isDarkMode ? "text-zinc-400" : "text-zinc-650")}>{score}%</span>
+                              </div>
+                              <div className="h-1.5 w-full bg-zinc-805 rounded-full overflow-hidden">
+                                <div className={cn("h-full rounded-full bg-gradient-to-r", item.color)} style={{ width: `${score}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* MMPI Validity Status */}
+                      {selectedPeerWall.mmpiResilience !== undefined && (
+                        <div className={cn(
+                          "p-3 rounded-xl border flex items-center justify-between text-[9.5px] font-bold",
+                          isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-150"
+                        )}>
+                          <div className="flex items-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5 text-teal-400 animate-pulse" />
+                            <span className={isDarkMode ? "text-zinc-400" : "text-zinc-650"}>Clinical Resilience:</span>
+                          </div>
+                          <span className="text-emerald-400 font-mono font-black">{selectedPeerWall.mmpiResilience}%</span>
+                          <span className="text-zinc-500">|</span>
+                          <span className="text-teal-400 font-mono font-black">{selectedPeerWall.mmpiTruthScore || 100}% Honest</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-zinc-400 text-[10px] font-medium italic">
+                      This seeker has not recorded their Scholar Personality Diagnostics yet.
+                    </div>
+                  )}
                 </div>
 
                 {/* Approved posts (The "Wall") */}
