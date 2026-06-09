@@ -2437,7 +2437,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                         {/* Media rendering section */}       {/* Media rendering section */}
                         {post.mediaType === 'image' && post.mediaUrl && (
-                          <div className="rounded-2xl overflow-hidden border border-zinc-800/20 max-h-80 bg-zinc-950">
+                          <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-zinc-800/20 bg-zinc-950">
                             <img 
                               src={post.mediaUrl} 
                               alt="attachment" 
@@ -5133,7 +5133,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                             {/* Optional post image rendering */}
                             {p.mediaType === 'image' && p.mediaUrl && (
-                              <div className="rounded-xl overflow-hidden max-h-48 border border-zinc-800/10">
+                              <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-zinc-800/10 bg-zinc-950">
                                 <img src={p.mediaUrl} className="w-full h-full object-cover" alt="wall-image" />
                               </div>
                             )}
