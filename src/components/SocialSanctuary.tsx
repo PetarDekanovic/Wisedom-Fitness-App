@@ -236,6 +236,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [quizAnswers, setQuizAnswers] = useState<{ [key: string]: boolean | number }>({});
   const [quizCalculated, setQuizCalculated] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const [eduSection, setEduSection] = useState<'mbti' | 'ocean' | 'mmpi' | 'matches'>('mbti');
 
   // Preset covers for classical/academic wellness vibe
   const PRESET_COVERS = [
@@ -4276,7 +4277,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   {/* Right Diagnostics Dashboard Column */}
                   <div className="space-y-6">
                     <div className={cn(
-                      "p-6 rounded-3xl border space-y-6 text-xs",
+                      "p-6 sm:p-7 rounded-3xl border space-y-6 text-xs",
                       isDarkMode ? "bg-zinc-900/30 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
                     )}>
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Diagnostics Report Card</h4>
@@ -4286,45 +4287,106 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           
                           {/* MBTI Avatar badge card */}
                           <div className={cn(
-                            "p-5 rounded-2xl border text-center relative overflow-hidden",
-                            isDarkMode ? "bg-zinc-950/70 border-zinc-800" : "bg-zinc-50 border-zinc-150 shadow-sm"
+                            "p-5 rounded-3xl border text-center relative overflow-hidden",
+                            isDarkMode ? "bg-zinc-950/70 border-zinc-900" : "bg-zinc-50 border-zinc-150 shadow-sm"
                           )}>
                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-violet-500"></div>
                             
                             <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-violet-400 tracking-widest block uppercase font-mono">
                               {thisPublicProfile.mbti}
                             </span>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block mt-1.5 leading-none">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block mt-1.5 leading-none font-bold">
                               {thisPublicProfile.mbtiName}
                             </span>
                             
-                            <p className="text-[9.5px] leading-relaxed text-zinc-500 mt-2">
-                              A profoundly verified archetype representing specific cognitive approaches to learning, recovery, and coupling compatibility.
-                            </p>
+                            {/* Jungian Cognitive details to make dashboard MUCH bigger and detailed */}
+                            <div className={cn(
+                              "mt-3.5 p-4 rounded-2xl text-[10px] text-left space-y-3.5 border",
+                              isDarkMode ? "bg-zinc-900 border-zinc-800/80" : "bg-white border-zinc-200"
+                            )}>
+                              <div>
+                                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest block leading-none">Cognitive Stack Logic</span>
+                                <span className="font-mono text-emerald-400 font-bold block mt-1">
+                                  {thisPublicProfile.mbti === "INTJ" ? "Ni (Introverted Intuition) → Te (Extraverted Thinking) → Fi (Introverted Feeling) → Se" :
+                                   thisPublicProfile.mbti === "INFJ" ? "Ni (Introverted Intuition) → Fe (Extraverted Feeling) → Ti (Introverted Thinking) → Se" :
+                                   thisPublicProfile.mbti === "INTP" ? "Ti (Introverted Thinking) → Ne (Extraverted Intuition) → Si (Introverted Sensing) → Fe" :
+                                   thisPublicProfile.mbti === "INFP" ? "Fi (Introverted Feeling) → Ne (Extraverted Intuition) → Si (Introverted Sensing) → Te" :
+                                   thisPublicProfile.mbti === "ENTJ" ? "Te (Extraverted Thinking) → Ni (Introverted Intuition) → Se (Extraverted Sensing) → Fi" :
+                                   thisPublicProfile.mbti === "ENFJ" ? "Fe (Extraverted Feeling) → Ni (Introverted Intuition) → Se (Extraverted Sensing) → Ti" :
+                                   thisPublicProfile.mbti === "ENTP" ? "Ne (Extraverted Intuition) → Ti (Introverted Thinking) → Fe (Extraverted Feeling) → Si" :
+                                   thisPublicProfile.mbti === "ENFP" ? "Ne (Extraverted Intuition) → Fi (Introverted Feeling) → Te (Extraverted Thinking) → Si" :
+                                   thisPublicProfile.mbti === "ISTJ" ? "Si (Introverted Sensing) → Te (Extraverted Thinking) → Fi (Introverted Feeling) → Ne" :
+                                   thisPublicProfile.mbti === "ISFJ" ? "Si (Introverted Sensing) → Fe (Extraverted Feeling) → Ti (Introverted Thinking) → Ne" :
+                                   "Sx → Tx → Fx → Nx (Balanced)"}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest block leading-none">Archetypal Tendencies</span>
+                                <p className={cn("leading-relaxed font-semibold mt-1", isDarkMode ? "text-zinc-300" : "text-zinc-750")}>
+                                  {thisPublicProfile.mbti === "INTJ" ? "You analyze life through complex systemic principles, cold logic, and a deep, far-sighted internal blueprint. You recover by retreating into complete cognitive isolation and structured physical discipline." :
+                                   thisPublicProfile.mbti === "INFJ" ? "You combine rich interpersonal empathy with an unyielding structured drive. You search for underlying symbolic connections in everything and seek a clean, warm developmental fellowship with fellow seekers." :
+                                   thisPublicProfile.mbti === "INTP" ? "You operate as a rigorous, deconstructive philosopher. You prioritize absolute logical consistency and intellectual correctness over social consensus, needing tranquil quietude to analyze ideas." :
+                                   thisPublicProfile.mbti === "INFP" ? "Your interior sanctuary is governed by rich personal values and delicate poetic patterns. You demand absolute congruence between your habits and your spiritual alignment." :
+                                   "Your cognitive code represents a highly adaptive, resilient scholarly perspective, capable of rapid problem-solving, active dialogue, and rigorous engagement with physical and classical wisdom disciplines."}
+                                </p>
+                              </div>
+                              <div className="pt-1.5 border-t border-zinc-805/50">
+                                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest block leading-none">Optimal Dialectical Affinity</span>
+                                <span className="text-teal-400 font-bold block mt-1">
+                                  {thisPublicProfile.mbti === "INTJ" ? "ENFP / ENTP (Dialectical spark and macro-insight exchange)" :
+                                   thisPublicProfile.mbti === "INFJ" ? "ENFP / ENFJ / INFP (Sublime emotional sync & high empathy)" :
+                                   thisPublicProfile.mbti === "INTP" ? "ENTJ / INFJ (High-integrity logic matching and critical debate)" :
+                                   thisPublicProfile.mbti === "INFP" ? "ENFJ / INFJ (Total spiritual/expressive congruence)" :
+                                   "Complementary intuitive seekers with shared philosophical discipline"}
+                                </span>
+                              </div>
+                            </div>
                           </div>
 
                           {/* Big Five OCEAN spectrum indicators */}
-                          <div className="space-y-3.5">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block">The Big Five (OCEAN) spectrum</span>
+                          <div className="space-y-4">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block leading-none">The Big Five (OCEAN) spectrum</span>
                             
                             {[
-                              { label: "O - Openness", key: "openness", desc: "Imagination / Complexity Focus", color: "from-sky-500 to-blue-500" },
-                              { label: "C - Conscientiousness", key: "conscientiousness", desc: "Organization / Routine Discipline", color: "from-emerald-500 to-teal-500" },
-                              { label: "E - Extraversion", key: "extraversion", desc: "Sociability / Core Vitality Offset", color: "from-amber-500 to-orange-500" },
-                              { label: "A - Agreeableness", key: "agreeableness", desc: "Altruism / Skeptical Rationality", color: "from-pink-500 to-rose-500" },
-                              { label: "N - Neuroticism", key: "neuroticism", desc: "Biological Strain Resilience", color: "from-purple-500 to-indigo-500" }
+                              { label: "O - Openness to Experience", key: "openness", desc: "Speculative imagination, complexity focus, aesthetic sensitivity", color: "from-sky-500 to-blue-500", bgLight: isDarkMode ? "bg-sky-500/10 text-sky-400" : "bg-sky-50 text-sky-700" },
+                              { label: "C - Conscientiousness", key: "conscientiousness", desc: "Structured self-discipline, routine routine organization", color: "from-emerald-500 to-teal-500", bgLight: isDarkMode ? "bg-emerald-500/10 text-emerald-400" : "bg-emerald-50 text-emerald-700" },
+                              { label: "E - Extraversion", key: "extraversion", desc: "Social dominance, dialogic outgoing energy, verbal drive", color: "from-amber-500 to-orange-500", bgLight: isDarkMode ? "bg-amber-500/10 text-amber-500" : "bg-amber-50 text-amber-700" },
+                              { label: "A - Agreeableness", key: "agreeableness", desc: "Altruistic social empathy, cooperative posture, peer supportiveness", color: "from-pink-500 to-rose-500", bgLight: isDarkMode ? "bg-pink-500/10 text-pink-400" : "bg-pink-50 text-pink-700" },
+                              { label: "N - Neuroticism (Sensitivity)", key: "neuroticism", desc: "Nervous adrenaline alertness, somatic vigilance reactions", color: "from-purple-500 to-indigo-500", bgLight: isDarkMode ? "bg-purple-500/10 text-purple-400" : "bg-purple-50 text-purple-705" }
                             ].map(item => {
                               const score = (thisPublicProfile.bigFive as any)?.[item.key] || 50;
+                              // Calculate dynamic diagnosis label
+                              let evaluationLabel = "";
+                              if (item.key === 'openness') {
+                                evaluationLabel = score >= 75 ? 'Scholarly Abstractness' : score <= 35 ? 'Pragmatic Empiricist' : 'Balanced Theoretical';
+                              } else if (item.key === 'conscientiousness') {
+                                evaluationLabel = score >= 75 ? 'Rigorously Structured' : score <= 35 ? 'Spontaneous Adaptive' : 'Pragmatic Rhythm';
+                              } else if (item.key === 'extraversion') {
+                                evaluationLabel = score >= 75 ? 'Outgoing Dialogue Catalyst' : score <= 35 ? 'Contemplative Quietude' : 'Measured Interactive';
+                              } else if (item.key === 'agreeableness') {
+                                evaluationLabel = score >= 75 ? 'Warm Companionate' : score <= 35 ? 'Analytical Dissent' : 'Collegiate Balanced';
+                              } else if (item.key === 'neuroticism') {
+                                evaluationLabel = score >= 75 ? 'High Adrenal Vigilance' : score <= 35 ? 'Stoic Equanimity (Ataraxia)' : 'Vigilant Adaptability';
+                              }
+
                               return (
-                                <div key={item.key} className="space-y-1">
-                                  <div className="flex justify-between text-[10px] font-bold tracking-tight">
-                                    <span className={cn("capitalize", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>{item.label}</span>
-                                    <span className={cn("font-semibold", isDarkMode ? "text-zinc-400" : "text-zinc-650")}>{score}%</span>
+                                <div key={item.key} className={cn(
+                                  "space-y-1.5 p-3 rounded-2xl border",
+                                  isDarkMode ? "bg-zinc-950/20 border-zinc-800" : "bg-zinc-50/50 border-zinc-200"
+                                )}>
+                                  <div className="flex justify-between items-center text-[10px] font-bold tracking-tight">
+                                    <span className={isDarkMode ? "text-zinc-300" : "text-zinc-800"}>{item.label}</span>
+                                    <span className="font-mono font-black text-emerald-400">{score}%</span>
                                   </div>
-                                  <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                                  <div className="h-2 w-full bg-zinc-805 rounded-full overflow-hidden">
                                     <div className={cn("h-full rounded-full bg-gradient-to-r", item.color)} style={{ width: `${score}%` }} />
                                   </div>
-                                  <span className="text-[8px] text-zinc-500 block leading-none">{item.desc}</span>
+                                  <div className="flex justify-between items-start gap-2 pt-0.5 text-[8.5px]">
+                                    <span className={cn("leading-relaxed shrink", isDarkMode ? "text-zinc-500" : "text-zinc-650")}>{item.desc}</span>
+                                    <span className={cn("px-1.5 py-0.5 rounded font-black uppercase text-[7px] tracking-widest block whitespace-nowrap", item.bgLight)}>
+                                      {evaluationLabel}
+                                    </span>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -4352,7 +4414,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                     ? "text-emerald-400" 
                                     : thisPublicProfile.mmpiTruthScore && thisPublicProfile.mmpiTruthScore >= 50 
                                       ? "text-amber-400" 
-                                      : "text-rose-500"
+                                      : "text-rose-505"
                                 )}>{thisPublicProfile.mmpiTruthScore}% Truthful</span>
                               </div>
                               <div className={cn("text-[8.5px] mt-1 leading-relaxed leading-normal", isDarkMode ? "text-zinc-500" : "text-zinc-600")}>
@@ -4378,6 +4440,293 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                 </div>
               </div>
             )}
+
+            {/* EDUCATIONAL COMPENDIUM TABBED BOARD - SPECIALLY ADDED TO COMPLY WITH USER'S EXTENSIVE EDUCATIONAL PATHWAY */}
+            <div className={cn(
+              "p-6 sm:p-8 rounded-3xl border space-y-6 mt-8 relative overflow-hidden transition-all duration-300",
+              isDarkMode ? "bg-zinc-900/20 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+            )}>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-emerald-500/5 to-teal-500/5 rounded-full blur-3xl select-none pointer-events-none"></div>
+
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800/10 dark:border-zinc-805 pb-5">
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-450 block font-mono">Academic Library</span>
+                  <h3 className="text-sm sm:text-base font-black uppercase tracking-tight flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-emerald-400 shrink-0" />
+                    Psychometrics & Cognitive Science Compendium
+                  </h3>
+                  <p className={cn("text-[10px] leading-relaxed max-w-xl font-medium", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                    Examine the scientific parameters, metrics, and cognitive archetypes utilized in our high-signal seekership compatibility network.
+                  </p>
+                </div>
+
+                {/* Educational Nav bar */}
+                <div className={cn(
+                  "flex flex-wrap p-1 rounded-xl self-start sm:self-center bg-zinc-950 border border-zinc-800/60"
+                )}>
+                  {[
+                    { id: 'mbti', label: '16 Archetypes (MBTI)' },
+                    { id: 'ocean', label: 'Big Five (OCEAN)' },
+                    { id: 'mmpi', label: 'Clinical Resilience (MMPI)' },
+                    { id: 'matches', label: 'Dialectical Compatibility' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setEduSection(tab.id as any)}
+                      className={cn(
+                        "px-3 py-1.5 text-[8.5px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer",
+                        eduSection === tab.id
+                          ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold"
+                          : "text-zinc-500 hover:text-zinc-350 hover:bg-zinc-900/50 border border-transparent"
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* MBTI SECTION BODY */}
+              {eduSection === 'mbti' && (
+                <div className="space-y-5 animate-fadeIn">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className={cn("p-4 rounded-2xl border space-y-2", isDarkMode ? "bg-zinc-955 border-zinc-850" : "bg-zinc-50 border-zinc-200")}>
+                      <span className="text-xl font-mono text-emerald-400 font-black">I vs E</span>
+                      <h4 className="text-[10px] font-black uppercase tracking-wider">Introversion vs Extraversion</h4>
+                      <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                        Determines the primary source of neural energy. <strong>Introverts</strong> recover focus through deep isolation, quiet contemplation, and standalone reading. <strong>Extraverts</strong> gain active dopamine and intellectual momentum through rapid verbal synthesis in peer circles.
+                      </p>
+                    </div>
+                    <div className={cn("p-4 rounded-2xl border space-y-2", isDarkMode ? "bg-zinc-955 border-zinc-850" : "bg-zinc-50 border-zinc-200")}>
+                      <span className="text-xl font-mono text-sky-400 font-black">S vs N</span>
+                      <h4 className="text-[10px] font-black uppercase tracking-wider">Sensing vs Intuition</h4>
+                      <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                        Defines how raw information is absorbed. <strong>Sensing</strong> types focus on tactile facts, physical exercises, and immediate empirical reality. <strong>Intuitive</strong> seekers focus on symbolic patterns, potential future matrices, and abstract classical philosophies.
+                      </p>
+                    </div>
+                    <div className={cn("p-4 rounded-2xl border space-y-2", isDarkMode ? "bg-zinc-955 border-zinc-850" : "bg-zinc-50 border-zinc-200")}>
+                      <span className="text-xl font-mono text-teal-400 font-black">T vs F</span>
+                      <h4 className="text-[10px] font-black uppercase tracking-wider">Thinking vs Feeling</h4>
+                      <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                        Explains how complex life decisions are structured. <strong>Thinking</strong> scholars apply consistent cause-and-effect logical maps, honoring objective truth over societal consensus. <strong>Feeling</strong> types decide through emotional alignment, team empathy, and subjective ethical resonance.
+                      </p>
+                    </div>
+                    <div className={cn("p-4 rounded-2xl border space-y-2", isDarkMode ? "bg-zinc-955 border-zinc-850" : "bg-zinc-50 border-zinc-200")}>
+                      <span className="text-xl font-mono text-purple-400 font-black">J vs P</span>
+                      <h4 className="text-[10px] font-black uppercase tracking-wider">Judging vs Perceiving</h4>
+                      <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                        Measures the preferred approach to life organization. <strong>Judging</strong> types crave firm closure, strict calisthenics schedules, tidy boundaries, and resolved files. <strong>Perceiving</strong> types thrive in open-ended emergent flexibilities and spontaneous schedules.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={cn(
+                    "p-5 rounded-2xl border space-y-3.5",
+                    isDarkMode ? "bg-zinc-950/30 border-zinc-850" : "bg-zinc-50 border-zinc-150"
+                  )}>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Academic Highlight Archetypes</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <span className="text-[9.5px] font-bold text-emerald-450 font-mono block">INTJ - The Architect Scholar (Petar's Archetype)</span>
+                        <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                          Systems-oriented visionary who applies high-density mathematical blueprints and severe logical order. Drives group development through rigorous structural integrity, but requires total silence to restore biological vigor.
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[9.5px] font-bold text-sky-400 font-mono block">INFJ - The Seeker Counselor</span>
+                        <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                          Possesses profound, symbolic human intuition coupled with highly organized personal objectives. Thrives when orchestrating high-fidelity peer mentoring or researching ancient wisdom pathways to restore collective focus.
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[9.5px] font-bold text-teal-450 font-mono block">INTP - The Analytical Sage</span>
+                        <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                          A deconstructive, independent philosopher obsessed with absolute conceptual correctness. Spends massive cognitive energy analyzing the hidden mechanics of physical and mental systems, rejecting unverified dogmas.
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[9.5px] font-bold text-purple-400 font-mono block">ENTJ - The Strategic Commander</span>
+                        <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                          Decisive, macro-focused organizer who handles administrative strain and complex logistics with commanding ease. Thrives when leading physical sanctuaries or coordinating mutual workout parameters.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* OCEAN SECTION BODY */}
+              {eduSection === 'ocean' && (
+                <div className="space-y-5 animate-fadeIn">
+                  <div className="space-y-4">
+                    {[
+                      {
+                        title: "O - Openness to Experience",
+                        desc: "Measures intellectual flexibility, abstract aesthetic appreciation, and willingness to engage challenging speculative metaphysics.",
+                        high: "Drawn to complex eastern/western philosophies, custom atmospheric soundtracks, and advanced scientific theories. Open to multi-layered routines.",
+                        low: "Highly grounded, concrete operational style. Prefers clear, verified mechanical realities and traditional, practical fitness/life procedures.",
+                        color: "text-sky-450 border-sky-500/20 bg-sky-500/5"
+                      },
+                      {
+                        title: "C - Conscientiousness",
+                        desc: "Measures executive regulation, structured task adherence, attention to detail, and systemic routine integrity.",
+                        high: "Meticulous focus, highly regular workouts (calisthenics/strength sets), and perfect adherence to sleep/recovery metrics.",
+                        low: "Spontaneous, adaptive, highly reactive. Allows physical recovery to emerge organically; values intuitive flow over strict clocks.",
+                        color: "text-emerald-450 border-emerald-500/20 bg-emerald-500/5"
+                      },
+                      {
+                        title: "E - Extraversion",
+                        desc: "Determines the density of social communication and preference for collective vs. single-seeker physical environments.",
+                        high: "Draws immediate motivation from the Scholarly Swarm. Passionate about group workouts, open channels, and active oral debates.",
+                        low: "Thrives in total self-sufficiency. Restores cognitive reserves in silent, standalone workout sanctuaries and high-quality deep writing.",
+                        color: "text-amber-500 border-amber-500/20 bg-amber-500/5"
+                      },
+                      {
+                        title: "A - Agreeableness",
+                        desc: "Measures natural interpersonal empathy, collaborative posture, trust of peer nodes, and altruistic balance.",
+                        high: "Highly supportive, cooperative, and eager to protect community harmony. Excels at mentoring and group recovery.",
+                        low: "Crucially rigorous. Willing to express intellectual dissent, challenge inaccuracies, and prioritize hard logical truth over social comforting.",
+                        color: "text-pink-455 border-pink-500/20 bg-pink-500/5"
+                      },
+                      {
+                        title: "N - Neuroticism (Vigilance / Sensitivity)",
+                        desc: "Measures the reaction velocity of the nervous system to environmental stress, fatigue, or biochemical oscillations.",
+                        high: "Hyper-adrenal alertness. Mind experiences intense peaks and valleys. Demands proactive gentle Yin Yoga, breath cycles, and sleep guidance.",
+                        low: "Classical Stoic Ataraxia. Deep biological stability under load; easily quietens physical anxieties and sustains peak cognitive stamina.",
+                        color: "text-purple-450 border-purple-500/20 bg-purple-500/5"
+                      }
+                    ].map(trait => (
+                      <div key={trait.title} className={cn("p-4 sm:p-5 rounded-2xl border grid grid-cols-1 md:grid-cols-3 gap-3.5", isDarkMode ? "bg-zinc-950/40 border-zinc-850" : "bg-zinc-50 border-zinc-200 shadow-xs")}>
+                        <div className="space-y-1">
+                          <h4 className={cn("text-xs font-black uppercase font-mono tracking-tight", trait.color.split(" ")[0])}>{trait.title}</h4>
+                          <p className={cn("text-[9.5px] leading-relaxed font-semibold", isDarkMode ? "text-zinc-500" : "text-zinc-600")}>{trait.desc}</p>
+                        </div>
+                        <div className="p-3 rounded-xl border border-dashed border-emerald-500/25 bg-emerald-500/5 space-y-1">
+                          <span className="text-[7.5px] font-black uppercase text-emerald-400 tracking-widest block font-bold">High Score Indication</span>
+                          <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-300" : "text-zinc-650")}>{trait.high}</p>
+                        </div>
+                        <div className="p-3 rounded-xl border border-dashed border-zinc-800 bg-zinc-950/60 space-y-1">
+                          <span className="text-[7.5px] font-black uppercase text-zinc-555 tracking-widest block font-bold">Low Score Indication</span>
+                          <p className={cn("text-[9px] leading-relaxed text-zinc-400")}>{trait.low}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* MMPI SECTION BODY */}
+              {eduSection === 'mmpi' && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className={cn("p-5 rounded-2xl border space-y-3", isDarkMode ? "bg-zinc-955 border-zinc-850" : "bg-zinc-50 border-zinc-200")}>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <h4 className="text-xs font-black uppercase tracking-wider">Clinical Resilience Index</h4>
+                      </div>
+                      <p className={cn("text-[10px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-650")}>
+                        Quantifies the seeker's inherent neuropsychological fortitude against depression, fatigue, somatic tension, and severe situational load.
+                      </p>
+                      <div className="space-y-1.5 pt-2 text-[9.5px] font-bold">
+                        <div className="flex justify-between items-center text-emerald-400">
+                          <span>80% - 100%: High Fortitude (Roman Stoic)</span>
+                          <span>Complete Stress Mastery</span>
+                        </div>
+                        <p className={cn("text-[9px] font-normal", isDarkMode ? "text-zinc-550" : "text-zinc-500")}>
+                          Strong baseline equanimity. Somatic fatigue is managed with breathwork, sustaining high executive function under pressure.
+                        </p>
+                        <div className="flex justify-between items-center text-amber-500 pt-1">
+                          <span>50% - 79%: Standard Adaptive Strength</span>
+                          <span>Moderate Somatic Vigilance</span>
+                        </div>
+                        <p className={cn("text-[9px] font-normal", isDarkMode ? "text-zinc-550" : "text-zinc-500")}>
+                          Capable of deep intellectual focus, but requires regular calisthenics or quiet meditation breaks to resolve muscle tightness.
+                        </p>
+                        <div className="flex justify-between items-center text-rose-500 pt-1">
+                          <span>Below 50%: Vulnerable Alert State</span>
+                          <span>Needs Restorative Yin Rituals</span>
+                        </div>
+                        <p className={cn("text-[9px] font-normal", isDarkMode ? "text-zinc-550" : "text-zinc-500")}>
+                          The nervous system is currently carrying high stress. The application triggers specialized "Restore Mode" sequences to avoid burnout.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className={cn("p-5 rounded-2xl border space-y-3", isDarkMode ? "bg-zinc-955 border-zinc-850" : "bg-zinc-50 border-zinc-200")}>
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-teal-400 shrink-0" />
+                        <h4 className="text-xs font-black uppercase tracking-wider">L-Scale Validity (Truth Validation)</h4>
+                      </div>
+                      <p className={cn("text-[10px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-650")}>
+                        Evaluates raw psychometric honesty. Traditional corporate quizzes are easily warped by subjects answering with their 'ideal self' rather than real behaviors. The MMPI Lie screener calculates this defensive gap.
+                      </p>
+                      <div className="space-y-1.5 pt-2 text-[9.5px] font-bold">
+                        <div className="flex justify-between items-center text-emerald-400">
+                          <span>80% - 100%: Total Transparent Verity</span>
+                          <span>Highly Academic</span>
+                        </div>
+                        <p className={cn("text-[9px] font-normal", isDarkMode ? "text-zinc-550" : "text-zinc-500")}>
+                          The user has fully embraced their flaws, shadow elements, and physical vulnerabilities. Provides an accurate metric for pairing.
+                        </p>
+                        <div className="flex justify-between items-center text-amber-500 pt-1">
+                          <span>60% - 79%: Minor Social Shielding</span>
+                          <span>Mild Ideal Projection</span>
+                        </div>
+                        <p className={cn("text-[9px] font-normal", isDarkMode ? "text-zinc-550" : "text-zinc-500")}>
+                          Answers contain slight tendencies to project a flawless classical face. Balanced but with small defensive postures.
+                        </p>
+                        <div className="flex justify-between items-center text-rose-450 pt-1">
+                          <span>Below 60%: High Defensive Facade</span>
+                          <span>Incomplete Self-Realization</span>
+                        </div>
+                        <p className={cn("text-[9px] font-normal", isDarkMode ? "text-zinc-550" : "text-zinc-500")}>
+                          Subconscious posturing detected. The test results should be interpreted with care. Seeker is advised to retake the test in a quiet, isolated meditation state.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* COMPATIBILITY/MATCHES SECTION BODY */}
+              {eduSection === 'matches' && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className={cn(
+                    "p-5 rounded-2xl border space-y-3.5",
+                    isDarkMode ? "bg-zinc-950/50 border-zinc-850" : "bg-zinc-50 border-zinc-200"
+                  )}>
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-black uppercase tracking-widest text-emerald-400 font-mono">The Scholarly Compatibility Rules</h4>
+                      <p className={cn("text-[10.5px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                        WiseFit doesn't use simple algorithms. Compatibility scoring uses Euclidean vector distances across the Big Five spectrum paired with Myers-Briggs Cognitive complementarity:
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-zinc-300 block uppercase tracking-wider font-mono">1. Cognitive Sparks</span>
+                        <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-500" : "text-zinc-600")}>
+                          Intuitive/Abstract (N) types pair best with other intuitive nodes for late-night philosophical exploration. Sensing (S) athletes connect deeply with concrete calisthenics partners for intense mechanical physical trials.
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-zinc-300 block uppercase tracking-wider font-mono">2. Extraversion Offset</span>
+                        <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-550" : "text-zinc-600")}>
+                          Dualities (e.g. Introvert paired with Extravert) provide balance. The extroverted node stimulates external dialectics, while the introverted node provides silent, structured, calming depth.
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-zinc-300 block uppercase tracking-wider font-mono">3. Stoic Ataraxia Baseline</span>
+                        <p className={cn("text-[9px] leading-relaxed", isDarkMode ? "text-zinc-550" : "text-zinc-650")}>
+                          High Neuroticism (Sensitivity) nodes require at least one partner with Low Neuroticism (low stress sensitivity) to form a peaceful sanctuary, avoiding compounding anxiety spirals.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
           </div>
         )}
