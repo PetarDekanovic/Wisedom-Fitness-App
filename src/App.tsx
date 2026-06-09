@@ -968,6 +968,47 @@ function ArticleCard({
   const [copiedContent, setCopiedContent] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
 
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (!article.url) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      {
+        threshold: 0.3, // autoplays when 30% or more of the video is in view
+      }
+    );
+
+    const currentVideo = videoRef.current;
+    if (currentVideo) {
+      observer.observe(currentVideo);
+    }
+
+    return () => {
+      if (currentVideo) {
+        observer.unobserve(currentVideo);
+      }
+      observer.disconnect();
+    };
+  }, [article.url]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isVisible) {
+      video.play().catch((err) => {
+        // Autoplay policy might block unmuted video play, which is fine and expected
+        console.log("Autoplay was prevented:", err);
+      });
+    } else {
+      video.pause();
+    }
+  }, [isVisible]);
+
   const copyContent = () => {
     navigator.clipboard.writeText(article.content);
     setCopiedContent(true);
@@ -1250,8 +1291,9 @@ function ArticleCard({
       {article.url && (
         <div className="relative rounded-[2rem] overflow-hidden border border-zinc-500/10 bg-black aspect-video mb-4 shadow-xl">
           <video 
+            ref={videoRef}
             src={`${article.url}#t=0.001`}
-            autoPlay
+            autoPlay={isVisible}
             controls
             playsInline
             muted={false}
