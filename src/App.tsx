@@ -1616,6 +1616,7 @@ function AppContent() {
   const [editGrade, setEditGrade] = useState('');
   const [editComment, setEditComment] = useState('');
   const [isAddingQuote, setIsAddingQuote] = useState(false);
+  const [localCopiedId, setLocalCopiedId] = useState<string | null>(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [newQuote, setNewQuote] = useState<{
     text: string;
@@ -7439,14 +7440,62 @@ function AppContent() {
                                 <div className={cn("mt-3 pt-3 border-t space-y-2", isDarkMode ? "border-zinc-800/20" : "border-zinc-800/10")}>
                                   <div className="flex items-center justify-between">
                                     <p className={cn("text-[16px] font-bold", isGirlyMode ? "text-pink-600" : "text-blue-500")}>{quote.author}</p>
-                                    {quote.markedDate && (
-                                      <p className={cn(
-                                        "text-[9px] font-medium",
-                                        isDarkMode ? "text-zinc-600" : "text-zinc-400"
-                                      )}>
-                                        {format(new Date(quote.markedDate), 'MMM d, yyyy')}
-                                      </p>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                      {quote.markedDate && (
+                                        <p className={cn(
+                                          "text-[9px] font-medium mr-1.5",
+                                          isDarkMode ? "text-zinc-600" : "text-zinc-400"
+                                        )}>
+                                          {format(new Date(quote.markedDate), 'MMM d, yyyy')}
+                                        </p>
+                                      )}
+                                      <button
+                                        onClick={() => {
+                                          const shareText = `"${quote.text}" — ${quote.author}`;
+                                          navigator.clipboard.writeText(shareText);
+                                          setLocalCopiedId(quote.id!);
+                                          setTimeout(() => setLocalCopiedId(null), 2000);
+                                        }}
+                                        className={cn(
+                                          "p-1.5 rounded-xl transition-all active:scale-95 flex items-center justify-center",
+                                          isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-emerald-450" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 hover:text-emerald-650"
+                                        )}
+                                        title="Copy Quote"
+                                      >
+                                        {localCopiedId === quote.id ? (
+                                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                        ) : (
+                                          <Copy className="w-3.5 h-3.5" />
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          const shareText = `"${quote.text}" — ${quote.author} (via WiseFit)`;
+                                          if (navigator.share) {
+                                            try {
+                                              await navigator.share({
+                                                title: 'WiseFit Wisdom',
+                                                text: shareText,
+                                                url: window.location.href,
+                                              });
+                                            } catch (error) {
+                                              console.error('Error sharing:', error);
+                                            }
+                                          } else {
+                                            navigator.clipboard.writeText(shareText);
+                                            setLocalCopiedId(quote.id!);
+                                            setTimeout(() => setLocalCopiedId(null), 2000);
+                                          }
+                                        }}
+                                        className={cn(
+                                          "p-1.5 rounded-xl transition-all active:scale-95 flex items-center justify-center",
+                                          isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-emerald-450" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 hover:text-emerald-650"
+                                        )}
+                                        title="Share Quote"
+                                      >
+                                        <Share2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
                                   </div>
                                   {quote.comment && !editingQuoteId && (
                                     <div className={cn(
