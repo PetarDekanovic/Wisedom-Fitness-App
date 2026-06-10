@@ -73,6 +73,28 @@ export default function WiseFitPlusPaywall({
 
   const handlePaymentSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    
+    // Check if a real physical Stripe Payment Link is configured in Vite environment variables
+    const envMonthlyLink = (import.meta as any).env.VITE_STRIPE_MONTHLY_PAYMENT_LINK;
+    const envLifetimeLink = (import.meta as any).env.VITE_STRIPE_LIFETIME_PAYMENT_LINK;
+    const realLink = tier === 'monthly' ? envMonthlyLink : envLifetimeLink;
+
+    if (realLink) {
+      try {
+        console.log(`[WiseFit Billing] Active Stripe direct checkout link found: ${realLink}`);
+        const checkoutUrl = new URL(realLink);
+        if (userEmail) {
+          // Tell Stripe to pre-fill the customer email for a premium customer experience
+          checkoutUrl.searchParams.set('prefilled_email', userEmail);
+        }
+        // Redirect top frame to Stripe checkout
+        window.top!.location.href = checkoutUrl.toString();
+        return;
+      } catch (err) {
+        console.error('[WiseFit Billing] Failed to direct window to payment portal. Checking fallback...', err);
+      }
+    }
+
     if (payMethod === 'card') {
       if (cardNumber.replace(/\s/g, '').length < 16) {
         setErrorMessage('Please enter a valid 16-digit card number.');

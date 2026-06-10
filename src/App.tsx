@@ -3152,6 +3152,29 @@ function AppContent() {
     setUserProfile(updated);
   };
 
+  // Process Stripe Checkout Success redirects automatically
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const stripeStatus = params.get('stripe_checkout') || params.get('payment_status');
+      const sessionId = params.get('session_id');
+      const plan = (params.get('plan') || 'monthly') as 'monthly' | 'lifetime';
+      
+      if (stripeStatus === 'success' || sessionId) {
+        console.log('[WiseFit Billing] Customer redirected from Stripe checkout successfully.');
+        handleUpgradeSuccess(plan).then(() => {
+          console.log('[WiseFit Billing] Premium subscription status successfully written to Firestore.');
+        });
+        
+        // Clear query parameters from address bar to keep a clean aesthetic 
+        const newUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, '', newUrl);
+      }
+    } catch (err) {
+      console.error('[WiseFit Billing] Failed to process URL query parameters:', err);
+    }
+  }, [user]);
+
   const handleDeleteWorkout = async (id: string) => {
     setWorkouts(prev => prev.filter(w => w.id !== id));
     if (user) {
