@@ -92,6 +92,8 @@ export interface UserProfile {
   uid?: string;
   name: string;
   email?: string;
+  isSubscribed?: boolean;
+  subscriptionType?: 'monthly' | 'lifetime';
   height: number;
   currentWeight: number;
   targetWeight: number;

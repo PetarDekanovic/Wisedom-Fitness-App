@@ -135,6 +135,7 @@ import { INITIAL_HISTORY_VIDEOS } from './data/historyVideos';
 import { YOGA_FLOWS } from './data/yogaFlows';
 import { SocialSanctuary } from './components/SocialSanctuary';
 import { DigestQuoteCard } from './components/DigestQuoteCard';
+import WiseFitPlusPaywall from './components/WiseFitPlusPaywall';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -1919,6 +1920,7 @@ function AppContent() {
     "esmeraldadarkomanila@gmail.com"
   ];
   const isAuthorized = user && user.email && AUTHORIZED_EMAILS.includes(user.email.toLowerCase());
+  const isPremiumUser = (userProfile?.isSubscribed === true) || isAuthorized;
 
   // Audio State
   const [isSpeaking, setIsSpeaking] = useState<string | null>(null);
@@ -1986,8 +1988,8 @@ function AppContent() {
   }, [isSpeaking]);
 
   const fetchAIQuote = useCallback(async (history: Quote[] = []): Promise<Quote | null> => {
-    if (!isAuthorized) {
-      console.warn('AI functionality is restricted to authorized seekers.');
+    if (!isPremiumUser) {
+      console.warn('AI functionality is restricted to authorized seekers/subscribers.');
       return null;
     }
     setIsGeneratingAIQuote(true);
@@ -2038,7 +2040,7 @@ function AppContent() {
       setIsGeneratingAIQuote(false);
       setAiCountdown(0);
     }
-  }, [wisdomTradition, isAuthorized, user]);
+  }, [wisdomTradition, isPremiumUser, user]);
 
   const refillQuotesPool = useCallback(async (force = false): Promise<Quote[]> => {
     // GUEST PROTECTION: Guests never refill from database to save quota
@@ -3129,6 +3131,27 @@ function AppContent() {
     }
   };
 
+  const handleUpgradeSuccess = async (type: 'monthly' | 'lifetime') => {
+    const updated: UserProfile = {
+      ...userProfile,
+      isSubscribed: true,
+      subscriptionType: type
+    };
+    
+    if (user) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), updated, { merge: true });
+        console.log('Subscription successfully written to Firestore.');
+      } catch (err: any) {
+        console.error('Failed to write subscription to Firestore:', err);
+        handleFirestoreError(err, 'write', `users/${user.uid}`);
+      }
+    } else {
+      localStorage.setItem('guest_subscription', JSON.stringify({ isSubscribed: true, subscriptionType: type }));
+    }
+    setUserProfile(updated);
+  };
+
   const handleDeleteWorkout = async (id: string) => {
     setWorkouts(prev => prev.filter(w => w.id !== id));
     if (user) {
@@ -3585,6 +3608,22 @@ function AppContent() {
       setWorkouts(MOCK_WORKOUTS);
       setStats(MOCK_STATS);
       setWeeklyPlan(INITIAL_WEEKLY_PLAN);
+      
+      const guestSub = localStorage.getItem('guest_subscription');
+      if (guestSub) {
+        try {
+          const parsed = JSON.parse(guestSub);
+          if (parsed && parsed.isSubscribed) {
+            setUserProfile(prev => ({
+              ...prev,
+              isSubscribed: true,
+              subscriptionType: parsed.subscriptionType || 'monthly'
+            }));
+          }
+        } catch (e) {
+          console.error("Failed to parse guest subscription:", e);
+        }
+      }
       return;
     }
 
@@ -3742,7 +3781,7 @@ function AppContent() {
   };
 
   const handleSendMessage = async () => {
-    if (!chatInput.trim() || isChatLoading || !isAuthorized) return;
+    if (!chatInput.trim() || isChatLoading || !isPremiumUser) return;
 
     const userMessage: ChatMessage = { role: 'user', parts: [{ text: chatInput }] };
     setChatMessages(prev => [...prev, userMessage]);
@@ -3793,7 +3832,7 @@ function AppContent() {
   };
 
   const handlePsychSendMessage = async () => {
-    if (!psychInput.trim() || isPsychLoading || !isAuthorized) return;
+    if (!psychInput.trim() || isPsychLoading || !isPremiumUser) return;
 
     const userMessage: ChatMessage = { role: 'user', parts: [{ text: psychInput }] };
     setPsychMessages(prev => [...prev, userMessage]);
@@ -5795,13 +5834,24 @@ function AppContent() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <YogaView 
-                isDarkMode={isDarkMode} 
-                isGirlyMode={isGirlyMode}
-                onMarkAsWise={markQuoteAsSeen}
-                isSessionActive={isYogaSessionActive}
-                setIsSessionActive={setIsYogaSessionActive}
-              />
+              {isPremiumUser ? (
+                <YogaView 
+                  isDarkMode={isDarkMode} 
+                  isGirlyMode={isGirlyMode}
+                  onMarkAsWise={markQuoteAsSeen}
+                  isSessionActive={isYogaSessionActive}
+                  setIsSessionActive={setIsYogaSessionActive}
+                />
+              ) : (
+                <div className="max-w-md mx-auto">
+                  <WiseFitPlusPaywall 
+                    isDarkMode={isDarkMode} 
+                    isGirlyMode={isGirlyMode} 
+                    userEmail={user?.email} 
+                    onSuccess={handleUpgradeSuccess} 
+                  />
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -5851,6 +5901,76 @@ function AppContent() {
                     isGirlyMode ? "text-pink-600/60" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
                   )}>{user?.email}</p>
                 </div>
+              </div>
+
+              {/* WiseFit Plus Sanctuary Card */}
+              <div className={cn(
+                "p-5 rounded-3xl border relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-500",
+                userProfile.isSubscribed 
+                  ? (isGirlyMode ? "bg-pink-500/10 border-pink-500/30" : "bg-emerald-500/10 border-emerald-500/30")
+                  : (isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-zinc-50 border-zinc-200")
+              )}>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "text-[10px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full",
+                      userProfile.isSubscribed
+                        ? (isGirlyMode ? "bg-pink-500 text-white" : "bg-emerald-500 text-zinc-950")
+                        : (isDarkMode ? "bg-zinc-850 text-zinc-400" : "bg-zinc-200 text-zinc-600")
+                    )}>
+                      {userProfile.isSubscribed ? "WiseFit Plus Sanctuary Mode" : "WiseFit Standard"}
+                    </span>
+                    {userProfile.isSubscribed && (
+                      <span className="text-[10px] font-black opacity-80 flex items-center gap-1 text-emerald-500">
+                        <Check className="w-3.5 h-3.5" />
+                        {userProfile.subscriptionType === 'lifetime' ? 'Lifetime Patron' : 'Monthly Member'}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-sm font-bold mt-1">
+                    {userProfile.isSubscribed 
+                      ? "Your connection to the premium intelligence suite is active." 
+                      : "Upgrade to WiseFit Plus for full AI & Ritual unlocks."}
+                  </h3>
+                  <p className={cn("text-xs transition-colors", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                    {userProfile.isSubscribed 
+                      ? "You have full, cloud-persistent access to Sage AI Coach, Psychology Clinic, Scholarly Swarm feed, and all Yoga Rituals." 
+                      : "Subscribing supports high-fidelity servers and unlocks the full mental & body discipline suite."}
+                  </p>
+                </div>
+
+                {userProfile.isSubscribed ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (window.confirm("Are you sure you want to end your active subscription? This will lock premium AI features.")) {
+                        const updated = { ...userProfile, isSubscribed: false, subscriptionType: undefined };
+                        if (user) {
+                          await setDoc(doc(db, 'users', user.uid), updated, { merge: true });
+                        } else {
+                          localStorage.removeItem('guest_subscription');
+                        }
+                        setUserProfile(updated);
+                      }
+                    }}
+                    className="shrink-0 text-[11px] font-bold text-red-500 hover:text-red-400 active:scale-95 transition-all cursor-pointer"
+                  >
+                    Cancel Membership
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveView('chat');
+                    }}
+                    className={cn(
+                      "shrink-0 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1 transition-all active:scale-95 shadow-lg cursor-pointer",
+                      isGirlyMode ? "bg-pink-500 text-white" : "bg-emerald-500 text-zinc-950"
+                    )}
+                  >
+                    <Sparkles className="w-4 h-4" /> Go Premium
+                  </button>
+                )}
               </div>
 
               <div className={cn(
@@ -6555,167 +6675,139 @@ function AppContent() {
               exit={{ opacity: 0, x: -20 }}
               className="flex flex-col h-[calc(100vh-180px)] relative"
             >
-              {!isAuthorized && (
-                <div className="absolute inset-0 z-50 backdrop-blur-md bg-zinc-950/20 rounded-3xl flex flex-col items-center justify-center p-8 text-center space-y-6">
-                  <div className={cn(
-                    "w-20 h-20 rounded-full flex items-center justify-center border transition-colors",
-                    isGirlyMode 
-                      ? "bg-pink-500/20 border-pink-500/30" 
-                      : "bg-emerald-500/20 border-emerald-500/30"
-                  )}>
-                    <Sparkles className={cn("w-10 h-10", isGirlyMode ? "text-pink-400" : "text-emerald-400")} />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-black uppercase tracking-tight text-white">Consult the Sage</h3>
-                    <p className="text-sm text-zinc-300">
-                      {!user 
-                        ? "The AI Stoic requires a deeper connection. Sign in to unlock personal coaching." 
-                        : "Your spirit is not yet ready for this transmission. AI features are currently restricted to authorized seekers."}
-                    </p>
-                  </div>
-                  {!user ? (
-                    <button 
-                      onClick={handleLogin}
-                      className={cn(
-                        "px-8 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform",
-                        isGirlyMode ? "bg-pink-500 text-white" : "bg-emerald-500 text-zinc-950"
-                      )}
-                    >
-                      Enter the Sanctuary
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => setActiveView('dashboard')}
-                      className={cn(
-                        "px-8 py-3 rounded-2xl font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform",
-                        isGirlyMode ? "bg-pink-500 text-white" : "bg-emerald-500 text-zinc-950"
-                      )}
-                    >
-                      Return to Discipline
-                    </button>
-                  )}
-                </div>
-              )}
-              <div className="flex items-center gap-3 mb-6">
-                <div className={cn(
-                  "w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border transition-colors",
-                  isGirlyMode ? "bg-pink-500/20 border-pink-500/20" : "bg-emerald-500/20 border-emerald-500/20"
-                )}>
-                  <img 
-                    src={AVATARS[0].url} 
-                    alt="AI Stoic" 
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div>
-                  <h2 className={cn("text-2xl font-bold", isGirlyMode ? "text-pink-900" : "")}>AI Stoic</h2>
-                  <p className={cn(
-                    "text-xs font-medium uppercase tracking-widest",
-                    isGirlyMode ? "text-pink-500" : "text-zinc-500"
-                  )}>Powered by Gemini</p>
-                </div>
-              </div>
-
-              <div className={cn(
-                "flex-1 overflow-y-auto space-y-4 p-4 rounded-3xl border mb-4 no-scrollbar",
-                isGirlyMode ? "bg-white/40 border-pink-100" : isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/60 border-zinc-200 shadow-sm"
-              )}>
-                {chatMessages.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
-                    <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center">
-                      <Flame className="w-8 h-8 text-emerald-500/50" />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="font-bold text-zinc-500">The obstacle is the way, Petar.</p>
-                      <p className="text-sm text-zinc-600">Ask me anything about your training, discipline, or how to master the pull-up.</p>
-                    </div>
-                  </div>
-                )}
-                {chatMessages.map((msg, idx) => (
-                  <div key={idx} className={cn(
-                    "flex items-end gap-2",
-                    msg.role === 'user' ? "flex-row-reverse" : "flex-row"
-                  )}>
-                    <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-zinc-700/30">
+              {isPremiumUser ? (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className={cn(
+                      "w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border transition-colors",
+                      isGirlyMode ? "bg-pink-500/20 border-pink-500/20" : "bg-emerald-500/20 border-emerald-500/20"
+                    )}>
                       <img 
-                        src={msg.role === 'user' ? userProfile.avatarUrl : AVATARS[0].url} 
-                        alt={msg.role === 'user' ? "User" : "AI Stoic"} 
+                        src={AVATARS[0].url} 
+                        alt="AI Stoic" 
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                       />
                     </div>
-                    <div className={cn(
-                      "max-w-[80%] p-4 rounded-2xl text-sm relative group",
-                      msg.role === 'user' 
-                        ? "bg-emerald-500 text-zinc-950 font-medium rounded-br-none" 
-                        : (isDarkMode ? "bg-zinc-800 text-zinc-100 rounded-bl-none" : "bg-zinc-100 text-zinc-900 rounded-bl-none")
-                    )}>
-                      {msg.parts[0].text}
-                      {msg.role === 'model' && (
-                        <div className="absolute top-2 right-2 flex items-center gap-2">
-                          <button
-                            onClick={() => handleSpeak(msg.parts[0].text, `chat-${idx}`)}
-                            className={cn(
-                              "p-2 rounded-xl transition-all shadow-sm",
-                              isSpeaking === `chat-${idx}` 
-                                ? "bg-emerald-500 text-zinc-950" 
-                                : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300")
-                            )}
-                            title="Listen"
-                          >
-                            {isSpeaking === `chat-${idx}` ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                          </button>
-                          <button
-                            onClick={() => handleCopy(msg.parts[0].text, idx)}
-                            className={cn(
-                              "p-2 rounded-xl transition-all shadow-sm",
-                              copiedIndex === idx 
-                                ? "bg-emerald-500 text-zinc-950" 
-                                : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300")
-                            )}
-                            title="Copy"
-                          >
-                            {copiedIndex === idx ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                          </button>
-                        </div>
-                      )}
+                    <div>
+                      <h2 className={cn("text-2xl font-bold", isGirlyMode ? "text-pink-900" : "")}>AI Stoic</h2>
+                      <p className={cn(
+                        "text-xs font-medium uppercase tracking-widest",
+                        isGirlyMode ? "text-pink-500" : "text-zinc-500"
+                      )}>Powered by Gemini</p>
                     </div>
                   </div>
-                ))}
-                {isChatLoading && (
-                  <div className="flex justify-start">
-                    <div className={cn(
-                      "p-4 rounded-2xl rounded-tl-none",
-                      isDarkMode ? "bg-zinc-800" : "bg-zinc-100"
-                    )}>
-                      <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
-                    </div>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
 
-              <div className="flex gap-2">
-                <input 
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Ask your coach..."
-                  className={cn(
-                    "flex-1 border rounded-2xl px-4 py-4 focus:outline-none focus:border-emerald-500 transition-all",
-                    isDarkMode ? "bg-zinc-900 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900 shadow-sm"
-                  )}
-                />
-                <button 
-                  onClick={handleSendMessage}
-                  disabled={isChatLoading || !chatInput.trim()}
-                  className="bg-emerald-500 text-zinc-950 p-4 rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
-                >
-                  <Send className="w-6 h-6" />
-                </button>
-              </div>
+                  <div className={cn(
+                    "flex-1 overflow-y-auto space-y-4 p-4 rounded-3xl border mb-4 no-scrollbar",
+                    isGirlyMode ? "bg-white/40 border-pink-100" : isDarkMode ? "bg-zinc-900/40 border-zinc-800/50" : "bg-white/60 border-zinc-200 shadow-sm"
+                  )}>
+                    {chatMessages.length === 0 && (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
+                        <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center">
+                          <Flame className="w-8 h-8 text-emerald-500/50" />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="font-bold text-zinc-500">The obstacle is the way, Petar.</p>
+                          <p className="text-sm text-zinc-600">Ask me anything about your training, discipline, or how to master the pull-up.</p>
+                        </div>
+                      </div>
+                    )}
+                    {chatMessages.map((msg, idx) => (
+                      <div key={idx} className={cn(
+                        "flex items-end gap-2",
+                        msg.role === 'user' ? "flex-row-reverse" : "flex-row"
+                      )}>
+                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-zinc-700/30">
+                          <img 
+                            src={msg.role === 'user' ? userProfile.avatarUrl : AVATARS[0].url} 
+                            alt={msg.role === 'user' ? "User" : "AI Stoic"} 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <div className={cn(
+                          "max-w-[80%] p-4 rounded-2xl text-sm relative group",
+                          msg.role === 'user' 
+                            ? "bg-emerald-500 text-zinc-950 font-medium rounded-br-none" 
+                            : (isDarkMode ? "bg-zinc-800 text-zinc-100 rounded-bl-none" : "bg-zinc-100 text-zinc-900 rounded-bl-none")
+                        )}>
+                          {msg.parts[0].text}
+                          {msg.role === 'model' && (
+                            <div className="absolute top-2 right-2 flex items-center gap-2">
+                              <button
+                                onClick={() => handleSpeak(msg.parts[0].text, `chat-${idx}`)}
+                                className={cn(
+                                  "p-2 rounded-xl transition-all shadow-sm",
+                                  isSpeaking === `chat-${idx}` 
+                                    ? "bg-emerald-500 text-zinc-950" 
+                                    : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300")
+                                )}
+                                title="Listen"
+                              >
+                                {isSpeaking === `chat-${idx}` ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                              </button>
+                              <button
+                                onClick={() => handleCopy(msg.parts[0].text, idx)}
+                                className={cn(
+                                  "p-2 rounded-xl transition-all shadow-sm",
+                                  copiedIndex === idx 
+                                    ? "bg-emerald-500 text-zinc-950" 
+                                    : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300")
+                                )}
+                                title="Copy"
+                              >
+                                {copiedIndex === idx ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {isChatLoading && (
+                      <div className="flex justify-start">
+                        <div className={cn(
+                          "p-4 rounded-2xl rounded-tl-none",
+                          isDarkMode ? "bg-zinc-800" : "bg-zinc-100"
+                        )}>
+                          <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                        </div>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input 
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder="Ask your coach..."
+                      className={cn(
+                        "flex-1 border rounded-2xl px-4 py-4 focus:outline-none focus:border-emerald-500 transition-all",
+                        isDarkMode ? "bg-zinc-900 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900 shadow-sm"
+                      )}
+                    />
+                    <button 
+                      onClick={handleSendMessage}
+                      disabled={isChatLoading || !chatInput.trim()}
+                      className="bg-emerald-500 text-zinc-950 p-4 rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
+                    >
+                      <Send className="w-6 h-6" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="max-w-md mx-auto w-full my-auto">
+                  <WiseFitPlusPaywall 
+                    isDarkMode={isDarkMode} 
+                    isGirlyMode={isGirlyMode} 
+                    userEmail={user?.email} 
+                    onSuccess={handleUpgradeSuccess} 
+                  />
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -6727,20 +6819,9 @@ function AppContent() {
               exit={{ opacity: 0, x: -20 }}
               className="flex flex-col h-[calc(100vh-180px)] relative"
             >
-              {!isAuthorized && (
-                <div className="absolute inset-0 z-50 backdrop-blur-md bg-zinc-950/20 rounded-3xl flex flex-col items-center justify-center p-8 text-center space-y-6">
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center border bg-blue-500/20 border-blue-500/30">
-                    <Brain className="w-10 h-10 text-blue-400" />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-black uppercase tracking-tight text-white">Enter the Clinic</h3>
-                    <p className="text-sm text-zinc-300">
-                      The AI Psychologist is available for authorized seekers.
-                    </p>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-center gap-3 mb-6">
+              {isPremiumUser ? (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border border-blue-500/20 bg-blue-500/10 shadow-lg shadow-blue-500/10 transition-transform hover:scale-105">
                   <img 
                     src="https://compcharity.org/wp-content/uploads/2026/05/freud.jpg" 
@@ -6881,6 +6962,17 @@ function AppContent() {
                   <Send className="w-6 h-6" />
                 </button>
               </div>
+                </>
+              ) : (
+                <div className="max-w-md mx-auto w-full my-auto">
+                  <WiseFitPlusPaywall 
+                    isDarkMode={isDarkMode} 
+                    isGirlyMode={isGirlyMode} 
+                    userEmail={user?.email} 
+                    onSuccess={handleUpgradeSuccess} 
+                  />
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -7530,12 +7622,23 @@ function AppContent() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <SocialSanctuary 
-                isDarkMode={isDarkMode} 
-                isGirlyMode={isGirlyMode} 
-                currentUser={user} 
-                userProfile={userProfile} 
-              />
+              {isPremiumUser ? (
+                <SocialSanctuary 
+                  isDarkMode={isDarkMode} 
+                  isGirlyMode={isGirlyMode} 
+                  currentUser={user} 
+                  userProfile={userProfile} 
+                />
+              ) : (
+                <div className="max-w-md mx-auto">
+                  <WiseFitPlusPaywall 
+                    isDarkMode={isDarkMode} 
+                    isGirlyMode={isGirlyMode} 
+                    userEmail={user?.email} 
+                    onSuccess={handleUpgradeSuccess} 
+                  />
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
