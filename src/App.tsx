@@ -3584,19 +3584,30 @@ function AppContent() {
     let profileName = firebaseUser.displayName || 'Seeker';
     let profileAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
 
+    const isAdminEmail = firebaseUser.email && [
+      'petar.dekanovic@gmail.com',
+      'esmeraldadarkomanila@gmail.com',
+      'stjepan.dekanovic@gmail.com'
+    ].includes(firebaseUser.email.toLowerCase());
+
     if (!userDoc.exists()) {
       const newProfile: UserProfile = {
         ...INITIAL_PROFILE,
         uid: firebaseUser.uid,
         name: firebaseUser.displayName || 'User',
         email: firebaseUser.email || '',
-        role: 'user'
+        role: isAdminEmail ? 'admin' : 'user'
       };
       console.log('Creating new user profile for:', firebaseUser.uid);
       await setDoc(userDocRef, newProfile);
       setUserProfile(newProfile);
     } else {
       const data = userDoc.data();
+      if (isAdminEmail && data.role !== 'admin') {
+        data.role = 'admin';
+        console.log('Upgrading role to admin in Firestore for:', firebaseUser.email);
+        await setDoc(userDocRef, { role: 'admin' }, { merge: true });
+      }
       if (data.name) profileName = data.name;
       if (data.avatarUrl) profileAvatar = data.avatarUrl;
       console.log('Loaded existing user profile for:', firebaseUser.uid, 'Marked quotes:', data.markedQuotes?.length || 0);
