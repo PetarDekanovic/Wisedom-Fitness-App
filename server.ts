@@ -605,9 +605,21 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     try {
       console.log(`[Link Scraper] Fetching metadata for: ${targetUrl}`);
       
+      const isFacebook = targetUrl.includes("facebook.com") || targetUrl.includes("fb.watch");
+      const isTikTok = targetUrl.includes("tiktok.com");
+      const isInstagram = targetUrl.includes("instagram.com");
+
+      let userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36";
+      
+      // Use Twitterbot/1.0 User-Agent for Facebook/Instagram/TikTok to bypass login blockades 
+      // and retrieve official open graph tags (og:image, og:title, og:description)
+      if (isFacebook || isInstagram || isTikTok) {
+        userAgent = "Twitterbot/1.0";
+      }
+
       const response = await axios.get(targetUrl, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+          "User-Agent": userAgent,
           "Accept-Language": "en-US,en;q=0.9",
         },
         timeout: 6000,
@@ -616,11 +628,22 @@ app.get("/api/ai/diagnostics", async (req, res) => {
       const $ = cheerio.load(response.data);
       const title = $('meta[property="og:title"]').attr('content') || $('title').text() || "";
       let description = $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content') || "";
-      let image = $('meta[property="og:image"]').attr('content') || "";
-      const publisher = $('meta[property="og:site_name"]').attr('content') || "";
+      let image = $('meta[property="og:image"]').attr('content') || 
+                  $('meta[property="og:image:src"]').attr('content') || 
+                  $('meta[name="twitter:image"]').attr('content') || 
+                  $('meta[name="twitter:image:src"]').attr('content') || 
+                  "";
+      
+      if (image && !image.startsWith('http://') && !image.startsWith('https://')) {
+        try {
+          const parsedUrl = new URL(targetUrl);
+          image = new URL(image, parsedUrl.origin).toString();
+        } catch (e) {
+          // Ignore URL resolution error, leave as relative
+        }
+      }
 
-      const isFacebook = targetUrl.includes("facebook.com") || targetUrl.includes("fb.watch");
-      const isTikTok = targetUrl.includes("tiktok.com");
+      const publisher = $('meta[property="og:site_name"]').attr('content') || "";
 
       const isGeneric = 
         !description || 
@@ -656,7 +679,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
           return res.json({
             title: parsed.title || (isFacebook ? "Facebook Shared Reflection" : "TikTok Shared Insight"),
             description: parsed.description || "A deep clinical breakdown of physical training, Stoic discipline, or community athletic expression.",
-            image: parsed.image || (isFacebook 
+            image: image || parsed.image || (isFacebook 
               ? "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=600"
               : "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600"),
             publisher: publisher || (isFacebook ? "Facebook" : "TikTok")
