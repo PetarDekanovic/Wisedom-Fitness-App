@@ -52,7 +52,11 @@ import {
   Compass,
   MapPin,
   Play,
-  Save
+  Save,
+  Share2,
+  Twitter,
+  Facebook,
+  Copy
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
@@ -304,6 +308,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const editingPostWordCount = editingPostContent.trim() ? editingPostContent.trim().split(/\s+/).length : 0;
   const isEditingPostOverWordLimit = editingPostWordCount > 7000;
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
+
+  // Sharing states
+  const [activeSharePostId, setActiveSharePostId] = useState<string | null>(null);
+  const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
 
   // Sub-tabs horizontal scrolling & mobile view visibility states
   const tabContainerRef = useRef<HTMLDivElement>(null);
@@ -2306,6 +2314,21 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           isDarkMode ? "bg-zinc-900/40 border-zinc-800/80" : "bg-white border-zinc-200 shadow-sm"
                         )}
                       >
+                        {/* Copy overlay */}
+                        <AnimatePresence>
+                          {copiedPostId === post.id && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                              className="absolute top-4 right-4 bg-emerald-500 text-zinc-950 font-black text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg z-50 flex items-center gap-1.5"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Reflection Copied</span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
                         {/* Header author alignment */}
                         <div className="flex items-center justify-between">
                           <button 
@@ -2346,7 +2369,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             </div>
                           </button>
 
-                          {/* Like, edit, delete actions */}
+                          {/* Like, share, edit, delete actions */}
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1">
                               <button
@@ -2365,6 +2388,88 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
                                 {post.likes?.length || 0}
                               </span>
+                            </div>
+
+                            {/* Share Options dropdown */}
+                            <div className="relative">
+                              <button
+                                onClick={() => setActiveSharePostId(activeSharePostId === post.id ? null : post.id)}
+                                className={cn(
+                                  "p-2 rounded-lg transition-colors",
+                                  activeSharePostId === post.id 
+                                    ? "text-emerald-500 bg-emerald-500/10" 
+                                    : isDarkMode 
+                                      ? "text-zinc-500 hover:text-white hover:bg-zinc-800" 
+                                      : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+                                )}
+                                title="Share reflection"
+                              >
+                                <Share2 className="w-4 h-4" />
+                              </button>
+
+                              <AnimatePresence>
+                                {activeSharePostId === post.id && (
+                                  <motion.div
+                                    initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                                    className={cn(
+                                      "absolute right-0 mt-1 w-48 rounded-xl border p-2 shadow-xl z-40 space-y-1",
+                                      isDarkMode 
+                                        ? "bg-zinc-950 border-zinc-800 text-zinc-300" 
+                                        : "bg-white border-zinc-200 text-zinc-700 shadow-zinc-200/40"
+                                    )}
+                                  >
+                                    <button
+                                      onClick={() => {
+                                        const snippet = post.content.length > 180 ? post.content.substring(0, 180) + '...' : post.content;
+                                        const text = `"${snippet}"\n\n— Shared from @WiseFit Digital Sanctuary`;
+                                        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.origin)}`;
+                                        window.open(url, '_blank', 'noopener,noreferrer');
+                                        setActiveSharePostId(null);
+                                      }}
+                                      className={cn(
+                                        "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors text-left",
+                                        isDarkMode ? "hover:bg-zinc-900 hover:text-white" : "hover:bg-zinc-100 hover:text-zinc-900"
+                                      )}
+                                    >
+                                      <Twitter className="w-3.5 h-3.5 text-[#1DA1F2]" />
+                                      <span>Share to X (Twitter)</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => {
+                                        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}`;
+                                        window.open(url, '_blank', 'noopener,noreferrer');
+                                        setActiveSharePostId(null);
+                                      }}
+                                      className={cn(
+                                        "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors text-left",
+                                        isDarkMode ? "hover:bg-zinc-900 hover:text-white" : "hover:bg-zinc-100 hover:text-zinc-900"
+                                      )}
+                                    >
+                                      <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
+                                      <span>Share to Facebook</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(`"${post.content}"\n\n— Shared from WiseFit Digital Sanctuary: ${window.location.origin}`);
+                                        setCopiedPostId(post.id);
+                                        setActiveSharePostId(null);
+                                        setTimeout(() => setCopiedPostId(null), 2500);
+                                      }}
+                                      className={cn(
+                                        "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors text-left",
+                                        isDarkMode ? "hover:bg-zinc-900 hover:text-white" : "hover:bg-zinc-100 hover:text-zinc-900"
+                                      )}
+                                    >
+                                      <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                                      <span>Copy Reflection</span>
+                                    </button>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
 
                             {/* Edit & Delete Actions */}
@@ -5107,10 +5212,24 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           <div
                             key={p.id}
                             className={cn(
-                              "p-4 rounded-2xl border text-xs font-medium space-y-3 transition-colors relative",
+                              "p-4 rounded-2xl border text-xs font-medium space-y-3 transition-colors relative overflow-hidden",
                               isDarkMode ? "bg-zinc-855/30 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-150 text-zinc-700"
                             )}
                           >
+                            {/* Copy overlay */}
+                            <AnimatePresence>
+                              {copiedPostId === p.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                  className="absolute top-3 right-3 bg-emerald-500 text-zinc-950 font-black text-[8px] uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg z-50 flex items-center gap-1"
+                                >
+                                  <CheckCircle2 className="w-2.5 h-2.5" />
+                                  <span>Reflection Copied</span>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                             {editingPostId === p.id ? (
                               <div className="space-y-2 mt-2 text-left">
                                 <textarea
@@ -5216,11 +5335,88 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                   </div>
                                 )}
 
-                                <div className="flex items-center gap-1">
-                                  <button onClick={() => handleToggleLike(p)} className="p-1 text-zinc-400 hover:text-red-500 transition-colors">
-                                    <Heart className={cn("w-3.5 h-3.5", hasLiked && "fill-current text-red-500 animate-ping-once")} />
-                                  </button>
-                                  <span>{p.likes?.length || 0} Likes</span>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1">
+                                    <button onClick={() => handleToggleLike(p)} className="p-1 text-zinc-400 hover:text-red-500 transition-colors">
+                                      <Heart className={cn("w-3.5 h-3.5", hasLiked && "fill-current text-red-500 animate-ping-once")} />
+                                    </button>
+                                    <span>{p.likes?.length || 0} Likes</span>
+                                  </div>
+
+                                  {/* Share button Peer Wall */}
+                                  <div className="relative inline-block text-left">
+                                    <button
+                                      onClick={() => setActiveSharePostId(activeSharePostId === p.id ? null : p.id)}
+                                      className="p-1 text-zinc-400 hover:text-emerald-500 transition-colors"
+                                      title="Share reflection"
+                                    >
+                                      <Share2 className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    <AnimatePresence>
+                                      {activeSharePostId === p.id && (
+                                        <motion.div
+                                          initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                                          exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                                          className={cn(
+                                            "absolute right-0 bottom-full mb-1 w-48 rounded-xl border p-2 shadow-xl z-50 space-y-1 text-left",
+                                            isDarkMode 
+                                              ? "bg-zinc-950 border-zinc-800 text-zinc-300" 
+                                              : "bg-white border-zinc-200 text-zinc-700 shadow-zinc-200/40"
+                                          )}
+                                        >
+                                          <button
+                                            onClick={() => {
+                                              const snippet = p.content.length > 180 ? p.content.substring(0, 180) + '...' : p.content;
+                                              const text = `"${snippet}"\n\n— Shared from @WiseFit Digital Sanctuary`;
+                                              const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.origin)}`;
+                                              window.open(url, '_blank', 'noopener,noreferrer');
+                                              setActiveSharePostId(null);
+                                            }}
+                                            className={cn(
+                                              "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors text-left",
+                                              isDarkMode ? "hover:bg-zinc-900 hover:text-white" : "hover:bg-zinc-100 hover:text-zinc-900"
+                                            )}
+                                          >
+                                            <Twitter className="w-3.5 h-3.5 text-[#1DA1F2]" />
+                                            <span>Share to X (Twitter)</span>
+                                          </button>
+
+                                          <button
+                                            onClick={() => {
+                                              const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}`;
+                                              window.open(url, '_blank', 'noopener,noreferrer');
+                                              setActiveSharePostId(null);
+                                            }}
+                                            className={cn(
+                                              "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors text-left",
+                                              isDarkMode ? "hover:bg-zinc-900 hover:text-white" : "hover:bg-zinc-100 hover:text-zinc-900"
+                                            )}
+                                          >
+                                            <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
+                                            <span>Share to Facebook</span>
+                                          </button>
+
+                                          <button
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(`"${p.content}"\n\n— Shared from WiseFit Digital Sanctuary: ${window.location.origin}`);
+                                              setCopiedPostId(p.id);
+                                              setActiveSharePostId(null);
+                                              setTimeout(() => setCopiedPostId(null), 2500);
+                                            }}
+                                            className={cn(
+                                              "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors text-left",
+                                              isDarkMode ? "hover:bg-zinc-900 hover:text-white" : "hover:bg-zinc-100 hover:text-zinc-900"
+                                            )}
+                                          >
+                                            <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                                            <span>Copy Reflection</span>
+                                          </button>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
                                 </div>
                               </div>
                             </div>
