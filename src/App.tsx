@@ -5411,12 +5411,31 @@ function AppContent() {
                     if (historySubView === 'journal') setIsAddingWorkout(true);
                     else if (historySubView === 'articles') setIsAddingArticle(true);
                   }}
-                  className="bg-emerald-500 text-zinc-950 p-2 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
+                  className="hidden sm:flex bg-emerald-500 text-zinc-950 px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all text-xs font-bold items-center gap-2 hover:bg-emerald-400 shrink-0"
+                  id="desktop-add-log-btn"
                 >
-                  <Plus className="w-6 h-6" />
+                  <Plus className="w-4 h-4 text-zinc-950 stroke-[3]" />
+                  <span>Log {historySubView === 'journal' ? 'Workout' : 'Article'}</span>
                 </button>
                 )}
               </div>
+
+              {/* Prominent, easy-to-use full-width action button for mobile devices */}
+              {(historySubView !== 'plans' && (historySubView === 'journal' || historySubView === 'articles') && user) && (
+                <div className="block sm:hidden w-full mb-4 px-1" id="mobile-add-log-container">
+                  <button 
+                    onClick={() => {
+                      if (historySubView === 'journal') setIsAddingWorkout(true);
+                      else if (historySubView === 'articles') setIsAddingArticle(true);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-400 text-zinc-950 font-black uppercase text-xs rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-95 transition-all tracking-widest leading-none"
+                    id="mobile-add-log-btn-prominent"
+                  >
+                    <Plus className="w-4 h-4 stroke-[3] text-zinc-950" />
+                    <span>Log New {historySubView === 'journal' ? 'Workout Log' : 'Intellectual Article'}</span>
+                  </button>
+                </div>
+              )}
 
               {historySubView === 'journal' ? (
                 <div className="space-y-4">

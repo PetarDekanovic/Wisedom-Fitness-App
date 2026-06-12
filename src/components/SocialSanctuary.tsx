@@ -272,6 +272,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   // Feed states
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [newPostContent, setNewPostContent] = useState('');
+  const newPostWordCount = newPostContent.trim() ? newPostContent.trim().split(/\s+/).length : 0;
+  const isNewPostOverWordLimit = newPostWordCount > 7000;
   const [newPostMediaType, setNewPostMediaType] = useState<'none' | 'image' | 'youtube' | 'tiktok'>('none');
   const [newPostMediaUrl, setNewPostMediaUrl] = useState('');
   const [isPosting, setIsPosting] = useState(false);
@@ -299,6 +301,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   // Post edit / delete state
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editingPostContent, setEditingPostContent] = useState<string>('');
+  const editingPostWordCount = editingPostContent.trim() ? editingPostContent.trim().split(/\s+/).length : 0;
+  const isEditingPostOverWordLimit = editingPostWordCount > 7000;
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
 
   // Sub-tabs horizontal scrolling & mobile view visibility states
@@ -2172,13 +2176,25 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       value={newPostContent}
                       onChange={(e) => setNewPostContent(e.target.value)}
                       placeholder="Discharge some research, clinical workouts, or hard-boiled philosophy..."
-                      rows={3}
-                      maxLength={4000}
+                      rows={5}
+                      maxLength={60000}
                       className={cn(
                         "w-full text-xs font-medium outline-none border-0 bg-transparent resize-none focus:ring-0",
                         isDarkMode ? "text-white placeholder-zinc-500" : "text-zinc-900 placeholder-zinc-400"
                       )}
                     />
+                    <div className="flex justify-end pr-2 pt-1">
+                      <span className={cn(
+                        "text-[9px] font-mono font-bold uppercase tracking-wider",
+                        isNewPostOverWordLimit 
+                          ? "text-rose-500 animate-pulse" 
+                          : newPostWordCount > 6000 
+                            ? "text-amber-500" 
+                            : "text-zinc-500"
+                      )}>
+                        {newPostWordCount.toLocaleString()} / 7,000 words
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -2223,10 +2239,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                   <button
                     type="submit"
-                    disabled={isPosting || !newPostContent.trim()}
+                    disabled={isPosting || !newPostContent.trim() || isNewPostOverWordLimit}
                     className={cn(
                       "px-5 py-2 rounded-xl bg-emerald-500 text-zinc-950 font-black italic uppercase text-[10px] tracking-wider transition-all active:scale-95 flex items-center justify-center gap-1.5 self-end",
-                      (isPosting || !newPostContent.trim()) && "opacity-50 pointer-events-none"
+                      (isPosting || !newPostContent.trim() || isNewPostOverWordLimit) && "opacity-50 pointer-events-none"
                     )}
                   >
                     {isPosting ? 'Transmitting...' : 'Transmit Reflect'}
@@ -2389,7 +2405,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             <textarea
                               value={editingPostContent}
                               onChange={(e) => setEditingPostContent(e.target.value)}
-                              rows={3}
+                              rows={5}
+                              maxLength={60000}
                               className={cn(
                                 "w-full text-xs p-3 rounded-2xl border outline-none font-sans resize-none transition-all duration-300",
                                 isDarkMode 
@@ -2398,35 +2415,47 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               )}
                               placeholder="Edit your scholarly reflection..."
                             />
-                            <div className="flex justify-end gap-2 text-[10px] font-black uppercase tracking-wider">
-                              <button
-                                onClick={() => {
-                                  setEditingPostId(null);
-                                  setEditingPostContent('');
-                                }}
-                                disabled={isSavingEdit}
-                                className={cn(
-                                  "px-3.5 py-1.5 rounded-lg border transition-colors",
-                                  isDarkMode 
-                                    ? "border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800" 
-                                    : "border-zinc-250 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100"
-                                )}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={() => handleSaveEditedPost(post.id)}
-                                disabled={isSavingEdit || !editingPostContent.trim()}
-                                className="px-3.5 py-1.5 rounded-lg bg-emerald-500 text-zinc-950 font-black flex items-center gap-1 active:scale-95 disabled:opacity-50 transition-all shadow shadow-emerald-500/10"
-                              >
-                                {isSavingEdit ? (
-                                  <span>Saving...</span>
-                                ) : (
-                                  <>
-                                    <Save className="w-3 h-3" /> Save Changes
-                                  </>
-                                )}
-                              </button>
+                            <div className="flex items-center justify-between px-1 text-[10px] uppercase font-black tracking-wider">
+                              <span className={cn(
+                                "font-mono font-bold",
+                                isEditingPostOverWordLimit 
+                                  ? "text-rose-500 animate-pulse" 
+                                  : editingPostWordCount > 6000 
+                                    ? "text-amber-500" 
+                                    : "text-zinc-500"
+                              )}>
+                                {editingPostWordCount.toLocaleString()} / 7,000 words
+                              </span>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingPostId(null);
+                                    setEditingPostContent('');
+                                  }}
+                                  disabled={isSavingEdit}
+                                  className={cn(
+                                    "px-3.5 py-1.5 rounded-lg border transition-colors",
+                                    isDarkMode 
+                                      ? "border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800" 
+                                      : "border-zinc-250 text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100"
+                                  )}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => handleSaveEditedPost(post.id)}
+                                  disabled={isSavingEdit || !editingPostContent.trim() || isEditingPostOverWordLimit}
+                                  className="px-3.5 py-1.5 rounded-lg bg-emerald-500 text-zinc-950 font-black flex items-center gap-1 active:scale-95 disabled:opacity-50 transition-all shadow shadow-emerald-500/10"
+                                >
+                                  {isSavingEdit ? (
+                                    <span>Saving...</span>
+                                  ) : (
+                                    <>
+                                      <Save className="w-3 h-3" /> Save Changes
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ) : (
