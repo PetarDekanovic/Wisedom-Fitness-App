@@ -595,6 +595,126 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     }
   });
 
+  // --- LINK PREVIEW SCROLLER & META EXTRACTOR ---
+  app.get("/api/link-metadata", async (req, res) => {
+    const targetUrl = req.query.url as string;
+    if (!targetUrl) {
+      return res.status(400).json({ error: "Missing url parameter" });
+    }
+
+    try {
+      console.log(`[Link Scraper] Fetching metadata for: ${targetUrl}`);
+      
+      const response = await axios.get(targetUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        timeout: 6000,
+      });
+
+      const $ = cheerio.load(response.data);
+      const title = $('meta[property="og:title"]').attr('content') || $('title').text() || "";
+      let description = $('meta[property="og:description"]').attr('content') || $('meta[name="description"]').attr('content') || "";
+      let image = $('meta[property="og:image"]').attr('content') || "";
+      const publisher = $('meta[property="og:site_name"]').attr('content') || "";
+
+      const isFacebook = targetUrl.includes("facebook.com") || targetUrl.includes("fb.watch");
+      const isTikTok = targetUrl.includes("tiktok.com");
+
+      const isGeneric = 
+        !description || 
+        description.toLowerCase().includes("explore the things you love") || 
+        description.toLowerCase().includes("log in") || 
+        description.toLowerCase().includes("log into") ||
+        description.toLowerCase().includes("welcome to facebook") ||
+        description.toLowerCase().includes("something went wrong");
+
+      if ((isFacebook || isTikTok) && (isGeneric || !image)) {
+        console.log(`[Link Scraper] Generating premium excerpt for Facebook/TikTok Reel: ${targetUrl}`);
+        
+        const prompt = `
+          Translate or analyze this shared social media link: "${targetUrl}"
+          This is for a shared post inside WiseFit (the premium, stoic Digital Sanctuary of physical & mental discipline and clinical athletic metrics).
+          The chief explorer Petar Dekanovic has shared this link on the Swarm Feed.
+          
+          Generate:
+          1. A polished, dignified Title (e.g. "Facebook Shared Reflection" or "Stoic Performance Reel").
+          2. An intellectually dense, elegant, and scholarly Excerpt / Description (2-3 sentences) relating to self-discipline, athletic mastery, Stoic fortitude, or classic physical expression.
+          3. Recommend an outstanding high-resolution vertical Unsplash sports/philosophy image URL (e.g. containing athletes, heavy weights, old stone gyms, training rings, or classical scenery, like "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format...").
+          
+          Provide the output in raw JSON format (no markdown, just the object):
+          {"title": "...", "description": "...", "image": "..."}
+        `;
+
+        try {
+          const geminiResult = await generateWithFallback(prompt, { responseMimeType: "application/json" });
+          let text = geminiResult.text() || "{}";
+          text = text.replace(/^```json/, '').replace(/```$/, '').trim();
+          const parsed = JSON.parse(text);
+
+          return res.json({
+            title: parsed.title || (isFacebook ? "Facebook Shared Reflection" : "TikTok Shared Insight"),
+            description: parsed.description || "A deep clinical breakdown of physical training, Stoic discipline, or community athletic expression.",
+            image: parsed.image || (isFacebook 
+              ? "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=600"
+              : "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600"),
+            publisher: publisher || (isFacebook ? "Facebook" : "TikTok")
+          });
+        } catch (gemErr) {
+          console.error("[Link Scraper] Gemini fallback generation failed:", gemErr);
+        }
+      }
+
+      res.json({
+        title: title || (isFacebook ? "Facebook Reflection" : "TikTok Insight"),
+        description: description || "Access this connected physical training or scholastic breakdown.",
+        image: image || (isFacebook 
+          ? "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=600"
+          : "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600"),
+        publisher: publisher || (isFacebook ? "Facebook" : "TikTok")
+      });
+
+    } catch (err) {
+      console.warn(`[Link Scraper] Extraction error for ${targetUrl}:`, err);
+      const isFacebook = targetUrl.includes("facebook.com") || targetUrl.includes("fb.watch");
+      const isTikTok = targetUrl.includes("tiktok.com");
+
+      try {
+        const prompt = `
+          Translate or analyze this shared link: "${targetUrl}"
+          This is for WiseFit. Write a premium, stoic, and dignified Title, a beautiful intellectually dense Description (2 sentences) on how physical action trains the soul and mind, and pick a scenic fitness/philosophy Unsplash photo URL.
+          Provide output as raw JSON:
+          {"title": "...", "description": "...", "image": "..."}
+        `;
+        const geminiResult = await generateWithFallback(prompt, { responseMimeType: "application/json" });
+        let text = geminiResult.text() || "{}";
+        text = text.replace(/^```json/, '').replace(/```$/, '').trim();
+        const parsed = JSON.parse(text);
+
+        return res.json({
+          title: parsed.title || (isFacebook ? "Facebook Shared Reflection" : "TikTok Shared Insight"),
+          description: parsed.description || "A deep clinical breakdown of physical training, Stoic discipline, or community athletic expression.",
+          image: parsed.image || (isFacebook 
+            ? "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=600"
+            : "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600"),
+          publisher: isFacebook ? "Facebook" : isTikTok ? "TikTok" : "External"
+        });
+      } catch (gemErr2) {
+        console.error("[Link Scraper] Gemini failsafe also failed:", gemErr2);
+      }
+
+      res.json({
+        title: isFacebook ? "Facebook Reflection" : isTikTok ? "TikTok Insight" : "Resource Link",
+        description: "Click to inspect this external resource, video breakdown, or community asset.",
+        image: isFacebook 
+          ? "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=600"
+          : "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600",
+        publisher: isFacebook ? "Facebook" : isTikTok ? "TikTok" : "External"
+      });
+    }
+  });
+
   // --- SCRAPER ---
   app.get("/api/daily-quotes", async (req, res) => {
     try {

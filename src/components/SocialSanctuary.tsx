@@ -5278,6 +5278,8 @@ function LinkPreviewCard({ url, isDarkMode }: { url: string; isDarkMode: boolean
   const [data, setData] = useState<LinkPreviewData | null>(previewCache[url] || null);
   const [loading, setLoading] = useState(!previewCache[url]);
 
+  const isVerticalReel = url.includes("tiktok.com") || url.includes("facebook.com") || url.includes("fb.watch");
+
   useEffect(() => {
     if (data) return;
 
@@ -5320,6 +5322,31 @@ function LinkPreviewCard({ url, isDarkMode }: { url: string; isDarkMode: boolean
           return;
         }
 
+        // Try our premium local server-side scraper first (uses Cheerio + Gemini validation)
+        try {
+          const sRes = await fetch(`/api/link-metadata?url=${encodeURIComponent(url)}`);
+          if (sRes.ok) {
+            const sData = await sRes.json();
+            if (sData && sData.title) {
+              const mData: LinkPreviewData = {
+                title: sData.title,
+                description: sData.description,
+                image: sData.image,
+                logo: sData.logo || "",
+                publisher: sData.publisher || ""
+              };
+              previewCache[url] = mData;
+              if (isMounted) {
+                setData(mData);
+                setLoading(false);
+              }
+              return;
+            }
+          }
+        } catch (serverScrapingErr) {
+          console.warn("[LinkPreviewCard] Server-side scraper failed, falling back to Microlink...", serverScrapingErr);
+        }
+
         // Generic URL fetching (including TikTok and arbitrary domains) using Microlink
         const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
         if (!response.ok) throw new Error();
@@ -5351,6 +5378,10 @@ function LinkPreviewCard({ url, isDarkMode }: { url: string; isDarkMode: boolean
           titleFallback = "TikTok Shared Insight";
           descFallback = "Check out this physical training or scholarly breakdown on TikTok.";
           imgFallback = "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&q=80&w=600";
+        } else if (url.includes("facebook.com") || url.includes("fb.watch")) {
+          titleFallback = "Facebook Shared Reflection";
+          descFallback = "Explore this shared fitness demonstration, community reflection, or classical workout on Facebook.";
+          imgFallback = "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=600";
         }
 
         const fbData: LinkPreviewData = {
@@ -5382,7 +5413,12 @@ function LinkPreviewCard({ url, isDarkMode }: { url: string; isDarkMode: boolean
         "p-4 rounded-2xl border flex flex-col sm:flex-row gap-3 animate-pulse bg-zinc-950/5 border-zinc-500/10 pointer-events-none mt-2",
         isDarkMode ? "bg-zinc-900/20" : "bg-zinc-50 border-zinc-200"
       )}>
-        <div className="w-full sm:w-28 h-20 bg-zinc-700/10 rounded-xl shrink-0" />
+        <div className={cn(
+          "bg-zinc-700/10 rounded-xl shrink-0",
+          isVerticalReel 
+            ? "w-[200px] aspect-[9/16] sm:w-[150px] sm:h-[266px] mx-auto sm:mx-0" 
+            : "w-full sm:w-28 h-20"
+        )} />
         <div className="space-y-2 flex-1 py-1">
           <div className="h-3.5 bg-zinc-700/10 rounded w-1/2" />
           <div className="h-3 bg-zinc-700/10 rounded w-full" />
@@ -5403,13 +5439,19 @@ function LinkPreviewCard({ url, isDarkMode }: { url: string; isDarkMode: boolean
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "group p-3 rounded-2xl border flex flex-col sm:flex-row gap-3.5 hover:border-emerald-500/30 transition-all duration-300 pointer-events-auto text-left mt-2 shadow-sm",
+        "group p-3 rounded-2xl border flex flex-col gap-3.5 hover:border-emerald-500/30 transition-all duration-300 pointer-events-auto text-left mt-2 shadow-sm",
+        isVerticalReel ? "items-center sm:items-stretch sm:flex-row" : "sm:flex-row",
         isDarkMode 
           ? "bg-zinc-950/40 border-zinc-800/80 hover:bg-zinc-900/40" 
           : "bg-zinc-50/50 border-zinc-200 hover:bg-zinc-100"
       )}
     >
-      <div className="w-full sm:w-28 h-20 rounded-xl overflow-hidden border border-zinc-500/10 bg-zinc-900 shrink-0 relative flex items-center justify-center">
+      <div className={cn(
+        "overflow-hidden border border-zinc-500/10 bg-zinc-900 shrink-0 relative flex items-center justify-center rounded-xl",
+        isVerticalReel
+          ? "w-[200px] aspect-[9/16] sm:w-[150px] sm:h-[266px] mx-auto sm:mx-0 shadow-md transition-all duration-300"
+          : "w-full sm:w-28 h-20"
+      )}>
         <img
           src={displayImage}
           alt={data.title || "thumbnail"}
@@ -5419,16 +5461,16 @@ function LinkPreviewCard({ url, isDarkMode }: { url: string; isDarkMode: boolean
             (e.target as any).src = "https://images.unsplash.com/photo-1546074177-3df148018795?auto=format&fit=crop&q=80&w=600";
           }}
         />
-        {(getYouTubeId(url) || url.includes("tiktok.com")) && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/20 transition-colors">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/95 flex items-center justify-center shadow">
-              <Play className="w-3.5 h-3.5 text-zinc-950 fill-current ml-0.5" />
+        {(getYouTubeId(url) || isVerticalReel) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/35 group-hover:bg-black/20 transition-colors">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/95 flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
+              <Play className="w-4 h-4 text-zinc-950 fill-current ml-0.5" />
             </div>
           </div>
         )}
       </div>
 
-      <div className="space-y-1 py-0.5 min-w-0 flex-1 flex flex-col justify-center">
+      <div className="space-y-1.5 py-0.5 min-w-0 flex-1 flex flex-col justify-center">
         <div className="flex items-center gap-1.5">
           {data.logo ? (
             <img src={data.logo} alt="logo" className="w-3 h-3 rounded object-contain bg-white" referrerPolicy="no-referrer" />
@@ -5444,10 +5486,18 @@ function LinkPreviewCard({ url, isDarkMode }: { url: string; isDarkMode: boolean
             {data.publisher || domain}
           </span>
         </div>
-        <h5 className={cn("text-[11px] font-bold truncate tracking-tight group-hover:text-emerald-500 transition-colors", isDarkMode ? "text-zinc-200" : "text-zinc-850")}>
+        <h5 className={cn(
+          "font-bold truncate tracking-tight group-hover:text-emerald-500 transition-colors",
+          isVerticalReel ? "text-[12px] sm:text-[13px] whitespace-normal line-clamp-2" : "text-[11px]",
+          isDarkMode ? "text-zinc-200" : "text-zinc-850"
+        )}>
           {data.title || "Scholarly Resource"}
         </h5>
-        <p className={cn("text-[10px] leading-snug line-clamp-2", isDarkMode ? "text-zinc-450" : "text-zinc-500")}>
+        <p className={cn(
+          "leading-snug",
+          isVerticalReel ? "text-[11px] line-clamp-4" : "text-[10px] line-clamp-2",
+          isDarkMode ? "text-zinc-450" : "text-zinc-500"
+        )}>
           {data.description || "Stream or read external resource code, video tutorials, or public clinical spreadsheets."}
         </p>
       </div>

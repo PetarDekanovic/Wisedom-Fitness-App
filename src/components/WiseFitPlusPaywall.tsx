@@ -75,7 +75,7 @@ export default function WiseFitPlusPaywall({
     if (e) e.preventDefault();
     
     // Check if a real physical Stripe Payment Link is configured in Vite environment variables
-    const envMonthlyLink = (import.meta as any).env.VITE_STRIPE_MONTHLY_PAYMENT_LINK;
+    const envMonthlyLink = (import.meta as any).env.VITE_STRIPE_MONTHLY_PAYMENT_LINK || 'https://buy.stripe.com/test_aFa7sM7SxaEedr8fRA1oI00';
     const envLifetimeLink = (import.meta as any).env.VITE_STRIPE_LIFETIME_PAYMENT_LINK;
     const realLink = tier === 'monthly' ? envMonthlyLink : envLifetimeLink;
 
