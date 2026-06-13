@@ -70,7 +70,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-        ((request.auth.token != null && 'email' in request.auth.token && request.auth.token.email in ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com", "stjepan.dekanovic@gmail.com"]) ||
+        ((request.auth.token != null && request.auth.token.get('email', '') in ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com", "stjepan.dekanovic@gmail.com"]) ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin'));
     }
@@ -106,18 +106,18 @@ service cloud.firestore {
              data.author is string && data.author.size() > 0 && data.author.size() < 100 &&
              data.source is string && data.source.size() > 0 && data.source.size() < 100 &&
              data.randomId is number &&
-             (!('category' in data) || (data.category in ['fitness', 'wisdom', 'stoic', 'jewish', 'psychology', 'finance', 'balkan', 'chinese', 'japanese', 'daily']));
+             (data.get('category', null) == null || (data.category in ['fitness', 'wisdom', 'stoic', 'jewish', 'psychology', 'finance', 'balkan', 'chinese', 'japanese', 'daily']));
     }
 
     function isValidPublicProfile(data) {
       return data.keys().hasAll(['uid', 'name']) &&
              data.uid == request.auth.uid &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             (!('biography' in data) || (data.biography is string && data.biography.size() < 2000)) &&
-             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() < 1000)) &&
-             (!('isOnline' in data) || (data.isOnline is bool)) &&
-             (!('lastActive' in data) || (data.lastActive is string)) &&
-             (!('friends' in data) || (data.friends is list && data.friends.size() <= 1000));
+             (data.get('biography', null) == null || (data.biography is string && data.biography.size() < 2000)) &&
+             (data.get('avatarUrl', null) == null || (data.avatarUrl is string && data.avatarUrl.size() < 1000)) &&
+             (data.get('isOnline', null) == null || (data.isOnline is bool)) &&
+             (data.get('lastActive', null) == null || (data.lastActive is string)) &&
+             (data.get('friends', null) == null || (data.friends is list && data.friends.size() <= 1000));
     }
 
     function isValidFriendRequest(data) {
@@ -125,7 +125,7 @@ service cloud.firestore {
              data.id is string && data.id.size() < 150 &&
              data.senderId == request.auth.uid &&
              data.senderName is string && data.senderName.size() < 100 &&
-             (!('senderAvatar' in data) || (data.senderAvatar is string && data.senderAvatar.size() < 1000)) &&
+             (data.get('senderAvatar', null) == null || (data.senderAvatar is string && data.senderAvatar.size() < 1000)) &&
              data.receiverId is string && data.receiverId.size() < 100 &&
              data.status in ['pending', 'accepted', 'rejected'] &&
              data.createdAt is string;
@@ -137,9 +137,9 @@ service cloud.firestore {
              data.userId == request.auth.uid &&
              data.content is string && data.content.size() > 0 && data.content.size() < 60000 &&
              data.status in ['pending', 'approved', 'rejected'] &&
-             (!('mediaType' in data) || (data.mediaType in ['none', 'image', 'video', 'youtube', 'tiktok'])) &&
-             (!('mediaUrl' in data) || (data.mediaUrl is string && data.mediaUrl.size() < 1000)) &&
-             (!('likes' in data) || (data.likes is list && data.likes.size() <= 1000));
+             (data.get('mediaType', null) == null || (data.mediaType in ['none', 'image', 'video', 'youtube', 'tiktok'])) &&
+             (data.get('mediaUrl', null) == null || (data.mediaUrl is string && data.mediaUrl.size() < 1000)) &&
+             (data.get('likes', null) == null || (data.likes is list && data.likes.size() <= 1000));
     }
 
     match /daily_quotes_cache/{quoteId} {
@@ -204,7 +204,7 @@ service cloud.firestore {
                      conversationId.split('_')[1] == request.auth.uid ||
                      request.auth.uid in conversationId.split('_'));
       allow update: if isAuthenticated() && 
-                    (('participants' in resource.data && request.auth.uid in resource.data.participants) ||
+                    ((resource.data.get('participants', null) != null && request.auth.uid in resource.data.participants) ||
                      conversationId.split('_')[0] == request.auth.uid ||
                      conversationId.split('_')[1] == request.auth.uid ||
                      request.auth.uid in conversationId.split('_')) &&
