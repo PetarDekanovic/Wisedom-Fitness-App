@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db, auth } from '../firebase';
+import { db, auth, storage } from '../firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { 
   collection, 
   doc, 
@@ -56,7 +57,9 @@ import {
   Share2,
   Twitter,
   Facebook,
-  Copy
+  Copy,
+  Loader2,
+  Upload
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
@@ -278,7 +281,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [newPostContent, setNewPostContent] = useState('');
   const newPostWordCount = newPostContent.trim() ? newPostContent.trim().split(/\s+/).length : 0;
   const isNewPostOverWordLimit = newPostWordCount > 7000;
-  const [newPostMediaType, setNewPostMediaType] = useState<'none' | 'image' | 'youtube' | 'tiktok'>('none');
+  const [newPostMediaType, setNewPostMediaType] = useState<'none' | 'image' | 'video' | 'youtube' | 'tiktok'>('none');
+  const [isUploadingPostVideo, setIsUploadingPostVideo] = useState(false);
+  const [postVideoProgress, setPostVideoProgress] = useState(0);
   const [newPostMediaUrl, setNewPostMediaUrl] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
@@ -2208,7 +2213,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                 {/* Optional Media attachments choice bar */}
                 <div className="pt-2 border-t border-zinc-800/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Attach:</span>
                     <select
                       value={newPostMediaType}
@@ -2223,11 +2228,12 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     >
                       <option value="none">None</option>
                       <option value="image">Image Link</option>
+                      <option value="video">Direct Video Upload</option>
                       <option value="youtube">YouTube Embed</option>
                       <option value="tiktok">TikTok Video</option>
                     </select>
 
-                    {newPostMediaType !== 'none' && (
+                    {newPostMediaType !== 'none' && newPostMediaType !== 'video' && (
                       <input 
                         type="url"
                         value={newPostMediaUrl}
@@ -2242,6 +2248,76 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         )}
                         required
                       />
+                    )}
+
+                    {newPostMediaType === 'video' && (
+                      <div className="flex items-center gap-2">
+                        <label className={cn(
+                          "flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-lg border border-dashed cursor-pointer hover:bg-emerald-500/10 hover:border-emerald-500/40 text-[9px] font-bold transition-all",
+                          isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-650 hover:text-emerald-600"
+                        )}>
+                          {isUploadingPostVideo ? (
+                            <span className="animate-pulse text-emerald-500 flex items-center gap-1">
+                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                              Uploading {postVideoProgress}%
+                            </span>
+                          ) : (
+                            <>
+                              <Upload className="w-2.5 h-2.5 text-emerald-500" />
+                              <span>{newPostMediaUrl ? 'Change Video' : 'Upload MP4 from Phone'}</span>
+                            </>
+                          )}
+                          <input 
+                            type="file" 
+                            accept="video/mp4,video/x-m4v,video/*"
+                            className="hidden" 
+                            disabled={isUploadingPostVideo}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+
+                              const MAX_MB = 100;
+                              if (file.size > MAX_MB * 1024 * 1024) {
+                                alert(`The video exceeds our recommended ${MAX_MB}MB sanctuary limit for rapid mobile browsing.`);
+                                return;
+                              }
+
+                              setIsUploadingPostVideo(true);
+                              setPostVideoProgress(0);
+
+                              try {
+                                const uniqueName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                                const storageRef = ref(storage, `community_videos/${uniqueName}`);
+                                const uploadTask = uploadBytesResumable(storageRef, file);
+
+                                uploadTask.on('state_changed', 
+                                  (snapshot) => {
+                                    const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                                    setPostVideoProgress(progress);
+                                  }, 
+                                  (error) => {
+                                    console.error('Feed video upload failed:', error);
+                                    alert('Upload failed: ' + error.message);
+                                    setIsUploadingPostVideo(false);
+                                  }, 
+                                  async () => {
+                                    const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                                    setNewPostMediaUrl(downloadUrl);
+                                    setIsUploadingPostVideo(false);
+                                  }
+                                );
+                              } catch (err: any) {
+                                console.error('Feed video upload outer failed:', err);
+                                alert('Upload failed: ' + err.message);
+                                setIsUploadingPostVideo(false);
+                              }
+                            }}
+                          />
+                        </label>
+                        {newPostMediaUrl && (
+                          <span className="text-[8px] font-mono text-emerald-500 truncate max-w-[120px]">Uploaded!</span>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -2569,7 +2645,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           </p>
                         )}
 
-                        {/* Media rendering section */}       {/* Media rendering section */}
+                        {/* Media rendering section */}
                         {post.mediaType === 'image' && post.mediaUrl && (
                           <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-zinc-800/20 bg-zinc-950">
                             <img 
@@ -2579,6 +2655,18 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               onError={(e) => {
                                 (e.target as any).src = 'https://images.unsplash.com/photo-1518152006812-cdff2f4a4c35?auto=format&fit=crop&q=80&w=600';
                               }}
+                            />
+                          </div>
+                        )}
+
+                        {post.mediaType === 'video' && post.mediaUrl && (
+                          <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-zinc-800/25 bg-black shadow-lg">
+                            <video 
+                              src={`${post.mediaUrl}#t=0.001`}
+                              controls
+                              playsInline
+                              preload="metadata"
+                              className="w-full h-full object-contain"
                             />
                           </div>
                         )}
@@ -5283,6 +5371,18 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             {p.mediaType === 'image' && p.mediaUrl && (
                               <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-zinc-800/10 bg-zinc-950">
                                 <img src={p.mediaUrl} className="w-full h-full object-cover" alt="wall-image" />
+                              </div>
+                            )}
+
+                            {p.mediaType === 'video' && p.mediaUrl && (
+                              <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-zinc-800/10 bg-black shadow">
+                                <video 
+                                  src={`${p.mediaUrl}#t=0.001`}
+                                  controls
+                                  playsInline
+                                  preload="metadata"
+                                  className="w-full h-full object-contain"
+                                />
                               </div>
                             )}
 

@@ -258,7 +258,7 @@ export interface CommunityPost {
   userName: string;
   userAvatar?: string;
   content: string;
-  mediaType: 'none' | 'image' | 'youtube' | 'tiktok';
+  mediaType: 'none' | 'image' | 'video' | 'youtube' | 'tiktok';
   mediaUrl?: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: any; // Server timestamp or string

@@ -83,6 +83,7 @@ import {
   Facebook,
   Linkedin,
   MessageCircle,
+  Upload,
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -105,7 +106,8 @@ import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { 
   ref, 
   uploadBytes, 
-  getDownloadURL 
+  getDownloadURL,
+  uploadBytesResumable
 } from 'firebase/storage';
 import { 
   doc, 
@@ -1423,6 +1425,8 @@ function AppContent() {
   const [articleTitle, setArticleTitle] = useState('');
   const [articleContent, setArticleContent] = useState('');
   const [articleUrl, setArticleUrl] = useState('');
+  const [isUploadingArticleVideo, setIsUploadingArticleVideo] = useState(false);
+  const [articleVideoProgress, setArticleVideoProgress] = useState(0);
   const [user, setUser] = useState<FirebaseUser | null>(null);
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -8256,16 +8260,93 @@ function AppContent() {
                       "text-xs font-bold uppercase mb-1 block transition-colors",
                       isDarkMode ? "text-zinc-500" : "text-zinc-400"
                     )}>Video URL (Optional .mp4)</label>
-                    <input 
-                      type="text" 
-                      value={articleUrl}
-                      onChange={(e) => setArticleUrl(e.target.value)}
-                      placeholder="e.g. https://compcharity.org/wp-content/uploads/video.mp4"
-                      className={cn(
-                        "w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-all font-mono",
-                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={articleUrl}
+                        onChange={(e) => setArticleUrl(e.target.value)}
+                        placeholder="e.g. https://compcharity.org/wp-content/uploads/video.mp4"
+                        className={cn(
+                          "flex-1 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-all font-mono",
+                          isDarkMode ? "bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                        )}
+                      />
+                      {articleUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setArticleUrl('')}
+                          className="px-4 py-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 font-bold text-xs rounded-xl transition-all"
+                        >
+                          Clear
+                        </button>
                       )}
-                    />
+                    </div>
+                    
+                    <div className="mt-2">
+                      <label className={cn(
+                        "w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed cursor-pointer transition-all hover:bg-emerald-500/10 hover:border-emerald-500/40 text-xs font-bold",
+                        isDarkMode ? "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-650 hover:text-emerald-600"
+                      )}>
+                        {isUploadingArticleVideo ? (
+                          <span className="animate-pulse flex items-center gap-1.5 text-emerald-500 font-bold uppercase tracking-wider text-[10px]">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Uploading Biometric Video... {articleVideoProgress}%
+                          </span>
+                        ) : (
+                          <>
+                            <Upload className="w-3.5 h-3.5 text-emerald-500" />
+                            <span className="uppercase tracking-wider text-[10px]">Upload Video Direct from Phone (.mp4)</span>
+                          </>
+                        )}
+                        <input 
+                          type="file" 
+                          accept="video/mp4,video/x-m4v,video/*"
+                          className="hidden" 
+                          disabled={isUploadingArticleVideo}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            
+                            // Check file size limit: 100MB
+                            const MAX_MB = 100;
+                            if (file.size > MAX_MB * 1024 * 1024) {
+                              alert(`The video exceeds our recommended ${MAX_MB}MB sanctuary limit for rapid mobile browsing.`);
+                              return;
+                            }
+
+                            setIsUploadingArticleVideo(true);
+                            setArticleVideoProgress(0);
+
+                            try {
+                              const uniqueName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                              const storageRef = ref(storage, `articles_videos/${uniqueName}`);
+                              const uploadTask = uploadBytesResumable(storageRef, file);
+
+                              uploadTask.on('state_changed', 
+                                (snapshot) => {
+                                  const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                                  setArticleVideoProgress(progress);
+                                }, 
+                                (error) => {
+                                  console.error('Video upload failed:', error);
+                                  alert('Upload channels rejected the file: ' + error.message);
+                                  setIsUploadingArticleVideo(false);
+                                }, 
+                                async () => {
+                                  const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                                  setArticleUrl(downloadUrl);
+                                  setIsUploadingArticleVideo(false);
+                                }
+                              );
+                            } catch (err: any) {
+                              console.error('Video upload outer failed:', err);
+                              alert('Attachment transit interrupted: ' + err.message);
+                              setIsUploadingArticleVideo(false);
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   <div className="flex-1">
