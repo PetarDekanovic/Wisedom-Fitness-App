@@ -59,7 +59,8 @@ import {
   Facebook,
   Copy,
   Loader2,
-  Upload
+  Upload,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
@@ -2526,6 +2527,23 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                     >
                                       <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
                                       <span>Share to Facebook</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => {
+                                        const snippet = post.content.length > 180 ? post.content.substring(0, 180) + '...' : post.content;
+                                        const text = `"${snippet}"\n\n— Shared from WiseFit Digital Sanctuary:`;
+                                        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + '\n' + window.location.origin)}`;
+                                        window.open(url, '_blank', 'noopener,noreferrer');
+                                        setActiveSharePostId(null);
+                                      }}
+                                      className={cn(
+                                        "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors text-left",
+                                        isDarkMode ? "hover:bg-zinc-900 hover:text-white" : "hover:bg-zinc-100 hover:text-zinc-900"
+                                      )}
+                                    >
+                                      <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" />
+                                      <span>Share to WhatsApp</span>
                                     </button>
 
                                     <button
@@ -5496,6 +5514,23 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                           >
                                             <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
                                             <span>Share to Facebook</span>
+                                          </button>
+
+                                          <button
+                                            onClick={() => {
+                                              const snippet = p.content.length > 180 ? p.content.substring(0, 180) + '...' : p.content;
+                                              const text = `"${snippet}"\n\n— Shared from WiseFit Digital Sanctuary:`;
+                                              const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + '\n' + window.location.origin)}`;
+                                              window.open(url, '_blank', 'noopener,noreferrer');
+                                              setActiveSharePostId(null);
+                                            }}
+                                            className={cn(
+                                              "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-colors text-left",
+                                              isDarkMode ? "hover:bg-zinc-900 hover:text-white" : "hover:bg-zinc-100 hover:text-zinc-900"
+                                            )}
+                                          >
+                                            <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" />
+                                            <span>Share to WhatsApp</span>
                                           </button>
 
                                           <button

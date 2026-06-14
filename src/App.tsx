@@ -1143,7 +1143,7 @@ function ArticleCard({
   }, [article.id]);
 
   const handleShare = async (platform?: string) => {
-    const shareUrl = window.location.href; 
+    const shareUrl = `${window.location.origin}/?view=articles&id=${article.id}`; 
     const text = `Check out this article on WiseFit: ${article.title}`;
     
     // Increment share count
@@ -1167,6 +1167,7 @@ function ArticleCard({
 
   return (
     <motion.div
+      id={`article-${article.id}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
@@ -1347,6 +1348,26 @@ function AppContent() {
   const [isQuotaDismissed, setIsQuotaDismissed] = useState(false);
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [historySubView, setHistorySubView] = useState<'journal' | 'plans' | 'articles' | 'digest'>('journal');
+  const [highlightedArticleId, setHighlightedArticleId] = useState<string | null>(null);
+
+  // Parse deep-link parameters on initial load
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const view = params.get('view');
+      const articleId = params.get('id');
+      
+      if (view === 'articles') {
+        setActiveView('workouts'); // 'workouts' is the Log section containing articles
+        setHistorySubView('articles');
+        if (articleId) {
+          setHighlightedArticleId(articleId);
+        }
+      }
+    } catch (err) {
+      console.error('[WiseFit Shared Link] Failed parsing query params:', err);
+    }
+  }, []);
   const [digestData, setDigestData] = useState<{
     lastUpdated: string;
     news: any[];
@@ -1388,6 +1409,25 @@ function AppContent() {
   }, [historySubView, fetchSanctuaryDigest]);
 
   const [articles, setArticles] = useState<Article[]>([]);
+
+  // Handle smooth scroll and highlight of the shared article when articles load and state matches
+  useEffect(() => {
+    if (highlightedArticleId && articles.length > 0) {
+      // Allow a brief delay for rendering/layout completion
+      const timer = setTimeout(() => {
+        const element = document.getElementById(`article-${highlightedArticleId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('ring-2', 'ring-emerald-500', 'ring-offset-4', 'scale-[1.01]');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-emerald-500', 'ring-offset-4', 'scale-[1.01]');
+            setHighlightedArticleId(null); // Reset after highlighting
+          }, 3500);
+        }
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedArticleId, articles]);
   const [expandedQuote, setExpandedQuote] = useState<any | null>(null);
   const [isExpandingQuote, setIsExpandingQuote] = useState(false);
   const [expandedQuoteInterpretation, setExpandedQuoteInterpretation] = useState<string>("");
