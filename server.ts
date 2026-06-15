@@ -1009,12 +1009,129 @@ Author: ${author || "Unknown"}`;
   
   if (isProd) {
     console.log(`[WiseFit] Production Mode: Serving static files from ${distPath}`);
-    app.use(express.static(distPath));
+    // Disable automatic serving of index.html by express.static so that it falls through to our wildcard route
+    app.use(express.static(distPath, { index: false }));
     
     // SPA Fallback for all non-API paths
-    app.get("*", (req, res, next) => {
+    app.get("*", async (req, res, next) => {
       if (req.path.startsWith('/api/')) return next();
-      res.sendFile(path.join(distPath, "index.html"), (err) => {
+      
+      const indexPath = path.join(distPath, "index.html");
+      const view = req.query.view;
+      const articleId = req.query.id as string;
+      
+      if (view === 'articles' && articleId) {
+        try {
+          console.log(`[Dynamic OG] Serving dynamic OG tags for article ${articleId}`);
+          let html = fs.readFileSync(indexPath, "utf-8");
+          
+          const projectId = "gen-lang-client-0833207836";
+          const firestoreDatabaseId = "ai-studio-4d7e1cec-5733-4ce6-a67d-e27f38f60915";
+          const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${firestoreDatabaseId}/documents:runQuery`;
+          
+          const requestBody = {
+            structuredQuery: {
+              from: [{ collectionId: "articles" }],
+              where: {
+                fieldFilter: {
+                  field: { fieldPath: "id" },
+                  op: "EQUAL",
+                  value: { stringValue: articleId }
+                }
+              },
+              limit: 1
+            }
+          };
+          
+          const response = await axios.post(firestoreUrl, requestBody, { timeout: 3000 });
+          const documents = response.data;
+          
+          if (documents && documents[0] && documents[0].document) {
+            const fields = documents[0].document.fields;
+            const title = fields.title?.stringValue || "WiseFit Link";
+            const content = fields.content?.stringValue || "";
+            const videoUrlRaw = fields.url?.stringValue || "";
+            
+            let description = content
+              .replace(/[#*`~]/g, '')
+              .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+              .trim();
+            if (description.length > 200) {
+              description = description.substring(0, 200) + "...";
+            }
+            
+            const host = req.get('host') || "wisefit.fun";
+            const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+            const absoluteBase = `${protocol}://${host}`;
+            
+            let videoUrl = videoUrlRaw;
+            if (videoUrl && !videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
+              videoUrl = `${absoluteBase}${videoUrl.startsWith('/') ? '' : '/'}${videoUrl}`;
+            }
+            
+            const imageUrl = "https://compcharity.org/wp-content/uploads/2026/04/e0efb5a2-1d04-40b2-b3fa-459dfdab069e_839bb3b2-scaled.jpg";
+            
+            const titleEscaped = title.replace(/"/g, '&quot;');
+            const descriptionEscaped = description.replace(/"/g, '&quot;');
+            const urlEscaped = `${absoluteBase}${req.originalUrl}`.replace(/"/g, '&quot;');
+            const imageEscaped = imageUrl.replace(/"/g, '&quot;');
+            
+            // Replaces patterns
+            html = html.replace(/<title>[\s\S]*?<\/title>/gi, `<title>${titleEscaped} - WiseFit</title>`);
+            
+            // Clean other duplicate meta tags
+            html = html.replace(/<meta name="description" content="[^"]*" \/>/gi, '');
+            html = html.replace(/<meta property="og:title" content="[^"]*" \/>/gi, '');
+            html = html.replace(/<meta property="og:description" content="[^"]*" \/>/gi, '');
+            html = html.replace(/<meta property="og:url" content="[^"]*" \/>/gi, '');
+            html = html.replace(/<meta property="og:image" content="[^"]*" \/>/gi, '');
+            html = html.replace(/<meta property="og:type" content="[^"]*" \/>/gi, '');
+            
+            html = html.replace(/<meta property="twitter:card" content="[^"]*" \/>/gi, '');
+            html = html.replace(/<meta property="twitter:url" content="[^"]*" \/>/gi, '');
+            html = html.replace(/<meta property="twitter:title" content="[^"]*" \/>/gi, '');
+            html = html.replace(/<meta property="twitter:description" content="[^"]*" \/>/gi, '');
+            html = html.replace(/<meta property="twitter:image" content="[^"]*" \/>/gi, '');
+            
+            let newMeta = `
+              <meta name="description" content="${descriptionEscaped}" />
+              <meta property="og:title" content="${titleEscaped}" />
+              <meta property="og:description" content="${descriptionEscaped}" />
+              <meta property="og:url" content="${urlEscaped}" />
+              <meta property="og:image" content="${imageEscaped}" />
+              <meta property="og:type" content="${videoUrl ? 'video.other' : 'website'}" />
+            `;
+            
+            if (videoUrl) {
+              const videoEscaped = videoUrl.replace(/"/g, '&quot;');
+              newMeta += `
+              <meta property="og:video" content="${videoEscaped}" />
+              <meta property="og:video:secure_url" content="${videoEscaped}" />
+              <meta property="og:video:type" content="video/mp4" />
+              <meta name="twitter:card" content="player" />
+              <meta name="twitter:player" content="${videoEscaped}" />
+              <meta name="twitter:player:width" content="720" />
+              <meta name="twitter:player:height" content="1280" />
+              <meta name="twitter:image" content="${imageEscaped}" />
+              `;
+            } else {
+              newMeta += `
+              <meta name="twitter:card" content="summary_large_image" />
+              <meta name="twitter:title" content="${titleEscaped}" />
+              <meta name="twitter:description" content="${descriptionEscaped}" />
+              <meta name="twitter:image" content="${imageEscaped}" />
+              `;
+            }
+            
+            html = html.replace(/<head>/i, `<head>${newMeta}`);
+            return res.send(html);
+          }
+        } catch (dbErr: any) {
+          console.error("[Dynamic OG Database/Network Error]", dbErr.message);
+        }
+      }
+      
+      res.sendFile(indexPath, (err) => {
         if (err) {
           console.error(`[SPA Error] Failed to send index.html: ${err.message}`);
           res.status(404).send("WiseFit Sanctuary: Static artifact missing. Please check build logs.");
