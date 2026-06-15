@@ -1249,142 +1249,155 @@ function ArticleCard({
         isDarkMode ? "bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800/40" : "bg-white border-zinc-100 shadow-sm hover:shadow-md"
       )}
     >
-      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 w-full">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className={cn(
-            "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0",
-            isDarkMode ? "bg-emerald-500/10 text-emerald-500" : "bg-emerald-50"
+      {/* Title & Date Metadata (occupies full width) */}
+      <div className="flex items-start gap-4 w-full" id={`article-header-text-${article.id}`}>
+        <div className={cn(
+          "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border mt-0.5 shadow-sm transition-all duration-300",
+          isDarkMode 
+            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
+            : "bg-emerald-50 text-emerald-600 border-emerald-100"
+        )}>
+          <FileText className="w-5 h-5 text-emerald-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className={cn(
+            "font-black text-lg md:text-xl leading-snug tracking-tight text-wrap break-words",
+            isDarkMode ? "text-zinc-100" : "text-zinc-900"
           )}>
-            <FileText className="w-5 h-5 text-emerald-500" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-base leading-tight text-wrap break-words">{article.title}</h4>
-            <p className={cn("text-[10px] uppercase font-bold tracking-widest mt-0.5", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
-              {format(new Date(article.date), 'MMM d, yyyy • HH:mm')}
-            </p>
-          </div>
+            {article.title}
+          </h4>
+          <p className={cn("text-[10px] uppercase font-bold tracking-widest mt-1.5", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
+            {format(new Date(article.date), 'MMM d, yyyy • HH:mm')}
+          </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
-          <button 
-            onClick={copyContent}
-            className={cn(
-              "p-2 rounded-xl transition-all flex items-center gap-2 border",
-              copiedContent 
-                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 font-bold" 
-                : isDarkMode 
-                  ? "bg-zinc-800/40 border-zinc-700/40 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 text-zinc-400" 
-                  : "bg-zinc-55 border-zinc-200 text-zinc-650 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-250"
-            )}
-            title="Copy Content"
-          >
-            {copiedContent ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-emerald-500" />}
-            <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">
-              {copiedContent ? "Copied" : "Copy"}
-            </span>
-          </button>
+      </div>
 
-          <button 
-            onClick={toggleSpeech}
-            className={cn(
-              "p-2 rounded-xl transition-all flex items-center gap-2 border",
-              (isPlaying || isProcessing)
-                ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30 font-bold" 
-                : isDarkMode 
-                  ? "bg-zinc-800/40 border-zinc-700/40 hover:bg-indigo-500/10 hover:text-indigo-400 hover:border-indigo-500/20 text-zinc-400" 
-                  : "bg-zinc-55 border-zinc-200 text-zinc-650 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-250"
-            )}
-            title={isPlaying ? "Stop Listening" : "Listen to Article"}
-          >
-            {isProcessing ? (
-              <Loader2 className="w-4 h-4 animate-spin text-indigo-450" />
-            ) : isPlaying ? (
-              <VolumeX className="w-4 h-4 animate-pulse text-indigo-455" />
-            ) : (
-              <Volume2 className="w-4 h-4 text-indigo-500" />
-            )}
-            <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">
-              {isProcessing ? "Processing..." : isPlaying ? `Reading ${currentChunkIndex}/${totalChunks}` : "Listen"}
-            </span>
-          </button>
-
-          <div className="relative" ref={shareRef}>
-            <button 
-              onClick={() => setIsSharing(!isSharing)}
-              className={cn(
-                "p-2 rounded-xl transition-all flex items-center justify-center border",
-                isSharing
-                  ? "bg-sky-500/20 text-sky-400 border-sky-500/30"
-                  : isDarkMode 
-                    ? "bg-zinc-800/40 border-zinc-700/40 hover:bg-sky-500/10 hover:text-sky-400 hover:border-sky-500/20 text-zinc-400" 
-                    : "bg-zinc-55 border-zinc-200 text-zinc-650 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-250"
-              )}
-              title="Share"
-            >
-              <Share2 className="w-4 h-4 text-sky-500" />
-            </button>
-            
-            <AnimatePresence>
-              {isSharing && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                  className={cn(
-                    "absolute right-0 top-12 z-20 min-w-[160px] p-2 rounded-2xl border shadow-xl backdrop-blur-xl",
-                    isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-white/90 border-zinc-200"
-                  )}
-                >
-                  <button onClick={() => handleShare('twitter')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left">
-                    <Twitter className="w-4 h-4 text-[#1DA1F2]" /> Twitter
-                  </button>
-                  <button onClick={() => handleShare('facebook')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left">
-                    <Facebook className="w-4 h-4 text-[#1877F2]" /> Facebook
-                  </button>
-                  <button onClick={() => handleShare('linkedin')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left">
-                    <Linkedin className="w-4 h-4 text-[#0A66C2]" /> LinkedIn
-                  </button>
-                  <button onClick={() => handleShare('whatsapp')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left">
-                    <MessageCircle className="w-4 h-4 text-[#25D366]" /> WhatsApp
-                  </button>
-                  <div className="h-px bg-zinc-800/50 my-1 mx-2" />
-                  <button onClick={() => handleShare()} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left">
-                    {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />} 
-                    {copied ? 'Copied!' : 'Copy Link'}
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {isOwner && (
-            <>
-              <button 
-                onClick={() => onEdit(article)}
-                className={cn(
-                  "p-2 rounded-xl transition-all flex items-center justify-center border",
-                  isDarkMode 
-                    ? "bg-zinc-800/40 border-zinc-700/40 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/20 text-zinc-400" 
-                    : "bg-zinc-55 border-zinc-200 text-zinc-650 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-250"
-                )}
-                title="Edit Article"
-              >
-                <Edit className="w-4 h-4 text-amber-500" />
-              </button>
-              <button 
-                onClick={() => onDelete(article.id)}
-                className={cn(
-                  "p-2 rounded-xl transition-all flex items-center justify-center border",
-                  isDarkMode 
-                    ? "bg-zinc-800/40 border-zinc-700/40 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20 text-zinc-400" 
-                    : "bg-zinc-55 border-zinc-200 text-zinc-655 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-250"
-                )}
-                title="Delete Article"
-              >
-                <Trash2 className="w-4 h-4 text-rose-500" />
-              </button>
-            </>
+      {/* Action Toolbar Row (on its own line to prevent title clamping or layout clashes) */}
+      <div className="flex flex-wrap items-center gap-2 pt-2 pb-3 border-b border-zinc-800/10 dark:border-zinc-800/30 w-full" id={`article-toolbar-${article.id}`}>
+        <button 
+          onClick={copyContent}
+          className={cn(
+            "p-2 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider",
+            copiedContent 
+              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-sm" 
+              : isDarkMode 
+                ? "bg-zinc-800/30 border-zinc-800 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 text-zinc-400" 
+                : "bg-zinc-100 border-zinc-200 text-zinc-600 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200"
           )}
+          title="Copy Content"
+          id={`btn-copy-${article.id}`}
+        >
+          {copiedContent ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-emerald-500" />}
+          <span>{copiedContent ? "Copied" : "Copy"}</span>
+        </button>
+
+        <button 
+          onClick={toggleSpeech}
+          className={cn(
+            "p-2 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider",
+            (isPlaying || isProcessing)
+              ? "bg-indigo-500/15 text-indigo-400 border-indigo-500/30 shadow-sm" 
+              : isDarkMode 
+                ? "bg-zinc-800/30 border-zinc-800 hover:bg-indigo-500/10 hover:text-indigo-400 hover:border-indigo-500/20 text-zinc-400" 
+                : "bg-zinc-100 border-zinc-200 text-zinc-650 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200"
+          )}
+          title={isPlaying ? "Stop Listening" : "Listen to Article"}
+          id={`btn-listen-${article.id}`}
+        >
+          {isProcessing ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+          ) : isPlaying ? (
+            <VolumeX className="w-3.5 h-3.5 animate-pulse text-indigo-400" />
+          ) : (
+            <Volume2 className="w-3.5 h-3.5 text-indigo-500" />
+          )}
+          <span>{isProcessing ? "Processing..." : isPlaying ? "Stop" : "Listen"}</span>
+        </button>
+
+        <div className="relative" ref={shareRef}>
+          <button 
+            onClick={() => setIsSharing(!isSharing)}
+            className={cn(
+              "p-2 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider",
+              isSharing
+                ? "bg-sky-500/15 text-sky-400 border-sky-500/30 shadow-sm"
+                : isDarkMode 
+                  ? "bg-zinc-800/30 border-zinc-800 hover:bg-sky-500/10 hover:text-sky-400 hover:border-sky-500/20 text-zinc-400" 
+                  : "bg-zinc-100 border-zinc-200 text-zinc-650 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200"
+            )}
+            title="Share"
+            id={`btn-share-trigger-${article.id}`}
+          >
+            <Share2 className="w-3.5 h-3.5 text-sky-500" />
+            <span>Share</span>
+          </button>
+          
+          <AnimatePresence>
+            {isSharing && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                className={cn(
+                  "absolute left-0 top-11 z-20 min-w-[160px] p-2 rounded-2xl border shadow-xl backdrop-blur-xl",
+                  isDarkMode ? "bg-zinc-950 border-zinc-800" : "bg-white border-zinc-200"
+                )}
+                id={`share-dropdown-${article.id}`}
+              >
+                <button onClick={() => handleShare('twitter')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left" id={`share-tw-${article.id}`}>
+                  <Twitter className="w-4 h-4 text-[#1DA1F2]" /> Twitter
+                </button>
+                <button onClick={() => handleShare('facebook')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left" id={`share-fb-${article.id}`}>
+                  <Facebook className="w-4 h-4 text-[#1877F2]" /> Facebook
+                </button>
+                <button onClick={() => handleShare('linkedin')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left" id={`share-li-${article.id}`}>
+                  <Linkedin className="w-4 h-4 text-[#0A66C2]" /> LinkedIn
+                </button>
+                <button onClick={() => handleShare('whatsapp')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left" id={`share-wa-${article.id}`}>
+                  <MessageCircle className="w-4 h-4 text-[#25D366]" /> WhatsApp
+                </button>
+                <div className="h-px bg-zinc-800/10 dark:bg-zinc-800/50 my-1 mx-2" />
+                <button onClick={() => handleShare()} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left" id={`share-copy-${article.id}`}>
+                  {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />} 
+                  {copied ? 'Copied!' : 'Copy Link'}
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
+        {isOwner && (
+          <>
+            <button 
+              onClick={() => onEdit(article)}
+              className={cn(
+                "p-2 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider",
+                isDarkMode 
+                  ? "bg-zinc-800/30 border-zinc-800 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/20 text-zinc-400" 
+                  : "bg-zinc-100 border-zinc-200 text-zinc-650 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200"
+              )}
+              title="Edit Article"
+              id={`btn-edit-${article.id}`}
+            >
+              <Edit className="w-3.5 h-3.5 text-amber-500" />
+              <span>Edit</span>
+            </button>
+            <button 
+              onClick={() => onDelete(article.id)}
+              className={cn(
+                "p-2 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider",
+                isDarkMode 
+                  ? "bg-zinc-800/30 border-zinc-800 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20 text-zinc-400" 
+                  : "bg-zinc-100 border-zinc-200 text-zinc-655 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-250"
+              )}
+              title="Delete Article"
+              id={`btn-delete-${article.id}`}
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+              <span>Delete</span>
+            </button>
+          </>
+        )}
       </div>
 
       {article.url && (
@@ -4329,8 +4342,9 @@ function AppContent() {
 
       {/* Main Content */}
       <main className={cn(
-        "relative z-10 pb-24 px-4 pt-6 mx-auto",
-        activeView === 'social' ? "max-w-4xl" : "max-w-md"
+        "relative z-10 pb-24 px-4 pt-6 mx-auto transition-all duration-300",
+        activeView === 'social' ? "max-w-4xl" : 
+        activeView === 'workouts' ? "max-w-2xl" : "max-w-md"
       )}>
         {isQuotaExceeded && !isQuotaDismissed && (
           <motion.div 
