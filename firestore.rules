@@ -245,7 +245,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAuthenticated() && isValidArticle(request.resource.data);
       allow update: if (isDocOwner() && isValidArticle(request.resource.data) && request.resource.data.userId == resource.data.userId) ||
-                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reads', 'shares']));
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reads', 'shares', 'likes', 'likedBy']));
       allow delete: if isDocOwner() || isAdmin();
     }
 

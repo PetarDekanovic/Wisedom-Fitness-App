@@ -85,6 +85,8 @@ export interface Article {
   isAI?: boolean;
   reads?: number;
   shares?: number;
+  likes?: number;
+  likedBy?: string[];
   url?: string;
 }
 

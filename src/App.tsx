@@ -52,6 +52,7 @@ import {
   Globe,
   ExternalLink,
   Edit,
+  Eye,
   X,
   Wind,
   Play,
@@ -971,6 +972,17 @@ function ArticleCard({
   const [copiedContent, setCopiedContent] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
 
+  const [localLiked, setLocalLiked] = useState(false);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      const likedState = localStorage.getItem(`liked_${article.id}`);
+      setLocalLiked(!!likedState);
+    }
+  }, [article.id, currentUserId]);
+
+  const isLiked = currentUserId ? (article.likedBy || []).includes(currentUserId) : localLiked;
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -1133,6 +1145,68 @@ function ArticleCard({
     }
   };
 
+  const updateLikesCount = async (delta: number) => {
+    try {
+      const q = query(collection(db, 'articles'), where('id', '==', article.id));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const articleDoc = snapshot.docs[0];
+        const currentLikes = typeof article.likes === 'number' ? article.likes : (article.likedBy || []).length;
+        const newLikes = Math.max(0, currentLikes + delta);
+        await updateDoc(doc(db, 'articles', articleDoc.id), {
+          likes: newLikes
+        });
+      }
+    } catch (e) {
+      console.error("Error updating likes count:", e);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!currentUserId) {
+      const likedState = localStorage.getItem(`liked_${article.id}`);
+      if (likedState) {
+        localStorage.removeItem(`liked_${article.id}`);
+        setLocalLiked(false);
+        await updateLikesCount(-1);
+      } else {
+        localStorage.setItem(`liked_${article.id}`, 'true');
+        setLocalLiked(true);
+        await updateLikesCount(1);
+      }
+      return;
+    }
+
+    try {
+      const q = query(collection(db, 'articles'), where('id', '==', article.id));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const articleDoc = snapshot.docs[0];
+        const currentLikedBy = article.likedBy || [];
+        let newLikedBy: string[];
+        let likesDelta = 0;
+
+        if (currentLikedBy.includes(currentUserId)) {
+          newLikedBy = currentLikedBy.filter(id => id !== currentUserId);
+          likesDelta = -1;
+        } else {
+          newLikedBy = [...currentLikedBy, currentUserId];
+          likesDelta = 1;
+        }
+
+        const currentLikes = typeof article.likes === 'number' ? article.likes : (article.likedBy || []).length;
+        const newLikes = Math.max(0, currentLikes + likesDelta);
+
+        await updateDoc(doc(db, 'articles', articleDoc.id), {
+          likedBy: newLikedBy,
+          likes: newLikes
+        });
+      }
+    } catch (e) {
+      console.error("Error toggling like status on article:", e);
+    }
+  };
+
   useEffect(() => {
     // Increment read count only once per session for this article
     const sessionKey = `read_${article.id}`;
@@ -1175,34 +1249,36 @@ function ArticleCard({
         isDarkMode ? "bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800/40" : "bg-white border-zinc-100 shadow-sm hover:shadow-md"
       )}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 w-full">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className={cn(
-            "w-10 h-10 rounded-2xl flex items-center justify-center",
+            "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0",
             isDarkMode ? "bg-emerald-500/10 text-emerald-500" : "bg-emerald-50"
           )}>
             <FileText className="w-5 h-5 text-emerald-500" />
           </div>
-          <div>
-            <h4 className="font-bold text-base leading-tight">{article.title}</h4>
-            <p className={cn("text-[10px] uppercase font-bold tracking-widest", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-base leading-tight text-wrap break-words">{article.title}</h4>
+            <p className={cn("text-[10px] uppercase font-bold tracking-widest mt-0.5", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
               {format(new Date(article.date), 'MMM d, yyyy • HH:mm')}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
           <button 
             onClick={copyContent}
             className={cn(
-              "p-2 rounded-lg transition-all flex items-center gap-2",
+              "p-2 rounded-xl transition-all flex items-center gap-2 border",
               copiedContent 
-                ? "bg-emerald-500/20 text-emerald-500" 
-                : isDarkMode ? "hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300" : "hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600"
+                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 font-bold" 
+                : isDarkMode 
+                  ? "bg-zinc-800/40 border-zinc-700/40 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 text-zinc-400" 
+                  : "bg-zinc-55 border-zinc-200 text-zinc-650 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-250"
             )}
             title="Copy Content"
           >
-            {copiedContent ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">
+            {copiedContent ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-emerald-500" />}
+            <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">
               {copiedContent ? "Copied" : "Copy"}
             </span>
           </button>
@@ -1210,21 +1286,23 @@ function ArticleCard({
           <button 
             onClick={toggleSpeech}
             className={cn(
-              "p-2 rounded-lg transition-all flex items-center gap-2",
+              "p-2 rounded-xl transition-all flex items-center gap-2 border",
               (isPlaying || isProcessing)
-                ? "bg-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500/30" 
-                : isDarkMode ? "hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300" : "hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600"
+                ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30 font-bold" 
+                : isDarkMode 
+                  ? "bg-zinc-800/40 border-zinc-700/40 hover:bg-indigo-500/10 hover:text-indigo-400 hover:border-indigo-500/20 text-zinc-400" 
+                  : "bg-zinc-55 border-zinc-200 text-zinc-650 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-250"
             )}
             title={isPlaying ? "Stop Listening" : "Listen to Article"}
           >
             {isProcessing ? (
-              <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+              <Loader2 className="w-4 h-4 animate-spin text-indigo-450" />
             ) : isPlaying ? (
-              <VolumeX className="w-4 h-4 animate-pulse text-indigo-400" />
+              <VolumeX className="w-4 h-4 animate-pulse text-indigo-455" />
             ) : (
-              <Volume2 className="w-4 h-4" />
+              <Volume2 className="w-4 h-4 text-indigo-500" />
             )}
-            <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">
+            <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">
               {isProcessing ? "Processing..." : isPlaying ? `Reading ${currentChunkIndex}/${totalChunks}` : "Listen"}
             </span>
           </button>
@@ -1233,11 +1311,16 @@ function ArticleCard({
             <button 
               onClick={() => setIsSharing(!isSharing)}
               className={cn(
-                "p-2 rounded-lg transition-all",
-                isDarkMode ? "hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300" : "hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600"
+                "p-2 rounded-xl transition-all flex items-center justify-center border",
+                isSharing
+                  ? "bg-sky-500/20 text-sky-400 border-sky-500/30"
+                  : isDarkMode 
+                    ? "bg-zinc-800/40 border-zinc-700/40 hover:bg-sky-500/10 hover:text-sky-400 hover:border-sky-500/20 text-zinc-400" 
+                    : "bg-zinc-55 border-zinc-200 text-zinc-650 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-250"
               )}
+              title="Share"
             >
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-4 h-4 text-sky-500" />
             </button>
             
             <AnimatePresence>
@@ -1247,24 +1330,24 @@ function ArticleCard({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9, y: 10 }}
                   className={cn(
-                    "absolute right-0 top-10 z-10 min-w-[160px] p-2 rounded-2xl border shadow-xl backdrop-blur-xl",
+                    "absolute right-0 top-12 z-20 min-w-[160px] p-2 rounded-2xl border shadow-xl backdrop-blur-xl",
                     isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-white/90 border-zinc-200"
                   )}
                 >
-                  <button onClick={() => handleShare('twitter')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold">
+                  <button onClick={() => handleShare('twitter')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left">
                     <Twitter className="w-4 h-4 text-[#1DA1F2]" /> Twitter
                   </button>
-                  <button onClick={() => handleShare('facebook')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold">
+                  <button onClick={() => handleShare('facebook')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left">
                     <Facebook className="w-4 h-4 text-[#1877F2]" /> Facebook
                   </button>
-                  <button onClick={() => handleShare('linkedin')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold">
+                  <button onClick={() => handleShare('linkedin')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left">
                     <Linkedin className="w-4 h-4 text-[#0A66C2]" /> LinkedIn
                   </button>
-                  <button onClick={() => handleShare('whatsapp')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold">
+                  <button onClick={() => handleShare('whatsapp')} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left">
                     <MessageCircle className="w-4 h-4 text-[#25D366]" /> WhatsApp
                   </button>
                   <div className="h-px bg-zinc-800/50 my-1 mx-2" />
-                  <button onClick={() => handleShare()} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold">
+                  <button onClick={() => handleShare()} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left">
                     {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />} 
                     {copied ? 'Copied!' : 'Copy Link'}
                   </button>
@@ -1277,15 +1360,27 @@ function ArticleCard({
             <>
               <button 
                 onClick={() => onEdit(article)}
-                className="p-2 opacity-50 hover:opacity-100 hover:text-emerald-500 transition-all"
+                className={cn(
+                  "p-2 rounded-xl transition-all flex items-center justify-center border",
+                  isDarkMode 
+                    ? "bg-zinc-800/40 border-zinc-700/40 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/20 text-zinc-400" 
+                    : "bg-zinc-55 border-zinc-200 text-zinc-650 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-250"
+                )}
+                title="Edit Article"
               >
-                <Edit className="w-4 h-4" />
+                <Edit className="w-4 h-4 text-amber-500" />
               </button>
               <button 
                 onClick={() => onDelete(article.id)}
-                className="p-2 opacity-50 hover:opacity-100 hover:text-red-500 transition-all"
+                className={cn(
+                  "p-2 rounded-xl transition-all flex items-center justify-center border",
+                  isDarkMode 
+                    ? "bg-zinc-800/40 border-zinc-700/40 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20 text-zinc-400" 
+                    : "bg-zinc-55 border-zinc-200 text-zinc-655 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-250"
+                )}
+                title="Delete Article"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 text-rose-500" />
               </button>
             </>
           )}
@@ -1313,26 +1408,52 @@ function ArticleCard({
         <ReactMarkdown>{article.content}</ReactMarkdown>
       </div>
 
-      <div className="flex items-center gap-4 pt-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-zinc-800/10 dark:border-zinc-800/50">
         <div className="flex items-center gap-2">
           {article.isAI && (
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded-full">
-              <Sparkles className="w-3 h-3" />
-              AI Insight
+            <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full border border-purple-500/20">
+              <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+              AI Stoic Insight
             </span>
           )}
         </div>
         
-        <div className="flex items-center gap-4 ml-auto">
-          <div className="flex items-center gap-1.5 grayscale opacity-50">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span className="text-[10px] font-bold tracking-tighter">{article.reads || 0}</span>
+        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+          <div className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all hover:scale-[1.02]",
+            isDarkMode ? "bg-zinc-800/20 border-zinc-700/30 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-650"
+          )} title={`${article.reads || 0} Total views`}>
+            <Eye className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="text-[10px] font-black tracking-wider uppercase">{article.reads || 0} views</span>
           </div>
-          <div className="flex items-center gap-1.5 grayscale opacity-50">
-            <Share2 className="w-3.5 h-3.5" />
-            <span className="text-[10px] font-bold tracking-tighter">{article.shares || 0}</span>
+
+          <div className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all hover:scale-[1.02]",
+            isDarkMode ? "bg-zinc-800/20 border-zinc-700/30 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-650"
+          )} title={`${article.shares || 0} Total shares`}>
+            <Share2 className="w-3.5 h-3.5 text-sky-400" />
+            <span className="text-[10px] font-black tracking-wider uppercase">{article.shares || 0} shares</span>
           </div>
-          <div className="flex -space-x-1">
+
+          <button 
+            onClick={handleLike}
+            className={cn(
+              "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border transition-all duration-300 active:scale-95 hover:scale-[1.05] group/heart",
+              isLiked 
+                ? "bg-rose-500/10 border-rose-500/30 text-rose-400 font-bold" 
+                : isDarkMode 
+                  ? "bg-zinc-800/30 border-zinc-700/50 hover:bg-rose-500/5 hover:text-rose-450 hover:border-rose-500/20 text-zinc-400" 
+                  : "bg-zinc-50 border-zinc-200 text-zinc-650 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200"
+            )}
+            title={isLiked ? "Unlike Article" : "Like Article"}
+          >
+            <Heart className={cn("w-3.5 h-3.5 transition-all duration-300", isLiked ? "fill-rose-500 text-rose-500 scale-110" : "text-rose-400 group-hover/heart:scale-110 group-hover/heart:text-rose-500")} />
+            <span className="text-[10px] font-black tracking-wider uppercase">
+              {article.likes || (article.likedBy || []).length} likes
+            </span>
+          </button>
+
+          <div className="flex -space-x-1 ml-1 hidden sm:flex">
             {[1,2,3].map(i => (
               <div key={i} className={cn("w-5 h-5 rounded-full border-2", isDarkMode ? "bg-zinc-800 border-zinc-900" : "bg-zinc-100 border-white")} />
             ))}
