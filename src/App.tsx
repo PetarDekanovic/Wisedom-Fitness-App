@@ -1031,13 +1031,17 @@ function ArticleCard({
   };
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (shareRef.current && !shareRef.current.contains(event.target as Node)) {
         setIsSharing(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -1239,6 +1243,31 @@ function ArticleCard({
     setIsSharing(false);
   };
 
+  const handleShareTriggerClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/?view=articles&id=${article.id}`; 
+    const text = `Check out this article on WiseFit: ${article.title}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: article.title,
+          text: text,
+          url: shareUrl
+        });
+        await updateEngagement('shares');
+        return;
+      } catch (err) {
+        console.log("Native share failed or was close:", err);
+        if ((err as Error).name === 'AbortError') {
+          return;
+        }
+      }
+    }
+    
+    setIsSharing(!isSharing);
+  };
+
   return (
     <motion.div
       id={`article-${article.id}`}
@@ -1277,24 +1306,49 @@ function ArticleCard({
         <button 
           onClick={copyContent}
           className={cn(
-            "p-2 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider",
+            "h-9 px-3 rounded-xl transition-all flex items-center justify-center border text-[10px] font-black uppercase tracking-wider relative overflow-hidden select-none active:scale-95",
             copiedContent 
               ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 shadow-sm" 
               : isDarkMode 
                 ? "bg-zinc-800/30 border-zinc-800 hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/20 text-zinc-400" 
-                : "bg-zinc-100 border-zinc-200 text-zinc-600 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200"
+                : "bg-zinc-100 border-zinc-200 text-zinc-650 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-250"
           )}
           title="Copy Content"
           id={`btn-copy-${article.id}`}
         >
-          {copiedContent ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-emerald-500" />}
-          <span>{copiedContent ? "Copied" : "Copy"}</span>
+          <AnimatePresence mode="wait" initial={false}>
+            {copiedContent ? (
+              <motion.span 
+                key="copied"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.15 }}
+                className="flex items-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Copied</span>
+              </motion.span>
+            ) : (
+              <motion.span 
+                key="copy"
+                initial={{ opacity: 0, y: -15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 15 }}
+                transition={{ duration: 0.15 }}
+                className="flex items-center gap-1.5"
+              >
+                <Copy className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>Copy</span>
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
 
         <button 
           onClick={toggleSpeech}
           className={cn(
-            "p-2 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider",
+            "h-9 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider select-none active:scale-95",
             (isPlaying || isProcessing)
               ? "bg-indigo-500/15 text-indigo-400 border-indigo-500/30 shadow-sm" 
               : isDarkMode 
@@ -1316,14 +1370,14 @@ function ArticleCard({
 
         <div className="relative" ref={shareRef}>
           <button 
-            onClick={() => setIsSharing(!isSharing)}
+            onClick={handleShareTriggerClick}
             className={cn(
-              "p-2 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider",
+              "h-9 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider select-none active:scale-95",
               isSharing
                 ? "bg-sky-500/15 text-sky-400 border-sky-500/30 shadow-sm"
                 : isDarkMode 
                   ? "bg-zinc-800/30 border-zinc-800 hover:bg-sky-500/10 hover:text-sky-400 hover:border-sky-500/20 text-zinc-400" 
-                  : "bg-zinc-100 border-zinc-200 text-zinc-650 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-200"
+                  : "bg-zinc-100 border-zinc-200 text-zinc-650 hover:bg-sky-50 hover:text-sky-600 hover:border-indigo-200"
             )}
             title="Share"
             id={`btn-share-trigger-${article.id}`}
@@ -1339,7 +1393,7 @@ function ArticleCard({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 10 }}
                 className={cn(
-                  "absolute left-0 top-11 z-20 min-w-[160px] p-2 rounded-2xl border shadow-xl backdrop-blur-xl",
+                  "absolute right-0 top-11 z-20 min-w-[170px] p-2 rounded-2xl border shadow-xl backdrop-blur-xl",
                   isDarkMode ? "bg-zinc-950 border-zinc-800" : "bg-white border-zinc-200"
                 )}
                 id={`share-dropdown-${article.id}`}
@@ -1357,9 +1411,38 @@ function ArticleCard({
                   <MessageCircle className="w-4 h-4 text-[#25D366]" /> WhatsApp
                 </button>
                 <div className="h-px bg-zinc-800/10 dark:bg-zinc-800/50 my-1 mx-2" />
-                <button onClick={() => handleShare()} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left" id={`share-copy-${article.id}`}>
-                  {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />} 
-                  {copied ? 'Copied!' : 'Copy Link'}
+                <button 
+                  onClick={() => handleShare()} 
+                  className="w-full flex items-center h-9 px-3 rounded-xl hover:bg-zinc-500/10 transition-all text-xs font-bold text-left relative overflow-hidden" 
+                  id={`share-copy-${article.id}`}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {copied ? (
+                      <motion.span
+                        key="copied-link"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        transition={{ duration: 0.15 }}
+                        className="flex items-center gap-3 w-full text-emerald-400 font-bold"
+                      >
+                        <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span>Copied Link!</span>
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="copy-link"
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        transition={{ duration: 0.15 }}
+                        className="flex items-center gap-3 w-full"
+                      >
+                        <Copy className="w-4 h-4 text-zinc-400 shrink-0" />
+                        <span>Copy Link</span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </button>
               </motion.div>
             )}
@@ -1371,10 +1454,10 @@ function ArticleCard({
             <button 
               onClick={() => onEdit(article)}
               className={cn(
-                "p-2 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider",
+                "h-9 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider select-none active:scale-95",
                 isDarkMode 
                   ? "bg-zinc-800/30 border-zinc-800 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/20 text-zinc-400" 
-                  : "bg-zinc-100 border-zinc-200 text-zinc-650 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200"
+                  : "bg-zinc-100 border-zinc-200 text-zinc-650 hover:bg-amber-50 hover:text-amber-600 hover:border-emerald-200"
               )}
               title="Edit Article"
               id={`btn-edit-${article.id}`}
@@ -1385,7 +1468,7 @@ function ArticleCard({
             <button 
               onClick={() => onDelete(article.id)}
               className={cn(
-                "p-2 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider",
+                "h-9 px-3 rounded-xl transition-all flex items-center gap-1.5 border text-[10px] font-black uppercase tracking-wider select-none active:scale-95",
                 isDarkMode 
                   ? "bg-zinc-800/30 border-zinc-800 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20 text-zinc-400" 
                   : "bg-zinc-100 border-zinc-200 text-zinc-655 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-250"
