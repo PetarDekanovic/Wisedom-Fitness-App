@@ -1650,31 +1650,6 @@ function AppContent() {
   const [expandedQuoteInterpretation, setExpandedQuoteInterpretation] = useState<string>("");
   const [expansionError, setExpansionError] = useState<string | null>(null);
 
-  const expandQuoteWithStoicAI = useCallback(async (quote: any) => {
-    setExpandedQuote(quote);
-    setIsExpandingQuote(true);
-    setExpandedQuoteInterpretation("");
-    setExpansionError(null);
-    try {
-      const res = await fetch("/api/interpret-quote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: quote.text, author: quote.author })
-      });
-      if (!res.ok) throw new Error("Our Stoic servers are deep in thought. Please try again.");
-      const data = await res.json();
-      if (data.success) {
-        setExpandedQuoteInterpretation(data.interpretation);
-      } else {
-        throw new Error(data.error || "Failed to generate interpretation.");
-      }
-    } catch (err: any) {
-      console.error("expandQuoteWithStoicAI err:", err);
-      setExpansionError(err.message || "Failed to interpret quote");
-    } finally {
-      setIsExpandingQuote(false);
-    }
-  }, []);
   const [isAddingArticle, setIsAddingArticle] = useState(false);
   const [diagnostics, setDiagnostics] = useState<any>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
@@ -4125,6 +4100,75 @@ function AppContent() {
       setIsChatLoading(false);
     }
   };
+
+  const expandQuoteWithStoicAI = useCallback(async (quote: any) => {
+    // Navigate straight to the SAGE (chat) panel
+    setActiveView('chat');
+    
+    // Construct an elegant, comparative Stoic analysis prompt
+    const seedPrompt = `I am contemplating this quote:
+"${quote.text}" — ${quote.author}
+
+As my Stoic AI Mentor, please provide a profound comparative overview. Show me:
+1. Which other legendary philosophers or intellectual thinkers (from Roman Stoicism, Eastern Zen, Existentialism, or Slavic giants like Krleža and Andrić) shared similar concepts or thoughts.
+2. How their ideas align or contrast with this quote.
+3. A pragmatic lesson on how I can apply this synergy of thought to my physical training, daily discipline, and mental fortress today.
+
+Keep your response highly intense, intellectually rich, yet compact (under 5 sentences), declarative, and source-cited.`;
+
+    const userMessage: ChatMessage = { role: 'user', parts: [{ text: seedPrompt }] };
+    
+    // Stop any speech output that is active
+    if (isSpeaking !== null) {
+      currentSourceRef.current?.stop();
+      setIsSpeaking(null);
+    }
+
+    // Append the user message to start the conversation segment
+    setChatMessages(prev => [...prev, userMessage]);
+    setIsChatLoading(true);
+
+    try {
+      const resp = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: [...chatMessages, userMessage],
+          userEmail: user?.email
+        })
+      });
+      
+      const text = await resp.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        console.error("Parse Error. Body:", text);
+        throw new Error("The Stoic Chamber returned an invalid response.");
+      }
+      
+      if (!resp.ok) {
+        throw new Error(result.error || `Server responded with status ${resp.status}`);
+      }
+
+      const modelMessage: ChatMessage = { 
+        role: 'model', 
+        parts: [{ text: result.text || 'Sorry, I could not generate a response.' }] 
+      };
+      setChatMessages(prev => [...prev, modelMessage]);
+    } catch (error: any) {
+      console.error('Gemini Error:', error);
+      setChatMessages(prev => [
+        ...prev, 
+        { 
+          role: 'model', 
+          parts: [{ text: error.message || 'Error connecting to the Stoic sanctuary.' }] 
+        }
+      ]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  }, [chatMessages, user, isSpeaking]);
 
   const handlePsychSendMessage = async () => {
     if (!psychInput.trim() || isPsychLoading || !isPremiumUser) return;
