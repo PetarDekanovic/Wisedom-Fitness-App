@@ -1052,7 +1052,10 @@ Author: ${author || "Unknown"}`;
             const content = fields.content?.stringValue || "";
             const videoUrlRaw = fields.url?.stringValue || "";
             
-            let description = content
+            const dbThumbnail = fields.thumbnailUrl?.stringValue || "";
+            const dbExcerpt = fields.excerpt?.stringValue || "";
+            
+            let description = dbExcerpt || content
               .replace(/[#*`~]/g, '')
               .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
               .trim();
@@ -1069,7 +1072,10 @@ Author: ${author || "Unknown"}`;
               videoUrl = `${absoluteBase}${videoUrl.startsWith('/') ? '' : '/'}${videoUrl}`;
             }
             
-            const imageUrl = "https://compcharity.org/wp-content/uploads/2026/04/e0efb5a2-1d04-40b2-b3fa-459dfdab069e_839bb3b2-scaled.jpg";
+            let imageUrl = dbThumbnail || "https://compcharity.org/wp-content/uploads/2026/04/e0efb5a2-1d04-40b2-b3fa-459dfdab069e_839bb3b2-scaled.jpg";
+            if (imageUrl && !imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+              imageUrl = `${absoluteBase}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+            }
             
             const titleEscaped = title.replace(/"/g, '&quot;');
             const descriptionEscaped = description.replace(/"/g, '&quot;');

@@ -88,6 +88,8 @@ export interface Article {
   likes?: number;
   likedBy?: string[];
   url?: string;
+  thumbnailUrl?: string;
+  excerpt?: string;
 }
 
 export interface UserProfile {

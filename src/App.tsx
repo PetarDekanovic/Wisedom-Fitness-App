@@ -85,6 +85,8 @@ import {
   Linkedin,
   MessageCircle,
   Upload,
+  Camera,
+  Image,
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -1488,6 +1490,7 @@ function ArticleCard({
           <video 
             ref={videoRef}
             src={`${article.url}#t=0.001`}
+            poster={article.thumbnailUrl}
             autoPlay={isVisible}
             controls
             playsInline
@@ -1659,6 +1662,11 @@ function AppContent() {
   const [articleUrl, setArticleUrl] = useState('');
   const [isUploadingArticleVideo, setIsUploadingArticleVideo] = useState(false);
   const [articleVideoProgress, setArticleVideoProgress] = useState(0);
+  
+  const [articleThumbnailUrl, setArticleThumbnailUrl] = useState('');
+  const [articleExcerpt, setArticleExcerpt] = useState('');
+  const [isExtractingThumbnail, setIsExtractingThumbnail] = useState(false);
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [user, setUser] = useState<FirebaseUser | null>(null);
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -1770,12 +1778,23 @@ function AppContent() {
             title: articleTitle,
             content: articleContent,
             url: articleUrl,
+            thumbnailUrl: articleThumbnailUrl,
+            excerpt: articleExcerpt,
           });
         }
-        setArticles(prev => prev.map(a => a.id === editingArticle.id ? { ...a, title: articleTitle, content: articleContent, url: articleUrl } : a));
+        setArticles(prev => prev.map(a => a.id === editingArticle.id ? { 
+          ...a, 
+          title: articleTitle, 
+          content: articleContent, 
+          url: articleUrl,
+          thumbnailUrl: articleThumbnailUrl,
+          excerpt: articleExcerpt
+        } : a));
         setArticleTitle('');
         setArticleContent('');
         setArticleUrl('');
+        setArticleThumbnailUrl('');
+        setArticleExcerpt('');
         setEditingArticle(null);
       } catch (e) {
         console.error("Error updating article:", e);
@@ -1788,6 +1807,8 @@ function AppContent() {
         title: articleTitle,
         content: articleContent,
         url: articleUrl,
+        thumbnailUrl: articleThumbnailUrl,
+        excerpt: articleExcerpt,
         date: new Date().toISOString(),
         isAI: false,
         reads: 0,
@@ -1800,6 +1821,8 @@ function AppContent() {
         setArticleTitle('');
         setArticleContent('');
         setArticleUrl('');
+        setArticleThumbnailUrl('');
+        setArticleExcerpt('');
         setIsAddingArticle(false);
       } catch (e) {
         console.error("Error adding article:", e);
@@ -1812,6 +1835,69 @@ function AppContent() {
     setArticleTitle(article.title);
     setArticleContent(article.content);
     setArticleUrl(article.url || '');
+    setArticleThumbnailUrl(article.thumbnailUrl || '');
+    setArticleExcerpt(article.excerpt || '');
+  };
+
+  const extractThumbnailFromVideoUrl = async (videoUrl: string) => {
+    if (!videoUrl) return;
+    setIsExtractingThumbnail(true);
+    try {
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.crossOrigin = 'anonymous'; // avoids tainted canvas of external domain
+      video.currentTime = 1.0;
+      video.muted = true;
+      video.playsInline = true;
+
+      await new Promise<void>((resolve, reject) => {
+        video.onloadeddata = () => {
+          video.play()
+            .then(() => {
+              video.pause();
+              resolve();
+            })
+            .catch(() => {
+              resolve();
+            });
+        };
+        video.onseeked = () => resolve();
+        video.onerror = () => reject(new Error("Unable to load video stream"));
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 360;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const base64 = canvas.toDataURL('image/jpeg', 0.85);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: `extracted_thumbnail_${Date.now()}.jpg`,
+            fileType: 'image/jpeg',
+            base64Data: base64
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.url) {
+            setArticleThumbnailUrl(data.url);
+          }
+        } else {
+          setArticleThumbnailUrl(base64);
+        }
+      }
+    } catch (err: any) {
+      console.error("Frame extractor failure:", err);
+      alert("Note: External videos may have CORS policies that prevent canvas extraction. Try uploading a custom image directly, or paste a direct, allowed URL.");
+    } finally {
+      setIsExtractingThumbnail(false);
+    }
   };
 
   const deleteArticle = async (id: string) => {
@@ -8532,6 +8618,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       setArticleTitle('');
                       setArticleContent('');
                       setArticleUrl('');
+                      setArticleThumbnailUrl('');
+                      setArticleExcerpt('');
                     }} 
                     className={isDarkMode ? "text-zinc-500" : "text-zinc-400"}
                   >
@@ -8649,6 +8737,147 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                         />
                       </label>
                     </div>
+                  </div>
+
+                  {/* Option D Custom Thumbnail Image */}
+                  <div>
+                    <label className={cn(
+                      "text-xs font-bold uppercase mb-1 block transition-colors",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>
+                      Post Thumbnail Image (Optional)
+                    </label>
+                    <div className="flex gap-2 mb-2">
+                      <input 
+                        type="text" 
+                        value={articleThumbnailUrl}
+                        onChange={(e) => setArticleThumbnailUrl(e.target.value)}
+                        placeholder="e.g. /uploads/extracted_thumbnail_123.jpg"
+                        className={cn(
+                          "flex-1 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-all font-mono",
+                          isDarkMode ? "bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-650" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder:text-zinc-400"
+                        )}
+                      />
+                      {articleThumbnailUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setArticleThumbnailUrl('')}
+                          className="px-4 py-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 font-bold text-xs rounded-xl transition-all"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {/* Upload Thumbnail direct */}
+                      <label className={cn(
+                        "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed cursor-pointer transition-all hover:bg-emerald-500/10 hover:border-emerald-500/40 text-xs font-bold",
+                        isDarkMode ? "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-650 hover:text-emerald-600"
+                      )}>
+                        {isUploadingThumbnail ? (
+                          <span className="animate-pulse flex items-center gap-1.5 text-emerald-500 font-bold uppercase tracking-wider text-[10px]">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Uploading Thumbnail...
+                          </span>
+                        ) : (
+                          <>
+                            <Image className="w-3.5 h-3.5 text-emerald-500" />
+                            <span className="uppercase tracking-wider text-[10px]">Upload Thumbnail Image</span>
+                          </>
+                        )}
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          className="hidden" 
+                          disabled={isUploadingThumbnail}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+
+                            setIsUploadingThumbnail(true);
+                            try {
+                              const reader = new FileReader();
+                              reader.onloadend = async () => {
+                                const base64 = reader.result as string;
+                                const response = await fetch('/api/upload', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    filename: `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`,
+                                    fileType: file.type,
+                                    base64Data: base64
+                                  })
+                                });
+
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  if (data.url) {
+                                    setArticleThumbnailUrl(data.url);
+                                  }
+                                } else {
+                                  setArticleThumbnailUrl(base64); // Safe local fallback
+                                }
+                                setIsUploadingThumbnail(false);
+                              };
+                              reader.readAsDataURL(file);
+                            } catch (err: any) {
+                              console.error('Thumbnail upload failed:', err);
+                              alert('Upload failed: ' + err.message);
+                              setIsUploadingThumbnail(false);
+                            }
+                          }}
+                        />
+                      </label>
+
+                      {/* Option D: Video Frame Extraction */}
+                      {articleUrl && (
+                        <button
+                          type="button"
+                          disabled={isExtractingThumbnail}
+                          onClick={() => extractThumbnailFromVideoUrl(articleUrl)}
+                          className={cn(
+                            "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed transition-all text-xs font-bold active:scale-95",
+                            isExtractingThumbnail 
+                              ? "bg-amber-500/10 border-amber-500 text-amber-500 animate-pulse" 
+                              : isDarkMode 
+                                ? "bg-zinc-900/60 border-zinc-800 hover:bg-amber-500/10 hover:border-amber-500/40 hover:text-amber-400 text-zinc-400" 
+                                : "bg-zinc-100 border-zinc-300 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-600 text-zinc-650"
+                          )}
+                        >
+                          {isExtractingThumbnail ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span className="uppercase tracking-wider text-[10px]">Capturing Frame from Video...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Camera className="w-3.5 h-3.5 text-amber-500" />
+                              <span className="uppercase tracking-wider text-[10px]">Capture Frame (Option D)</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Custom Excerpt / Description for Facebook Feed */}
+                  <div>
+                    <label className={cn(
+                      "text-xs font-bold uppercase mb-1 block transition-colors",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>
+                      Facebook Feed Description / Excerpt (Optional)
+                    </label>
+                    <textarea 
+                      value={articleExcerpt}
+                      onChange={(e) => setArticleExcerpt(e.target.value)}
+                      placeholder="e.g. Discover how elite Stoic daily discipline integrates with deep biometric trends. Ideal for direct social feeds."
+                      className={cn(
+                        "w-full h-20 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition-all font-sans leading-relaxed resize-none",
+                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                      )}
+                    />
                   </div>
 
                   <div className="flex-1">
