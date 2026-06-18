@@ -92,6 +92,17 @@ export interface Article {
   excerpt?: string;
 }
 
+export interface ArticleComment {
+  id: string;
+  articleId: string;
+  userId: string | null;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  createdAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
 export interface UserProfile {
   uid?: string;
   name: string;

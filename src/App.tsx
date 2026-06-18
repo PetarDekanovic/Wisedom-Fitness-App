@@ -11,6 +11,9 @@ import {
   User, 
   Plus, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
+  XCircle,
   Calendar, 
   Flame, 
   Footprints, 
@@ -103,7 +106,7 @@ import {
 } from 'recharts';
 import { format, subDays, startOfToday, getDay } from 'date-fns';
 import { cn } from './lib/utils';
-import type { Workout, DailyStats, Exercise, WorkoutSet, DayPlan, PlannedExercise, UserProfile, ChatMessage, Quote, WorkoutComment, Article } from './types';
+import type { Workout, DailyStats, Exercise, WorkoutSet, DayPlan, PlannedExercise, UserProfile, ChatMessage, Quote, WorkoutComment, Article, ArticleComment } from './types';
 import { auth, db, storage, googleProvider, signInWithPopup, signOut } from './firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { 
@@ -954,14 +957,17 @@ function ArticleCard({
   isDarkMode, 
   onDelete,
   onEdit,
-  currentUserId 
+  user,
+  userProfile
 }: { 
   article: Article, 
   isDarkMode: boolean, 
   onDelete: (id: string) => void,
   onEdit: (article: Article) => void,
-  currentUserId?: string
+  user?: any,
+  userProfile?: UserProfile
 }) {
+  const currentUserId = user?.uid;
   const isOwner = currentUserId === article.userId;
   const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -975,6 +981,110 @@ function ArticleCard({
   const shareRef = useRef<HTMLDivElement>(null);
 
   const [localLiked, setLocalLiked] = useState(false);
+  const [comments, setComments] = useState<ArticleComment[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [showComments, setShowComments] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentSuccessMsg, setCommentSuccessMsg] = useState('');
+
+  // Subscribe to comments
+  useEffect(() => {
+    const q = query(
+      collection(db, 'articles', article.id, 'comments'),
+      orderBy('createdAt', 'asc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetched = snapshot.docs.map(doc => ({ ...doc.data() } as ArticleComment));
+      setComments(fetched);
+    }, (error) => {
+      console.error("Comments subscription error:", error);
+    });
+    return () => unsubscribe();
+  }, [article.id]);
+
+  const isAdmin = user && user.email && ADMIN_EMAILS.includes(user.email);
+  const isArticleOwner = currentUserId === article.userId;
+
+  const visibleComments = comments.filter(c => {
+    if (c.status === 'approved') return true;
+    if (isAdmin || isArticleOwner) return true;
+    if (currentUserId && c.userId === currentUserId) return true;
+    return false;
+  });
+
+  const approvedCommentsCount = comments.filter(c => c.status === 'approved').length;
+  const pendingCommentsCount = comments.filter(c => c.status === 'pending').length;
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+
+    const finalUserName = user 
+      ? (userProfile?.name || user.displayName || 'Anonymous') 
+      : (guestName.trim() || 'Anonymous Seeker');
+
+    const commentId = `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const newComment: ArticleComment = {
+      id: commentId,
+      articleId: article.id,
+      userId: currentUserId || null,
+      userName: finalUserName,
+      userAvatar: user ? (user.photoURL || userProfile?.avatarUrl || '') : '',
+      content: commentText.trim(),
+      createdAt: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    setIsSubmittingComment(true);
+    setCommentSuccessMsg('');
+
+    try {
+      const commentsCol = collection(db, 'articles', article.id, 'comments');
+      await setDoc(doc(commentsCol, commentId), newComment);
+      
+      setCommentText('');
+      setCommentSuccessMsg('Your comment has been submitted and is pending administrator approval.');
+      setTimeout(() => setCommentSuccessMsg(''), 7000);
+    } catch (err: any) {
+      console.error("Error submitting comment:", err);
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const handleApproveComment = async (commentId: string) => {
+    try {
+      const commentDocRef = doc(db, 'articles', article.id, 'comments', commentId);
+      await updateDoc(commentDocRef, {
+        status: 'approved'
+      });
+    } catch (err: any) {
+      console.error("Error approving comment:", err);
+    }
+  };
+
+  const handleRejectComment = async (commentId: string) => {
+    try {
+      const commentDocRef = doc(db, 'articles', article.id, 'comments', commentId);
+      await updateDoc(commentDocRef, {
+        status: 'rejected'
+      });
+    } catch (err: any) {
+      console.error("Error rejecting comment:", err);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) return;
+    try {
+      const commentDocRef = doc(db, 'articles', article.id, 'comments', commentId);
+      await deleteDoc(commentDocRef);
+    } catch (err: any) {
+      console.error("Error deleting comment:", err);
+    }
+  };
 
   useEffect(() => {
     if (!currentUserId) {
@@ -1505,6 +1615,224 @@ function ArticleCard({
         isDarkMode ? "text-zinc-300 prose-invert" : "text-zinc-700"
       )}>
         <ReactMarkdown>{article.content}</ReactMarkdown>
+      </div>
+
+      {/* --- COMMENTS SECTION --- */}
+      <div className={cn(
+        "pt-4 border-t",
+        isDarkMode ? "border-zinc-800/40" : "border-zinc-100"
+      )}>
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => setShowComments(!showComments)}
+            className={cn(
+              "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all duration-300 active:scale-95",
+              isDarkMode 
+                ? "bg-zinc-900/30 border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-800/30 text-zinc-300"
+                : "bg-zinc-50 border-zinc-200 hover:bg-zinc-100/50 text-zinc-600"
+            )}
+          >
+            <MessageSquare className="w-4 h-4 text-emerald-500" />
+            <span>Comments ({approvedCommentsCount})</span>
+            {showComments ? (
+              <ChevronUp className="w-3.5 h-3.5 text-zinc-500" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+            )}
+          </button>
+
+          {/* Pending reviews indicator for admins/owners */}
+          {pendingCommentsCount > 0 && (isAdmin || isArticleOwner) && (
+            <span className="text-[10px] h-6 flex items-center font-black uppercase tracking-wider bg-amber-500/10 text-amber-500 px-2.5 py-1 rounded-full border border-amber-500/20 shadow-sm animate-pulse">
+              {pendingCommentsCount} Pending Approval
+            </span>
+          )}
+        </div>
+
+        {showComments && (
+          <div className="space-y-4 mt-4 transition-all duration-300">
+            {/* Comment list */}
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+              {visibleComments.map((comment) => (
+                <div 
+                  key={comment.id}
+                  className={cn(
+                    "p-3 rounded-2xl border flex flex-col gap-1.5 relative group/comment transition-colors duration-200",
+                    isDarkMode 
+                      ? comment.status === 'pending'
+                        ? "bg-amber-500/5 border-amber-500/20"
+                        : "bg-zinc-900/40 border-zinc-900/60 hover:bg-zinc-900/60"
+                      : comment.status === 'pending'
+                        ? "bg-amber-50/50 border-amber-200/60"
+                        : "bg-zinc-50/50 border-zinc-100 hover:bg-zinc-100/30"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {comment.userAvatar ? (
+                        <img 
+                          referrerPolicy="no-referrer"
+                          src={comment.userAvatar} 
+                          alt={comment.userName} 
+                          className="w-5 h-5 rounded-full object-cover border border-zinc-500/20" 
+                        />
+                      ) : (
+                        <div className={cn(
+                          "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border shrink-0",
+                          isDarkMode ? "bg-zinc-800 text-zinc-400 border-zinc-700/50" : "bg-zinc-100 text-zinc-500 border-zinc-200"
+                        )}>
+                          {comment.userName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <span className={cn(
+                          "text-xs font-bold",
+                          isDarkMode ? "text-zinc-200" : "text-zinc-850"
+                        )}>
+                          {comment.userName}
+                        </span>
+                        <span className={cn(
+                          "text-[9px] font-mono uppercase ml-2 select-none font-medium",
+                          isDarkMode ? "text-zinc-500" : "text-zinc-450"
+                        )}>
+                          {format(new Date(comment.createdAt), 'MMM d • HH:mm')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Pending badge */}
+                    {comment.status === 'pending' && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 select-none">
+                        Pending
+                      </span>
+                    )}
+                  </div>
+
+                  <p className={cn(
+                    "text-xs leading-relaxed break-words",
+                    isDarkMode ? "text-zinc-350" : "text-zinc-650"
+                  )}>
+                    {comment.content}
+                  </p>
+
+                  {/* Inline comment moderation and deletion tools */}
+                  <div className="flex items-center gap-2 mt-1 select-none">
+                    {comment.status === 'pending' && (isAdmin || isArticleOwner) && (
+                      <>
+                        <button 
+                          onClick={() => handleApproveComment(comment.id)}
+                          className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/20 transition-all active:scale-95"
+                        >
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          Approve
+                        </button>
+                        <button 
+                          onClick={() => handleRejectComment(comment.id)}
+                          className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-rose-450 hover:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-0.5 rounded border border-rose-500/20 transition-all active:scale-95"
+                        >
+                          <XCircle className="w-3 h-3 text-rose-500" />
+                          Reject
+                        </button>
+                      </>
+                    )}
+
+                    {/* Delete button (owner of comment, admin, or author of article) */}
+                    {(isAdmin || isArticleOwner || (currentUserId && comment.userId === currentUserId)) && (
+                      <button 
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-rose-450 hover:bg-rose-500/10 px-2 py-0.5 rounded transition-all active:scale-95 ml-auto sm:opacity-0 group-hover/comment:opacity-100"
+                      >
+                        <Trash2 className="w-3 h-3 text-zinc-400" />
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {visibleComments.length === 0 && (
+                <p className="text-xs text-center text-zinc-500 py-3 italic">
+                  No approved comments yet. Be the first to share your reflections.
+                </p>
+              )}
+            </div>
+
+            {/* Comment Form */}
+            <form onSubmit={handleAddComment} className="space-y-2 pt-2 border-t border-zinc-800/10 dark:border-zinc-800/20">
+              {/* If player is a guest, let them choose a custom local nickname! */}
+              {!user && (
+                <div className="flex flex-col gap-1">
+                  <label className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider",
+                    isDarkMode ? "text-zinc-500" : "text-zinc-450"
+                  )}>
+                    Your Nickname (Guest)
+                  </label>
+                  <input 
+                    type="text"
+                    required
+                    maxLength={30}
+                    placeholder="E.g., Belgrade Scholar, Split Seeker..."
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    className={cn(
+                      "w-full rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-500/50 border transition-all",
+                      isDarkMode ? "bg-zinc-950/40 border-zinc-800 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                    )}
+                  />
+                </div>
+              )}
+
+              {user && (
+                <p className={cn(
+                  "text-[10px] font-bold uppercase tracking-widest leading-none select-none",
+                  isDarkMode ? "text-zinc-500" : "text-zinc-455"
+                )}>
+                  Commenting as <span className="text-emerald-500">{userProfile?.name || user.displayName || 'Anonymous'}</span>
+                </p>
+              )}
+
+              <div className="flex gap-2 items-end">
+                <textarea 
+                  required
+                  maxLength={1000}
+                  placeholder={user ? "Add a strategic comment..." : "Share a guest reflection..."}
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  rows={2}
+                  className={cn(
+                    "flex-1 border rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-all resize-none",
+                    isDarkMode ? "bg-zinc-950/40 border-zinc-800 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                  )}
+                />
+                <button 
+                  type="submit"
+                  disabled={isSubmittingComment || !commentText.trim()}
+                  className={cn(
+                    "bg-emerald-500 text-zinc-950 text-xs font-bold px-4 py-2.5 rounded-xl active:scale-95 transition-all shadow-md shadow-emerald-500/10 hover:bg-emerald-400 h-9 flex items-center justify-center shrink-0",
+                    (isSubmittingComment || !commentText.trim()) && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  {isSubmittingComment ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+                  ) : (
+                    <span>Comment</span>
+                  )}
+                </button>
+              </div>
+
+              {commentSuccessMsg && (
+                <motion.p 
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-[10px] text-emerald-500 font-bold leading-relaxed"
+                >
+                  {commentSuccessMsg}
+                </motion.p>
+              )}
+            </form>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-zinc-800/10 dark:border-zinc-800/50">
@@ -6011,7 +6339,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       isDarkMode={isDarkMode}
                       onDelete={deleteArticle}
                       onEdit={openEditArticle}
-                      currentUserId={user?.uid}
+                      user={user}
+                      userProfile={userProfile}
                     />
                   ))}
                   {articles.length === 0 && (

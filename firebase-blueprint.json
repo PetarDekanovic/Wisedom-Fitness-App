@@ -234,6 +234,22 @@
         "createdAt": { "type": "string" }
       },
       "required": ["id", "conversationId", "senderId", "senderName", "text", "createdAt"]
+    },
+    "ArticleComment": {
+      "title": "ArticleComment",
+      "description": "A user or guest comment on a long-form article/log entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "articleId": { "type": "string" },
+        "userId": { "type": ["string", "null"] },
+        "userName": { "type": "string" },
+        "userAvatar": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] }
+      },
+      "required": ["id", "articleId", "userName", "content", "createdAt", "status"]
     }
   },
   "firestore": {
@@ -260,6 +276,10 @@
     "/articles/{articleId}": {
       "schema": "Article",
       "description": "Long-form articles and insights collection"
+    },
+    "/articles/{articleId}/comments/{commentId}": {
+      "schema": "ArticleComment",
+      "description": "Comments left on articles/log entries"
     },
     "/workouts/{workoutId}": {
       "schema": "Workout",

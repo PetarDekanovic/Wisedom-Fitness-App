@@ -160,6 +160,17 @@ service cloud.firestore {
              data.date is string;
     }
 
+    function isValidArticleComment(data) {
+      return data.keys().hasAll(['id', 'articleId', 'userName', 'content', 'createdAt', 'status']) &&
+             data.id is string && data.id.size() < 100 &&
+             data.articleId is string && data.articleId.size() < 100 &&
+             data.userName is string && data.userName.size() > 0 && data.userName.size() < 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 5000 &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             (data.get('userId', null) == null || (data.userId is string && data.userId.size() < 100)) &&
+             (data.get('userAvatar', null) == null || (data.userAvatar is string && data.userAvatar.size() < 1000));
+    }
+
     match /public_profiles/{userId} {
       allow read: if isAuthenticated();
       allow create, update: if (isOwner(userId) && isValidPublicProfile(request.resource.data)) || isAdmin();
@@ -247,6 +258,31 @@ service cloud.firestore {
       allow update: if (isDocOwner() && isValidArticle(request.resource.data) && request.resource.data.userId == resource.data.userId) ||
                     (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reads', 'shares', 'likes', 'likedBy']));
       allow delete: if isDocOwner() || isAdmin();
+
+      match /comments/{commentId} {
+        allow read: if resource.data.status == 'approved' || 
+                     (isAuthenticated() && (
+                       resource.data.userId == request.auth.uid || 
+                       isAdmin() || 
+                       get(/databases/$(database)/documents/articles/$(articleId)).data.userId == request.auth.uid
+                     ));
+        allow create: if isValidArticleComment(request.resource.data) && 
+                      request.resource.data.articleId == articleId &&
+                      (request.resource.data.status == 'pending' || isAdmin()) &&
+                      (request.resource.data.get('userId', null) == null || (isAuthenticated() && request.resource.data.userId == request.auth.uid));
+        allow update: if isAdmin() || (
+                        isAuthenticated() && 
+                        get(/databases/$(database)/documents/articles/$(articleId)).data.userId == request.auth.uid &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+                        request.resource.data.status in ['approved', 'rejected', 'pending']
+                      );
+        allow delete: if isAdmin() || (
+                        isAuthenticated() && (
+                          resource.data.userId == request.auth.uid || 
+                          get(/databases/$(database)/documents/articles/$(articleId)).data.userId == request.auth.uid
+                        )
+                      );
+      }
     }
 
     match /workouts/{workoutId} {
