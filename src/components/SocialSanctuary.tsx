@@ -70,6 +70,7 @@ interface SocialSanctuaryProps {
   isGirlyMode: boolean;
   currentUser: any; // FirebaseUser
   userProfile: UserProfile;
+  isPremiumUser?: boolean;
 }
 
 enum OperationType {
@@ -211,7 +212,7 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
   }
 ];
 
-export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProfile }: SocialSanctuaryProps) {
+export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProfile, isPremiumUser }: SocialSanctuaryProps) {
   const [activeTab, setActiveTab] = useState<'feed' | 'messages' | 'peers' | 'moderation' | 'personality'>('feed');
   
   // Public profiles
@@ -3171,29 +3172,29 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     </div>
                   </div>
 
-                  {/* Input sending bottom form */}
+                  {/* Input sending bottom form or locked for AI Scholars */}
                   <form onSubmit={handleSendDMMessage} className="flex gap-2 shrink-0">
-                    <input 
-                      type="text"
-                      value={newMessageText}
-                      onChange={(e) => setNewMessageText(e.target.value)}
-                      placeholder="Transcribe peaceful thoughts or structured critiques..."
-                      className={cn(
-                        "flex-1 px-4 py-3 text-sm rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none font-sans font-semibold placeholder:font-sans",
-                        isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
-                      )}
-                    />
-                    <button 
-                      type="submit" 
-                      disabled={!newMessageText.trim() || isUploadingFile}
-                      className={cn(
-                        "p-3 rounded-xl bg-emerald-500 text-zinc-950 active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-emerald-500/10",
-                        (!newMessageText.trim() || isUploadingFile) && "opacity-50 pointer-events-none"
-                      )}
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </form>
+                      <input 
+                        type="text"
+                        value={newMessageText}
+                        onChange={(e) => setNewMessageText(e.target.value)}
+                        placeholder="Transcribe peaceful thoughts or structured critiques..."
+                        className={cn(
+                          "flex-1 px-4 py-3 text-sm rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none font-sans font-semibold placeholder:font-sans",
+                          isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
+                        )}
+                      />
+                      <button 
+                        type="submit" 
+                        disabled={!newMessageText.trim() || isUploadingFile}
+                        className={cn(
+                          "p-3 rounded-xl bg-emerald-500 text-zinc-950 active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-emerald-500/10",
+                          (!newMessageText.trim() || isUploadingFile) && "opacity-50 pointer-events-none"
+                        )}
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </form>
 
                 </div>
               ) : (

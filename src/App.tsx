@@ -2039,18 +2039,12 @@ function AppContent() {
 
   useEffect(() => {
     let q: any;
-    if (user && !isQuotaExceeded) {
-      q = query(
-        collection(db, 'articles'), 
-        where('userId', '==', user.uid),
-        orderBy('date', 'desc')
-      );
-    } else if (!isQuotaExceeded) {
-      // Guests see all articles (or a public subset if we had one)
+    if (!isQuotaExceeded) {
+      // Everyone (guests and logged-in seekers) see all published articles in the feed
       q = query(
         collection(db, 'articles'),
         orderBy('date', 'desc'),
-        limit(50)
+        limit(100)
       );
     }
     
@@ -2580,6 +2574,10 @@ function AppContent() {
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   const handleSpeak = useCallback(async (text: string, quoteId: string) => {
+    if (!isPremiumUser) {
+      console.warn("Regional high-signal Slavic/Croatian TTS is restricted to WiseFit Plus Premium subscribers.");
+      return;
+    }
     if (isSpeaking === quoteId) {
       currentSourceRef.current?.stop();
       setIsSpeaking(null);
@@ -4518,6 +4516,9 @@ function AppContent() {
   const expandQuoteWithStoicAI = useCallback(async (quote: any) => {
     // Navigate straight to the SAGE (chat) panel
     setActiveView('chat');
+    if (!isPremiumUser) {
+      return;
+    }
     
     // Construct an elegant, comparative Stoic analysis prompt
     const seedPrompt = `I am contemplating this quote:
@@ -8396,12 +8397,13 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              {isPremiumUser ? (
+              {user ? (
                 <SocialSanctuary 
                   isDarkMode={isDarkMode} 
                   isGirlyMode={isGirlyMode} 
                   currentUser={user} 
                   userProfile={userProfile} 
+                  isPremiumUser={isPremiumUser}
                 />
               ) : (
                 <div className="max-w-md mx-auto">
