@@ -22,3 +22,12 @@
     scrollbar-width: none;
   }
 }
+
+.font-handwritten strong {
+  font-weight: 700 !important;
+  color: #34d399 !important; /* Elegant emerald-400 tint to highlight bold names/terms */
+}
+
+.font-handwritten {
+  font-family: "Caveat", cursive !important;
+}

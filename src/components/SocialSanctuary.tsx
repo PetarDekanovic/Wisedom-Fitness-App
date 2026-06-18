@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { db, auth, storage } from '../firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { 
@@ -426,7 +427,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
   };
 
-  const renderMessageTextWithAttachments = (text: string, isMine: boolean) => {
+  const renderMessageTextWithAttachments = (text: string, isMine: boolean, isScholar = false) => {
     if (!text) return null;
 
     const regex = /\[Attachment:\s*(.*?)\]\((.*?)\)/gi;
@@ -522,12 +523,19 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     return (
       <div className="space-y-2">
         {remainsText.trim() && (
-          <p className={cn(
-            "whitespace-pre-wrap text-[13px] leading-relaxed pt-0.5 select-text font-semibold",
-            isMine ? "text-zinc-950" : "text-white"
+          <div className={cn(
+            "whitespace-pre-wrap select-text leading-relaxed pt-0.5 font-semibold text-left",
+            isScholar 
+              ? "font-handwritten text-[17px] sm:text-[19px] tracking-wide" 
+              : "text-[13px]",
+            isMine ? "text-zinc-950" : isDarkMode ? "text-emerald-50" : "text-emerald-950"
           )}>
-            {hasUrls ? textSegments : remainsText}
-          </p>
+            {isScholar ? (
+              <ReactMarkdown>{remainsText}</ReactMarkdown>
+            ) : (
+              hasUrls ? textSegments : remainsText
+            )}
+          </div>
         )}
 
         {richPreviews.length > 0 && (
@@ -3008,17 +3016,22 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       chatMessages.map(msg => {
                         const isMine = msg.senderId === currentUser.uid;
                         const isEditing = editingMessageId === msg.id;
+                        const isScholar = msg.senderId && msg.senderId.startsWith('dummy_');
 
                         return (
                           <div 
                             key={msg.id}
                             className={cn(
-                              "flex flex-col max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs font-semibold border relative group transition-all",
+                              "flex flex-col max-w-[80%] rounded-2xl relative group transition-all",
                               isMine 
-                                ? "self-end bg-emerald-500 text-zinc-950 ml-auto border-emerald-400/30 rounded-tr-none shadow-sm shadow-emerald-500/10" 
-                                : isDarkMode 
-                                  ? "self-start bg-zinc-800 border-zinc-700/80 text-zinc-50 rounded-tl-none shadow-sm" 
-                                  : "self-start bg-zinc-100 border-zinc-200 text-zinc-900 rounded-tl-none shadow-sm"
+                                ? "self-end bg-emerald-500 text-zinc-950 ml-auto border-emerald-400/30 rounded-tr-none shadow-sm shadow-emerald-500/10 px-3.5 py-2.5 text-xs font-semibold border" 
+                                : isScholar
+                                  ? (isDarkMode 
+                                      ? "self-start bg-zinc-900/80 border-emerald-500/20 text-emerald-100 rounded-tl-none shadow-md shadow-emerald-500/5 px-4 py-3 border" 
+                                      : "self-start bg-emerald-50/50 border-emerald-205 text-emerald-950 rounded-tl-none shadow-sm px-4 py-3 border")
+                                  : isDarkMode 
+                                    ? "self-start bg-zinc-800 border-zinc-700/80 text-zinc-50 rounded-tl-none shadow-sm px-3.5 py-2.5 text-xs font-semibold border" 
+                                    : "self-start bg-zinc-100 border-zinc-200 text-zinc-900 rounded-tl-none shadow-sm px-3.5 py-2.5 text-xs font-semibold border"
                             )}
                           >
                             {isEditing ? (
@@ -3062,7 +3075,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               </div>
                             ) : (
                               <>
-                                {renderMessageTextWithAttachments(msg.text, isMine)}
+                                {renderMessageTextWithAttachments(msg.text, isMine, isScholar)}
                                 <div className="flex items-center justify-between gap-3 mt-1.5 leading-none shrink-0">
                                   <span className={cn(
                                     "text-[8px] select-none opacity-60 font-mono flex items-center gap-1",

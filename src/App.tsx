@@ -2579,7 +2579,14 @@ function AppContent() {
       return;
     }
     if (isSpeaking === quoteId) {
-      currentSourceRef.current?.stop();
+      try {
+        currentSourceRef.current?.stop();
+      } catch (e) {}
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (e) {}
+      }
       setIsSpeaking(null);
       return;
     }
@@ -2628,12 +2635,47 @@ function AppContent() {
           setIsSpeaking(null);
           currentSourceRef.current = null;
         };
+      } else {
+        throw new Error("No base64 audio returned");
       }
     } catch (error: any) {
-      console.error('TTS failed:', error);
-      setIsSpeaking(null);
+      console.warn('Backend TTS failed, falling back to Web Speech API:', error);
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const cleanText = text.replace(/[*_#`\[\]()]/g, ''); // strip markdown chars for clean voice reading
+          const utterance = new SpeechSynthesisUtterance(cleanText);
+          
+          const voices = window.speechSynthesis.getVoices();
+          // Find Croatian or Slavic if possible, otherwise default high-quality English
+          const regionalVoice = voices.find(v => v.lang.startsWith('hr') || v.lang.startsWith('sr') || v.lang.startsWith('bs') || v.lang.startsWith('sh'));
+          if (regionalVoice) {
+            utterance.voice = regionalVoice;
+          } else {
+            const defaultVoice = voices.find(v => v.lang.startsWith('en') && v.localService) || voices[0];
+            if (defaultVoice) utterance.voice = defaultVoice;
+          }
+          
+          utterance.rate = 0.92; // Wise, firm, measured tempo
+          utterance.pitch = 0.95;
+          
+          utterance.onend = () => {
+            setIsSpeaking(null);
+          };
+          utterance.onerror = () => {
+            setIsSpeaking(null);
+          };
+          
+          window.speechSynthesis.speak(utterance);
+        } else {
+          setIsSpeaking(null);
+        }
+      } catch (innerErr) {
+        console.error('All TTS paths failed:', innerErr);
+        setIsSpeaking(null);
+      }
     }
-  }, [isSpeaking]);
+  }, [isSpeaking, isPremiumUser, user]);
 
   const fetchAIQuote = useCallback(async (history: Quote[] = []): Promise<Quote | null> => {
     if (!isPremiumUser) {
@@ -7502,12 +7544,21 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                           />
                         </div>
                         <div className={cn(
-                          "max-w-[80%] p-4 rounded-2xl text-sm relative group",
+                          "max-w-[80%] p-4 rounded-2xl relative group",
                           msg.role === 'user' 
-                            ? "bg-emerald-500 text-zinc-950 font-medium rounded-br-none" 
-                            : (isDarkMode ? "bg-zinc-800 text-zinc-100 rounded-bl-none" : "bg-zinc-100 text-zinc-900 rounded-bl-none")
+                            ? "bg-emerald-500 text-zinc-950 text-sm font-semibold rounded-br-none shadow-sm shadow-emerald-500/10" 
+                            : (isDarkMode ? "bg-zinc-800 text-zinc-100 rounded-bl-none shadow-sm" : "bg-zinc-100 text-zinc-900 rounded-bl-none shadow-sm")
                         )}>
-                          {msg.parts[0].text}
+                          {msg.role === 'user' ? (
+                            <span className="text-sm font-semibold leading-relaxed whitespace-pre-wrap select-text">{msg.parts[0].text}</span>
+                          ) : (
+                            <div className={cn(
+                              "markdown-body font-handwritten tracking-wide leading-relaxed text-[17px] sm:text-[19px] select-text font-medium text-left",
+                              isDarkMode ? "text-emerald-50" : "text-emerald-950"
+                            )}>
+                              <ReactMarkdown>{msg.parts[0].text}</ReactMarkdown>
+                            </div>
+                          )}
                           {msg.role === 'model' && (
                             <div className="absolute top-2 right-2 flex items-center gap-2">
                               <button
@@ -7596,26 +7647,41 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
             >
               {isPremiumUser ? (
                 <>
-                  <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border border-blue-500/20 bg-blue-500/10 shadow-lg shadow-blue-500/10 transition-transform hover:scale-105">
-                  <img 
-                    src="https://compcharity.org/wp-content/uploads/2026/05/freud.jpg" 
-                    alt="Sigmund Freud" 
-                    className="w-full h-full object-cover brightness-110 contrast-115 grayscale-[0.2]"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';
-                    }}
-                  />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold">Dr. Sigmund Freud</h2>
-                  <p className="text-xs font-bold uppercase tracking-widest text-blue-500 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    Dr. Freud | Clinical Empathy
-                  </p>
-                </div>
-              </div>
+                  <div className="flex items-center justify-between gap-3 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center border border-blue-500/20 bg-blue-500/10 shadow-lg shadow-blue-500/10 transition-transform hover:scale-105">
+                        <img 
+                          src="https://compcharity.org/wp-content/uploads/2026/05/freud.jpg" 
+                          alt="Sigmund Freud" 
+                          className="w-full h-full object-cover brightness-110 contrast-115 grayscale-[0.2]"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold">Dr. Sigmund Freud</h2>
+                        <p className="text-xs font-bold uppercase tracking-widest text-blue-500 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                          Dr. Freud | Clinical Empathy
+                        </p>
+                      </div>
+                    </div>
+
+                    {userProfile?.avatarUrl && (
+                      <div className="flex flex-col items-end gap-1 select-none">
+                        <div className="w-10 h-10 rounded-2xl overflow-hidden border border-emerald-500/20 bg-emerald-500/5 shadow-md justify-center items-center flex">
+                          <img 
+                            src={userProfile.avatarUrl} 
+                            alt="Patient Profile" 
+                            className="w-full h-full object-cover" 
+                          />
+                        </div>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Patient</span>
+                      </div>
+                    )}
+                  </div>
 
               <div className={cn(
                 "flex-1 overflow-y-auto space-y-4 p-4 rounded-3xl border mb-4 no-scrollbar",
@@ -7627,8 +7693,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       <Stethoscope className="w-8 h-8 text-blue-500/50" />
                     </div>
                     <div className="space-y-2">
-                      <p className="font-bold text-zinc-500">How are you feeling today, Petar?</p>
-                      <p className="text-sm text-zinc-600">I am here to help you navigate your mental state and behavioral patterns.</p>
+                      <p className="font-bold text-zinc-500">How are you feeling today, {userProfile?.name?.split(' ')[0] || 'Seeker'}?</p>
+                      <p className="text-sm text-zinc-650">I am here to help you navigate your mental state and behavioral patterns.</p>
                     </div>
                    </div>
                 )}
@@ -7643,7 +7709,16 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                         msg.role === 'user' ? "bg-zinc-800" : "bg-blue-900/50"
                       )}>
                         {msg.role === 'user' ? (
-                          <User className="w-4 h-4 text-zinc-400" />
+                          userProfile?.avatarUrl ? (
+                            <img 
+                              src={userProfile.avatarUrl} 
+                              alt="User avatar" 
+                              className="w-full h-full object-cover" 
+                              referrerPolicy="no-referrer" 
+                            />
+                          ) : (
+                            <User className="w-4 h-4 text-zinc-400" />
+                          )
                         ) : (
                           <img 
                             src="https://compcharity.org/wp-content/uploads/2026/05/freud.jpg" 
