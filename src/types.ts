@@ -101,6 +101,7 @@ export interface ArticleComment {
   content: string;
   createdAt: string;
   status: 'pending' | 'approved' | 'rejected';
+  updatedAt?: string;
 }
 
 export interface UserProfile {

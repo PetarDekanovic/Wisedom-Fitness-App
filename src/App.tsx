@@ -987,6 +987,8 @@ function ArticleCard({
   const [showComments, setShowComments] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentSuccessMsg, setCommentSuccessMsg] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState('');
 
   // Subscribe to comments
   useEffect(() => {
@@ -1026,6 +1028,9 @@ function ArticleCard({
 
     const commentId = `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Logged in users are allowed to comment without admin approving each comment
+    const isUserLoggedIn = !!currentUserId;
+
     const newComment: ArticleComment = {
       id: commentId,
       articleId: article.id,
@@ -1034,7 +1039,7 @@ function ArticleCard({
       userAvatar: user ? (user.photoURL || userProfile?.avatarUrl || '') : '',
       content: commentText.trim(),
       createdAt: new Date().toISOString(),
-      status: 'pending'
+      status: isUserLoggedIn ? 'approved' : 'pending'
     };
 
     setIsSubmittingComment(true);
@@ -1045,7 +1050,11 @@ function ArticleCard({
       await setDoc(doc(commentsCol, commentId), newComment);
       
       setCommentText('');
-      setCommentSuccessMsg('Your comment has been submitted and is pending administrator approval.');
+      if (isUserLoggedIn) {
+        setCommentSuccessMsg('Your comment has been posted successfully.');
+      } else {
+        setCommentSuccessMsg('Your comment has been submitted and is pending administrator approval.');
+      }
       setTimeout(() => setCommentSuccessMsg(''), 7000);
     } catch (err: any) {
       console.error("Error submitting comment:", err);
@@ -1073,6 +1082,21 @@ function ArticleCard({
       });
     } catch (err: any) {
       console.error("Error rejecting comment:", err);
+    }
+  };
+
+  const handleUpdateComment = async (commentId: string) => {
+    if (!editingCommentText.trim()) return;
+    try {
+      const commentDocRef = doc(db, 'articles', article.id, 'comments', commentId);
+      await updateDoc(commentDocRef, {
+        content: editingCommentText.trim(),
+        updatedAt: new Date().toISOString()
+      });
+      setEditingCommentId(null);
+      setEditingCommentText('');
+    } catch (err: any) {
+      console.error("Error updating comment:", err);
     }
   };
 
@@ -1708,12 +1732,57 @@ function ArticleCard({
                     )}
                   </div>
 
-                  <p className={cn(
-                    "text-xs leading-relaxed break-words",
-                    isDarkMode ? "text-zinc-350" : "text-zinc-650"
-                  )}>
-                    {comment.content}
-                  </p>
+                  {editingCommentId === comment.id ? (
+                    <div className="flex flex-col gap-2 mt-1">
+                      <textarea
+                        value={editingCommentText}
+                        onChange={(e) => setEditingCommentText(e.target.value)}
+                        className={cn(
+                          "w-full text-xs p-2.5 rounded-xl border focus:outline-none focus:ring-1 focus:ring-emerald-500",
+                          isDarkMode 
+                            ? "bg-zinc-950 border-zinc-850 text-zinc-100" 
+                            : "bg-white border-zinc-200 text-zinc-900"
+                        )}
+                        rows={2}
+                      />
+                      <div className="flex items-center gap-2 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCommentId(null);
+                            setEditingCommentText('');
+                          }}
+                          className={cn(
+                            "flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded transition-all active:scale-95 border",
+                            isDarkMode
+                              ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-850"
+                              : "bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+                          )}
+                        >
+                          <X className="w-2.5 h-2.5" />
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateComment(comment.id)}
+                          className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded transition-all active:scale-95 bg-emerald-500 text-zinc-950 font-bold hover:bg-emerald-400"
+                        >
+                          <Check className="w-2.5 h-2.5 text-zinc-950" />
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className={cn(
+                      "text-xs leading-relaxed break-words",
+                      isDarkMode ? "text-zinc-350" : "text-zinc-650"
+                    )}>
+                      {comment.content}
+                      {comment.updatedAt && (
+                        <span className="text-[9px] italic opacity-65 ml-1.5 font-medium">(edited)</span>
+                      )}
+                    </p>
+                  )}
 
                   {/* Inline comment moderation and deletion tools */}
                   <div className="flex items-center gap-2 mt-1 select-none">
@@ -1736,15 +1805,33 @@ function ArticleCard({
                       </>
                     )}
 
-                    {/* Delete button (owner of comment, admin, or author of article) */}
-                    {(isAdmin || isArticleOwner || (currentUserId && comment.userId === currentUserId)) && (
-                      <button 
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-rose-450 hover:bg-rose-500/10 px-2 py-0.5 rounded transition-all active:scale-95 ml-auto sm:opacity-0 group-hover/comment:opacity-100"
-                      >
-                        <Trash2 className="w-3 h-3 text-zinc-400" />
-                        Delete
-                      </button>
+                    {editingCommentId !== comment.id && (
+                      <div className="flex items-center gap-1.5 ml-auto sm:opacity-0 group-hover/comment:opacity-100 transition-opacity">
+                        {/* Edit button (owner of comment, or admin) */}
+                        {(isAdmin || (currentUserId && comment.userId === currentUserId)) && (
+                          <button 
+                            onClick={() => {
+                              setEditingCommentId(comment.id);
+                              setEditingCommentText(comment.content);
+                            }}
+                            className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 px-2 py-0.5 rounded transition-all active:scale-95"
+                          >
+                            <Edit className="w-3 h-3" />
+                            Edit
+                          </button>
+                        )}
+
+                        {/* Delete button (owner of comment, admin, or author of article) */}
+                        {(isAdmin || isArticleOwner || (currentUserId && comment.userId === currentUserId)) && (
+                          <button 
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-zinc-400 hover:text-rose-450 hover:bg-rose-500/10 px-2 py-0.5 rounded transition-all active:scale-95"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

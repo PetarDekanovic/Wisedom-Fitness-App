@@ -268,9 +268,20 @@ service cloud.firestore {
                      ));
         allow create: if isValidArticleComment(request.resource.data) && 
                       request.resource.data.articleId == articleId &&
-                      (request.resource.data.status == 'pending' || isAdmin()) &&
+                      (
+                        request.resource.data.status == 'pending' || 
+                        isAdmin() || 
+                        (isAuthenticated() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'approved')
+                      ) &&
                       (request.resource.data.get('userId', null) == null || (isAuthenticated() && request.resource.data.userId == request.auth.uid));
         allow update: if isAdmin() || (
+                        isAuthenticated() && 
+                        resource.data.userId == request.auth.uid &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content', 'updatedAt']) &&
+                        isValidArticleComment(request.resource.data) &&
+                        request.resource.data.userId == resource.data.userId &&
+                        request.resource.data.status == resource.data.status
+                      ) || (
                         isAuthenticated() && 
                         get(/databases/$(database)/documents/articles/$(articleId)).data.userId == request.auth.uid &&
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
