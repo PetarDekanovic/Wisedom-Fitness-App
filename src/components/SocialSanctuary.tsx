@@ -524,17 +524,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       <div className="space-y-2">
         {remainsText.trim() && (
           <div className={cn(
-            "whitespace-pre-wrap select-text leading-relaxed pt-0.5 font-semibold text-left",
-            isScholar 
-              ? "font-handwritten text-[17px] sm:text-[19px] tracking-wide" 
-              : "text-[13px]",
+            "whitespace-pre-wrap select-text leading-relaxed pt-0.5 text-left font-handwritten text-[18px] sm:text-[20px] font-bold tracking-wide",
             isMine ? "text-zinc-950" : isDarkMode ? "text-emerald-50" : "text-emerald-950"
           )}>
-            {isScholar ? (
-              <ReactMarkdown>{remainsText}</ReactMarkdown>
-            ) : (
-              hasUrls ? textSegments : remainsText
-            )}
+            {hasUrls ? textSegments : <ReactMarkdown>{remainsText}</ReactMarkdown>}
           </div>
         )}
 
@@ -1969,7 +1962,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         required
                         disabled={isSendingEngage || isUploadingFile}
                         className={cn(
-                          "w-full px-4 py-3 text-sm rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-sans font-semibold",
+                          "w-full px-4 py-3 text-[18px] rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none resize-none font-handwritten tracking-wide font-semibold",
                           isDarkMode ? "bg-zinc-800/80 border-zinc-700/80 text-white placeholder-zinc-550" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
                         )}
                         placeholder="Establish clarity, speak with discipline, and build intellectual/biometric alignment..."
@@ -1979,7 +1972,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     {/* Emojis selection & file uploads row bar */}
                     <div className="flex flex-wrap items-center justify-between gap-2 px-1">
                       <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar">
-                        {['🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
+                        {['❤️', '💖', '💝', '💕', '🫶', '💗', '💓', '🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
                           <button
                             key={emoji}
                             type="button"
@@ -3145,7 +3138,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   {/* Emoji selection & file uploads row bar */}
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
                     <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar">
-                      {['🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
+                      {['❤️', '💖', '💝', '💕', '🫶', '💗', '💓', '🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
                         <button
                           key={emoji}
                           type="button"
@@ -3193,7 +3186,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         onChange={(e) => setNewMessageText(e.target.value)}
                         placeholder="Transcribe peaceful thoughts or structured critiques..."
                         className={cn(
-                          "flex-1 px-4 py-3 text-sm rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none font-sans font-semibold placeholder:font-sans",
+                          "flex-1 px-4 py-3 text-[18px] rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none font-handwritten tracking-wide font-semibold placeholder:font-sans placeholder:text-xs",
                           isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
                         )}
                       />
