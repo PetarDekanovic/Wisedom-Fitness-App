@@ -257,6 +257,7 @@ export interface PublicProfile {
   favoritePhilosophers?: string;
   favoritePsychologists?: string;
   userPhotos?: string[];
+  userPhotosVisibility?: string[];
 }
 
 export interface FriendRequest {

@@ -62,7 +62,9 @@ import {
   Copy,
   Loader2,
   Upload,
-  MessageCircle
+  MessageCircle,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
@@ -256,6 +258,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [setupName, setSetupName] = useState(userProfile?.name || '');
   const [activeLightboxImg, setActiveLightboxImg] = useState<string | null>(null);
   const [editUserPhotos, setEditUserPhotos] = useState<string[]>([]);
+  const [editUserPhotosVisibility, setEditUserPhotosVisibility] = useState<string[]>([]);
   const [uploadingSlots, setUploadingSlots] = useState<{ [key: number]: boolean }>({});
   const [uploadProgressSlots, setUploadProgressSlots] = useState<{ [key: number]: number }>({});
 
@@ -851,6 +854,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       setEditFavoritePhilosophers(thisPublicProfile.favoritePhilosophers || '');
       setEditFavoritePsychologists(thisPublicProfile.favoritePsychologists || '');
       setEditUserPhotos(thisPublicProfile.userPhotos || []);
+      setEditUserPhotosVisibility(thisPublicProfile.userPhotosVisibility || ['friends', 'friends', 'friends', 'friends']);
       
       if (thisPublicProfile.bigFive) {
         setQuizCalculated(true);
@@ -933,6 +937,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         favoritePhilosophers: editFavoritePhilosophers,
         favoritePsychologists: editFavoritePsychologists,
         userPhotos: editUserPhotos,
+        userPhotosVisibility: editUserPhotosVisibility,
         updatedAt: new Date().toISOString()
       };
       
@@ -4112,6 +4117,38 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                     <X className="w-3 h-3" />
                                   </button>
                                   <span className="relative z-10 text-[9px] font-black text-white/60 tracking-wider">PHOTO {index + 1}</span>
+                                  
+                                  {/* Custom Visibility Toggle overlay button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = [...editUserPhotosVisibility];
+                                      while (updated.length <= index) {
+                                        updated.push('friends');
+                                      }
+                                      updated[index] = (updated[index] || 'friends') === 'public' ? 'friends' : 'public';
+                                      setEditUserPhotosVisibility(updated);
+                                    }}
+                                    className={cn(
+                                      "absolute bottom-2.5 left-2.5 z-10 px-2 py-1 text-[8px] font-black uppercase rounded-lg border flex items-center justify-center gap-1 cursor-pointer transition-all duration-200 select-none shadow backdrop-blur-md",
+                                      (editUserPhotosVisibility[index] || 'friends') === 'public'
+                                        ? "bg-emerald-500 text-zinc-950 border-emerald-400 hover:bg-emerald-450"
+                                        : "bg-zinc-950/85 text-zinc-350 border-zinc-700 hover:bg-zinc-800"
+                                    )}
+                                    title="Toggle visibility status"
+                                  >
+                                    {(editUserPhotosVisibility[index] || 'friends') === 'public' ? (
+                                      <>
+                                        <Globe className="w-2.5 h-2.5 text-zinc-950" />
+                                        <span>Public</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Lock className="w-2.5 h-2.5" />
+                                        <span>Friends</span>
+                                      </>
+                                    )}
+                                  </button>
                                 </>
                               ) : (
                                 <div className="flex flex-col items-center justify-center h-full space-y-2 text-center py-3 w-full">
@@ -4179,6 +4216,38 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
                               )}
                             />
+                            {editUserPhotos[index] && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...editUserPhotosVisibility];
+                                  while (updated.length <= index) {
+                                    updated.push('friends');
+                                  }
+                                  updated[index] = (updated[index] || 'friends') === 'public' ? 'friends' : 'public';
+                                  setEditUserPhotosVisibility(updated);
+                                }}
+                                className={cn(
+                                  "px-2.5 py-2 text-[9px] font-black uppercase rounded-xl border flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap select-none",
+                                  (editUserPhotosVisibility[index] || 'friends') === 'public'
+                                    ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                                    : "bg-zinc-500/5 border-zinc-850 text-zinc-400 font-bold"
+                                )}
+                                title="Click to toggle Public / Friends Only"
+                              >
+                                {(editUserPhotosVisibility[index] || 'friends') === 'public' ? (
+                                  <>
+                                    <Globe className="w-3 h-3 text-emerald-400" />
+                                    <span>Public</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Lock className="w-3 h-3 text-zinc-500" />
+                                    <span>Friends Only</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -5542,32 +5611,93 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   </p>
                 </div>
 
-                {/* Seeker Premium Photo Gallery (Dating compatibility) */}
-                {selectedPeerWall.userPhotos && selectedPeerWall.userPhotos.filter(Boolean).length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Seeker Photo Gallery</h4>
-                    <div className="grid grid-cols-2 gap-3 mt-1">
-                      {selectedPeerWall.userPhotos.filter(Boolean).map((url, idx) => (
-                        <div 
-                          key={idx}
-                          onClick={() => setActiveLightboxImg(url)}
-                          className="aspect-[3/4] rounded-2xl overflow-hidden border border-zinc-805/40 bg-zinc-950/20 relative group cursor-zoom-in shadow-md"
-                        >
-                          <img 
-                            src={url} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                            alt={`Gallery ${idx + 1}`}
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 flex justify-between items-center">
-                            <span className="text-[8px] font-black uppercase text-white/80 tracking-widest">Image {idx + 1}</span>
-                            <Maximize2 className="w-3 h-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                {/* Seeker Premium Photo Gallery (Dating compatibility with visibility controls) */}
+                {(() => {
+                  if (!selectedPeerWall.userPhotos) return null;
+                  
+                  const isMeOnWall = currentUser?.uid === selectedPeerWall.uid;
+                  const isFriendOnWall = getFriendRelation(selectedPeerWall.uid) === 'friend';
+                  const canSeeAllOnWall = isMeOnWall || isFriendOnWall;
+                  
+                  const nonEmtpyPhotosWithIndex = selectedPeerWall.userPhotos
+                    .map((url, origIdx) => ({ url, origIdx }))
+                    .filter(item => item.url);
+
+                  if (nonEmtpyPhotosWithIndex.length === 0) return null;
+
+                  const visiblePhotos = nonEmtpyPhotosWithIndex.filter(item => {
+                    if (canSeeAllOnWall) return true;
+                    const visibility = selectedPeerWall.userPhotosVisibility?.[item.origIdx] || 'friends';
+                    return visibility === 'public';
+                  });
+
+                  const hiddenCount = nonEmtpyPhotosWithIndex.length - visiblePhotos.length;
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Seeker Photo Gallery</h4>
+                        {canSeeAllOnWall && (
+                          <span className="text-[8px] font-bold uppercase text-emerald-450 bg-emerald-500/10 border border-emerald-500/15 px-2 py-0.5 rounded-lg flex items-center gap-1 shrink-0">
+                            <UserCheck className="w-2.5 h-2.5" /> Checked Friends-Visible
+                          </span>
+                        )}
+                      </div>
+                      
+                      {visiblePhotos.length > 0 && (
+                        <div className="grid grid-cols-2 gap-3 mt-1">
+                          {visiblePhotos.map((item, idx) => {
+                            const isPhotoPublic = (selectedPeerWall.userPhotosVisibility?.[item.origIdx] || 'friends') === 'public';
+                            return (
+                              <div 
+                                key={idx}
+                                onClick={() => setActiveLightboxImg(item.url)}
+                                className="aspect-[3/4] rounded-2xl overflow-hidden border border-zinc-805/45 bg-zinc-950/25 relative group cursor-zoom-in shadow-md"
+                              >
+                                <img 
+                                  src={item.url} 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                                  alt={`Gallery ${idx + 1}`}
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent p-2.5 flex justify-between items-center">
+                                  <div className="flex flex-col">
+                                    <span className="text-[8.5px] font-black uppercase text-white tracking-widest leading-none">Photo {idx + 1}</span>
+                                    {(isMeOnWall || isFriendOnWall) && (
+                                      <span className="text-[7px] text-zinc-300 flex items-center gap-0.5 mt-1 leading-none font-bold">
+                                        {isPhotoPublic ? <Globe className="w-2 h-2 text-emerald-400" /> : <Lock className="w-2 h-2 text-zinc-400" />}
+                                        {isPhotoPublic ? "Public" : "Friends"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <Maximize2 className="w-3.5 h-3.5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {hiddenCount > 0 && !canSeeAllOnWall && (
+                        <div className={cn(
+                          "p-4 rounded-2xl border text-center space-y-2 flex flex-col items-center justify-center relative overflow-hidden",
+                          isDarkMode ? "bg-zinc-950/95 border-zinc-850" : "bg-zinc-50 border-zinc-200"
+                        )}>
+                          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-20 select-none pointer-events-none"></div>
+                          <Lock className="w-5 h-5 text-emerald-450 animate-pulse relative z-10" />
+                          <div className="space-y-1 relative z-10">
+                            <h5 className="font-extrabold uppercase text-[9px] tracking-widest text-zinc-350">
+                              {hiddenCount} Seeker Photo{hiddenCount > 1 ? 's' : ''} Locked
+                            </h5>
+                            <p className="text-[9.5px] font-medium text-zinc-400 max-w-sm leading-normal">
+                              Only accepted friends can see these private profile photographs. Send a connection request to unlock their complete dating gallery!
+                            </p>
                           </div>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Academic Psychologist Assessment Results */}
                 <div className={cn(
