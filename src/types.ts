@@ -256,6 +256,7 @@ export interface PublicProfile {
   // Custom favorite academics
   favoritePhilosophers?: string;
   favoritePsychologists?: string;
+  userPhotos?: string[];
 }
 
 export interface FriendRequest {

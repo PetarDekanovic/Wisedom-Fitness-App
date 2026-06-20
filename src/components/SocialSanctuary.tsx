@@ -31,6 +31,7 @@ import {
   Edit, 
   X, 
   Plus, 
+  Maximize2,
   Sparkles, 
   Link as LinkIcon, 
   Youtube, 
@@ -179,37 +180,69 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
     uid: 'dummy_marcus_aurelius',
     name: 'Marcus Aurelius',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+    coverUrl: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=600',
+    relationshipIntent: 'Long-term partnership',
+    location: 'Rome, Italy',
+    height: '185',
     biography: 'Emperor of Rome. Author of Meditations. Focuses on stoic temperance, deep morning journaling, and body callisthenics.',
     isOnline: true,
     lastActive: new Date().toISOString(),
-    friends: []
+    friends: [],
+    userPhotos: [
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400'
+    ]
   },
   {
     uid: 'dummy_seneca_younger',
     name: 'Lucius Seneca',
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
+    coverUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=600',
+    relationshipIntent: 'Mindful companionship',
+    location: 'Cordoba, Spain',
+    height: '178',
     biography: 'Imperial Advisor and playwright. Writing dialogues on tranquility and mental equilibrium under load.',
     isOnline: true,
     lastActive: new Date().toISOString(),
-    friends: []
+    friends: [],
+    userPhotos: [
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400'
+    ]
   },
   {
     uid: 'dummy_epictetus',
     name: 'Epictetus',
     avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300',
+    coverUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=600',
+    relationshipIntent: 'Intellectual calisthenic dyads',
+    location: 'Hierapolis, Phrygia',
+    height: '173',
     biography: 'Born a slave, died a master. Teaching that we suffer not from events, but from our judgment of them.',
     isOnline: true,
     lastActive: new Date().toISOString(),
-    friends: []
+    friends: [],
+    userPhotos: [
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400'
+    ]
   },
   {
     uid: 'dummy_hypatia_alex',
     name: 'Hypatia',
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
+    coverUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?auto=format&fit=crop&q=80&w=600',
+    relationshipIntent: 'Deep philosophical connection',
+    location: 'Alexandria, Egypt',
+    height: '172',
     biography: 'Neoplatonist philosopher, leading astronomer and mathematician. Seeking physical hygiene and structural clarity.',
     isOnline: true,
     lastActive: new Date().toISOString(),
-    friends: []
+    friends: [],
+    userPhotos: [
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'
+    ]
   }
 ];
 
@@ -221,6 +254,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [isSettingUpProfile, setIsSettingUpProfile] = useState(false);
   const [setupBiography, setSetupBiography] = useState('');
   const [setupName, setSetupName] = useState(userProfile?.name || '');
+  const [activeLightboxImg, setActiveLightboxImg] = useState<string | null>(null);
+  const [editUserPhotos, setEditUserPhotos] = useState<string[]>([]);
 
   // Dating, matching and personality states
   const [personalitySubTab, setPersonalitySubTab] = useState<'bio' | 'quiz'>('bio');
@@ -813,6 +848,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       setSetupBiography(thisPublicProfile.biography || '');
       setEditFavoritePhilosophers(thisPublicProfile.favoritePhilosophers || '');
       setEditFavoritePsychologists(thisPublicProfile.favoritePsychologists || '');
+      setEditUserPhotos(thisPublicProfile.userPhotos || []);
       
       if (thisPublicProfile.bigFive) {
         setQuizCalculated(true);
@@ -837,6 +873,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         biography: setupBiography,
         favoritePhilosophers: editFavoritePhilosophers,
         favoritePsychologists: editFavoritePsychologists,
+        userPhotos: editUserPhotos,
         updatedAt: new Date().toISOString()
       };
       
@@ -3938,6 +3975,99 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       </div>
                     </div>
 
+                    {/* Seeker Custom Photo Album Section */}
+                    <div className="space-y-4 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-4">
+                      <div>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Your Photo Album (Dating Compatibility)</h4>
+                        <p className="text-[10px] text-zinc-400 mt-1">Add up to 4 photos of yourself to establish an authentic visual connection for other seekers.</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[0, 1, 2, 3].map((index) => {
+                          const currentUrl = editUserPhotos[index] || '';
+                          return (
+                            <div 
+                              key={index} 
+                              className={cn(
+                                "aspect-[3/4] rounded-2xl border overflow-hidden relative group flex flex-col justify-between p-2.5",
+                                isDarkMode ? "bg-zinc-950/80 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                              )}
+                            >
+                              {currentUrl ? (
+                                <>
+                                  <img 
+                                    src={currentUrl} 
+                                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                                    alt={`Seeker Photo ${index + 1}`}
+                                    referrerPolicy="no-referrer"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = [...editUserPhotos];
+                                      updated[index] = '';
+                                      setEditUserPhotos(updated);
+                                    }}
+                                    className="absolute top-1.5 right-1.5 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors z-10"
+                                    title="Remove Photo"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                  <span className="relative z-10 text-[9px] font-black text-white/60 tracking-wider">PHOTO {index + 1}</span>
+                                </>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center h-full space-y-2 text-center py-4">
+                                  <Plus className="w-4 h-4 text-zinc-500" />
+                                  <span className="text-[8px] font-black uppercase text-zinc-500 tracking-wider">Empty Slot</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const presets = [
+                                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
+                                        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400",
+                                        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400",
+                                        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400"
+                                      ];
+                                      const updated = [...editUserPhotos];
+                                      updated[index] = presets[index % presets.length];
+                                      setEditUserPhotos(updated);
+                                    }}
+                                    className="text-[7px] px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold uppercase rounded-lg hover:bg-emerald-500/20 transition-all cursor-pointer"
+                                  >
+                                    Use Preset
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Inputs for manual URLs */}
+                      <div className="space-y-2">
+                        {[0, 1, 2, 3].map((index) => (
+                          <div key={index} className="flex gap-2 items-center">
+                            <span className="w-14 shrink-0 text-[10px] font-bold text-zinc-500 hover:text-emerald-450 transition-colors lowercase">Photo {index + 1}:</span>
+                            <input
+                              type="text"
+                              value={editUserPhotos[index] || ''}
+                              onChange={(e) => {
+                                const updated = [...editUserPhotos];
+                                updated[index] = e.target.value;
+                                setEditUserPhotos(updated);
+                              }}
+                              placeholder="Paste any portrait Unsplash or direct image URL..."
+                              className={cn(
+                                "flex-1 px-3 py-2 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
+                                isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                              )}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Submit Button */}
                     <button
                       type="button"
@@ -5084,41 +5214,73 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           uid: 'dummy_marcus_aurelius',
                           name: 'Marcus Aurelius',
                           avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+                          coverUrl: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=600',
+                          relationshipIntent: 'Long-term partnership',
+                          location: 'Rome, Italy',
+                          height: '185',
                           biography: 'Emperor of Rome. Author of Meditations. Focuses on stoic temperance, deep morning journaling, and body callisthenics.',
                           isOnline: true,
                           lastActive: new Date().toISOString(),
                           updatedAt: new Date().toISOString(),
-                          friends: []
+                          friends: [],
+                          userPhotos: [
+                            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
+                            'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400'
+                          ]
                         },
                         {
                           uid: 'dummy_seneca_younger',
                           name: 'Lucius Seneca',
                           avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
+                          coverUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=600',
+                          relationshipIntent: 'Mindful companionship',
+                          location: 'Cordoba, Spain',
+                          height: '178',
                           biography: 'Imperial Advisor and playwright. Writing dialogues on tranquility and mental equilibrium under load.',
                           isOnline: true,
                           lastActive: new Date().toISOString(),
                           updatedAt: new Date().toISOString(),
-                          friends: []
+                          friends: [],
+                          userPhotos: [
+                            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400',
+                            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400'
+                          ]
                         },
                         {
                           uid: 'dummy_epictetus',
                           name: 'Epictetus',
                           avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300',
+                          coverUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=600',
+                          relationshipIntent: 'Intellectual calisthenic dyads',
+                          location: 'Hierapolis, Phrygia',
+                          height: '173',
                           biography: 'Born a slave, died a master. Teaching that we suffer not from events, but from our judgment of them.',
                           isOnline: true,
                           lastActive: new Date().toISOString(),
                           updatedAt: new Date().toISOString(),
-                          friends: []
+                          friends: [],
+                          userPhotos: [
+                            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400'
+                          ]
                         },
                         {
                           uid: 'dummy_hypatia_alex',
                           name: 'Hypatia',
                           avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
+                          coverUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?auto=format&fit=crop&q=80&w=600',
+                          relationshipIntent: 'Deep philosophical connection',
+                          location: 'Alexandria, Egypt',
+                          height: '172',
                           biography: 'Neoplatonist philosopher, leading astronomer and mathematician. Seeking physical hygiene and structural clarity.',
                           isOnline: true,
                           lastActive: new Date().toISOString(),
                           updatedAt: new Date().toISOString(),
-                          friends: []
+                          friends: [],
+                          userPhotos: [
+                            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400',
+                            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
+                            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'
+                          ]
                         }
                       ];
 
@@ -5186,32 +5348,71 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
               {/* Scrollable interior block */}
               <div className="overflow-y-auto space-y-6 pr-2 flex-1 scrollable-overlay">
                 
-                {/* Biography card top banner */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-zinc-800/10 pt-2">
-                  <div className="flex items-center gap-3.5">
-                    <img 
-                      src={selectedPeerWall.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                      className="w-12 h-12 rounded-full object-cover shrink-0 border border-zinc-500/10"
-                      alt="avatar"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="space-y-0.5">
-                      <h3 className="font-black text-base uppercase tracking-tight leading-none">{selectedPeerWall.name}</h3>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Established Disciple</p>
-                    </div>
+                {/* Stunning Top Cover & Large Profile photo block */}
+                <div className="relative rounded-2xl overflow-hidden border border-zinc-805/40 bg-zinc-950/20 mb-4 pt-2">
+                  {/* Biography card top cover */}
+                  <div className="h-32 w-full relative overflow-hidden bg-zinc-800 bg-gradient-to-r from-emerald-950/20 to-zinc-900">
+                    {selectedPeerWall.coverUrl ? (
+                      <img 
+                        src={selectedPeerWall.coverUrl} 
+                        className="w-full h-full object-cover opacity-60" 
+                        alt="cover" 
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-800/10 via-teal-900/10 to-zinc-900/30"></div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent"></div>
                   </div>
 
-                  <button 
-                    onClick={() => {
-                      setEngagePeer(selectedPeerWall);
-                      setEngageMessage('');
-                      setEngageSuccess(false);
-                      setEngageError(null);
-                    }}
-                    className="px-4 py-2.5 bg-emerald-500 text-zinc-950 font-black italic uppercase text-[10px] tracking-wider rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5 self-start sm:self-center"
-                  >
-                    Secure Dialog <Send className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="px-5 pb-5 relative -mt-14 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+                    <div className="flex items-end gap-3.5">
+                      <div 
+                        onClick={() => setActiveLightboxImg(selectedPeerWall.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200')}
+                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-emerald-500 bg-zinc-950 cursor-zoom-in shrink-0 shadow-xl group"
+                        title="Click to enlarge"
+                      >
+                        <img 
+                          src={selectedPeerWall.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          alt="avatar"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <Maximize2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1 mb-1">
+                        <h3 className="font-extrabold text-xl uppercase tracking-tighter leading-none">{selectedPeerWall.name}</h3>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400">
+                          {selectedPeerWall.mbti ? `${selectedPeerWall.mbti} · ` : ''}Established Disciple
+                        </p>
+                        {selectedPeerWall.location && (
+                          <p className="text-[10px] font-medium text-zinc-400 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-emerald-500" /> {selectedPeerWall.location}
+                          </p>
+                        )}
+                        {selectedPeerWall.height && (
+                          <p className="text-[10px] font-medium text-zinc-400">
+                            Height: <strong className="text-zinc-305">{selectedPeerWall.height} cm</strong>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => {
+                        setEngagePeer(selectedPeerWall);
+                        setEngageMessage('');
+                        setEngageSuccess(false);
+                        setEngageError(null);
+                      }}
+                      className="px-5 py-3 bg-emerald-500 text-zinc-950 font-black italic uppercase text-[10px] tracking-wider rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-1.5 self-start sm:self-end shadow-md shadow-emerald-500/10 shrink-0 cursor-pointer"
+                    >
+                      Secure Dialog <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Seeker Biography Text */}
@@ -5224,6 +5425,33 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     {selectedPeerWall.biography || 'This seeker choice was deep contemplation. No biography documented.'}
                   </p>
                 </div>
+
+                {/* Seeker Premium Photo Gallery (Dating compatibility) */}
+                {selectedPeerWall.userPhotos && selectedPeerWall.userPhotos.filter(Boolean).length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Seeker Photo Gallery</h4>
+                    <div className="grid grid-cols-2 gap-3 mt-1">
+                      {selectedPeerWall.userPhotos.filter(Boolean).map((url, idx) => (
+                        <div 
+                          key={idx}
+                          onClick={() => setActiveLightboxImg(url)}
+                          className="aspect-[3/4] rounded-2xl overflow-hidden border border-zinc-805/40 bg-zinc-950/20 relative group cursor-zoom-in shadow-md"
+                        >
+                          <img 
+                            src={url} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                            alt={`Gallery ${idx + 1}`}
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 flex justify-between items-center">
+                            <span className="text-[8px] font-black uppercase text-white/80 tracking-widest">Image {idx + 1}</span>
+                            <Maximize2 className="w-3 h-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Academic Psychologist Assessment Results */}
                 <div className={cn(
@@ -5571,6 +5799,43 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Premium Zoomable Lightbox for Seeker compatibility images & portrait clicks */}
+      <AnimatePresence>
+        {activeLightboxImg && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setActiveLightboxImg(null)}
+            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 cursor-zoom-out"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-4xl max-h-[90vh] flex flex-col items-center justify-center pointer-events-none"
+            >
+              <img 
+                src={activeLightboxImg} 
+                className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl border border-zinc-805/30 pointer-events-auto" 
+                alt="Enlarged Seeker Media"
+                referrerPolicy="no-referrer"
+              />
+              <span className="mt-3 text-[10px] sm:text-xs font-black uppercase tracking-widest text-zinc-500 pointer-events-auto select-none">
+                Click anywhere to return
+              </span>
+            </motion.div>
+            <button 
+              type="button" 
+              onClick={() => setActiveLightboxImg(null)}
+              className="absolute top-6 right-6 p-2 bg-zinc-900/85 hover:bg-zinc-800 rounded-xl text-white transition-all shadow-lg border border-zinc-800 pointer-events-auto cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
