@@ -2763,15 +2763,22 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                         {/* Media rendering section */}
                         {post.mediaType === 'image' && post.mediaUrl && (
-                          <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-zinc-800/20 bg-zinc-950">
+                          <div 
+                            onClick={() => setActiveLightboxImg(post.mediaUrl)}
+                            className="relative aspect-video w-full rounded-2xl overflow-hidden border border-zinc-800/20 bg-zinc-950 cursor-zoom-in group shadow-md"
+                            title="Click to enlarge image"
+                          >
                             <img 
                               src={post.mediaUrl} 
                               alt="attachment" 
-                              className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                              className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-all duration-300"
                               onError={(e) => {
                                 (e.target as any).src = 'https://images.unsplash.com/photo-1518152006812-cdff2f4a4c35?auto=format&fit=crop&q=80&w=600';
                               }}
                             />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                              <Maximize2 className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                            </div>
                           </div>
                         )}
 
@@ -3446,8 +3453,15 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       )}
                     >
                       {peer.coverUrl && (
-                        <div className="absolute top-0 left-0 right-0 h-16 overflow-hidden select-none">
-                          <img src={peer.coverUrl} className="w-full h-full object-cover opacity-45" alt="cover" />
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveLightboxImg(peer.coverUrl);
+                          }}
+                          className="absolute top-0 left-0 right-0 h-16 overflow-hidden select-none cursor-zoom-in group/cover z-10"
+                          title="Click to zoom cover"
+                        >
+                          <img src={peer.coverUrl} className="w-full h-full object-cover opacity-45 group-hover/cover:scale-105 transition-transform duration-300" alt="cover" />
                           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-950/90"></div>
                         </div>
                       )}
@@ -3455,13 +3469,27 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       <div className="space-y-3 text-xs relative z-10">
                         {/* Top Profile Header */}
                         <div className="flex items-center gap-3">
-                          <div className="relative shrink-0">
+                          <div className="relative shrink-0 select-none group/avatar">
                             <img 
                               src={peer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                              className="w-11 h-11 rounded-full object-cover border border-zinc-500/20"
+                              className="w-11 h-11 rounded-full object-cover border border-zinc-500/20 cursor-zoom-in transition-transform duration-300 group-hover/avatar:scale-105 relative z-10"
                               alt="peer"
                               referrerPolicy="no-referrer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveLightboxImg(peer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200');
+                              }}
+                              title="Click to enlarge avatar"
                             />
+                            <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveLightboxImg(peer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200');
+                              }}
+                              className="absolute inset-0 bg-black/0 group-hover/avatar:bg-black/25 rounded-full transition-colors flex items-center justify-center z-20 cursor-zoom-in"
+                            >
+                              <Maximize2 className="w-3.5 h-3.5 text-white opacity-0 group-hover/avatar:opacity-100 transition-opacity" />
+                            </div>
                             {online ? (
                               <span className="absolute bottom-0 right-0 flex h-3 w-3">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
