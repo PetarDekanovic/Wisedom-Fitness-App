@@ -881,7 +881,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     try {
       const extension = file.name.split('.').pop() || 'jpg';
       const uniqueName = `slot_${index}_${Date.now()}.${extension}`;
-      const storageRef = ref(storage, `users/${currentUser.uid}/photos/${uniqueName}`);
+      const storageRef = ref(storage, `users/${currentUser.uid}/attachments/${uniqueName}`);
       const uploadTask = uploadBytesResumable(storageRef, file);
 
       uploadTask.on('state_changed', 
