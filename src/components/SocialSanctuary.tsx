@@ -256,6 +256,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [setupName, setSetupName] = useState(userProfile?.name || '');
   const [activeLightboxImg, setActiveLightboxImg] = useState<string | null>(null);
   const [editUserPhotos, setEditUserPhotos] = useState<string[]>([]);
+  const [uploadingSlots, setUploadingSlots] = useState<{ [key: number]: boolean }>({});
+  const [uploadProgressSlots, setUploadProgressSlots] = useState<{ [key: number]: number }>({});
 
   // Dating, matching and personality states
   const [personalitySubTab, setPersonalitySubTab] = useState<'bio' | 'quiz'>('bio');
@@ -855,6 +857,63 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       }
     }
   }, [thisPublicProfile, userProfile]);
+
+  // Handle uploading specific seeker photo
+  const handleUploadPhoto = async (index: number, file: File) => {
+    if (!currentUser) return;
+    
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert("Only JPEG and PNG image formats are securely supported as genuine representations.");
+      return;
+    }
+    
+    // Check size limit: 8MB
+    const MAX_SIZE = 8 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      alert("This photograph exceeds our 8MB sanctuary limit for rapid modern rendering.");
+      return;
+    }
+
+    setUploadingSlots(prev => ({ ...prev, [index]: true }));
+    setUploadProgressSlots(prev => ({ ...prev, [index]: 0 }));
+
+    try {
+      const extension = file.name.split('.').pop() || 'jpg';
+      const uniqueName = `slot_${index}_${Date.now()}.${extension}`;
+      const storageRef = ref(storage, `users/${currentUser.uid}/photos/${uniqueName}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on('state_changed', 
+        (snapshot) => {
+          const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          setUploadProgressSlots(prev => ({ ...prev, [index]: progress }));
+        }, 
+        (error) => {
+          console.error(`Seeker slot ${index} photograph upload failed:`, error);
+          alert('Upload abortive: ' + error.message);
+          setUploadingSlots(prev => ({ ...prev, [index]: false }));
+        }, 
+        async () => {
+          try {
+            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            const updated = [...editUserPhotos];
+            updated[index] = downloadUrl;
+            setEditUserPhotos(updated);
+          } catch (e: any) {
+            console.error('Error fetching download URL:', e);
+            alert('Failed to process uploaded file: ' + e.message);
+          } finally {
+            setUploadingSlots(prev => ({ ...prev, [index]: false }));
+          }
+        }
+      );
+    } catch (err: any) {
+      console.error('Photo upload outer error:', err);
+      alert('Outer process interruption: ' + err.message);
+      setUploadingSlots(prev => ({ ...prev, [index]: false }));
+    }
+  };
 
   // Update biography and dating-compatible parameters
   const handleSaveBiographyAndDating = async () => {
@@ -3993,7 +4052,17 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 isDarkMode ? "bg-zinc-950/80 border-zinc-800" : "bg-zinc-50 border-zinc-200"
                               )}
                             >
-                              {currentUrl ? (
+                              {uploadingSlots[index] ? (
+                                <div className="flex flex-col items-center justify-center h-full space-y-2 text-center py-4 relative z-10 w-full">
+                                  <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                                  <span className="text-[9px] font-black uppercase text-emerald-400 tracking-widest leading-none">
+                                    Uploading
+                                  </span>
+                                  <span className="text-[11px] font-mono font-bold text-zinc-400">
+                                    {uploadProgressSlots[index] || 0}%
+                                  </span>
+                                </div>
+                              ) : currentUrl ? (
                                 <>
                                   <img 
                                     src={currentUrl} 
@@ -4009,7 +4078,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                       updated[index] = '';
                                       setEditUserPhotos(updated);
                                     }}
-                                    className="absolute top-1.5 right-1.5 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors z-10"
+                                    className="absolute top-1.5 right-1.5 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors z-10 cursor-pointer"
                                     title="Remove Photo"
                                   >
                                     <X className="w-3 h-3" />
@@ -4017,26 +4086,45 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                   <span className="relative z-10 text-[9px] font-black text-white/60 tracking-wider">PHOTO {index + 1}</span>
                                 </>
                               ) : (
-                                <div className="flex flex-col items-center justify-center h-full space-y-2 text-center py-4">
+                                <div className="flex flex-col items-center justify-center h-full space-y-2 text-center py-3 w-full">
                                   <Plus className="w-4 h-4 text-zinc-500" />
                                   <span className="text-[8px] font-black uppercase text-zinc-500 tracking-wider">Empty Slot</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const presets = [
-                                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
-                                        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400",
-                                        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400",
-                                        "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400"
-                                      ];
-                                      const updated = [...editUserPhotos];
-                                      updated[index] = presets[index % presets.length];
-                                      setEditUserPhotos(updated);
-                                    }}
-                                    className="text-[7px] px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold uppercase rounded-lg hover:bg-emerald-500/20 transition-all cursor-pointer"
-                                  >
-                                    Use Preset
-                                  </button>
+                                  <div className="flex flex-col gap-1.5 w-full px-1">
+                                    {/* Upload Button */}
+                                    <label className="text-[8.5px] px-2.5 py-1.5 bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-extrabold uppercase rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1">
+                                      <Upload className="w-3 h-3" />
+                                      Upload
+                                      <input
+                                        type="file"
+                                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            handleUploadPhoto(index, file);
+                                          }
+                                        }}
+                                      />
+                                    </label>
+                                    {/* Use Preset Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const presets = [
+                                          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
+                                          "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400",
+                                          "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400",
+                                          "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400"
+                                        ];
+                                        const updated = [...editUserPhotos];
+                                        updated[index] = presets[index % presets.length];
+                                        setEditUserPhotos(updated);
+                                      }}
+                                      className="text-[7.5px] px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold uppercase rounded-lg hover:bg-emerald-500/20 transition-all cursor-pointer"
+                                    >
+                                      Use Preset
+                                    </button>
+                                  </div>
                                 </div>
                               )}
                             </div>
