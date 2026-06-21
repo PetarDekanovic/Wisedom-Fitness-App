@@ -228,6 +228,12 @@ const INITIAL_PROFILE: UserProfile = {
   markedQuotes: [],
   dailyExercises: [],
   dailyExerciseHistory: [],
+  isDatingModeEnabled: false,
+  datingPreferences: {
+    genderInterest: 'female',
+    minAge: 18,
+    maxAge: 40
+  },
   personalRecords: [
     { id: '1', label: 'Fastest kilometre', date: 'Sun 8 Feb', value: '4 min 38 sec', category: 'speed' },
     { id: '2', label: 'Fastest 5K', date: '18 Oct 2025', value: '26 min 9 sec', category: 'speed' },
@@ -8950,6 +8956,113 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       )}
                     />
                   </div>
+                </div>
+
+                {/* Dating Mode Toggle & Preferences */}
+                <div className={cn(
+                  "p-5 rounded-2xl border space-y-4",
+                  isGirlyMode ? "bg-pink-50/50 border-pink-100/50" : isDarkMode ? "bg-zinc-950/80 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                )}>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h4 className={cn("text-xs font-black uppercase tracking-wider", isGirlyMode ? "text-pink-600" : "text-emerald-500")}>Dating sanctuary mode</h4>
+                      <p className={cn("text-[10px] mt-0.5", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>Toggle eligibility to appear on the Seekers active dating swarm.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setUserProfile({ 
+                        ...userProfile, 
+                        isDatingModeEnabled: !userProfile.isDatingModeEnabled 
+                      })}
+                      className={cn(
+                        "relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                        userProfile.isDatingModeEnabled 
+                          ? (isGirlyMode ? "bg-pink-500" : "bg-emerald-500") 
+                          : "bg-zinc-700"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
+                          userProfile.isDatingModeEnabled ? "translate-x-5" : "translate-x-0"
+                        )}
+                      />
+                    </button>
+                  </div>
+
+                  {userProfile.isDatingModeEnabled && (
+                    <div className="space-y-4 pt-4 border-t border-dashed border-zinc-800/50">
+                      <div>
+                        <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-2", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Gender Interest</label>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {(['female', 'male', 'both', 'all'] as const).map((genderVal) => (
+                            <button
+                              key={genderVal}
+                              type="button"
+                              onClick={() => setUserProfile({
+                                ...userProfile,
+                                datingPreferences: {
+                                  ...(userProfile.datingPreferences || {}),
+                                  genderInterest: genderVal
+                                }
+                              })}
+                              className={cn(
+                                "py-2 px-1 rounded-xl text-[10px] font-bold border uppercase transition-all tracking-tight text-center cursor-pointer",
+                                userProfile.datingPreferences?.genderInterest === genderVal
+                                  ? (isGirlyMode ? "bg-pink-500 text-white border-pink-500" : "bg-emerald-500 text-zinc-950 border-emerald-500")
+                                  : (isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" : "bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900")
+                              )}
+                            >
+                              {genderVal === 'both' ? 'Both' : genderVal === 'all' ? 'All' : genderVal}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Min Age: <span className="text-emerald-400 font-mono">{userProfile.datingPreferences?.minAge || 18}</span></label>
+                          <input
+                            type="range"
+                            min="18"
+                            max="80"
+                            value={userProfile.datingPreferences?.minAge || 18}
+                            onChange={(e) => setUserProfile({
+                              ...userProfile,
+                              datingPreferences: {
+                                ...(userProfile.datingPreferences || {}),
+                                minAge: Number(e.target.value)
+                              }
+                            })}
+                            className={cn(
+                              "w-full h-1 rounded-lg appearance-none cursor-pointer",
+                              isGirlyMode ? "accent-pink-500 bg-pink-100" : "accent-emerald-500 bg-zinc-800"
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Max Age: <span className="text-emerald-400 font-mono">{userProfile.datingPreferences?.maxAge || 40}</span></label>
+                          <input
+                            type="range"
+                            min="18"
+                            max="80"
+                            value={userProfile.datingPreferences?.maxAge || 40}
+                            onChange={(e) => setUserProfile({
+                              ...userProfile,
+                              datingPreferences: {
+                                ...(userProfile.datingPreferences || {}),
+                                maxAge: Number(e.target.value)
+                              }
+                            })}
+                            className={cn(
+                              "w-full h-1 rounded-lg appearance-none cursor-pointer",
+                              isGirlyMode ? "accent-pink-500 bg-pink-100" : "accent-emerald-500 bg-zinc-800"
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3">

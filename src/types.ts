@@ -152,6 +152,12 @@ export interface UserProfile {
   }[];
   dailyExercises?: { id: string; name: string; completed: boolean }[];
   dailyExerciseHistory?: { date: string; completedCount: number; totalCount: number }[];
+  isDatingModeEnabled?: boolean;
+  datingPreferences?: {
+    genderInterest?: 'male' | 'female' | 'both' | 'all';
+    minAge?: number;
+    maxAge?: number;
+  };
   role?: 'user' | 'admin';
   integrations?: {
     fitbit?: {
@@ -258,6 +264,12 @@ export interface PublicProfile {
   favoritePsychologists?: string;
   userPhotos?: string[];
   userPhotosVisibility?: string[];
+  isDatingModeEnabled?: boolean;
+  datingPreferences?: {
+    genderInterest?: 'male' | 'female' | 'both' | 'all';
+    minAge?: number;
+    maxAge?: number;
+  };
 }
 
 export interface FriendRequest {

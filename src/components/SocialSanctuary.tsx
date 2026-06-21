@@ -230,7 +230,7 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
   },
   {
     uid: 'dummy_hypatia_alex',
-    name: 'Hypatia',
+    name: 'Hypatia of Alexandria',
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
     coverUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?auto=format&fit=crop&q=80&w=600',
     relationshipIntent: 'Deep philosophical connection',
@@ -240,10 +240,64 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
     isOnline: true,
     lastActive: new Date().toISOString(),
     friends: [],
+    isDatingModeEnabled: true,
+    datingPreferences: {
+      genderInterest: 'male',
+      minAge: 18,
+      maxAge: 45
+    },
     userPhotos: [
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400',
       'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'
+    ]
+  },
+  {
+    uid: 'dummy_diotima_mantinea',
+    name: 'Diotima of Mantinea',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
+    coverUrl: 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&q=80&w=600',
+    relationshipIntent: 'Spiritual & intellectual resonance',
+    location: 'Mantinea, Greece',
+    height: '168',
+    biography: 'Ancient Greek priestess and philosopher. Taught Socrates the Ladder of Love (Eros) as a climb from physical desire to eternal truth.',
+    isOnline: true,
+    lastActive: new Date().toISOString(),
+    friends: [],
+    isDatingModeEnabled: true,
+    datingPreferences: {
+      genderInterest: 'all',
+      minAge: 18,
+      maxAge: 50
+    },
+    userPhotos: [
+      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=400'
+    ]
+  },
+  {
+    uid: 'dummy_aspasia_miletus',
+    name: 'Aspasia of Miletus',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+    coverUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=600',
+    relationshipIntent: 'Rhetorical & dialectic partnership',
+    location: 'Athens, Greece',
+    height: '170',
+    biography: 'Intellectual partner of Pericles and dialogue teacher of Socrates. Expert in rhetoric, statecraft, and high-performance lifestyle habits.',
+    isOnline: true,
+    lastActive: new Date().toISOString(),
+    friends: [],
+    isDatingModeEnabled: true,
+    datingPreferences: {
+      genderInterest: 'male',
+      minAge: 18,
+      maxAge: 45
+    },
+    userPhotos: [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&q=80&w=400'
     ]
   }
 ];
@@ -1861,7 +1915,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     return 'none';
   };
 
-  const [peerFilter, setPeerFilter] = useState<'all' | 'friends'>('all');
+  const [peerFilter, setPeerFilter] = useState<'all' | 'friends' | 'dating'>('all');
 
   // Filtered peers list
   const filteredPeers = peers.filter(peer => {
@@ -1870,6 +1924,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
     if (peerFilter === 'friends') {
       return matchesSearch && acceptedFriendIds.has(peer.uid);
+    }
+    if (peerFilter === 'dating') {
+      return matchesSearch && peer.isDatingModeEnabled === true;
     }
     return matchesSearch;
   });
@@ -3485,7 +3542,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   type="button"
                   onClick={() => setPeerFilter('friends')}
                   className={cn(
-                    "px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all flex items-center gap-1.5",
+                    "px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer",
                     peerFilter === 'friends'
                       ? "bg-emerald-500 border-emerald-400 text-zinc-950 font-black italic shadow-md shadow-emerald-500/10" 
                       : isDarkMode
@@ -3494,6 +3551,20 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   )}
                 >
                   <UserCheck className="w-3.5 h-3.5" /> Checked Friends ({acceptedFriendIds.size})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPeerFilter('dating')}
+                  className={cn(
+                    "px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer",
+                    peerFilter === 'dating'
+                      ? "bg-rose-500 border-rose-400 text-white font-black italic shadow-md shadow-rose-500/15" 
+                      : isDarkMode
+                        ? "border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                        : "border-zinc-200 text-zinc-500 hover:text-zinc-800"
+                  )}
+                >
+                  <Heart className={cn("w-3.5 h-3.5 fill-current", peerFilter === 'dating' ? "text-white" : "text-rose-500")} /> Dating Swarm ({peers.filter(p => p.isDatingModeEnabled).length})
                 </button>
               </div>
             </div>
@@ -3643,6 +3714,25 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             </div>
                           </div>
                         </div>
+
+                        {/* Mini Image Preview Strip */}
+                        {peer.userPhotos && peer.userPhotos.length > 0 && (
+                          <div className="flex gap-1.5 overflow-x-auto py-1.5 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+                            {peer.userPhotos.map((photo, i) => (
+                              <div 
+                                key={i}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveLightboxImg(photo);
+                                }}
+                                className="w-10 h-10 rounded-xl overflow-hidden border border-zinc-500/10 cursor-zoom-in shrink-0 hover:scale-110 active:scale-95 transition-transform"
+                                title="Click to preview photo"
+                              >
+                                <img src={photo} alt={`profile_${i}`} className="w-full h-full object-cover" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         
                         <p className={cn(
                           "text-[12px] leading-relaxed line-clamp-3 font-semibold min-h-[50px] pt-1",
@@ -5567,7 +5657,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         },
                         {
                           uid: 'dummy_hypatia_alex',
-                          name: 'Hypatia',
+                          name: 'Hypatia of Alexandria',
                           avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
                           coverUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?auto=format&fit=crop&q=80&w=600',
                           relationshipIntent: 'Deep philosophical connection',
@@ -5578,14 +5668,70 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           lastActive: new Date().toISOString(),
                           updatedAt: new Date().toISOString(),
                           friends: [],
+                          isDatingModeEnabled: true,
+                          datingPreferences: {
+                            genderInterest: 'male',
+                            minAge: 18,
+                            maxAge: 45
+                          },
                           userPhotos: [
                             'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400',
                             'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
                             'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'
                           ]
+                        },
+                        {
+                          uid: 'dummy_diotima_mantinea',
+                          name: 'Diotima of Mantinea',
+                          avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
+                          coverUrl: 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&q=80&w=600',
+                          relationshipIntent: 'Spiritual & intellectual resonance',
+                          location: 'Mantinea, Greece',
+                          height: '168',
+                          biography: 'Ancient Greek priestess and philosopher. Taught Socrates the Ladder of Love (Eros) as a climb from physical desire to eternal truth.',
+                          isOnline: true,
+                          lastActive: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                          friends: [],
+                          isDatingModeEnabled: true,
+                          datingPreferences: {
+                            genderInterest: 'all',
+                            minAge: 18,
+                            maxAge: 50
+                          },
+                          userPhotos: [
+                            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
+                            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=400',
+                            'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=400'
+                          ]
+                        },
+                        {
+                          uid: 'dummy_aspasia_miletus',
+                          name: 'Aspasia of Miletus',
+                          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+                          coverUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=600',
+                          relationshipIntent: 'Rhetorical & dialectic partnership',
+                          location: 'Athens, Greece',
+                          height: '170',
+                          biography: 'Intellectual partner of Pericles and dialogue teacher of Socrates. Expert in rhetoric, statecraft, and high-performance lifestyle habits.',
+                          isOnline: true,
+                          lastActive: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                          friends: [],
+                          isDatingModeEnabled: true,
+                          datingPreferences: {
+                            genderInterest: 'male',
+                            minAge: 18,
+                            maxAge: 45
+                          },
+                          userPhotos: [
+                            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
+                            'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400',
+                            'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&q=80&w=400'
+                          ]
                         }
                       ];
-
+ 
                       for (const u of dummyUsers) {
                         await setDoc(doc(db, 'public_profiles', u.uid), u);
                       }
@@ -5599,13 +5745,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   disabled={isProvisioningDummy}
                   className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-zinc-950 text-xs font-black uppercase tracking-tight active:scale-95 transition-transform disabled:opacity-50 disabled:pointer-events-none shadow-lg shadow-emerald-500/10 cursor-pointer"
                 >
-                  {isProvisioningDummy ? "Provisioning..." : "Provision 4 Stoic Seekers"}
+                  {isProvisioningDummy ? "Provisioning..." : "Provision 6 Stoic Seekers"}
                 </button>
               </div>
-
+ 
               {provisionSuccess && (
                 <p className="text-[10px] font-bold text-emerald-400 bg-emerald-500/5 border border-emerald-500/10 px-3 py-2 rounded-xl">
-                  Seekers seeded successfully! Epictetus, Marcus Aurelius, Lucius Seneca, and Hypatia are now active inside the Seeker Swarm.
+                  Seekers seeded successfully! Epictetus, Marcus Aurelius, Lucius Seneca, Hypatia, Diotima, and Aspasia are now active inside the Seeker Swarm.
                 </p>
               )}
               {provisionError && (
