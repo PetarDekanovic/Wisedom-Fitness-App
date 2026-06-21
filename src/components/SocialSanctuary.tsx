@@ -3839,6 +3839,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   const online = isPeerOnline(peer);
 
                   const score = computeScholarMatchingScore(thisPublicProfile, peer);
+                  const compDetails = getDetailedCompatibility(thisPublicProfile, peer);
 
                   return (
                     <div
@@ -3911,14 +3912,46 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 {peer.mbti ? `${peer.mbti} · Archetype` : "Seeker"}
                               </span>
                               {score !== null && (
-                                <span className={cn(
-                                  "text-[7.5px] px-1.5 py-0.5 rounded font-black tracking-tight shrink-0 flex items-center gap-0.5 leading-none",
-                                  peer.isDatingModeEnabled
-                                    ? "bg-rose-500 text-white animate-pulse"
-                                    : "bg-emerald-500 text-zinc-950"
-                                )}>
-                                  {peer.isDatingModeEnabled ? "💖" : "⚡"} {score}% {peer.isDatingModeEnabled ? "Fit" : "Match"}
-                                </span>
+                                <div className="relative group/tooltip inline-block z-30">
+                                  <span className={cn(
+                                    "text-[7.5px] px-1.5 py-0.5 rounded font-black tracking-tight shrink-0 flex items-center gap-0.5 leading-none cursor-help hover:scale-105 active:scale-95 transition-transform",
+                                    peer.isDatingModeEnabled
+                                      ? "bg-rose-500 text-white animate-pulse"
+                                      : "bg-emerald-500 text-zinc-950"
+                                  )}>
+                                    {peer.isDatingModeEnabled ? "💖" : "⚡"} {score}% {peer.isDatingModeEnabled ? "Fit" : "Match"}
+                                  </span>
+                                  
+                                  {/* Hover Tooltip Breakdown */}
+                                  <div className={cn(
+                                    "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 p-3 rounded-2xl border text-left shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:pointer-events-auto transition-all duration-300 z-50 space-y-1.5 backdrop-blur-md",
+                                    isGirlyMode 
+                                      ? "bg-white/95 border-pink-100 text-pink-950 shadow-pink-500/10" 
+                                      : isDarkMode 
+                                        ? "bg-zinc-950/95 border-zinc-805 text-zinc-200 shadow-black/40" 
+                                        : "bg-white/95 border-zinc-200 text-zinc-800 shadow-zinc-200/50"
+                                  )}>
+                                    <div className="flex items-center gap-1.5 border-b border-zinc-850/10 dark:border-zinc-800/35 pb-1.5 mb-1.5">
+                                      <Heart className="w-3.5 h-3.5 text-rose-500 fill-current animate-pulse shrink-0" />
+                                      <span className="font-extrabold uppercase tracking-widest text-[8.5px] text-rose-500">Compatibility Drivers</span>
+                                    </div>
+                                    {compDetails.isError ? (
+                                      <p className="text-[9.5px] text-zinc-500 dark:text-zinc-400 italic">Complete physical records and the personality checklist to generate detailed reasons.</p>
+                                    ) : (
+                                      <div className="space-y-1.5">
+                                        {compDetails.reasons.map((r, rIdx) => (
+                                          <div key={rIdx} className="flex items-start gap-1.5 leading-normal text-[9.5px]">
+                                            <span className="text-rose-500/80 font-bold shrink-0">✦</span>
+                                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">{r}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <div className="text-[7.5px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-500 text-center pt-1.5 border-t border-zinc-855 dark:border-zinc-800/35 leading-none">
+                                      Click tile to open sanctuary wall
+                                    </div>
+                                  </div>
+                                </div>
                               )}
                             </div>
                           </div>
