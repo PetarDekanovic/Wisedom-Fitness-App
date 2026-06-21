@@ -1982,7 +1982,7 @@ function AppContent() {
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const [isQuotaDismissed, setIsQuotaDismissed] = useState(false);
   const [activeView, setActiveView] = useState<View>('dashboard');
-  const [historySubView, setHistorySubView] = useState<'journal' | 'plans' | 'articles' | 'digest'>('journal');
+  const [historySubView, setHistorySubView] = useState<'journal' | 'plans' | 'articles' | 'digest'>('articles');
   const [highlightedArticleId, setHighlightedArticleId] = useState<string | null>(null);
 
   // Parse deep-link parameters on initial load
@@ -4420,19 +4420,31 @@ function AppContent() {
       setStats(MOCK_STATS);
       setWeeklyPlan(INITIAL_WEEKLY_PLAN);
       
-      const guestSub = localStorage.getItem('guest_subscription');
-      if (guestSub) {
+      const cachedGuestProfile = localStorage.getItem('guest_profile');
+      if (cachedGuestProfile) {
         try {
-          const parsed = JSON.parse(guestSub);
-          if (parsed && parsed.isSubscribed) {
-            setUserProfile(prev => ({
-              ...prev,
-              isSubscribed: true,
-              subscriptionType: parsed.subscriptionType || 'monthly'
-            }));
+          const parsed = JSON.parse(cachedGuestProfile);
+          if (parsed) {
+            setUserProfile(parsed);
           }
-        } catch (e) {
-          console.error("Failed to parse guest subscription:", e);
+        } catch (err) {
+          console.error("Failed to parse cached guest profile:", err);
+        }
+      } else {
+        const guestSub = localStorage.getItem('guest_subscription');
+        if (guestSub) {
+          try {
+            const parsed = JSON.parse(guestSub);
+            if (parsed && parsed.isSubscribed) {
+              setUserProfile(prev => ({
+                ...prev,
+                isSubscribed: true,
+                subscriptionType: parsed.subscriptionType || 'monthly'
+              }));
+            }
+          } catch (e) {
+            console.error("Failed to parse guest subscription:", e);
+          }
         }
       }
       return;
@@ -7155,30 +7167,85 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
               </div>
 
               <div className={cn(
-                "backdrop-blur-md border rounded-3xl p-6 space-y-4 transition-colors duration-500",
-                isDarkMode ? "bg-emerald-900/10 border-emerald-500/20" : "bg-emerald-50/50 border-emerald-200"
+                "backdrop-blur-md border rounded-3xl p-6 space-y-5 transition-colors duration-500 relative overflow-hidden",
+                isDarkMode ? "bg-zinc-900/60 border-zinc-800" : "bg-emerald-50/40 border-emerald-200/60 shadow-sm"
               )}>
-                <h3 className="text-sm font-bold uppercase tracking-widest text-emerald-500">Developer & Investor Brief</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500">Tech Stack</span>
-                    <span className="font-bold">React + Vite + Gemini AI</span>
+                {/* Visual Accent */}
+                <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <div className="flex items-center gap-2">
+                  <div className="p-1 px-2 rounded-lg bg-emerald-500/10 border border-emerald-500/15 text-[9px] font-black uppercase text-emerald-500 tracking-widest select-none">
+                    Investor Pitch
                   </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500">Market Position</span>
-                    <span className="font-bold">Premium High-Performance Living</span>
+                  <h3 className="text-normal font-extrabold uppercase tracking-widest text-emerald-500 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" /> Developer & Investor Brief
+                  </h3>
+                </div>
+
+                <div className="space-y-4">
+                  <p className={cn(
+                    "text-xs leading-relaxed",
+                    isDarkMode ? "text-zinc-350" : "text-zinc-600"
+                  )}>
+                    WiseFit has strategically evolved past basic biometric tracking to own the high-LTV seam between 
+                    <strong> physical discipline, physiological signals, and deep intellectual alignment</strong>. 
+                  </p>
+
+                  {/* Dual Position Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                    <div className={cn(
+                      "p-3.5 rounded-2xl border",
+                      isDarkMode ? "bg-zinc-950/40 border-zinc-850" : "bg-white border-zinc-150 shadow-sm"
+                    )}>
+                      <div className="flex items-center gap-1.5 mb-1 text-purple-400">
+                        <Heart className="w-3.5 h-3.5 text-pink-500 shrink-0" />
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-pink-500">Dual-Utility Dating</h4>
+                      </div>
+                      <p className="text-[10.5px] leading-relaxed text-zinc-400">
+                        WiseFit is now a premier high-signal **Seekers Swarm Dating & Relationship Sanctuary**. It screens candidates through scientific mental assessments, biometric data matching, and petar-reviewed peer moderation to prevent dating app "noise" or "slop".
+                      </p>
+                    </div>
+
+                    <div className={cn(
+                      "p-3.5 rounded-2xl border",
+                      isDarkMode ? "bg-zinc-950/40 border-zinc-850" : "bg-white border-zinc-150 shadow-sm"
+                    )}>
+                      <div className="flex items-center gap-1.5 mb-1 text-emerald-500">
+                        <LineChart className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-emerald-450">Slavic Regional Moat</h4>
+                      </div>
+                      <p className="text-[10.5px] leading-relaxed text-zinc-400">
+                        Our regional edge in the Croatian and broader Slavic wellness landscape pairs historical philosophers (Krleža, Tesla, Andrić) with custom local voices, establishing a defensible market entry point and high organic engagement.
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500">Est. Value (Post-Social)</span>
-                    <span className="text-emerald-500 font-bold">$12.5M - $25.0M</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500">Target Series A Price</span>
-                    <span className="font-bold">$249/yr per Seat</span>
+
+                  <div className="space-y-3 pt-2 border-t border-zinc-800/50">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-zinc-500 font-medium font-sans">Strategic Target Exit Valuation</span>
+                      <span className="text-emerald-500 font-extrabold text-sm tracking-tight">€5.0M - €15.0M</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-zinc-500 font-medium font-sans">Path to Acquisition</span>
+                      <span className="font-bold text-zinc-300">Whoop, Oura, Garmin or Calm</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-zinc-500 font-medium font-sans">Active Valuation Status</span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/15 text-emerald-400 text-[8px] font-black uppercase tracking-widest font-mono">
+                        €10M Strategic Target Runway
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-zinc-500 font-medium font-sans">Core Proprietary IP</span>
+                      <span className="font-bold text-zinc-300">Biometric-to-Philosophy Matching</span>
+                    </div>
                   </div>
                 </div>
+
                 <div className="pt-2">
-                  <p className="text-[10px] text-zinc-500 italic text-center">"Building the infrastructure for the modern philosopher-athlete."</p>
+                  <p className="text-[9px] text-zinc-500 italic text-center">
+                    "Bridging biometric metrics and intellectual intimacy for the world's most disciplined seekers."
+                  </p>
                 </div>
               </div>
 
@@ -8608,7 +8675,10 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
           />
           <NavButton 
             active={activeView === 'workouts'} 
-            onClick={() => setActiveView('workouts')}
+            onClick={() => {
+              setActiveView('workouts');
+              setHistorySubView('articles');
+            }}
             icon={<Dumbbell className="w-5 h-5 sm:w-6 sm:h-6" />}
             label="Log"
             isDarkMode={isDarkMode}
@@ -8944,6 +9014,9 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       } catch (error) {
                         handleFirestoreError(error, 'update', `users/${user.uid}`);
                       }
+                    } else {
+                      localStorage.setItem('guest_profile', JSON.stringify(userProfile));
+                      setIsEditingProfile(false);
                     }
                   }}
                   className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
