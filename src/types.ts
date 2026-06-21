@@ -161,6 +161,7 @@ export interface UserProfile {
   compatibilityScore?: number;
   gender?: 'male' | 'female' | 'other';
   age?: number;
+  biography?: string;
   role?: 'user' | 'admin';
   integrations?: {
     fitbit?: {

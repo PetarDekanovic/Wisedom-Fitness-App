@@ -489,6 +489,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [peers, setPeers] = useState<PublicProfile[]>(() => DUMMY_SCHOLARS.filter(d => d.uid !== currentUser?.uid));
   const [peerSearchQuery, setPeerSearchQuery] = useState('');
   const [selectedPeerWall, setSelectedPeerWall] = useState<PublicProfile | null>(null);
+  const [showCompatibilityReport, setShowCompatibilityReport] = useState<boolean>(false);
   const [peerWallPosts, setPeerWallPosts] = useState<CommunityPost[]>([]);
 
   // Admin moderation queue
@@ -2071,8 +2072,24 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       const shared = me.intellectualInterests.filter(i => rawPeer.intellectualInterests?.includes(i));
       if (shared.length > 0) {
         match += shared.length * 3;
-        reasons.push(`Shared scholarly focus: ${shared.slice(0, 3).join(", ")}.`);
+        reasons.push(`Shared interest in ${shared.slice(0, 3).join(", ")}.`);
+        if (shared.some(s => s.toLowerCase().includes('stoic') || s.toLowerCase().includes('philosoph'))) {
+          reasons.push("Shared interest in Stoicism & intellectual inquiries.");
+        }
       }
+    }
+
+    // Similar activity levels / somatic focus matching
+    const physicalKeywords = ['calisthenics', 'training', 'movement', 'body', 'yoga', 'run', 'gym', 'exercise', 'physical'];
+    const meHasPhysical = me.biography?.toLowerCase().split(/\s+/).some(w => physicalKeywords.includes(w)) || 
+                          me.intellectualInterests?.some(i => physicalKeywords.some(pk => i.toLowerCase().includes(pk)));
+    const peerHasPhysical = rawPeer.biography?.toLowerCase().split(/\s+/).some(w => physicalKeywords.includes(w)) || 
+                            rawPeer.intellectualInterests?.some(i => physicalKeywords.some(pk => i.toLowerCase().includes(pk))) ||
+                            rawPeer.uid === 'dummy_marcus_aurelius';
+    
+    if (meHasPhysical && peerHasPhysical) {
+      match += 5;
+      reasons.push("Similar activity levels and disciplined physical regimes.");
     }
     
     if (me.relationshipIntent && rawPeer.relationshipIntent) {
@@ -2088,7 +2105,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     
     return {
       score: finalScore,
-      reasons: reasons.slice(0, 4),
+      reasons: reasons.slice(0, 5),
       isError: false
     };
   };
@@ -6186,9 +6203,23 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           </div>
 
                           <div className="space-y-2 pt-2 border-t border-dashed border-zinc-500/10 dark:border-zinc-800/35">
-                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-550 block leading-none mb-1">Algorithmic Match Highlights</span>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400 block leading-none">Algorithmic Match Highlights</span>
+                              <button
+                                type="button"
+                                onClick={() => setShowCompatibilityReport(true)}
+                                className={cn(
+                                  "text-[9px] font-black uppercase tracking-widest flex items-center gap-1 active:scale-95 transition-all cursor-pointer px-2.5 py-1 rounded-full border shadow-sm",
+                                  isGirlyMode 
+                                    ? "bg-pink-500 text-white border-pink-400 hover:bg-pink-600 shadow-pink-500/15" 
+                                    : "bg-rose-500 text-white border-rose-400 hover:bg-rose-600 shadow-rose-500/15"
+                                )}
+                              >
+                                <Sparkles className="w-2.5 h-2.5" /> Analyze Affinity
+                              </button>
+                            </div>
                             {res.reasons.map((reason, idx) => (
-                              <div key={idx} className="flex items-start gap-2 text-[10px] font-semibold text-zinc-650 dark:text-zinc-300 leading-normal">
+                              <div key={idx} className="flex items-start gap-2 text-[10px] font-semibold text-zinc-650 dark:text-zinc-350 leading-normal">
                                 <span className="text-rose-500 font-bold shrink-0">✦</span>
                                 <span>{reason}</span>
                               </div>
@@ -6503,6 +6534,186 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             >
               <X className="w-5 h-5 stroke-[3px]" />
             </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Dynamic Swarm Compatibility Breakdown Modal */}
+      <AnimatePresence>
+        {showCompatibilityReport && selectedPeerWall && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className={cn(
+                "w-full max-w-lg rounded-3xl border p-6 space-y-6 relative max-h-[90vh] overflow-y-auto shadow-2xl transition-colors duration-500",
+                isGirlyMode ? "bg-white border-pink-100 text-pink-950" : isDarkMode ? "bg-zinc-900 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
+              )}
+            >
+              <button
+                onClick={() => setShowCompatibilityReport(false)}
+                className="absolute top-4 right-4 p-2 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/25 border border-rose-450/30 active:scale-95 flex items-center justify-center cursor-pointer font-bold"
+                title="Close Breakdown"
+              >
+                <X className="w-4 h-4 stroke-[3px]" />
+              </button>
+
+              <div className="space-y-1 border-b border-zinc-800/10 dark:border-zinc-800/35 pb-4 pr-10">
+                <div className="flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-rose-500 animate-pulse shrink-0" />
+                  <h3 className="text-lg font-black uppercase tracking-wider text-rose-500">Affinity Analysis</h3>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Detailed psychological, physical, and intellectual synchronization index with <strong className="text-zinc-700 dark:text-zinc-200">{selectedPeerWall.name}</strong>.
+                </p>
+              </div>
+
+              {(() => {
+                const res = getDetailedCompatibility(thisPublicProfile, selectedPeerWall);
+                if (res.isError || res.score === null) return <p className="text-xs text-zinc-500 font-bold">Diagnostics required.</p>;
+
+                return (
+                  <div className="space-y-5">
+                    {/* Compatibility Ring Indicator */}
+                    <div className="flex items-center gap-6 p-4 rounded-2xl bg-rose-500/5 border border-rose-500/10">
+                      <div className="relative flex items-center justify-center shrink-0">
+                        <svg className="w-20 h-20 transform -rotate-90">
+                          <circle
+                            cx="40"
+                            cy="40"
+                            r="34"
+                            stroke={isDarkMode ? "#27272a" : "#f4f4f5"}
+                            strokeWidth="6"
+                            fill="transparent"
+                          />
+                          <circle
+                            cx="40"
+                            cy="40"
+                            r="34"
+                            stroke={isGirlyMode ? "#ec4899" : "#f43f5e"}
+                            strokeWidth="6"
+                            fill="transparent"
+                            strokeDasharray={2 * Math.PI * 34}
+                            strokeDashoffset={2 * Math.PI * 34 * (1 - res.score / 100)}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span className="absolute text-lg font-black font-mono text-rose-500">
+                          {res.score}%
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest block leading-none">Overall Match Index</span>
+                        <h4 className="text-md font-extrabold tracking-tight text-zinc-800 dark:text-zinc-100">
+                          {res.score >= 85 ? "Excellent Academic & Romantic Fit" : res.score >= 70 ? "Strong Philosophical Complementarity" : "Complementary Intellectual Resonance"}
+                        </h4>
+                        <p className="text-[10.5px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+                          Matched through the multi-dimensional Seeker compatibility schema.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Highlights section with exact user examples */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+                        <span>✦ Match Pillars</span>
+                      </h4>
+                      <div className="space-y-2.5">
+                        {res.reasons.map((reason, idx) => {
+                          let subTitle = "Worldview Sync";
+                          let desc = "Matched through shared intellectual models and personal intents.";
+                          
+                          if (reason.includes("Stoicism") || reason.includes("scholarly") || reason.includes("shared interest") || reason.includes("Stoic")) {
+                            subTitle = "Intellectual Sanctuary";
+                            desc = "Both seek wisdom through classical philosophy. Shared interest in Stoicism is a core driver of cognitive and moral congruence.";
+                          } else if (reason.includes("activity") || reason.includes("regimes") || reason.includes("somatic") || reason.includes("Similar activity")) {
+                            subTitle = "Disciplined Physical Sync";
+                            desc = "Both maintain rigorous physical practices. Your step goals and somatic devotion (e.g. pull-ups, yoga, calisthenics) align tightly.";
+                          } else if (reason.includes("maturity") || reason.includes("age")) {
+                            subTitle = "Optimal Maturity Blend";
+                            desc = "Chronological age and developmental stage align precisely within mutual comfort filters, enhancing long-term outlook.";
+                          } else if (reason.includes("psychological") || reason.includes("traits") || reason.includes("OCEAN")) {
+                            subTitle = "Big Five Personality Core";
+                            desc = "Compatible psychological traits. Direct personality vector match on Openness, Conscientiousness, and emotional resilience.";
+                          } else if (reason.includes("relationship") || reason.includes("intent")) {
+                            subTitle = "Commitment Model Fit";
+                            desc = `Complementary dating targets. Both seek a similar level of connection detail: "${selectedPeerWall.relationshipIntent}".`;
+                          }
+
+                          return (
+                            <div 
+                              key={idx} 
+                              className={cn(
+                                "p-3.5 rounded-2xl border transition-all text-left space-y-1",
+                                isDarkMode ? "bg-zinc-950/40 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className={cn("text-[10px] px-2 py-0.5 font-bold rounded uppercase tracking-wider", isGirlyMode ? "bg-pink-500/10 text-pink-500" : "bg-rose-500/10 text-rose-500")}>
+                                  {subTitle}
+                                </span>
+                              </div>
+                              <p className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200 mt-1">{reason}</p>
+                              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-normal">{desc}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Visual Comparison Matrix between Me and Them */}
+                    {thisPublicProfile?.bigFive && selectedPeerWall.bigFive && (
+                      <div className={cn(
+                        "p-4 rounded-2xl border space-y-3",
+                        isDarkMode ? "bg-zinc-950/30 border-zinc-850" : "bg-zinc-50 border-zinc-200"
+                      )}>
+                        <h4 className="text-[10.5px] font-black uppercase tracking-wider text-zinc-400">Psychological Alignment (Big Five)</h4>
+                        <div className="space-y-2.5">
+                          {[
+                            { label: "Openness (Intellect & Aesthetics)", key: "openness", color: "bg-sky-500" },
+                            { label: "Conscientiousness (Order & Discipline)", key: "conscientiousness", color: "bg-emerald-500" },
+                            { label: "Extraversion (Social Energy)", key: "extraversion", color: "bg-amber-500" },
+                            { label: "Agreeableness (Interpersonal Warmth)", key: "agreeableness", color: "bg-pink-500" },
+                            { label: "Neuroticism (Stress Sensitivity)", key: "neuroticism", color: "bg-purple-500" }
+                          ].map((trait, tIdx) => {
+                            const valMe = (thisPublicProfile.bigFive as any)?.[trait.key] || 50;
+                            const valThem = (selectedPeerWall.bigFive as any)?.[trait.key] || 50;
+                            return (
+                              <div key={tIdx} className="space-y-1 text-xs">
+                                <div className="flex justify-between text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">
+                                  <span>{trait.label}</span>
+                                  <span>Me: <strong className="text-rose-500">{valMe}%</strong> · Them: <strong className="text-emerald-500">{valThem}%</strong></span>
+                                </div>
+                                <div className="h-1.5 w-full bg-zinc-200 dark:bg-zinc-855 rounded-full overflow-hidden relative">
+                                  {/* Me line */}
+                                  <div className={cn("absolute top-0 bottom-0 left-0", trait.color, "opacity-40")} style={{ width: `${valMe}%` }} />
+                                  {/* Them line overlay or dot */}
+                                  <div className="absolute top-0 bottom-0 bg-emerald-500/90 rounded-full" style={{ left: `calc(${valThem}% - 3.5px)`, width: '7px' }} title={`Them: ${valThem}%`} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <button
+                type="button"
+                onClick={() => setShowCompatibilityReport(false)}
+                className="w-full py-3.5 bg-rose-500 text-white font-extrabold rounded-2xl shadow-lg shadow-rose-500/20 active:scale-95 transition-transform text-xs uppercase tracking-widest"
+              >
+                Close Report
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

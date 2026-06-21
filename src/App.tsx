@@ -8904,67 +8904,191 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   </button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className={cn(
-                      "text-xs font-bold uppercase mb-1 block transition-colors",
-                      isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>Height (cm)</label>
-                    <input 
-                      type="number" 
-                      value={userProfile.height}
-                      onChange={(e) => setUserProfile({ ...userProfile, height: Number(e.target.value) })}
-                      className={cn(
-                        "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                        isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
-                      )}
-                    />
+                {/* Scrollable Container for many edit options */}
+                <div className="space-y-5 max-h-[50vh] overflow-y-auto pr-1">
+                  
+                  {/* Seeker Identity */}
+                  <div className="space-y-3">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">Seeker Identity</span>
+                    <div className="space-y-3">
+                      <div>
+                        <label className={cn(
+                          "text-xs font-bold uppercase mb-1 block transition-colors",
+                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        )}>Display Name / Seeker Handle</label>
+                        <input 
+                          type="text" 
+                          value={userProfile.name || ''}
+                          onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
+                          className={cn(
+                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                          )}
+                          placeholder="E.g. Marcus Aurelius"
+                        />
+                      </div>
+                      <div>
+                        <label className={cn(
+                          "text-xs font-bold uppercase mb-1 block transition-colors",
+                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        )}>Seeker biography / Wisdom philosophy</label>
+                        <textarea 
+                          rows={2}
+                          value={userProfile.biography || ''}
+                          onChange={(e) => setUserProfile({ ...userProfile, biography: e.target.value })}
+                          className={cn(
+                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all resize-none",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                          )}
+                          placeholder="Your guiding, scholarly background & bio..."
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className={cn(
-                      "text-xs font-bold uppercase mb-1 block transition-colors",
-                      isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>Weight (kg)</label>
-                    <input 
-                      type="number" 
-                      value={userProfile.currentWeight}
-                      onChange={(e) => setUserProfile({ ...userProfile, currentWeight: Number(e.target.value) })}
-                      className={cn(
-                        "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                        isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
-                      )}
-                    />
+
+                  {/* Somatic Metrics */}
+                  <div className="space-y-3 pt-3 border-t border-dashed border-zinc-500/10 dark:border-zinc-800/35">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">Somatic & Core Metrics</span>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={cn(
+                          "text-xs font-bold uppercase mb-1 block transition-colors",
+                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        )}>Height (cm)</label>
+                        <input 
+                          type="number" 
+                          value={userProfile.height}
+                          onChange={(e) => setUserProfile({ ...userProfile, height: Number(e.target.value) })}
+                          className={cn(
+                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <label className={cn(
+                          "text-xs font-bold uppercase mb-1 block transition-colors",
+                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        )}>Weight (kg)</label>
+                        <input 
+                          type="number" 
+                          value={userProfile.currentWeight}
+                          onChange={(e) => setUserProfile({ ...userProfile, currentWeight: Number(e.target.value) })}
+                          className={cn(
+                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <label className={cn(
+                          "text-xs font-bold uppercase mb-1 block transition-colors",
+                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        )}>Target (kg)</label>
+                        <input 
+                          type="number" 
+                          value={userProfile.targetWeight}
+                          onChange={(e) => setUserProfile({ ...userProfile, targetWeight: Number(e.target.value) })}
+                          className={cn(
+                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <label className={cn(
+                          "text-xs font-bold uppercase mb-1 block transition-colors",
+                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        )}>Step Goal</label>
+                        <input 
+                          type="number" 
+                          value={userProfile.stepGoal}
+                          onChange={(e) => setUserProfile({ ...userProfile, stepGoal: Number(e.target.value) })}
+                          className={cn(
+                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                          )}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className={cn(
-                      "text-xs font-bold uppercase mb-1 block transition-colors",
-                      isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>Target (kg)</label>
-                    <input 
-                      type="number" 
-                      value={userProfile.targetWeight}
-                      onChange={(e) => setUserProfile({ ...userProfile, targetWeight: Number(e.target.value) })}
-                      className={cn(
-                        "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                        isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
-                      )}
-                    />
+
+                  {/* Pull-ups / Max Strength */}
+                  <div className="space-y-3 pt-3 border-t border-dashed border-zinc-500/10 dark:border-zinc-800/35">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">Physical Discipline & Strength</span>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={cn(
+                          "text-xs font-bold uppercase mb-1 block transition-colors",
+                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        )}>Max Pull-ups</label>
+                        <input 
+                          type="number" 
+                          value={userProfile.maxPullUps || 0}
+                          onChange={(e) => setUserProfile({ ...userProfile, maxPullUps: Number(e.target.value) })}
+                          className={cn(
+                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <label className={cn(
+                          "text-xs font-bold uppercase mb-1 block transition-colors",
+                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        )}>Weighted 1-RM (kg)</label>
+                        <input 
+                          type="number" 
+                          value={userProfile.oneRMWeighted || 0}
+                          onChange={(e) => setUserProfile({ ...userProfile, oneRMWeighted: Number(e.target.value) })}
+                          className={cn(
+                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                          )}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className={cn(
-                      "text-xs font-bold uppercase mb-1 block transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>Step Goal</label>
-                    <input 
-                      type="number" 
-                      value={userProfile.stepGoal}
-                      onChange={(e) => setUserProfile({ ...userProfile, stepGoal: Number(e.target.value) })}
-                      className={cn(
-                        "w-full border rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-all",
-                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
-                      )}
-                    />
+
+                  {/* Scholarly Trajectory / Life Objectives */}
+                  <div className="space-y-3 pt-3 border-t border-dashed border-zinc-500/10 dark:border-zinc-800/35">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">Life Trajectory Goals</span>
+                    <div className="space-y-3">
+                      <div>
+                        <label className={cn(
+                          "text-xs font-bold uppercase mb-1 block transition-colors",
+                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        )}>Short Term Trajectory</label>
+                        <input 
+                          type="text" 
+                          value={userProfile.shortTermGoal || ''}
+                          onChange={(e) => setUserProfile({ ...userProfile, shortTermGoal: e.target.value })}
+                          className={cn(
+                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                          )}
+                          placeholder="Your active focus (e.g. +60kg pullup etc)"
+                        />
+                      </div>
+                      <div>
+                        <label className={cn(
+                          "text-xs font-bold uppercase mb-1 block transition-colors",
+                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                        )}>Long Term Trajectory</label>
+                        <input 
+                          type="text" 
+                          value={userProfile.longTermGoal || ''}
+                          onChange={(e) => setUserProfile({ ...userProfile, longTermGoal: e.target.value })}
+                          className={cn(
+                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                          )}
+                          placeholder="Your grand vision (e.g. +100kg pullup etc)"
+                        />
+                      </div>
+                    </div>
                   </div>
+
                 </div>
 
                 {/* Dating Mode Toggle & Preferences */}
