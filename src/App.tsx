@@ -8892,8 +8892,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                 isGirlyMode ? "bg-white border-pink-100 shadow-2xl" : isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-2xl"
               )}
             >
-              <div className="p-6 space-y-6">
-                <div className="flex items-center justify-between">
+              <div className="p-6 flex flex-col max-h-[90vh] sm:max-h-[85vh]">
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-zinc-500/10 dark:border-zinc-800/35">
                   <h3 className={cn("text-xl font-bold", isGirlyMode ? "text-pink-900" : "")}>Edit Profile</h3>
                   <button 
                     onClick={() => setIsEditingProfile(false)} 
@@ -8904,8 +8904,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   </button>
                 </div>
                 
-                {/* Scrollable Container for many edit options */}
-                <div className="space-y-5 max-h-[50vh] overflow-y-auto pr-1">
+                {/* Scrollable Container for ALL edit options */}
+                <div className="flex-1 overflow-y-auto space-y-5 pr-1.5 focus:outline-none">
                   
                   {/* Seeker Identity */}
                   <div className="space-y-3">
@@ -9081,7 +9081,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                           onChange={(e) => setUserProfile({ ...userProfile, longTermGoal: e.target.value })}
                           className={cn(
                             "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-555" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-555 md:focus:border-emerald-500"
                           )}
                           placeholder="Your grand vision (e.g. +100kg pullup etc)"
                         />
@@ -9089,231 +9089,236 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     </div>
                   </div>
 
-                </div>
-
-                {/* Dating Mode Toggle & Preferences */}
-                <div className={cn(
-                  "p-5 rounded-2xl border space-y-4",
-                  isGirlyMode ? "bg-pink-50/50 border-pink-100/50" : isDarkMode ? "bg-zinc-950/80 border-zinc-800" : "bg-zinc-50 border-zinc-200"
-                )}>
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <h4 className={cn("text-xs font-black uppercase tracking-wider", isGirlyMode ? "text-pink-600" : "text-emerald-500")}>Dating sanctuary mode</h4>
-                      <p className={cn("text-[10px] mt-0.5", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>Toggle eligibility to appear on the Seekers active dating swarm.</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setUserProfile({ 
-                        ...userProfile, 
-                        isDatingModeEnabled: !userProfile.isDatingModeEnabled 
-                      })}
-                      className={cn(
-                        "relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                        userProfile.isDatingModeEnabled 
-                          ? (isGirlyMode ? "bg-pink-500" : "bg-emerald-500") 
-                          : "bg-zinc-700"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
-                          userProfile.isDatingModeEnabled ? "translate-x-5" : "translate-x-0"
-                        )}
-                      />
-                    </button>
-                  </div>
-
-                  {userProfile.isDatingModeEnabled && (
-                    <div className="space-y-4 pt-4 border-t border-dashed border-zinc-800/50">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Your Gender</label>
-                          <select
-                            value={userProfile.gender || 'male'}
-                            onChange={(e) => setUserProfile({ ...userProfile, gender: e.target.value as any })}
-                            className={cn(
-                              "w-full border rounded-xl px-3 py-2 text-xs focus:outline-none transition-all",
-                              isGirlyMode ? "bg-pink-50 border-pink-150 text-pink-900" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
-                            )}
-                          >
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other / Seeker</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Your Age</label>
-                          <input
-                            type="number"
-                            min="18"
-                            max="100"
-                            value={userProfile.age || 28}
-                            onChange={(e) => setUserProfile({ ...userProfile, age: Number(e.target.value) })}
-                            className={cn(
-                              "w-full border rounded-xl px-3 py-2 text-xs focus:outline-none transition-all",
-                              isGirlyMode ? "bg-pink-50 border-pink-150 text-pink-900" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
-                            )}
-                          />
-                        </div>
-                      </div>
-
+                  {/* Dating Mode Toggle & Preferences */}
+                  <div className={cn(
+                    "p-5 rounded-2xl border space-y-4",
+                    isGirlyMode ? "bg-pink-50/50 border-pink-100/50" : isDarkMode ? "bg-zinc-950/80 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                  )}>
+                    <div className="flex items-center justify-between gap-4">
                       <div>
-                        <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-2", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Gender Interest</label>
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {(['female', 'male', 'both', 'all'] as const).map((genderVal) => (
-                            <button
-                              key={genderVal}
-                              type="button"
-                              onClick={() => setUserProfile({
+                        <h4 className={cn("text-xs font-black uppercase tracking-wider", isGirlyMode ? "text-pink-600" : "text-emerald-500")}>Dating sanctuary mode</h4>
+                        <p className={cn("text-[10px] mt-0.5", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>Toggle eligibility to appear on the Seekers active dating swarm.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setUserProfile({ 
+                          ...userProfile, 
+                          isDatingModeEnabled: !userProfile.isDatingModeEnabled 
+                        })}
+                        className={cn(
+                          "relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                          userProfile.isDatingModeEnabled 
+                            ? (isGirlyMode ? "bg-pink-500" : "bg-emerald-500") 
+                            : "bg-zinc-700"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
+                            userProfile.isDatingModeEnabled ? "translate-x-5" : "translate-x-0"
+                          )}
+                        />
+                      </button>
+                    </div>
+
+                    {userProfile.isDatingModeEnabled && (
+                      <div className="space-y-4 pt-4 border-t border-dashed border-zinc-800/50">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Your Gender</label>
+                            <select
+                              value={userProfile.gender || 'male'}
+                              onChange={(e) => setUserProfile({ ...userProfile, gender: e.target.value as any })}
+                              className={cn(
+                                "w-full border rounded-xl px-3 py-2 text-xs focus:outline-none transition-all",
+                                isGirlyMode ? "bg-pink-50 border-pink-150 text-pink-900" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                              )}
+                            >
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                              <option value="other">Other / Seeker</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Your Age</label>
+                            <input
+                              type="number"
+                              min="18"
+                              max="100"
+                              value={userProfile.age || 28}
+                              onChange={(e) => setUserProfile({ ...userProfile, age: Number(e.target.value) })}
+                              className={cn(
+                                "w-full border rounded-xl px-3 py-2 text-xs focus:outline-none transition-all",
+                                isGirlyMode ? "bg-pink-50 border-pink-150 text-pink-900" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                              )}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-2", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Gender Interest</label>
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {(['female', 'male', 'both', 'all'] as const).map((genderVal) => (
+                              <button
+                                key={genderVal}
+                                type="button"
+                                onClick={() => setUserProfile({
+                                  ...userProfile,
+                                  datingPreferences: {
+                                    ...(userProfile.datingPreferences || {}),
+                                    genderInterest: genderVal
+                                  }
+                                })}
+                                className={cn(
+                                  "py-2 px-1 rounded-xl text-[10px] font-bold border uppercase transition-all tracking-tight text-center cursor-pointer",
+                                  userProfile.datingPreferences?.genderInterest === genderVal
+                                    ? (isGirlyMode ? "bg-pink-500 text-white border-pink-500" : "bg-emerald-500 text-zinc-950 border-emerald-500")
+                                    : (isDarkMode ? "bg-zinc-905 border-zinc-800 text-zinc-400 hover:text-white" : "bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900")
+                                )}
+                              >
+                                {genderVal === 'both' ? 'Both' : genderVal === 'all' ? 'All' : genderVal}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Min Age: <span className="text-emerald-400 font-mono">{userProfile.datingPreferences?.minAge || 18}</span></label>
+                            <input
+                              type="range"
+                              min="18"
+                              max="80"
+                              value={userProfile.datingPreferences?.minAge || 18}
+                              onChange={(e) => setUserProfile({
                                 ...userProfile,
                                 datingPreferences: {
                                   ...(userProfile.datingPreferences || {}),
-                                  genderInterest: genderVal
+                                  minAge: Number(e.target.value)
                                 }
                               })}
                               className={cn(
-                                "py-2 px-1 rounded-xl text-[10px] font-bold border uppercase transition-all tracking-tight text-center cursor-pointer",
-                                userProfile.datingPreferences?.genderInterest === genderVal
-                                  ? (isGirlyMode ? "bg-pink-500 text-white border-pink-500" : "bg-emerald-500 text-zinc-950 border-emerald-500")
-                                  : (isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" : "bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900")
+                                "w-full h-1 rounded-lg appearance-none cursor-pointer",
+                                isGirlyMode ? "accent-pink-500 bg-pink-100" : "accent-emerald-500 bg-zinc-800"
                               )}
-                            >
-                              {genderVal === 'both' ? 'Both' : genderVal === 'all' ? 'All' : genderVal}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Min Age: <span className="text-emerald-400 font-mono">{userProfile.datingPreferences?.minAge || 18}</span></label>
-                          <input
-                            type="range"
-                            min="18"
-                            max="80"
-                            value={userProfile.datingPreferences?.minAge || 18}
-                            onChange={(e) => setUserProfile({
-                              ...userProfile,
-                              datingPreferences: {
-                                ...(userProfile.datingPreferences || {}),
-                                minAge: Number(e.target.value)
-                              }
-                            })}
-                            className={cn(
-                              "w-full h-1 rounded-lg appearance-none cursor-pointer",
-                              isGirlyMode ? "accent-pink-500 bg-pink-100" : "accent-emerald-500 bg-zinc-800"
-                            )}
-                          />
-                        </div>
-                        <div>
-                          <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Max Age: <span className="text-emerald-400 font-mono">{userProfile.datingPreferences?.maxAge || 40}</span></label>
-                          <input
-                            type="range"
-                            min="18"
-                            max="80"
-                            value={userProfile.datingPreferences?.maxAge || 40}
-                            onChange={(e) => setUserProfile({
-                              ...userProfile,
-                              datingPreferences: {
-                                ...(userProfile.datingPreferences || {}),
-                                maxAge: Number(e.target.value)
-                              }
-                            })}
-                            className={cn(
-                              "w-full h-1 rounded-lg appearance-none cursor-pointer",
-                              isGirlyMode ? "accent-pink-500 bg-pink-100" : "accent-emerald-500 bg-zinc-800"
-                            )}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <label className={cn(
-                    "text-xs font-bold uppercase block transition-colors",
-                    isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                  )}>Choose Your Avatar</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {AVATARS.map((avatar) => (
-                      <button
-                        key={avatar.name}
-                        onClick={() => setUserProfile({ ...userProfile, avatarUrl: avatar.url })}
-                        className={cn(
-                          "relative aspect-square rounded-2xl overflow-hidden border-2 transition-all active:scale-95",
-                          userProfile.avatarUrl === avatar.url 
-                            ? "border-emerald-500 ring-2 ring-emerald-500/20" 
-                            : (isDarkMode ? "border-zinc-800 bg-zinc-800 hover:border-zinc-700" : "border-zinc-100 bg-zinc-100 hover:border-zinc-200")
-                        )}
-                      >
-                        <img 
-                          src={avatar.url} 
-                          alt={avatar.name} 
-                          className="w-full h-full object-cover"
-                          referrerPolicy="no-referrer"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';
-                          }}
-                        />
-                        {userProfile.avatarUrl === avatar.url && (
-                          <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
-                            <CheckCircle2 className="w-6 h-6 text-emerald-500 drop-shadow-lg" />
+                            />
                           </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className={cn(
-                    "text-xs font-bold uppercase block transition-colors",
-                    isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                  )}>Or Custom Avatar URL</label>
-                  <input 
-                    type="text" 
-                    placeholder="https://example.com/image.jpg"
-                    value={userProfile.avatarUrl && !AVATARS.some(a => a.url === userProfile.avatarUrl) ? userProfile.avatarUrl : ''}
-                    onChange={(e) => setUserProfile({ ...userProfile, avatarUrl: e.target.value })}
-                    className={cn(
-                      "w-full border rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-all",
-                      isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          <div>
+                            <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Max Age: <span className="text-emerald-400 font-mono">{userProfile.datingPreferences?.maxAge || 40}</span></label>
+                            <input
+                              type="range"
+                              min="18"
+                              max="80"
+                              value={userProfile.datingPreferences?.maxAge || 40}
+                              onChange={(e) => setUserProfile({
+                                ...userProfile,
+                                datingPreferences: {
+                                  ...(userProfile.datingPreferences || {}),
+                                  maxAge: Number(e.target.value)
+                                }
+                              })}
+                              className={cn(
+                                "w-full h-1 rounded-lg appearance-none cursor-pointer",
+                                isGirlyMode ? "accent-pink-500 bg-pink-100" : "accent-emerald-500 bg-zinc-800"
+                              )}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     )}
-                  />
+                  </div>
+
+                  {/* Choose Avatar Section */}
+                  <div className="space-y-3">
+                    <label className={cn(
+                      "text-xs font-bold uppercase block transition-colors",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>Choose Your Avatar</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {AVATARS.map((avatar) => (
+                        <button
+                          key={avatar.name}
+                          onClick={() => setUserProfile({ ...userProfile, avatarUrl: avatar.url })}
+                          className={cn(
+                            "relative aspect-square rounded-2xl overflow-hidden border-2 transition-all active:scale-95 cursor-pointer",
+                            userProfile.avatarUrl === avatar.url 
+                              ? "border-emerald-500 ring-2 ring-emerald-500/20" 
+                              : (isDarkMode ? "border-zinc-800 bg-zinc-800 hover:border-zinc-700" : "border-zinc-100 bg-zinc-100 hover:border-zinc-200")
+                          )}
+                        >
+                          <img 
+                            src={avatar.url} 
+                            alt={avatar.name} 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';
+                            }}
+                          />
+                          {userProfile.avatarUrl === avatar.url && (
+                            <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
+                              <CheckCircle2 className="w-6 h-6 text-emerald-500 drop-shadow-lg" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Avatar URL section */}
+                  <div className="space-y-2">
+                    <label className={cn(
+                      "text-xs font-bold uppercase block transition-colors",
+                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                    )}>Or Custom Avatar URL</label>
+                    <input 
+                      type="text" 
+                      placeholder="https://example.com/image.jpg"
+                      value={userProfile.avatarUrl && !AVATARS.some(a => a.url === userProfile.avatarUrl) ? userProfile.avatarUrl : ''}
+                      onChange={(e) => setUserProfile({ ...userProfile, avatarUrl: e.target.value })}
+                      className={cn(
+                        "w-full border rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-all",
+                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                      )}
+                    />
+                  </div>
+
+                  {/* Debug Info Section */}
+                  <div className={cn(
+                    "p-4 rounded-2xl border border-dashed",
+                    isDarkMode ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
+                  )}>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Debug Information</p>
+                    <div className="space-y-1 font-mono text-[10px] text-zinc-400">
+                      <p>UID: {user?.uid}</p>
+                      <p>Email: {user?.email}</p>
+                      <p>Marked Quotes: {userProfile.markedQuotes?.length || 0}</p>
+                      <p>Library Quotes: {libraryQuotes.length}</p>
+                    </div>
+                  </div>
+
                 </div>
 
-                <button 
-                  onClick={async () => {
-                    if (user) {
-                      try {
-                        await setDoc(doc(db, 'users', user.uid), userProfile, { merge: true });
+                {/* Fixed Footer for Save Button */}
+                <div className="pt-4 mt-2 border-t border-zinc-500/10 dark:border-zinc-800/35">
+                  <button 
+                    onClick={async () => {
+                      if (user) {
+                        try {
+                          await setDoc(doc(db, 'users', user.uid), userProfile, { merge: true });
+                          setIsEditingProfile(false);
+                        } catch (error) {
+                          handleFirestoreError(error, 'update', `users/${user.uid}`);
+                        }
+                      } else {
+                        localStorage.setItem('guest_profile', JSON.stringify(userProfile));
                         setIsEditingProfile(false);
-                      } catch (error) {
-                        handleFirestoreError(error, 'update', `users/${user.uid}`);
                       }
-                    } else {
-                      localStorage.setItem('guest_profile', JSON.stringify(userProfile));
-                      setIsEditingProfile(false);
-                    }
-                  }}
-                  className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"
-                >
-                  Save Changes
-                </button>
-
-                {/* Debug Info Section */}
-                <div className={cn(
-                  "mt-8 p-4 rounded-2xl border border-dashed",
-                  isDarkMode ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
-                )}>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Debug Information</p>
-                  <div className="space-y-1 font-mono text-[10px] text-zinc-400">
-                    <p>UID: {user?.uid}</p>
-                    <p>Email: {user?.email}</p>
-                    <p>Marked Quotes: {userProfile.markedQuotes?.length || 0}</p>
-                    <p>Library Quotes: {libraryQuotes.length}</p>
-                  </div>
+                    }}
+                    className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-all text-center cursor-pointer hover:bg-emerald-450"
+                  >
+                    Save Changes
+                  </button>
                 </div>
               </div>
             </motion.div>
