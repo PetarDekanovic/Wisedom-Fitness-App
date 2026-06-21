@@ -6694,9 +6694,10 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                           {/* Close Button */}
                           <button
                             onClick={() => setExpandedQuote(null)}
-                            className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-zinc-800/10 dark:hover:bg-zinc-800 transition-colors z-20"
+                            className="absolute top-4 right-4 p-2.5 rounded-full transition-all z-30 bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/25 border border-rose-450/30 active:scale-95 flex items-center justify-center cursor-pointer"
+                            title="Close Dialogue"
                           >
-                            <X className="w-5 h-5 text-zinc-400" />
+                            <X className="w-4 h-4 stroke-[3px]" />
                           </button>
 
                           <div className="space-y-4">
@@ -8780,8 +8781,12 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     <h3 className={cn("text-xl font-bold", isGirlyMode ? "text-pink-900" : "")}>Choose Avatar</h3>
                     <p className={cn("text-xs mt-1", isGirlyMode ? "text-pink-400" : "text-zinc-500")}>Historical Stoics & Philosophers</p>
                   </div>
-                  <button onClick={() => setIsSelectingAvatar(false)} className={isGirlyMode ? "text-pink-300" : isDarkMode ? "text-zinc-500" : "text-zinc-400"}>
-                    <X className="w-6 h-6" />
+                  <button 
+                    onClick={() => setIsSelectingAvatar(false)} 
+                    className="p-2 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/25 border border-rose-455/30 active:scale-95 flex items-center justify-center cursor-pointer"
+                    title="Close Dialog"
+                  >
+                    <X className="w-4 h-4 stroke-[3px]" />
                   </button>
                 </div>
 
@@ -8890,8 +8895,12 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
               <div className="p-6 space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className={cn("text-xl font-bold", isGirlyMode ? "text-pink-900" : "")}>Edit Profile</h3>
-                  <button onClick={() => setIsEditingProfile(false)} className={isGirlyMode ? "text-pink-300" : isDarkMode ? "text-zinc-500" : "text-zinc-400"}>
-                    <ChevronLeft className="w-6 h-6 rotate-[-90deg]" />
+                  <button 
+                    onClick={() => setIsEditingProfile(false)} 
+                    className="p-2 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/25 border border-rose-450/30 active:scale-95 flex items-center justify-center cursor-pointer"
+                    title="Close Dialog"
+                  >
+                    <X className="w-4 h-4 stroke-[3px]" />
                   </button>
                 </div>
                 
@@ -8992,6 +9001,38 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
 
                   {userProfile.isDatingModeEnabled && (
                     <div className="space-y-4 pt-4 border-t border-dashed border-zinc-800/50">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Your Gender</label>
+                          <select
+                            value={userProfile.gender || 'male'}
+                            onChange={(e) => setUserProfile({ ...userProfile, gender: e.target.value as any })}
+                            className={cn(
+                              "w-full border rounded-xl px-3 py-2 text-xs focus:outline-none transition-all",
+                              isGirlyMode ? "bg-pink-50 border-pink-150 text-pink-900" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                            )}
+                          >
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other / Seeker</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Your Age</label>
+                          <input
+                            type="number"
+                            min="18"
+                            max="100"
+                            value={userProfile.age || 28}
+                            onChange={(e) => setUserProfile({ ...userProfile, age: Number(e.target.value) })}
+                            className={cn(
+                              "w-full border rounded-xl px-3 py-2 text-xs focus:outline-none transition-all",
+                              isGirlyMode ? "bg-pink-50 border-pink-150 text-pink-900" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                            )}
+                          />
+                        </div>
+                      </div>
+
                       <div>
                         <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-2", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Gender Interest</label>
                         <div className="grid grid-cols-4 gap-1.5">
@@ -9184,12 +9225,10 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   </div>
                   <button 
                     onClick={() => setShowAndroidInstallGuide(false)} 
-                    className={cn(
-                      "p-1.5 rounded-lg transition-colors",
-                      isDarkMode ? "text-zinc-500 hover:text-white hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100"
-                    )}
+                    className="p-2 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/25 border border-rose-455/30 active:scale-95 flex items-center justify-center cursor-pointer"
+                    title="Close Dialog"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-4 h-4 stroke-[3px]" />
                   </button>
                 </div>
 
@@ -9300,9 +9339,10 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       setArticleThumbnailUrl('');
                       setArticleExcerpt('');
                     }} 
-                    className={isDarkMode ? "text-zinc-500" : "text-zinc-400"}
+                    className="p-2 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/25 border border-rose-455/30 active:scale-95 flex items-center justify-center cursor-pointer"
+                    title="Close Dialog"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-4 h-4 stroke-[3px]" />
                   </button>
                 </div>
                 

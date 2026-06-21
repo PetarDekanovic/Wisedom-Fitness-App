@@ -190,6 +190,24 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
     isOnline: true,
     lastActive: new Date().toISOString(),
     friends: [],
+    gender: 'male',
+    age: 59,
+    isDatingModeEnabled: true,
+    datingPreferences: {
+      genderInterest: 'female',
+      minAge: 18,
+      maxAge: 60
+    },
+    mbti: 'INFJ',
+    mbtiName: 'The Counselor / Advocate',
+    bigFive: {
+      openness: 90,
+      conscientiousness: 98,
+      extraversion: 35,
+      agreeableness: 85,
+      neuroticism: 15
+    },
+    intellectualInterests: ['Stoicism', 'Philosophy', 'Journaling', 'Statecraft'],
     userPhotos: [
       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
       'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400'
@@ -207,6 +225,24 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
     isOnline: true,
     lastActive: new Date().toISOString(),
     friends: [],
+    gender: 'male',
+    age: 65,
+    isDatingModeEnabled: true,
+    datingPreferences: {
+      genderInterest: 'female',
+      minAge: 18,
+      maxAge: 65
+    },
+    mbti: 'ENFJ',
+    mbtiName: 'The Teacher / Mentor',
+    bigFive: {
+      openness: 95,
+      conscientiousness: 90,
+      extraversion: 55,
+      agreeableness: 88,
+      neuroticism: 25
+    },
+    intellectualInterests: ['Stoicism', 'Philosophy', 'Rhetoric', 'Tragedies'],
     userPhotos: [
       'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400',
       'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400'
@@ -224,6 +260,24 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
     isOnline: true,
     lastActive: new Date().toISOString(),
     friends: [],
+    gender: 'male',
+    age: 80,
+    isDatingModeEnabled: true,
+    datingPreferences: {
+      genderInterest: 'female',
+      minAge: 18,
+      maxAge: 85
+    },
+    mbti: 'INFP',
+    mbtiName: 'The Idealist / Healer',
+    bigFive: {
+      openness: 85,
+      conscientiousness: 95,
+      extraversion: 30,
+      agreeableness: 80,
+      neuroticism: 12
+    },
+    intellectualInterests: ['Stoicism', 'Philosophy', 'Ethics', 'Freedom'],
     userPhotos: [
       'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400'
     ]
@@ -240,12 +294,24 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
     isOnline: true,
     lastActive: new Date().toISOString(),
     friends: [],
+    gender: 'female',
+    age: 35,
     isDatingModeEnabled: true,
     datingPreferences: {
       genderInterest: 'male',
       minAge: 18,
       maxAge: 45
     },
+    mbti: 'INTJ',
+    mbtiName: 'The Architect / Mind Master',
+    bigFive: {
+      openness: 98,
+      conscientiousness: 92,
+      extraversion: 40,
+      agreeableness: 78,
+      neuroticism: 18
+    },
+    intellectualInterests: ['Neoplatonism', 'Astronomy', 'Mathematics', 'Philosophy'],
     userPhotos: [
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400',
       'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
@@ -264,12 +330,24 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
     isOnline: true,
     lastActive: new Date().toISOString(),
     friends: [],
+    gender: 'female',
+    age: 38,
     isDatingModeEnabled: true,
     datingPreferences: {
       genderInterest: 'all',
       minAge: 18,
       maxAge: 50
     },
+    mbti: 'INFJ',
+    mbtiName: 'The Mystic Counselor',
+    bigFive: {
+      openness: 99,
+      conscientiousness: 85,
+      extraversion: 50,
+      agreeableness: 90,
+      neuroticism: 14
+    },
+    intellectualInterests: ['Philosophy', 'Metaphysics', 'Eros Theory', 'Diads'],
     userPhotos: [
       'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
       'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=400',
@@ -288,12 +366,24 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
     isOnline: true,
     lastActive: new Date().toISOString(),
     friends: [],
+    gender: 'female',
+    age: 36,
     isDatingModeEnabled: true,
     datingPreferences: {
       genderInterest: 'male',
       minAge: 18,
       maxAge: 45
     },
+    mbti: 'ENTJ',
+    mbtiName: 'The Commander / Rhetorician',
+    bigFive: {
+      openness: 96,
+      conscientiousness: 88,
+      extraversion: 85,
+      agreeableness: 80,
+      neuroticism: 22
+    },
+    intellectualInterests: ['Rhetoric', 'Statecraft', 'Philosophy', 'Debate'],
     userPhotos: [
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
       'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400',
@@ -992,6 +1082,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         favoritePsychologists: editFavoritePsychologists,
         userPhotos: editUserPhotos,
         userPhotosVisibility: editUserPhotosVisibility,
+        isDatingModeEnabled: userProfile?.isDatingModeEnabled || false,
+        datingPreferences: userProfile?.datingPreferences || { genderInterest: 'female', minAge: 18, maxAge: 40 },
+        gender: userProfile?.gender || 'male',
+        age: userProfile?.age || 28,
         updatedAt: new Date().toISOString()
       };
       
@@ -1191,6 +1285,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         name: setupName || userProfile?.name || 'Anonymous Seeker',
         avatarUrl: userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
         biography: setupBiography,
+        isDatingModeEnabled: userProfile?.isDatingModeEnabled || false,
+        datingPreferences: userProfile?.datingPreferences || { genderInterest: 'female', minAge: 18, maxAge: 40 },
+        gender: userProfile?.gender || 'male',
+        age: userProfile?.age || 28,
         updatedAt: new Date().toISOString()
       };
       
@@ -1898,6 +1996,101 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
     
     return Math.min(99, match);
+  };
+
+  const getDetailedCompatibility = (me: PublicProfile | null, rawPeer: PublicProfile) => {
+    const reasons: string[] = [];
+    if (!me || !me.bigFive || !rawPeer.bigFive) {
+      return {
+        score: null,
+        reasons: ["Complete your personality quiz under the 'Personality' tab to unlock matching analysis."],
+        isError: true
+      };
+    }
+
+    let diff = 0;
+    const meB = me.bigFive;
+    const peerB = rawPeer.bigFive;
+    
+    diff += Math.abs((meB.openness || 50) - (peerB.openness || 50));
+    diff += Math.abs((meB.conscientiousness || 50) - (peerB.conscientiousness || 50));
+    diff += Math.abs((meB.extraversion || 50) - (peerB.extraversion || 50));
+    diff += Math.abs((meB.agreeableness || 50) - (peerB.agreeableness || 50));
+    diff += Math.abs((meB.neuroticism || 50) - (peerB.neuroticism || 50));
+    
+    const baseMatch = 100 - (diff / 10);
+    let match = Math.max(60, Math.min(99, Math.round(baseMatch + 20)));
+
+    if (diff < 100) {
+      reasons.push("Highly aligned psychological traits (direct Big Five spectrum alignment).");
+    } else if (diff < 200) {
+      reasons.push("Constructive personality traits (balanced extraversion & conscientiousness).");
+    } else {
+      reasons.push("Complementary cognitive styles (different but highly supportive spectrums).");
+    }
+
+    // Age preferences alignment
+    const targetAge = rawPeer.age || 25;
+    const myAge = me.age || 28;
+    const inMyMinAge = !me.datingPreferences?.minAge || targetAge >= me.datingPreferences.minAge;
+    const inMyMaxAge = !me.datingPreferences?.maxAge || targetAge <= me.datingPreferences.maxAge;
+    const inPeerMinAge = !rawPeer.datingPreferences?.minAge || myAge >= rawPeer.datingPreferences.minAge;
+    const inPeerMaxAge = !rawPeer.datingPreferences?.maxAge || myAge <= rawPeer.datingPreferences.maxAge;
+
+    if (inMyMinAge && inMyMaxAge && inPeerMinAge && inPeerMaxAge) {
+      match += 6;
+      reasons.push(`Optimal maturity matching (ages ${myAge} & ${targetAge} fit within exact preference limits).`);
+    } else {
+      reasons.push("Generational differences (outside of standard age preference filters).");
+    }
+
+    // Gender preferences check
+    const meInt = me.datingPreferences?.genderInterest || 'all';
+    const peerGender = rawPeer.gender || 'female';
+    const peerInt = rawPeer.datingPreferences?.genderInterest || 'all';
+    const meGender = me.gender || 'male';
+
+    let genderMatch = true;
+    if (meInt !== 'all' && meInt !== 'both') {
+      if (meInt !== peerGender) genderMatch = false;
+    }
+    if (peerInt !== 'all' && peerInt !== 'both') {
+      if (peerInt !== meGender) genderMatch = false;
+    }
+
+    if (genderMatch) {
+      match += 6;
+      reasons.push("Perfect romantic orientation harmony.");
+    } else {
+      match -= 12;
+      reasons.push("Partial gender orientation skew (friendly platonic synergy suggested).");
+    }
+
+    // Shared intellectual interests
+    if (me.intellectualInterests && rawPeer.intellectualInterests) {
+      const shared = me.intellectualInterests.filter(i => rawPeer.intellectualInterests?.includes(i));
+      if (shared.length > 0) {
+        match += shared.length * 3;
+        reasons.push(`Shared scholarly focus: ${shared.slice(0, 3).join(", ")}.`);
+      }
+    }
+    
+    if (me.relationshipIntent && rawPeer.relationshipIntent) {
+      if (me.relationshipIntent === rawPeer.relationshipIntent) {
+        match += 8;
+        reasons.push(`Synchronized relationship objective: "${me.relationshipIntent}".`);
+      } else {
+        reasons.push("Supportive relationship intents.");
+      }
+    }
+
+    const finalScore = Math.max(40, Math.min(99, match));
+    
+    return {
+      score: finalScore,
+      reasons: reasons.slice(0, 4),
+      isError: false
+    };
   };
 
   const getFriendRelation = (peerUid: string) => {
@@ -3701,8 +3894,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 {peer.mbti ? `${peer.mbti} · Archetype` : "Seeker"}
                               </span>
                               {score !== null && (
-                                <span className="text-[7.5px] px-1.5 py-0.5 rounded bg-emerald-500 text-zinc-950 font-black tracking-tight animate-pulse shrink-0">
-                                  ⚡ {score}% Match
+                                <span className={cn(
+                                  "text-[7.5px] px-1.5 py-0.5 rounded font-black tracking-tight shrink-0 flex items-center gap-0.5 leading-none",
+                                  peer.isDatingModeEnabled
+                                    ? "bg-rose-500 text-white animate-pulse"
+                                    : "bg-emerald-500 text-zinc-950"
+                                )}>
+                                  {peer.isDatingModeEnabled ? "💖" : "⚡"} {score}% {peer.isDatingModeEnabled ? "Fit" : "Match"}
                                 </span>
                               )}
                             </div>
@@ -5595,136 +5793,12 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     setProvisionSuccess(false);
 
                     try {
-                      const dummyUsers = [
-                        {
-                          uid: 'dummy_marcus_aurelius',
-                          name: 'Marcus Aurelius',
-                          avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
-                          coverUrl: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=600',
-                          relationshipIntent: 'Long-term partnership',
-                          location: 'Rome, Italy',
-                          height: '185',
-                          biography: 'Emperor of Rome. Author of Meditations. Focuses on stoic temperance, deep morning journaling, and body callisthenics.',
-                          isOnline: true,
-                          lastActive: new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
-                          friends: [],
-                          userPhotos: [
-                            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400',
-                            'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=400'
-                          ]
-                        },
-                        {
-                          uid: 'dummy_seneca_younger',
-                          name: 'Lucius Seneca',
-                          avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300',
-                          coverUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=600',
-                          relationshipIntent: 'Mindful companionship',
-                          location: 'Cordoba, Spain',
-                          height: '178',
-                          biography: 'Imperial Advisor and playwright. Writing dialogues on tranquility and mental equilibrium under load.',
-                          isOnline: true,
-                          lastActive: new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
-                          friends: [],
-                          userPhotos: [
-                            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400',
-                            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400'
-                          ]
-                        },
-                        {
-                          uid: 'dummy_epictetus',
-                          name: 'Epictetus',
-                          avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300',
-                          coverUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=600',
-                          relationshipIntent: 'Intellectual calisthenic dyads',
-                          location: 'Hierapolis, Phrygia',
-                          height: '173',
-                          biography: 'Born a slave, died a master. Teaching that we suffer not from events, but from our judgment of them.',
-                          isOnline: true,
-                          lastActive: new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
-                          friends: [],
-                          userPhotos: [
-                            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400'
-                          ]
-                        },
-                        {
-                          uid: 'dummy_hypatia_alex',
-                          name: 'Hypatia of Alexandria',
-                          avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300',
-                          coverUrl: 'https://images.unsplash.com/photo-1620121692029-d088224ddc74?auto=format&fit=crop&q=80&w=600',
-                          relationshipIntent: 'Deep philosophical connection',
-                          location: 'Alexandria, Egypt',
-                          height: '172',
-                          biography: 'Neoplatonist philosopher, leading astronomer and mathematician. Seeking physical hygiene and structural clarity.',
-                          isOnline: true,
-                          lastActive: new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
-                          friends: [],
-                          isDatingModeEnabled: true,
-                          datingPreferences: {
-                            genderInterest: 'male',
-                            minAge: 18,
-                            maxAge: 45
-                          },
-                          userPhotos: [
-                            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400',
-                            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
-                            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'
-                          ]
-                        },
-                        {
-                          uid: 'dummy_diotima_mantinea',
-                          name: 'Diotima of Mantinea',
-                          avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300',
-                          coverUrl: 'https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?auto=format&fit=crop&q=80&w=600',
-                          relationshipIntent: 'Spiritual & intellectual resonance',
-                          location: 'Mantinea, Greece',
-                          height: '168',
-                          biography: 'Ancient Greek priestess and philosopher. Taught Socrates the Ladder of Love (Eros) as a climb from physical desire to eternal truth.',
-                          isOnline: true,
-                          lastActive: new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
-                          friends: [],
-                          isDatingModeEnabled: true,
-                          datingPreferences: {
-                            genderInterest: 'all',
-                            minAge: 18,
-                            maxAge: 50
-                          },
-                          userPhotos: [
-                            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400',
-                            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=400',
-                            'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=400'
-                          ]
-                        },
-                        {
-                          uid: 'dummy_aspasia_miletus',
-                          name: 'Aspasia of Miletus',
-                          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
-                          coverUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&q=80&w=600',
-                          relationshipIntent: 'Rhetorical & dialectic partnership',
-                          location: 'Athens, Greece',
-                          height: '170',
-                          biography: 'Intellectual partner of Pericles and dialogue teacher of Socrates. Expert in rhetoric, statecraft, and high-performance lifestyle habits.',
-                          isOnline: true,
-                          lastActive: new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
-                          friends: [],
-                          isDatingModeEnabled: true,
-                          datingPreferences: {
-                            genderInterest: 'male',
-                            minAge: 18,
-                            maxAge: 45
-                          },
-                          userPhotos: [
-                            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400',
-                            'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400',
-                            'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&q=80&w=400'
-                          ]
-                        }
-                      ];
+                      const dummyUsers = DUMMY_SCHOLARS.map(u => ({
+                        ...u,
+                        isOnline: true,
+                        lastActive: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                      }));
  
                       for (const u of dummyUsers) {
                         await setDoc(doc(db, 'public_profiles', u.uid), u);
@@ -6034,6 +6108,97 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     </div>
                   )}
                 </div>
+
+                {/* Dating Swarms & Personality Compatibility Analysis */}
+                {selectedPeerWall.isDatingModeEnabled && (
+                  <div className={cn(
+                    "p-5 rounded-2xl border space-y-4 text-xs relative overflow-hidden",
+                    isGirlyMode ? "bg-pink-55/40 border-pink-100 shadow-sm" : isDarkMode ? "bg-zinc-950/70 border-zinc-850" : "bg-white border-zinc-200 shadow-sm"
+                  )}>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-rose-500/10 to-transparent rounded-full select-none pointer-events-none"></div>
+                    <div className="flex items-center gap-1.5 border-b border-zinc-800/10 dark:border-zinc-800/35 pb-2">
+                      <Heart className="w-4 h-4 text-rose-500 animate-pulse shrink-0" />
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-rose-500 dark:text-zinc-400">Dating Compatibility Score</h4>
+                    </div>
+
+                    {(() => {
+                      const res = getDetailedCompatibility(thisPublicProfile, selectedPeerWall);
+                      if (res.isError || res.score === null) {
+                        return (
+                          <div className="space-y-3">
+                            <p className="text-[10.5px] leading-relaxed text-zinc-400">
+                              Your romantic and intellectual connection details are currently locked. Complete your personality diagnostics quiz to unlock matchmaking alignment!
+                            </p>
+                            <button
+                              onClick={() => {
+                                setActiveTab('personality');
+                                setPersonalitySubTab('quiz');
+                              }}
+                              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-zinc-950 text-[10px] font-black uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all text-center shrink-0 cursor-pointer"
+                            >
+                              Take Personality Quiz to Unlock
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      // We have a score! Display it.
+                      return (
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-4">
+                            <div className="relative flex items-center justify-center shrink-0">
+                              {/* circular progress design */}
+                              <svg className="w-16 h-16 transform -rotate-90">
+                                <circle
+                                  cx="32"
+                                  cy="32"
+                                  r="28"
+                                  stroke={isDarkMode ? "#27272a" : "#f4f4f5"}
+                                  strokeWidth="5"
+                                  fill="transparent"
+                                />
+                                <circle
+                                  cx="32"
+                                  cy="32"
+                                  r="28"
+                                  stroke={isGirlyMode ? "#ec4899" : "#f43f5e"}
+                                  strokeWidth="5"
+                                  fill="transparent"
+                                  strokeDasharray={2 * Math.PI * 28}
+                                  strokeDashoffset={2 * Math.PI * 28 * (1 - res.score / 100)}
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                              <span className="absolute text-[13px] font-black font-mono text-rose-500 leading-none">
+                                {res.score}%
+                              </span>
+                            </div>
+                            
+                            <div>
+                              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest block leading-none">Scholar compatibility index</span>
+                              <h5 className="text-[13px] font-extrabold tracking-tight mt-1 text-zinc-800 dark:text-zinc-100">
+                                {res.score >= 85 ? "Excellent Academic & Romantic Fit" : res.score >= 70 ? "Strong Philosophical Complementarity" : "Complementary Intellectual Resonance"}
+                              </h5>
+                              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 leading-normal">
+                                Synthesized using OCEAN scale offsets, romantic preferences, global maturity, and shared interests.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2 pt-2 border-t border-dashed border-zinc-500/10 dark:border-zinc-800/35">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-550 block leading-none mb-1">Algorithmic Match Highlights</span>
+                            {res.reasons.map((reason, idx) => (
+                              <div key={idx} className="flex items-start gap-2 text-[10px] font-semibold text-zinc-650 dark:text-zinc-300 leading-normal">
+                                <span className="text-rose-500 font-bold shrink-0">✦</span>
+                                <span>{reason}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
 
                 {/* Approved posts (The "Wall") */}
                 <div className="space-y-4">

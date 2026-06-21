@@ -158,6 +158,9 @@ export interface UserProfile {
     minAge?: number;
     maxAge?: number;
   };
+  compatibilityScore?: number;
+  gender?: 'male' | 'female' | 'other';
+  age?: number;
   role?: 'user' | 'admin';
   integrations?: {
     fitbit?: {
@@ -270,6 +273,9 @@ export interface PublicProfile {
     minAge?: number;
     maxAge?: number;
   };
+  compatibilityScore?: number;
+  gender?: 'male' | 'female' | 'other';
+  age?: number;
 }
 
 export interface FriendRequest {
