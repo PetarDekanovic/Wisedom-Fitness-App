@@ -10134,8 +10134,8 @@ function NavButton({ active, onClick, icon, label, isDarkMode, isGirlyMode }: an
       className={cn(
         "flex flex-col items-center gap-0.5 transition-all duration-300 relative flex-shrink-0 min-w-[38px] sm:min-w-[64px] py-1",
         active 
-          ? (isGirlyMode ? "text-pink-600 scale-105 font-bold" : "text-emerald-500 scale-110 font-black") 
-          : (isGirlyMode ? "text-pink-300 hover:text-pink-400" : isDarkMode ? "text-zinc-600 hover:text-zinc-400" : "text-zinc-400 hover:text-zinc-600")
+          ? (isGirlyMode ? "text-pink-600 scale-105 font-bold" : "text-emerald-400 scale-110 font-bold") 
+          : (isGirlyMode ? "text-pink-450 hover:text-pink-600" : isDarkMode ? "text-zinc-350 hover:text-white" : "text-zinc-600 hover:text-zinc-900")
       )}
     >
       {active && (
@@ -10149,13 +10149,13 @@ function NavButton({ active, onClick, icon, label, isDarkMode, isGirlyMode }: an
       )}
       <div className={cn(
         "transition-transform duration-300",
-        active ? "scale-110" : "scale-100 opacity-60"
+        active ? "scale-110 opacity-100" : "scale-100 opacity-90"
       )}>
         {icon}
       </div>
       <span className={cn(
-        "text-[8px] sm:text-[10px] font-bold uppercase tracking-tighter sm:tracking-widest transition-all",
-        active ? "opacity-100 translate-y-0" : "opacity-40 -translate-y-0.5"
+        "text-[8px] sm:text-[10px] font-extrabold uppercase tracking-tighter sm:tracking-widest transition-all",
+        active ? "opacity-100 translate-y-0" : "opacity-80 translate-y-0"
       )}>
         {label}
       </span>
