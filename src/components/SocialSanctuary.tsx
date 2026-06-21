@@ -2037,14 +2037,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
               <button 
                 type="button"
                 onClick={() => setEngagePeer(null)}
-                className={cn(
-                  "absolute top-4 right-4 p-1.5 rounded-lg transition-colors border",
-                  isDarkMode 
-                    ? "border-zinc-800 hover:border-zinc-700 bg-zinc-850 hover:bg-zinc-800 text-zinc-400 hover:text-white" 
-                    : "border-zinc-200 hover:border-zinc-300 bg-zinc-50 hover:bg-zinc-100 text-zinc-500 hover:text-zinc-800"
-                )}
+                className="absolute top-4 right-4 p-2 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-950/30 active:scale-95 flex items-center justify-center cursor-pointer border border-rose-450 z-30"
+                title="Close Secure Dialog"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 stroke-[3px]" />
               </button>
 
               <div className="space-y-4">
@@ -3209,12 +3205,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     </div>
                     <button 
                       onClick={() => setActiveChat(null)}
-                      className={cn(
-                        "p-1 rounded-lg transition-colors",
-                        isDarkMode ? "text-zinc-500 hover:text-white hover:bg-zinc-800" : "text-zinc-400 hover:text-zinc-850 hover:bg-zinc-100"
-                      )}
+                      className="p-1.5 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-950/30 active:scale-95 flex items-center justify-center cursor-pointer border border-rose-450"
+                      title="Exit Dialogue"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4 stroke-[3px]" />
                     </button>
                   </div>
 
@@ -5785,12 +5779,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             >
               <button 
                 onClick={() => setSelectedPeerWall(null)}
-                className={cn(
-                  "absolute top-4 right-4 p-1.5 rounded-lg transition-colors z-20",
-                  isDarkMode ? "text-zinc-400 hover:text-white hover:bg-zinc-850" : "text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100"
-                )}
+                className="absolute top-4 right-4 p-2.5 rounded-full transition-all z-30 bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/25 border border-rose-400/30 active:scale-95 flex items-center justify-center cursor-pointer"
+                title="Close Wall"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 stroke-[3px]" />
               </button>
 
               {/* Scrollable interior block */}
@@ -6338,12 +6330,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                 Click anywhere to return
               </span>
             </motion.div>
-            <button 
+             <button 
               type="button" 
               onClick={() => setActiveLightboxImg(null)}
-              className="absolute top-6 right-6 p-2 bg-zinc-900/85 hover:bg-zinc-800 rounded-xl text-white transition-all shadow-lg border border-zinc-800 pointer-events-auto cursor-pointer"
+              className="absolute top-6 right-6 p-2.5 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/25 border border-rose-400/30 active:scale-95 flex items-center justify-center pointer-events-auto cursor-pointer"
+              title="Close View"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 stroke-[3px]" />
             </button>
           </motion.div>
         )}

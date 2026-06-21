@@ -7208,7 +7208,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                         <h4 className="text-[10px] font-black uppercase tracking-wider text-pink-500">Dual-Utility Dating</h4>
                       </div>
                       <p className="text-[10.5px] leading-relaxed text-zinc-400">
-                        WiseFit is now a premier high-signal **Seekers Swarm Dating & Relationship Sanctuary**. It screens candidates through scientific mental assessments, biometric data matching, and petar-reviewed peer moderation to prevent dating app "noise" or "slop".
+                        WiseFit is now a premier high-signal **Seekers Swarm Dating & Relationship Sanctuary**. It screens candidates through scientific mental assessments, biometric data matching, and peer-reviewed moderation by AI using modern psychology evaluation to prevent dating app "noise" or "slop".
                       </p>
                     </div>
 
