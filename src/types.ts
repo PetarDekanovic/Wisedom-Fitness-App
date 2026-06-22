@@ -181,6 +181,7 @@ export interface UserProfile {
       lastSync?: string;
     };
   };
+  uploadedAvatars?: string[];
 }
 
 export interface ChatMessage {

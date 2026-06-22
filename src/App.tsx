@@ -90,6 +90,7 @@ import {
   Upload,
   Camera,
   Image,
+  Save,
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -4140,6 +4141,7 @@ function AppContent() {
   }, [psychMessages, isPsychLoading]);
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isAddingWorkout, setIsAddingWorkout] = useState(false);
   const [newWorkout, setNewWorkout] = useState<Partial<Workout>>({
     name: '',
@@ -4532,6 +4534,42 @@ function AppContent() {
       }
     };
     console.error('Firestore Error:', JSON.stringify(errInfo));
+  };
+
+  const handleSaveSection = async (sectionName: string) => {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, 'users', user.uid), userProfile, { merge: true });
+      try {
+        const publicProfileRef = doc(db, 'public_profiles', user.uid);
+        await setDoc(publicProfileRef, {
+          uid: user.uid,
+          name: userProfile.name || 'Seeker',
+          avatarUrl: userProfile.avatarUrl || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2',
+          biography: userProfile.biography || '',
+          gender: userProfile.gender || 'male',
+          age: userProfile.age || 28,
+          height: userProfile.height || 0,
+          currentWeight: userProfile.currentWeight || 0,
+          targetWeight: userProfile.targetWeight || 0,
+          stepGoal: userProfile.stepGoal || 10000,
+          mbti: userProfile.mbti || '',
+          maxPullUps: userProfile.maxPullUps || 0,
+          oneRMWeighted: userProfile.oneRMWeighted || 0,
+          shortTermGoal: userProfile.shortTermGoal || '',
+          longTermGoal: userProfile.longTermGoal || '',
+          isDatingModeEnabled: !!userProfile.isDatingModeEnabled,
+          datingPreferences: userProfile.datingPreferences || null,
+          uploadedAvatars: userProfile.uploadedAvatars || [],
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (pubErr) {
+        console.warn('Could not sync public_profiles in section save:', pubErr);
+      }
+      alert(`${sectionName} saved successfully!`);
+    } catch (err: any) {
+      handleFirestoreError(err, 'update', `users/${user.uid}`);
+    }
   };
 
   const handleLogin = async () => {
@@ -8899,7 +8937,10 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
             className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
           >
             <motion.div 
-              initial={{ y: "100%" }}
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
               className={cn(
                 "w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden border transition-all duration-300 shadow-2xl",
                 isGirlyMode ? "bg-white border-pink-200" : isDarkMode ? "bg-zinc-900 border-zinc-700/80" : "bg-white border-zinc-300"
@@ -8956,6 +8997,26 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                           placeholder="Your guiding, scholarly background & bio..."
                         />
                       </div>
+                      
+                      {/* Local save for Seeker Identity */}
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveSection("Seeker Identity")}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg border transition-all active:scale-95 cursor-pointer shadow-sm",
+                            isGirlyMode 
+                              ? "bg-pink-100 hover:bg-pink-200 border-pink-200 text-pink-705" 
+                              : isDarkMode 
+                                ? "bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-emerald-400" 
+                                : "bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-850"
+                          )}
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          <span>Save Identity</span>
+                        </button>
+                      </div>
+
                     </div>
                   </div>
 
@@ -9024,6 +9085,24 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                         />
                       </div>
                     </div>
+                    {/* Local save for Somatic Metrics */}
+                    <div className="flex justify-end pt-3">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveSection("Somatic Metrics")}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg border transition-all active:scale-95 cursor-pointer shadow-sm",
+                          isGirlyMode 
+                            ? "bg-pink-100 hover:bg-pink-200 border-pink-200 text-pink-705" 
+                            : isDarkMode 
+                              ? "bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-emerald-400" 
+                              : "bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-850"
+                        )}
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save Metrics</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Pull-ups / Max Strength */}
@@ -9060,6 +9139,24 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                           )}
                         />
                       </div>
+                    </div>
+                    {/* Local save for Physical Discipline & Strength */}
+                    <div className="flex justify-end pt-3">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveSection("Physical Discipline & Strength")}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg border transition-all active:scale-95 cursor-pointer shadow-sm",
+                          isGirlyMode 
+                            ? "bg-pink-100 hover:bg-pink-200 border-pink-200 text-pink-705" 
+                            : isDarkMode 
+                              ? "bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-emerald-400" 
+                              : "bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-850"
+                        )}
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save Strength</span>
+                      </button>
                     </div>
                   </div>
 
@@ -9099,6 +9196,24 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                           placeholder="Your grand vision (e.g. +100kg pullup etc)"
                         />
                       </div>
+                    </div>
+                    {/* Local save for Life Trajectory Goals */}
+                    <div className="flex justify-end pt-3">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveSection("Life Trajectory Goals")}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg border transition-all active:scale-95 cursor-pointer shadow-sm",
+                          isGirlyMode 
+                            ? "bg-pink-100 hover:bg-pink-200 border-pink-200 text-pink-705" 
+                            : isDarkMode 
+                              ? "bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-emerald-400" 
+                              : "bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-850"
+                        )}
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save Goals</span>
+                      </button>
                     </div>
                   </div>
 
@@ -9239,6 +9354,24 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                         </div>
                       </div>
                     )}
+                    {/* Local save for Dating Preferences */}
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveSection("Dating Sanctuary Preferences")}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg border transition-all active:scale-95 cursor-pointer shadow-sm",
+                          isGirlyMode 
+                            ? "bg-pink-100 hover:bg-pink-200 border-pink-200 text-pink-705" 
+                            : isDarkMode 
+                              ? "bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-emerald-400" 
+                              : "bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-850"
+                        )}
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save Dating Prefs</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Choose Avatar Section */}
@@ -9248,9 +9381,69 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       isDarkMode ? "text-zinc-300" : "text-zinc-700"
                     )}>Choose Your Avatar</label>
                     <div className="grid grid-cols-3 gap-3">
+                      {/* Upload a custom image button in the grid */}
+                      <div className="relative aspect-square">
+                        <label className={cn(
+                          "flex flex-col items-center justify-center h-full rounded-2xl border-2 border-dashed transition-all active:scale-95 cursor-pointer text-center p-2",
+                          isUploadingAvatar
+                            ? "border-emerald-500/50 bg-emerald-500/5"
+                            : isDarkMode 
+                              ? "border-zinc-700 bg-zinc-800/50 hover:border-zinc-500" 
+                              : "border-zinc-300 bg-zinc-50 hover:border-zinc-400"
+                        )}>
+                          {isUploadingAvatar ? (
+                            <>
+                              <Loader2 className="w-5 h-5 text-emerald-500 animate-spin mb-1" />
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-5 h-5 text-zinc-400 mb-1" />
+                              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Upload Own</span>
+                            </>
+                          )}
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            disabled={isUploadingAvatar}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file || !user) return;
+                              setIsUploadingAvatar(true);
+                              try {
+                                const storageRef = ref(storage, `users/${user.uid}/avatars/${Date.now()}_${file.name}`);
+                                await uploadBytes(storageRef, file);
+                                const downloadUrl = await getDownloadURL(storageRef);
+                                
+                                // Add to uploadedAvatars array
+                                const currentUploaded = userProfile.uploadedAvatars || [];
+                                const nextUploaded = [...currentUploaded, downloadUrl];
+                                
+                                // Update local profile state & immediately set as active avatar!
+                                const updatedProfile = { 
+                                  ...userProfile, 
+                                  uploadedAvatars: nextUploaded, 
+                                  avatarUrl: downloadUrl 
+                                };
+                                setUserProfile(updatedProfile);
+                                
+                                alert('Custom avatar uploaded and selected! Feel free to save the details.');
+                              } catch (uploadErr: any) {
+                                console.error('Avatar upload failed:', uploadErr);
+                                alert('Failed to upload image: ' + uploadErr.message);
+                              } finally {
+                                setIsUploadingAvatar(false);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+
                       {AVATARS.map((avatar) => (
                         <button
                           key={avatar.name}
+                          type="button"
                           onClick={() => setUserProfile({ ...userProfile, avatarUrl: avatar.url })}
                           className={cn(
                             "relative aspect-square rounded-2xl overflow-hidden border-2 transition-all active:scale-95 cursor-pointer",
@@ -9275,7 +9468,77 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                           )}
                         </button>
                       ))}
+
+                      {/* Custom Uploaded Avatars list */}
+                      {(userProfile.uploadedAvatars || []).map((url, idx) => (
+                        <div key={`uploaded-${idx}`} className="relative aspect-square">
+                          <button
+                            type="button"
+                            onClick={() => setUserProfile({ ...userProfile, avatarUrl: url })}
+                            className={cn(
+                              "w-full h-full rounded-2xl overflow-hidden border-2 transition-all active:scale-95 cursor-pointer relative",
+                              userProfile.avatarUrl === url 
+                                ? "border-emerald-500 ring-2 ring-emerald-500/20" 
+                                : (isDarkMode ? "border-zinc-700 bg-zinc-800 hover:border-zinc-650" : "border-zinc-200 bg-zinc-100 hover:border-zinc-300")
+                            )}
+                          >
+                            <img 
+                              src={url} 
+                              alt={`Custom Uploaded ${idx + 1}`} 
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';
+                              }}
+                            />
+                            {userProfile.avatarUrl === url && (
+                              <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
+                                <CheckCircle2 className="w-6 h-6 text-emerald-500 drop-shadow-lg" />
+                              </div>
+                            )}
+                          </button>
+                          
+                          {/* Deletion Cross */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const updated = (userProfile.uploadedAvatars || []).filter((_, i) => i !== idx);
+                              const isDeletedActive = userProfile.avatarUrl === url;
+                              setUserProfile({
+                                ...userProfile,
+                                uploadedAvatars: updated,
+                                avatarUrl: isDeletedActive ? AVATARS[0].url : userProfile.avatarUrl
+                              });
+                            }}
+                            className="absolute -top-1.5 -right-1.5 p-1 bg-rose-500 hover:bg-rose-600 rounded-full text-white shadow-md transition-all scale-90 hover:scale-105 active:scale-90"
+                            title="Delete custom image"
+                          >
+                            <X className="w-2.5 h-2.5 stroke-[3px]" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
+
+                    {/* Local save for Choose Your Avatar & Custom URL */}
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveSection("Avatar Choices")}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg border transition-all active:scale-95 cursor-pointer shadow-sm",
+                          isGirlyMode 
+                            ? "bg-pink-100 hover:bg-pink-200 border-pink-200 text-pink-705" 
+                            : isDarkMode 
+                              ? "bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-emerald-400" 
+                              : "bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-850"
+                        )}
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save Chosen Avatar</span>
+                      </button>
+                    </div>
+
                   </div>
 
                   {/* Custom Avatar URL section */}
@@ -9340,6 +9603,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                               longTermGoal: userProfile.longTermGoal || '',
                               isDatingModeEnabled: !!userProfile.isDatingModeEnabled,
                               datingPreferences: userProfile.datingPreferences || null,
+                              uploadedAvatars: userProfile.uploadedAvatars || [],
                               updatedAt: new Date().toISOString()
                             }, { merge: true });
                           } catch (pubErr) {
