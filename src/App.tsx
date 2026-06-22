@@ -8885,60 +8885,58 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
           >
             <motion.div 
               initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
               className={cn(
-                "w-full max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden border transition-colors duration-500",
-                isGirlyMode ? "bg-white border-pink-100 shadow-2xl" : isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-2xl"
+                "w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden border transition-all duration-300 shadow-2xl",
+                isGirlyMode ? "bg-white border-pink-200" : isDarkMode ? "bg-zinc-900 border-zinc-700/80" : "bg-white border-zinc-300"
               )}
             >
               <div className="p-6 flex flex-col max-h-[90vh] sm:max-h-[85vh]">
-                <div className="flex items-center justify-between pb-3 mb-4 border-b border-zinc-500/10 dark:border-zinc-800/35">
-                  <h3 className={cn("text-xl font-bold", isGirlyMode ? "text-pink-900" : "")}>Edit Profile</h3>
+                <div className="flex items-center justify-between pb-4 mb-4 border-b border-zinc-500/20 dark:border-zinc-800/50">
+                  <h3 className={cn("text-2xl font-black tracking-tight", isGirlyMode ? "text-pink-900" : isDarkMode ? "text-white" : "text-zinc-900")}>Edit Profile</h3>
                   <button 
                     onClick={() => setIsEditingProfile(false)} 
-                    className="p-2 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/25 border border-rose-450/30 active:scale-95 flex items-center justify-center cursor-pointer"
+                    className="p-2 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-500/25 border border-rose-400/30 active:scale-95 flex items-center justify-center cursor-pointer"
                     title="Close Dialog"
                   >
-                    <X className="w-4 h-4 stroke-[3px]" />
+                    <X className="w-5 h-5 stroke-[3px]" />
                   </button>
                 </div>
                 
                 {/* Scrollable Container for ALL edit options */}
-                <div className="flex-1 overflow-y-auto space-y-5 pr-1.5 focus:outline-none">
+                <div className="flex-1 overflow-y-auto space-y-6 pr-1.5 focus:outline-none">
                   
                   {/* Seeker Identity */}
-                  <div className="space-y-3">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">Seeker Identity</span>
-                    <div className="space-y-3">
+                  <div className="space-y-4">
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-emerald-500 dark:text-emerald-400 border-b border-emerald-500/10 dark:border-emerald-450/10 pb-1 mb-2 block">Seeker Identity</span>
+                    <div className="space-y-4">
                       <div>
                         <label className={cn(
-                          "text-xs font-bold uppercase mb-1 block transition-colors",
-                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                          "text-sm font-extrabold uppercase mb-1.5 block tracking-wide transition-colors",
+                          isGirlyMode ? "text-pink-600" : isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>Display Name / Seeker Handle</label>
                         <input 
                           type="text" 
                           value={userProfile.name || ''}
                           onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
                           className={cn(
-                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                            "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-550 focus:border-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-900 placeholder-zinc-400 focus:border-emerald-500"
                           )}
                           placeholder="E.g. Marcus Aurelius"
                         />
                       </div>
                       <div>
                         <label className={cn(
-                          "text-xs font-bold uppercase mb-1 block transition-colors",
-                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                          "text-sm font-extrabold uppercase mb-1.5 block tracking-wide transition-colors",
+                          isGirlyMode ? "text-pink-600" : isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>Seeker biography / Wisdom philosophy</label>
                         <textarea 
-                          rows={2}
+                          rows={3}
                           value={userProfile.biography || ''}
                           onChange={(e) => setUserProfile({ ...userProfile, biography: e.target.value })}
                           className={cn(
-                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all resize-none",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                            "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none transition-all resize-none",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-550 focus:border-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-900 placeholder-zinc-450 focus:border-emerald-500"
                           )}
                           placeholder="Your guiding, scholarly background & bio..."
                         />
@@ -8947,66 +8945,66 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   </div>
 
                   {/* Somatic Metrics */}
-                  <div className="space-y-3 pt-3 border-t border-dashed border-zinc-500/10 dark:border-zinc-800/35">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">Somatic & Core Metrics</span>
-                    <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-4 pt-4 border-t border-dashed border-zinc-500/20 dark:border-zinc-800/40">
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-emerald-500 dark:text-emerald-400 border-b border-emerald-500/10 dark:border-emerald-450/10 pb-1 mb-2 block">Somatic & Core Metrics</span>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className={cn(
-                          "text-xs font-bold uppercase mb-1 block transition-colors",
-                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                          "text-xs sm:text-sm font-extrabold uppercase mb-1.5 block tracking-wide transition-colors",
+                          isGirlyMode ? "text-pink-600" : isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>Height (cm)</label>
                         <input 
                           type="number" 
-                          value={userProfile.height}
-                          onChange={(e) => setUserProfile({ ...userProfile, height: Number(e.target.value) })}
+                          value={userProfile.height || ''}
+                          onChange={(e) => setUserProfile({ ...userProfile, height: e.target.value === '' ? 0 : Number(e.target.value) })}
                           className={cn(
-                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                            "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-100 focus:border-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-900 focus:border-emerald-500"
                           )}
                         />
                       </div>
                       <div>
                         <label className={cn(
-                          "text-xs font-bold uppercase mb-1 block transition-colors",
-                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                          "text-xs sm:text-sm font-extrabold uppercase mb-1.5 block tracking-wide transition-colors",
+                          isGirlyMode ? "text-pink-600" : isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>Weight (kg)</label>
                         <input 
                           type="number" 
-                          value={userProfile.currentWeight}
-                          onChange={(e) => setUserProfile({ ...userProfile, currentWeight: Number(e.target.value) })}
+                          value={userProfile.currentWeight || ''}
+                          onChange={(e) => setUserProfile({ ...userProfile, currentWeight: e.target.value === '' ? 0 : Number(e.target.value) })}
                           className={cn(
-                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                            "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-100 focus:border-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-900 focus:border-emerald-500"
                           )}
                         />
                       </div>
                       <div>
                         <label className={cn(
-                          "text-xs font-bold uppercase mb-1 block transition-colors",
-                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                          "text-xs sm:text-sm font-extrabold uppercase mb-1.5 block tracking-wide transition-colors",
+                          isGirlyMode ? "text-pink-600" : isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>Target (kg)</label>
                         <input 
                           type="number" 
-                          value={userProfile.targetWeight}
-                          onChange={(e) => setUserProfile({ ...userProfile, targetWeight: Number(e.target.value) })}
+                          value={userProfile.targetWeight || ''}
+                          onChange={(e) => setUserProfile({ ...userProfile, targetWeight: e.target.value === '' ? 0 : Number(e.target.value) })}
                           className={cn(
-                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                            "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-100 focus:border-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-900 focus:border-emerald-500"
                           )}
                         />
                       </div>
                       <div>
                         <label className={cn(
-                          "text-xs font-bold uppercase mb-1 block transition-colors",
-                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                          "text-xs sm:text-sm font-extrabold uppercase mb-1.5 block tracking-wide transition-colors",
+                          isGirlyMode ? "text-pink-600" : isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>Step Goal</label>
                         <input 
                           type="number" 
-                          value={userProfile.stepGoal}
-                          onChange={(e) => setUserProfile({ ...userProfile, stepGoal: Number(e.target.value) })}
+                          value={userProfile.stepGoal || ''}
+                          onChange={(e) => setUserProfile({ ...userProfile, stepGoal: e.target.value === '' ? 0 : Number(e.target.value) })}
                           className={cn(
-                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                            "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-100 focus:border-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-900 focus:border-emerald-500"
                           )}
                         />
                       </div>
@@ -9014,36 +9012,36 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   </div>
 
                   {/* Pull-ups / Max Strength */}
-                  <div className="space-y-3 pt-3 border-t border-dashed border-zinc-500/10 dark:border-zinc-800/35">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">Physical Discipline & Strength</span>
-                    <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-4 pt-4 border-t border-dashed border-zinc-500/20 dark:border-zinc-800/40">
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-emerald-500 dark:text-emerald-400 border-b border-emerald-500/10 dark:border-emerald-450/10 pb-1 mb-2 block">Physical Discipline & Strength</span>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className={cn(
-                          "text-xs font-bold uppercase mb-1 block transition-colors",
-                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                          "text-xs sm:text-sm font-extrabold uppercase mb-1.5 block tracking-wide transition-colors",
+                          isGirlyMode ? "text-pink-600" : isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>Max Pull-ups</label>
                         <input 
                           type="number" 
-                          value={userProfile.maxPullUps || 0}
-                          onChange={(e) => setUserProfile({ ...userProfile, maxPullUps: Number(e.target.value) })}
+                          value={userProfile.maxPullUps || ''}
+                          onChange={(e) => setUserProfile({ ...userProfile, maxPullUps: e.target.value === '' ? 0 : Number(e.target.value) })}
                           className={cn(
-                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                            "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-100 focus:border-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-900 focus:border-emerald-500"
                           )}
                         />
                       </div>
                       <div>
                         <label className={cn(
-                          "text-xs font-bold uppercase mb-1 block transition-colors",
-                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                          "text-xs sm:text-sm font-extrabold uppercase mb-1.5 block tracking-wide transition-colors",
+                          isGirlyMode ? "text-pink-600" : isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>Weighted 1-RM (kg)</label>
                         <input 
                           type="number" 
-                          value={userProfile.oneRMWeighted || 0}
-                          onChange={(e) => setUserProfile({ ...userProfile, oneRMWeighted: Number(e.target.value) })}
+                          value={userProfile.oneRMWeighted || ''}
+                          onChange={(e) => setUserProfile({ ...userProfile, oneRMWeighted: e.target.value === '' ? 0 : Number(e.target.value) })}
                           className={cn(
-                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                            "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-100 focus:border-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-900 focus:border-emerald-500"
                           )}
                         />
                       </div>
@@ -9051,37 +9049,37 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   </div>
 
                   {/* Scholarly Trajectory / Life Objectives */}
-                  <div className="space-y-3 pt-3 border-t border-dashed border-zinc-500/10 dark:border-zinc-800/35">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">Life Trajectory Goals</span>
-                    <div className="space-y-3">
+                  <div className="space-y-4 pt-4 border-t border-dashed border-zinc-500/20 dark:border-zinc-800/40">
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-widest text-emerald-500 dark:text-emerald-400 border-b border-emerald-500/10 dark:border-emerald-450/10 pb-1 mb-2 block">Life Trajectory Goals</span>
+                    <div className="space-y-4">
                       <div>
                         <label className={cn(
-                          "text-xs font-bold uppercase mb-1 block transition-colors",
-                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                          "text-xs sm:text-sm font-extrabold uppercase mb-1.5 block tracking-wide transition-colors",
+                          isGirlyMode ? "text-pink-600" : isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>Short Term Trajectory</label>
                         <input 
                           type="text" 
                           value={userProfile.shortTermGoal || ''}
                           onChange={(e) => setUserProfile({ ...userProfile, shortTermGoal: e.target.value })}
                           className={cn(
-                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-500"
+                            "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-emerald-400 focus:border-emerald-555" : "bg-zinc-100 border-zinc-300 text-zinc-900 focus:border-emerald-555 md:focus:border-emerald-555"
                           )}
                           placeholder="Your active focus (e.g. +60kg pullup etc)"
                         />
                       </div>
                       <div>
                         <label className={cn(
-                          "text-xs font-bold uppercase mb-1 block transition-colors",
-                          isGirlyMode ? "text-pink-400" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                          "text-xs sm:text-sm font-extrabold uppercase mb-1.5 block tracking-wide transition-colors",
+                          isGirlyMode ? "text-pink-600" : isDarkMode ? "text-zinc-300" : "text-zinc-700"
                         )}>Long Term Trajectory</label>
                         <input 
                           type="text" 
                           value={userProfile.longTermGoal || ''}
                           onChange={(e) => setUserProfile({ ...userProfile, longTermGoal: e.target.value })}
                           className={cn(
-                            "w-full border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-555" : "bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-emerald-555 md:focus:border-emerald-500"
+                            "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none transition-all",
+                            isGirlyMode ? "bg-pink-50 border-pink-100 text-pink-900 focus:border-pink-500" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-emerald-400 focus:border-emerald-555" : "bg-zinc-100 border-zinc-300 text-zinc-900 focus:border-emerald-555 md:focus:border-emerald-500"
                           )}
                           placeholder="Your grand vision (e.g. +100kg pullup etc)"
                         />
@@ -9092,12 +9090,12 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   {/* Dating Mode Toggle & Preferences */}
                   <div className={cn(
                     "p-5 rounded-2xl border space-y-4",
-                    isGirlyMode ? "bg-pink-50/50 border-pink-100/50" : isDarkMode ? "bg-zinc-950/80 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                    isGirlyMode ? "bg-pink-50/50 border-pink-100/50" : isDarkMode ? "bg-zinc-950/80 border-zinc-700/60" : "bg-zinc-100/70 border-zinc-300"
                   )}>
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <h4 className={cn("text-xs font-black uppercase tracking-wider", isGirlyMode ? "text-pink-600" : "text-emerald-500")}>Dating sanctuary mode</h4>
-                        <p className={cn("text-[10px] mt-0.5", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>Toggle eligibility to appear on the Seekers active dating swarm.</p>
+                        <h4 className={cn("text-sm font-black uppercase tracking-wider", isGirlyMode ? "text-pink-600" : "text-emerald-500")}>Dating sanctuary mode</h4>
+                        <p className={cn("text-xs mt-0.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Toggle eligibility to appear on the Seekers active dating swarm.</p>
                       </div>
                       <button
                         type="button"
@@ -9106,15 +9104,15 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                           isDatingModeEnabled: !userProfile.isDatingModeEnabled 
                         })}
                         className={cn(
-                          "relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
                           userProfile.isDatingModeEnabled 
                             ? (isGirlyMode ? "bg-pink-500" : "bg-emerald-500") 
-                            : "bg-zinc-700"
+                            : "bg-zinc-750"
                         )}
                       >
                         <span
                           className={cn(
-                            "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
+                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out",
                             userProfile.isDatingModeEnabled ? "translate-x-5" : "translate-x-0"
                           )}
                         />
@@ -9122,16 +9120,16 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     </div>
 
                     {userProfile.isDatingModeEnabled && (
-                      <div className="space-y-4 pt-4 border-t border-dashed border-zinc-800/50">
+                      <div className="space-y-4 pt-4 border-t border-dashed border-zinc-800/80 dark:border-zinc-700/50">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Your Gender</label>
+                            <label className={cn("text-xs font-black uppercase tracking-wide block mb-1.5", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>Your Gender</label>
                             <select
                               value={userProfile.gender || 'male'}
                               onChange={(e) => setUserProfile({ ...userProfile, gender: e.target.value as any })}
                               className={cn(
-                                "w-full border rounded-xl px-3 py-2 text-xs focus:outline-none transition-all",
-                                isGirlyMode ? "bg-pink-50 border-pink-150 text-pink-900" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                                "w-full border rounded-xl px-3 py-2.5 text-xs sm:text-sm font-semibold focus:outline-none transition-all",
+                                isGirlyMode ? "bg-pink-50 border-pink-150 text-pink-900" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-300 text-zinc-900"
                               )}
                             >
                               <option value="male">Male</option>
@@ -9140,23 +9138,23 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                             </select>
                           </div>
                           <div>
-                            <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Your Age</label>
+                            <label className={cn("text-xs font-black uppercase tracking-wide block mb-1.5", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>Your Age</label>
                             <input
                               type="number"
                               min="18"
                               max="100"
-                              value={userProfile.age || 28}
-                              onChange={(e) => setUserProfile({ ...userProfile, age: Number(e.target.value) })}
+                              value={userProfile.age || ''}
+                              onChange={(e) => setUserProfile({ ...userProfile, age: e.target.value === '' ? 0 : Number(e.target.value) })}
                               className={cn(
-                                "w-full border rounded-xl px-3 py-2 text-xs focus:outline-none transition-all",
-                                isGirlyMode ? "bg-pink-50 border-pink-150 text-pink-900" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                                "w-full border rounded-xl px-3 py-2.5 text-xs sm:text-sm font-semibold focus:outline-none transition-all",
+                                isGirlyMode ? "bg-pink-50 border-pink-150 text-pink-900" : isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-300 text-zinc-900"
                               )}
                             />
                           </div>
                         </div>
 
                         <div>
-                          <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-2", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Gender Interest</label>
+                          <label className={cn("text-xs font-black uppercase tracking-wide block mb-2", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>Gender Interest</label>
                           <div className="grid grid-cols-4 gap-1.5">
                             {(['female', 'male', 'both', 'all'] as const).map((genderVal) => (
                               <button
@@ -9170,10 +9168,10 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                   }
                                 })}
                                 className={cn(
-                                  "py-2 px-1 rounded-xl text-[10px] font-bold border uppercase transition-all tracking-tight text-center cursor-pointer",
+                                  "py-2.5 px-1.5 rounded-xl text-xs font-black border uppercase transition-all tracking-tight text-center cursor-pointer",
                                   userProfile.datingPreferences?.genderInterest === genderVal
                                     ? (isGirlyMode ? "bg-pink-500 text-white border-pink-500" : "bg-emerald-500 text-zinc-950 border-emerald-500")
-                                    : (isDarkMode ? "bg-zinc-905 border-zinc-800 text-zinc-400 hover:text-white" : "bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900")
+                                    : (isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" : "bg-white border-zinc-300 text-zinc-700 hover:text-zinc-900")
                                 )}
                               >
                                 {genderVal === 'both' ? 'Both' : genderVal === 'all' ? 'All' : genderVal}
@@ -9184,7 +9182,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Min Age: <span className="text-emerald-400 font-mono">{userProfile.datingPreferences?.minAge || 18}</span></label>
+                            <label className={cn("text-xs font-black uppercase tracking-wide block mb-1.5", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>Min Age: <span className="text-emerald-500 dark:text-emerald-400 font-mono font-bold">{userProfile.datingPreferences?.minAge || 18}</span></label>
                             <input
                               type="range"
                               min="18"
@@ -9198,13 +9196,13 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                 }
                               })}
                               className={cn(
-                                "w-full h-1 rounded-lg appearance-none cursor-pointer",
+                                "w-full h-1.5 rounded-lg appearance-none cursor-pointer",
                                 isGirlyMode ? "accent-pink-500 bg-pink-100" : "accent-emerald-500 bg-zinc-800"
                               )}
                             />
                           </div>
                           <div>
-                            <label className={cn("text-[10px] font-bold uppercase tracking-wider block mb-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>Max Age: <span className="text-emerald-400 font-mono">{userProfile.datingPreferences?.maxAge || 40}</span></label>
+                            <label className={cn("text-xs font-black uppercase tracking-wide block mb-1.5", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>Max Age: <span className="text-emerald-500 dark:text-emerald-400 font-mono font-bold">{userProfile.datingPreferences?.maxAge || 40}</span></label>
                             <input
                               type="range"
                               min="18"
@@ -9218,7 +9216,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                 }
                               })}
                               className={cn(
-                                "w-full h-1 rounded-lg appearance-none cursor-pointer",
+                                "w-full h-1.5 rounded-lg appearance-none cursor-pointer",
                                 isGirlyMode ? "accent-pink-500 bg-pink-100" : "accent-emerald-500 bg-zinc-800"
                               )}
                             />
@@ -9231,8 +9229,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   {/* Choose Avatar Section */}
                   <div className="space-y-3">
                     <label className={cn(
-                      "text-xs font-bold uppercase block transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                      "text-sm font-extrabold uppercase block tracking-wide transition-colors",
+                      isDarkMode ? "text-zinc-300" : "text-zinc-700"
                     )}>Choose Your Avatar</label>
                     <div className="grid grid-cols-3 gap-3">
                       {AVATARS.map((avatar) => (
@@ -9243,7 +9241,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                             "relative aspect-square rounded-2xl overflow-hidden border-2 transition-all active:scale-95 cursor-pointer",
                             userProfile.avatarUrl === avatar.url 
                               ? "border-emerald-500 ring-2 ring-emerald-500/20" 
-                              : (isDarkMode ? "border-zinc-800 bg-zinc-800 hover:border-zinc-700" : "border-zinc-100 bg-zinc-100 hover:border-zinc-200")
+                              : (isDarkMode ? "border-zinc-700 bg-zinc-800 hover:border-zinc-650" : "border-zinc-200 bg-zinc-100 hover:border-zinc-300")
                           )}
                         >
                           <img 
@@ -9268,8 +9266,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   {/* Custom Avatar URL section */}
                   <div className="space-y-2">
                     <label className={cn(
-                      "text-xs font-bold uppercase block transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
+                      "text-sm font-extrabold uppercase block tracking-wide transition-colors",
+                      isDarkMode ? "text-zinc-300" : "text-zinc-700"
                     )}>Or Custom Avatar URL</label>
                     <input 
                       type="text" 
@@ -9277,8 +9275,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       value={userProfile.avatarUrl && !AVATARS.some(a => a.url === userProfile.avatarUrl) ? userProfile.avatarUrl : ''}
                       onChange={(e) => setUserProfile({ ...userProfile, avatarUrl: e.target.value })}
                       className={cn(
-                        "w-full border rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-all",
-                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                        "w-full border rounded-xl px-4 py-3.5 text-sm sm:text-base font-semibold focus:outline-none focus:border-emerald-500 transition-all",
+                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-100 placeholder-zinc-550" : "bg-zinc-100 border-zinc-300 text-zinc-900 placeholder-zinc-400"
                       )}
                     />
                   </div>
@@ -9286,10 +9284,10 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   {/* Debug Info Section */}
                   <div className={cn(
                     "p-4 rounded-2xl border border-dashed",
-                    isDarkMode ? "border-zinc-800 bg-zinc-900/30" : "border-zinc-200 bg-zinc-50"
+                    isDarkMode ? "border-zinc-805 bg-zinc-900/30" : "border-zinc-300 bg-zinc-50"
                   )}>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Debug Information</p>
-                    <div className="space-y-1 font-mono text-[10px] text-zinc-400">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-550 mb-2">Debug Information</p>
+                    <div className="space-y-1 font-mono text-[10px] text-zinc-500">
                       <p>UID: {user?.uid}</p>
                       <p>Email: {user?.email}</p>
                       <p>Marked Quotes: {userProfile.markedQuotes?.length || 0}</p>
@@ -9300,12 +9298,38 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                 </div>
 
                 {/* Fixed Footer for Save Button */}
-                <div className="pt-4 mt-2 border-t border-zinc-500/10 dark:border-zinc-800/35">
+                <div className="pt-4 mt-2 border-t border-zinc-500/20 dark:border-zinc-800/50">
                   <button 
                     onClick={async () => {
                       if (user) {
                         try {
                           await setDoc(doc(db, 'users', user.uid), userProfile, { merge: true });
+                          // Synchronize to public profiles so dating swarm lists and clinical logs update instantly
+                          try {
+                            const publicProfileRef = doc(db, 'public_profiles', user.uid);
+                            await setDoc(publicProfileRef, {
+                              uid: user.uid,
+                              name: userProfile.name || 'Seeker',
+                              avatarUrl: userProfile.avatarUrl || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2',
+                              biography: userProfile.biography || '',
+                              gender: userProfile.gender || 'male',
+                              age: userProfile.age || 28,
+                              height: userProfile.height || 0,
+                              currentWeight: userProfile.currentWeight || 0,
+                              targetWeight: userProfile.targetWeight || 0,
+                              stepGoal: userProfile.stepGoal || 10000,
+                              mbti: userProfile.mbti || '',
+                              maxPullUps: userProfile.maxPullUps || 0,
+                              oneRMWeighted: userProfile.oneRMWeighted || 0,
+                              shortTermGoal: userProfile.shortTermGoal || '',
+                              longTermGoal: userProfile.longTermGoal || '',
+                              isDatingModeEnabled: !!userProfile.isDatingModeEnabled,
+                              datingPreferences: userProfile.datingPreferences || null,
+                              updatedAt: new Date().toISOString()
+                            }, { merge: true });
+                          } catch (pubErr) {
+                            console.warn('Could not sync public_profiles:', pubErr);
+                          }
                           setIsEditingProfile(false);
                         } catch (error) {
                           handleFirestoreError(error, 'update', `users/${user.uid}`);
@@ -9315,7 +9339,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                         setIsEditingProfile(false);
                       }
                     }}
-                    className="w-full py-4 bg-emerald-500 text-zinc-950 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-all text-center cursor-pointer hover:bg-emerald-450"
+                    className="w-full py-4 bg-emerald-500 text-zinc-950 text-base rounded-2xl font-black uppercase tracking-wider shadow-lg shadow-emerald-500/20 active:scale-95 transition-all text-center cursor-pointer hover:bg-emerald-400"
                   >
                     Save Changes
                   </button>

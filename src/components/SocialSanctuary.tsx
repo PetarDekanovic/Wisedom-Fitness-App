@@ -401,6 +401,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [setupBiography, setSetupBiography] = useState('');
   const [setupName, setSetupName] = useState(userProfile?.name || '');
   const [activeLightboxImg, setActiveLightboxImg] = useState<string | null>(null);
+  const [activeTooltipUid, setActiveTooltipUid] = useState<string | null>(null);
   const [editUserPhotos, setEditUserPhotos] = useState<string[]>([]);
   const [editUserPhotosVisibility, setEditUserPhotosVisibility] = useState<string[]>([]);
   const [uploadingSlots, setUploadingSlots] = useState<{ [key: number]: boolean }>({});
@@ -2336,7 +2337,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     {/* Emojis selection & file uploads row bar */}
                     <div className="flex flex-wrap items-center justify-between gap-2 px-1">
                       <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar">
-                        {['❤️', '💖', '💝', '💕', '🫶', '💗', '💓', '🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
+                        {['❤️', '💔', '💖', '💝', '💕', '🫶', '🔥', '⚡', '✨', '🚀', '🎭', '🌌', '🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
                           <button
                             key={emoji}
                             type="button"
@@ -2507,22 +2508,33 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           ].map(tab => {
             if (tab.adminOnly && !isAdmin) return null;
             const active = activeTab === tab.id;
+            const isMessagesTab = tab.id === 'messages';
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap shrink-0 active:scale-95 select-none",
+                  "flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all whitespace-nowrap shrink-0 active:scale-95 select-none relative",
                   active 
                     ? "bg-emerald-500 text-zinc-950 font-black italic scale-[0.98] shadow-md shadow-emerald-500/15" 
-                    : isDarkMode
-                      ? "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30"
-                      : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
+                    : isMessagesTab
+                      ? "bg-zinc-800 border border-emerald-500/35 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/50 animate-pulse duration-[2000ms] shadow-[0_0_8px_rgba(16,185,129,0.15)] font-black"
+                      : isDarkMode
+                        ? "text-zinc-500 hover:text-zinc-350 hover:bg-zinc-800/30"
+                        : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
                 )}
               >
                 {tab.icon}
                 <span className="hidden sm:inline">{tab.label}</span>
                 <span className="inline sm:hidden">{tab.mobileLabel}</span>
+                
+                {/* Visual red/emerald indicator dot on Direct Dialogs */}
+                {isMessagesTab && !active && (
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2 z-30">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                  </span>
+                )}
               </button>
             );
           })}
@@ -2541,8 +2553,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
               
               {/* Draft Creator Form */}
               <form onSubmit={handlePostSubmit} className={cn(
-                "p-5 rounded-3xl border transition-all duration-300 space-y-4",
-                isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+                "p-6 rounded-3xl border transition-all duration-300 space-y-4 shadow-md",
+                isDarkMode ? "bg-zinc-900 border-zinc-700/80 shadow-black/25" : "bg-zinc-50/50 border-zinc-300 shadow-zinc-100"
               )}>
                 <div className="flex items-start gap-3">
                   <img 
@@ -2559,8 +2571,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       rows={5}
                       maxLength={60000}
                       className={cn(
-                        "w-full text-xs font-medium outline-none border-0 bg-transparent resize-none focus:ring-0",
-                        isDarkMode ? "text-white placeholder-zinc-500" : "text-zinc-900 placeholder-zinc-400"
+                        "w-full text-xs font-bold outline-none border-0 bg-transparent resize-none focus:ring-0 leading-relaxed",
+                        isDarkMode ? "text-zinc-100 placeholder-zinc-450" : "text-zinc-900 placeholder-zinc-500"
                       )}
                     />
                     <div className="flex justify-end pr-2 pt-1">
@@ -2581,7 +2593,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                 {/* Optional Media attachments choice bar */}
                 <div className="pt-2 border-t border-zinc-800/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Attach:</span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Attach asset:</span>
                     <select
                       value={newPostMediaType}
                       onChange={(e) => {
@@ -2589,8 +2601,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         setNewPostMediaUrl('');
                       }}
                       className={cn(
-                        "px-2 py-1 text-[10px] font-black uppercase rounded-lg border outline-none",
-                        isDarkMode ? "bg-zinc-850 border-zinc-800 text-zinc-400" : "bg-zinc-50 border-zinc-200 text-zinc-650"
+                        "px-3 py-1.5 text-[10px] font-black uppercase rounded-lg border outline-none font-sans cursor-pointer transition-all",
+                        isDarkMode ? "bg-zinc-800 border-zinc-650 text-emerald-400 hover:border-emerald-500" : "bg-white border-zinc-300 text-emerald-700 hover:border-emerald-500 shadow-sm"
                       )}
                     >
                       <option value="none">None</option>
@@ -2610,8 +2622,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           newPostMediaType === 'tiktok' ? 'TikTok URL' : 'Image attachment URL'
                         }
                         className={cn(
-                          "flex-1 px-3 py-1 text-[10px] rounded-lg border outline-none max-w-[150px] sm:max-w-xs",
-                          isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                          "flex-1 px-3 py-1.5 text-[10px] rounded-lg border outline-none max-w-[150px] sm:max-w-xs font-semibold",
+                          isDarkMode ? "bg-zinc-800 border-zinc-650 text-white placeholder-zinc-500" : "bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 shadow-sm"
                         )}
                         required
                       />
@@ -2620,8 +2632,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     {newPostMediaType === 'video' && (
                       <div className="flex items-center gap-2">
                         <label className={cn(
-                          "flex items-center justify-center gap-1.5 py-1 px-2.5 rounded-lg border border-dashed cursor-pointer hover:bg-emerald-500/10 hover:border-emerald-500/40 text-[9px] font-bold transition-all",
-                          isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-emerald-400" : "bg-zinc-100 border-zinc-300 text-zinc-650 hover:text-emerald-600"
+                          "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed cursor-pointer hover:bg-emerald-500/10 hover:border-emerald-500/40 text-[9px] font-black transition-all uppercase tracking-wider",
+                          isDarkMode ? "bg-zinc-800 border-zinc-650 text-emerald-450 hover:text-emerald-400" : "bg-white border-zinc-300 text-emerald-700 hover:text-emerald-600 shadow-sm"
                         )}>
                           {isUploadingPostVideo ? (
                             <span className="animate-pulse text-emerald-500 flex items-center gap-1">
@@ -3624,7 +3636,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   {/* Emoji selection & file uploads row bar */}
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
                     <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar">
-                      {['❤️', '💖', '💝', '💕', '🫶', '💗', '💓', '🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
+                      {['❤️', '💔', '💖', '💝', '💕', '🫶', '🔥', '⚡', '✨', '🚀', '🎭', '🌌', '🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
                         <button
                           key={emoji}
                           type="button"
@@ -3720,8 +3732,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   onChange={(e) => setPeerSearchQuery(e.target.value)}
                   placeholder="Search seekers by codename, bio credentials, or focus areas..."
                   className={cn(
-                    "w-full pl-10 pr-4 py-3 text-xs rounded-2xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                    isDarkMode ? "bg-zinc-900/60 border-zinc-800 text-white placeholder-zinc-500" : "bg-white border-zinc-250 text-zinc-900 placeholder-zinc-400 shadow-sm"
+                    "w-full pl-10 pr-4 py-3.5 text-xs rounded-2xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 transition-all",
+                    isDarkMode ? "bg-zinc-900 border-zinc-700 text-zinc-100 placeholder-zinc-450" : "bg-zinc-50 border-zinc-300 text-zinc-900 placeholder-zinc-500 shadow-inner"
                   )}
                 />
               </div>
@@ -3912,19 +3924,29 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 {peer.mbti ? `${peer.mbti} · Archetype` : "Seeker"}
                               </span>
                               {score !== null && (
-                                <div className="relative group/tooltip inline-block z-30">
-                                  <span className={cn(
-                                    "text-[7.5px] px-1.5 py-0.5 rounded font-black tracking-tight shrink-0 flex items-center gap-0.5 leading-none cursor-help hover:scale-105 active:scale-95 transition-transform",
-                                    peer.isDatingModeEnabled
-                                      ? "bg-rose-500 text-white animate-pulse"
-                                      : "bg-emerald-500 text-zinc-950"
-                                  )}>
+                                <div className="relative group/tooltip inline-block z-35">
+                                  <span 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveTooltipUid(activeTooltipUid === peer.uid ? null : peer.uid);
+                                    }}
+                                    className={cn(
+                                      "text-[7.5px] px-1.5 py-0.5 rounded font-black tracking-tight shrink-0 flex items-center gap-0.5 leading-none cursor-pointer hover:scale-105 active:scale-95 transition-transform select-none",
+                                      peer.isDatingModeEnabled
+                                        ? "bg-rose-500 text-white animate-pulse"
+                                        : "bg-emerald-500 text-zinc-950"
+                                    )}
+                                    title="Click to view match breakdown"
+                                  >
                                     {peer.isDatingModeEnabled ? "💖" : "⚡"} {score}% {peer.isDatingModeEnabled ? "Fit" : "Match"}
                                   </span>
                                   
-                                  {/* Hover Tooltip Breakdown */}
+                                  {/* Hover & Active Click Tooltip Breakdown */}
                                   <div className={cn(
-                                    "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 p-3 rounded-2xl border text-left shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 group-hover/tooltip:pointer-events-auto transition-all duration-300 z-50 space-y-1.5 backdrop-blur-md",
+                                    "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 p-3 rounded-2xl border text-left shadow-xl transition-all duration-300 z-50 space-y-1.5 backdrop-blur-md",
+                                    activeTooltipUid === peer.uid
+                                      ? "opacity-100 pointer-events-auto scale-100 translate-y-0"
+                                      : "opacity-0 pointer-events-none scale-95 translate-y-1 group-hover/tooltip:opacity-100 group-hover/tooltip:pointer-events-auto group-hover/tooltip:scale-100 group-hover/tooltip:translate-y-0",
                                     isGirlyMode 
                                       ? "bg-white/95 border-pink-100 text-pink-950 shadow-pink-500/10" 
                                       : isDarkMode 
@@ -4222,8 +4244,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                 {/* Left Form column */}
                 <div className="md:col-span-2 space-y-6">
                   <div className={cn(
-                    "p-6 rounded-3xl border space-y-6 animate-fadeIn",
-                    isDarkMode ? "bg-zinc-900/30 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
+                    "p-6 rounded-3xl border space-y-6 animate-fadeIn shadow-lg",
+                    isDarkMode ? "bg-zinc-900 border-zinc-700/80 shadow-black/20" : "bg-zinc-50 border-zinc-300 shadow-zinc-150"
                   )}>
                     {/* Presets Block */}
                     <div className="space-y-3">
@@ -4262,15 +4284,15 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         onChange={(e) => setEditCoverUrl(e.target.value)}
                         placeholder="Or input custom cover Image URL..."
                         className={cn(
-                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                          isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 transition-all",
+                          isDarkMode ? "bg-zinc-950 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
                         )}
                       />
                     </div>
 
                     {/* Presets Profile Avatars */}
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Preset Seeker Avatars</h4>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-350">Preset Seeker Avatars</h4>
                       <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
                         {PRESET_AVATARS.map(avatar => (
                           <button
@@ -4278,8 +4300,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             type="button"
                             onClick={() => setEditAvatarUrl(avatar.url)}
                             className={cn(
-                              "relative w-12 h-12 rounded-full overflow-hidden border shrink-0 transition-all",
-                              editAvatarUrl === avatar.url ? "border-emerald-500 ring-2 ring-emerald-500/25 scale-95" : "border-zinc-805 hover:border-zinc-700"
+                              "relative w-12 h-12 rounded-full overflow-hidden border shrink-0 transition-all shadow-sm",
+                              editAvatarUrl === avatar.url ? "border-emerald-500 ring-4 ring-emerald-500/20 scale-95" : "border-zinc-300 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-700"
                             )}
                           >
                             <img src={avatar.url} className="w-full h-full object-cover" />
@@ -4292,38 +4314,38 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         onChange={(e) => setEditAvatarUrl(e.target.value)}
                         placeholder="Or input custom profile Avatar URL..."
                         className={cn(
-                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                          isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 transition-all",
+                          isDarkMode ? "bg-zinc-950 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
                         )}
                       />
                     </div>
 
                     {/* Display Name and Academic Title */}
                     <div className="space-y-1.5">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Display Name / Pseudonym</h4>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-350">Display Name / Pseudonym</h4>
                       <input
                         type="text"
                         value={setupName}
                         onChange={(e) => setSetupName(e.target.value)}
                         placeholder="Your physical name or chosen seeker title..."
                         className={cn(
-                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                          isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 transition-all",
+                          isDarkMode ? "bg-zinc-955 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
                         )}
                       />
                     </div>
 
                     {/* Biography Description */}
                     <div className="space-y-1.5">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Philosophy biography</h4>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-350">Philosophy biography</h4>
                       <textarea
                         value={setupBiography}
                         onChange={(e) => setSetupBiography(e.target.value)}
                         rows={3}
                         placeholder="Introduce your intellectual aspirations and recovery priorities..."
                         className={cn(
-                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500 resize-none",
-                          isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                          "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 resize-none transition-all",
+                          isDarkMode ? "bg-zinc-955 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
                         )}
                       />
                     </div>
@@ -4333,43 +4355,43 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       
                       {/* Location */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Metropolitan Location</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-350">Metropolitan Location</label>
                         <input
                           type="text"
                           value={editLocation}
                           onChange={(e) => setEditLocation(e.target.value)}
                           placeholder="e.g. Zagreb, Croatia"
                           className={cn(
-                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 transition-all",
+                            isDarkMode ? "bg-zinc-955 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
                           )}
                         />
                       </div>
 
                       {/* Stature */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Stature height (cm)</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-350">Stature height (cm)</label>
                         <input
                           type="number"
                           value={editHeight}
                           onChange={(e) => setEditHeight(e.target.value)}
                           placeholder="e.g. 180"
                           className={cn(
-                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-white" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 transition-all",
+                            isDarkMode ? "bg-zinc-955 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
                           )}
                         />
                       </div>
 
                       {/* Intent */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Relationship Intent</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-350">Relationship Intent</label>
                         <select
                           value={editRelationshipIntent}
                           onChange={(e) => setEditRelationshipIntent(e.target.value)}
                           className={cn(
-                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 cursor-pointer transition-all",
+                            isDarkMode ? "bg-zinc-955 border-zinc-700 text-emerald-450" : "bg-white border-zinc-350 text-emerald-800 shadow-sm"
                           )}
                         >
                           <option value="Long-term partnership">Long-term partnership</option>
@@ -4381,13 +4403,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                       {/* Training Focus */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Workout & Recovery Focus</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-350">Workout & Recovery Focus</label>
                         <select
                           value={editFitnessStyle}
                           onChange={(e) => setEditFitnessStyle(e.target.value)}
                           className={cn(
-                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 cursor-pointer transition-all",
+                            isDarkMode ? "bg-zinc-955 border-zinc-700 text-emerald-450" : "bg-white border-zinc-350 text-emerald-800 shadow-sm"
                           )}
                         >
                           <option value="Heavy Calisthenics">Heavy Calisthenics</option>
