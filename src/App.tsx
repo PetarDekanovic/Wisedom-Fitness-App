@@ -6820,9 +6820,24 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                 <div>
                   <h2 className={cn("text-2xl font-bold", isGirlyMode ? "text-pink-900" : "")}>{userProfile.name}</h2>
                   <p className={cn(
-                    "font-medium transition-colors",
+                    "font-medium transition-colors mb-2",
                     isGirlyMode ? "text-pink-600/60" : isDarkMode ? "text-zinc-500" : "text-zinc-400"
                   )}>{user?.email}</p>
+                  
+                  <button
+                    onClick={() => setIsEditingProfile(true)}
+                    className={cn(
+                      "mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border transition-all active:scale-95 cursor-pointer shadow-sm",
+                      isGirlyMode 
+                        ? "bg-pink-50 border-pink-100 text-pink-600 hover:bg-pink-100" 
+                        : isDarkMode 
+                          ? "bg-zinc-900/60 border-zinc-800 text-emerald-400 hover:bg-zinc-800" 
+                          : "bg-white border-zinc-250 text-emerald-500 hover:bg-zinc-50"
+                    )}
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>Edit Profile Details</span>
+                  </button>
                 </div>
               </div>
 

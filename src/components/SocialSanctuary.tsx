@@ -1129,8 +1129,38 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             const updated = [...editUserPhotos];
             updated[index] = downloadUrl;
             setEditUserPhotos(updated);
+
+            // Determine if this is the first custom uploaded image or if current avatar is default/empty
+            const hasNoPriorUploadedPhotos = !thisPublicProfile?.userPhotos?.some((p: string) => p && p.startsWith('http'));
+            const isPlaceholderAvatar = !editAvatarUrl || 
+              editAvatarUrl.includes('unsplash.com') || 
+              editAvatarUrl.includes('images.unsplash.com');
+
+            let nextAvatarUrl = editAvatarUrl;
+            if (isPlaceholderAvatar || hasNoPriorUploadedPhotos || index === 0) {
+              nextAvatarUrl = downloadUrl;
+              setEditAvatarUrl(downloadUrl);
+            }
+
+            // Write immediately to Firestore ('public_profiles') so it is NEVER lost on page refresh!
+            const docRef = doc(db, 'public_profiles', currentUser.uid);
+            await setDoc(docRef, {
+              userPhotos: updated,
+              avatarUrl: nextAvatarUrl,
+              updatedAt: new Date().toISOString()
+            }, { merge: true });
+
+            // Keep the 'users' collection in sync as well
+            const userRef = doc(db, 'users', currentUser.uid);
+            await setDoc(userRef, {
+              avatarUrl: nextAvatarUrl
+            }, { merge: true });
+
+            // Refresh local profile state
+            setThisPublicProfile(prev => prev ? { ...prev, userPhotos: updated, avatarUrl: nextAvatarUrl } : null);
+
           } catch (e: any) {
-            console.error('Error fetching download URL:', e);
+            console.error('Error fetching download URL or saving data:', e);
             alert('Failed to process uploaded file: ' + e.message);
           } finally {
             setUploadingSlots(prev => ({ ...prev, [index]: false }));
@@ -4638,6 +4668,39 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       </div>
                     </div>
 
+                    {/* Integrated Save Button for Personality / Location */}
+                    <div className="flex justify-between items-center bg-emerald-500/5 dark:bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/10 mt-3 animate-fadeIn">
+                      <div className="space-y-0.5">
+                        <h5 className="text-[10px] uppercase font-black tracking-widest text-emerald-400">Save Personality Coordinates</h5>
+                        <p className="text-[9px] text-zinc-400">Lock your metropolitan location & physical metrics instantly.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await handleSaveBiographyAndDating();
+                            if (currentUser) {
+                              const userRef = doc(db, 'users', currentUser.uid);
+                              await setDoc(userRef, {
+                                location: editLocation,
+                                height: Number(editHeight) || 180,
+                                fitnessStyle: editFitnessStyle,
+                                morningEnergy: editMorningEnergy
+                              }, { merge: true });
+                            }
+                            alert('Personality coordinates and metropolitan location saved successfully!');
+                          } catch (err: any) {
+                            console.error('Error saving personality coordinates:', err);
+                            alert('Error: ' + err.message);
+                          }
+                        }}
+                        className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-black uppercase tracking-wider rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 active:scale-95 transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save Data</span>
+                      </button>
+                    </div>
+
                     {/* Relationship/Alignment Intent (Tinder style visual cards) */}
                     <div className="space-y-3 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-4">
                       <div className="flex items-center gap-1.5">
@@ -4884,7 +4947,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               "Heavy calisthenics by the Sava river followed by warm organic tea",
                               "A classical concert to synchronize heart-rate-variability"
                             ],
-                            hasCustomInput: false
+                            hasCustomInput: true,
+                            placeholder: "Specify custom outings or preferences..."
                           },
                           { 
                             id: "weekends" as const, 
@@ -5131,7 +5195,17 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           "Taoist Classical Wisdom",
                           "Balkan Gnosticism",
                           "Analytical Jungianism",
-                          "Frankl Logotherapy"
+                          "Frankl Logotherapy",
+                          "Socratic Virtues",
+                          "Spinozistic Pantheism",
+                          "Schopenhauerian Will",
+                          "Kantian Moral Duty",
+                          "Nietzschean Overman",
+                          "Marcus Aurelius Meditations",
+                          "Balkan Scholasticism",
+                          "Eudaimonism",
+                          "Dialectical Idealism",
+                          "Aesthetic Existentialism"
                         ].map(wisdom => {
                           const active = editInterests.includes(wisdom);
                           return (
