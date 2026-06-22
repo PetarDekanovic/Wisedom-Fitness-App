@@ -9412,9 +9412,34 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                               if (!file || !user) return;
                               setIsUploadingAvatar(true);
                               try {
-                                const storageRef = ref(storage, `users/${user.uid}/avatars/${Date.now()}_${file.name}`);
-                                await uploadBytes(storageRef, file);
-                                const downloadUrl = await getDownloadURL(storageRef);
+                                const reader = new FileReader();
+                                const fileLoadedPromise = new Promise<string>((resolve, reject) => {
+                                  reader.onload = () => resolve(reader.result as string);
+                                  reader.onerror = (err) => reject(err);
+                                });
+                                
+                                reader.readAsDataURL(file);
+                                const base64Data = await fileLoadedPromise;
+
+                                const response = await fetch('/api/upload', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json'
+                                  },
+                                  body: JSON.stringify({
+                                    filename: file.name,
+                                    fileType: file.type,
+                                    base64Data
+                                  })
+                                });
+
+                                if (!response.ok) {
+                                  const errJson = await response.json().catch(() => ({}));
+                                  throw new Error(errJson.error || 'Server rejected avatar upload.');
+                                }
+
+                                const uploadResult = await response.json();
+                                const downloadUrl = uploadResult.url;
                                 
                                 // Add to uploadedAvatars array
                                 const currentUploaded = userProfile.uploadedAvatars || [];

@@ -1105,72 +1105,81 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
 
     setUploadingSlots(prev => ({ ...prev, [index]: true }));
-    setUploadProgressSlots(prev => ({ ...prev, [index]: 0 }));
+    setUploadProgressSlots(prev => ({ ...prev, [index]: 20 }));
 
     try {
-      const extension = file.name.split('.').pop() || 'jpg';
-      const uniqueName = `slot_${index}_${Date.now()}.${extension}`;
-      const storageRef = ref(storage, `users/${currentUser.uid}/attachments/${uniqueName}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
+      const reader = new FileReader();
+      const fileLoadedPromise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (err) => reject(err);
+      });
+      
+      reader.readAsDataURL(file);
+      const base64Data = await fileLoadedPromise;
+      setUploadProgressSlots(prev => ({ ...prev, [index]: 50 }));
 
-      uploadTask.on('state_changed', 
-        (snapshot) => {
-          const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-          setUploadProgressSlots(prev => ({ ...prev, [index]: progress }));
-        }, 
-        (error) => {
-          console.error(`Seeker slot ${index} photograph upload failed:`, error);
-          alert('Upload abortive: ' + error.message);
-          setUploadingSlots(prev => ({ ...prev, [index]: false }));
-        }, 
-        async () => {
-          try {
-            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-            const updated = [...editUserPhotos];
-            updated[index] = downloadUrl;
-            setEditUserPhotos(updated);
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filename: file.name,
+          fileType: file.type,
+          base64Data
+        })
+      });
 
-            // Determine if this is the first custom uploaded image or if current avatar is default/empty
-            const hasNoPriorUploadedPhotos = !thisPublicProfile?.userPhotos?.some((p: string) => p && p.startsWith('http'));
-            const isPlaceholderAvatar = !editAvatarUrl || 
-              editAvatarUrl.includes('unsplash.com') || 
-              editAvatarUrl.includes('images.unsplash.com');
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Server rejected photo upload.');
+      }
 
-            let nextAvatarUrl = editAvatarUrl;
-            if (isPlaceholderAvatar || hasNoPriorUploadedPhotos || index === 0) {
-              nextAvatarUrl = downloadUrl;
-              setEditAvatarUrl(downloadUrl);
-            }
+      setUploadProgressSlots(prev => ({ ...prev, [index]: 80 }));
+      const uploadResult = await response.json();
+      const downloadUrl = uploadResult.url;
 
-            // Write immediately to Firestore ('public_profiles') so it is NEVER lost on page refresh!
-            const docRef = doc(db, 'public_profiles', currentUser.uid);
-            await setDoc(docRef, {
-              userPhotos: updated,
-              avatarUrl: nextAvatarUrl,
-              updatedAt: new Date().toISOString()
-            }, { merge: true });
+      const updated = [...editUserPhotos];
+      updated[index] = downloadUrl;
+      setEditUserPhotos(updated);
 
-            // Keep the 'users' collection in sync as well
-            const userRef = doc(db, 'users', currentUser.uid);
-            await setDoc(userRef, {
-              avatarUrl: nextAvatarUrl
-            }, { merge: true });
+      // Determine if this is the first custom uploaded image or if current avatar is default/empty
+      const hasNoPriorUploadedPhotos = !thisPublicProfile?.userPhotos?.some((p: string) => p && p.startsWith('http'));
+      const isPlaceholderAvatar = !editAvatarUrl || 
+        editAvatarUrl.includes('unsplash.com') || 
+        editAvatarUrl.includes('images.unsplash.com');
 
-            // Refresh local profile state
-            setThisPublicProfile(prev => prev ? { ...prev, userPhotos: updated, avatarUrl: nextAvatarUrl } : null);
+      let nextAvatarUrl = editAvatarUrl;
+      if (isPlaceholderAvatar || hasNoPriorUploadedPhotos || index === 0) {
+        nextAvatarUrl = downloadUrl;
+        setEditAvatarUrl(downloadUrl);
+      }
 
-          } catch (e: any) {
-            console.error('Error fetching download URL or saving data:', e);
-            alert('Failed to process uploaded file: ' + e.message);
-          } finally {
-            setUploadingSlots(prev => ({ ...prev, [index]: false }));
-          }
-        }
-      );
+      // Write immediately to Firestore ('public_profiles') so it is NEVER lost on page refresh!
+      const docRef = doc(db, 'public_profiles', currentUser.uid);
+      await setDoc(docRef, {
+        userPhotos: updated,
+        avatarUrl: nextAvatarUrl,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      // Keep the 'users' collection in sync as well
+      const userRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userRef, {
+        avatarUrl: nextAvatarUrl
+      }, { merge: true });
+
+      // Refresh local profile state
+      setThisPublicProfile(prev => prev ? { ...prev, userPhotos: updated, avatarUrl: nextAvatarUrl } : null);
+      setUploadProgressSlots(prev => ({ ...prev, [index]: 100 }));
+
     } catch (err: any) {
       console.error('Photo upload outer error:', err);
       alert('Outer process interruption: ' + err.message);
-      setUploadingSlots(prev => ({ ...prev, [index]: false }));
+    } finally {
+      setTimeout(() => {
+        setUploadingSlots(prev => ({ ...prev, [index]: false }));
+      }, 500);
     }
   };
 
