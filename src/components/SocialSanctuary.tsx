@@ -68,6 +68,15 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
+import { 
+  Briefcase, 
+  GraduationCap, 
+  Music, 
+  Coffee, 
+  Calendar, 
+  Camera, 
+  Edit3
+} from 'lucide-react';
 
 interface SocialSanctuaryProps {
   isDarkMode: boolean;
@@ -394,6 +403,42 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
 
 export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProfile, isPremiumUser }: SocialSanctuaryProps) {
   const [activeTab, setActiveTab] = useState<'feed' | 'messages' | 'peers' | 'moderation' | 'personality'>('feed');
+
+  const renderChoiceChips = (
+    label: string,
+    icon: React.ReactNode,
+    options: string[],
+    currentVal: string,
+    setVal: (v: string) => void
+  ) => (
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5">
+        {icon}
+        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-350">{label}</label>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((opt) => (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => setVal(opt)}
+            className={cn(
+              "px-3 py-1.5 text-[10.5px] font-bold rounded-xl border transition-all cursor-pointer active:scale-95",
+              currentVal === opt
+                ? isDarkMode 
+                  ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 font-extrabold"
+                  : "bg-emerald-50 border-emerald-450 text-emerald-850 font-extrabold shadow-sm"
+                : isDarkMode 
+                  ? "bg-zinc-950/60 border-zinc-850 hover:border-zinc-800 text-zinc-400"
+                  : "bg-white border-zinc-200 hover:border-zinc-300 text-zinc-650"
+            )}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
   
   // Public profiles
   const [thisPublicProfile, setThisPublicProfile] = useState<PublicProfile | null>(null);
@@ -420,6 +465,20 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   
   const [editFavoritePhilosophers, setEditFavoritePhilosophers] = useState('');
   const [editFavoritePsychologists, setEditFavoritePsychologists] = useState('');
+
+  // Tinder-inspired premium profile state properties
+  const [editJobTitle, setEditJobTitle] = useState('');
+  const [editCompany, setEditCompany] = useState('');
+  const [editSchool, setEditSchool] = useState('');
+  const [editAnthem, setEditAnthem] = useState('');
+  const [editZodiac, setEditZodiac] = useState('');
+  const [editEducation, setEditEducation] = useState('');
+  const [editFamilyPlans, setEditFamilyPlans] = useState('');
+  const [editCommunicationStyle, setEditCommunicationStyle] = useState('');
+  const [editLoveStyle, setEditLoveStyle] = useState('');
+  const [editPets, setEditPets] = useState('');
+  const [editDrinking, setEditDrinking] = useState('');
+  const [editSmoking, setEditSmoking] = useState('');
 
   // Interactive scientific-philosophical compatibility simulator states
   const [selectedPartnerArchetype, setSelectedPartnerArchetype] = useState('');
@@ -1002,6 +1061,19 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       setEditUserPhotos(thisPublicProfile.userPhotos || []);
       setEditUserPhotosVisibility(thisPublicProfile.userPhotosVisibility || ['friends', 'friends', 'friends', 'friends']);
       
+      setEditJobTitle(thisPublicProfile.jobTitle || '');
+      setEditCompany(thisPublicProfile.company || '');
+      setEditSchool(thisPublicProfile.school || '');
+      setEditAnthem(thisPublicProfile.anthem || '');
+      setEditZodiac(thisPublicProfile.zodiac || '');
+      setEditEducation(thisPublicProfile.education || '');
+      setEditFamilyPlans(thisPublicProfile.familyPlans || '');
+      setEditCommunicationStyle(thisPublicProfile.communicationStyle || '');
+      setEditLoveStyle(thisPublicProfile.loveStyle || '');
+      setEditPets(thisPublicProfile.pets || '');
+      setEditDrinking(thisPublicProfile.drinking || '');
+      setEditSmoking(thisPublicProfile.smoking || '');
+      
       if (thisPublicProfile.bigFive) {
         setQuizCalculated(true);
       }
@@ -1088,6 +1160,21 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         datingPreferences: userProfile?.datingPreferences || { genderInterest: 'female', minAge: 18, maxAge: 40 },
         gender: userProfile?.gender || 'male',
         age: userProfile?.age || 28,
+
+        // Tinder style attributes
+        jobTitle: editJobTitle,
+        company: editCompany,
+        school: editSchool,
+        anthem: editAnthem,
+        zodiac: editZodiac,
+        education: editEducation,
+        familyPlans: editFamilyPlans,
+        communicationStyle: editCommunicationStyle,
+        loveStyle: editLoveStyle,
+        pets: editPets,
+        drinking: editDrinking,
+        smoking: editSmoking,
+
         updatedAt: new Date().toISOString()
       };
       
@@ -4239,7 +4326,128 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
             {/* Sub-tab Content: Bio Settings */}
             {personalitySubTab === 'bio' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-6">
+                {/* Dynamically calculated Profile Completeness Section */}
+                {(() => {
+                  let score = 0;
+                  const total = 12;
+                  if (setupName.trim()) score++;
+                  if (setupBiography.trim()) score++;
+                  if (editAvatarUrl.trim()) score++;
+                  if (editCoverUrl.trim()) score++;
+                  if (editJobTitle.trim()) score++;
+                  if (editSchool.trim()) score++;
+                  if (editAnthem.trim()) score++;
+                  if (editZodiac.trim()) score++;
+                  if (editEducation.trim()) score++;
+                  if (editFamilyPlans.trim()) score++;
+                  if (editCommunicationStyle.trim() || editLoveStyle.trim()) score++;
+                  if (editUserPhotos.filter(p => !!p).length > 0) score++;
+
+                  const pct = Math.round((score / total) * 100);
+
+                  return (
+                    <div className={cn(
+                      "p-6 rounded-3xl border relative overflow-hidden shadow-xl transition-all",
+                      isDarkMode ? "bg-zinc-900/65 border-zinc-800 shadow-black/10" : "bg-white border-zinc-250/80 shadow-md shadow-zinc-200/40"
+                    )}>
+                      {/* Ambient background blur */}
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-emerald-500/15 to-teal-500/0 rounded-full filter blur-2xl pointer-events-none"></div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
+                        {/* Left column: progress */}
+                        <div className="lg:col-span-5 flex items-center gap-4 lg:border-r border-zinc-200/10 dark:border-zinc-800 pr-0 lg:pr-6">
+                          <div className="relative shrink-0">
+                            <div className="w-16 h-16 rounded-full border border-emerald-500/40 overflow-hidden shadow-lg bg-zinc-850">
+                              {editAvatarUrl ? (
+                                <img src={editAvatarUrl} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-zinc-400 bg-zinc-900 font-extrabold text-base">?</div>
+                              )}
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-zinc-950 text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-zinc-900 shadow">
+                              {pct}%
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <h4 className={cn("text-xs font-black uppercase tracking-wider", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                              {setupName || "Seeker Identity Progression"}
+                            </h4>
+                            <p className="text-[9.5px] font-bold text-zinc-400 block uppercase tracking-wide">
+                              {pct < 100 ? "Enhance profile to maximize compatibility ratings" : "Aesthetic profile perfected!"}
+                            </p>
+                            
+                            {/* Visual Bar */}
+                            <div className="w-40 sm:w-48 h-2 bg-zinc-200/20 dark:bg-zinc-900 rounded-full overflow-hidden mt-1 relative border border-zinc-800/10">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.6 }}
+                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right column: Action Check Items */}
+                        <div className="lg:col-span-7 space-y-2">
+                          <h5 className="text-[9px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-450">
+                            Dynamic Profile Completion Checklist
+                          </h5>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                            {/* Photo check */}
+                            <div className={cn(
+                              "flex items-center justify-between p-2 rounded-xl border transition-all",
+                              editUserPhotos.filter(p => !!p).length > 0
+                                ? isDarkMode ? "bg-emerald-950/20 border-emerald-500/20 text-emerald-400" : "bg-emerald-50 border-emerald-250 text-emerald-800"
+                                : isDarkMode ? "bg-zinc-900/40 border-zinc-800 text-zinc-450" : "bg-zinc-100 border-zinc-205 text-zinc-550"
+                            )}>
+                              <span className="font-bold flex items-center gap-1.5">📷 Add Portrait Album</span>
+                              <span className="font-black">{editUserPhotos.filter(p => !!p).length > 0 ? "✓ Done" : "+15%"}</span>
+                            </div>
+
+                            {/* Philosophy Biography check */}
+                            <div className={cn(
+                              "flex items-center justify-between p-2 rounded-xl border transition-all",
+                              setupBiography.trim().length > 10
+                                ? isDarkMode ? "bg-emerald-950/20 border-emerald-500/20 text-emerald-400" : "bg-emerald-50 border-emerald-250 text-emerald-800"
+                                : isDarkMode ? "bg-zinc-900/40 border-zinc-800 text-zinc-450" : "bg-zinc-105 border-zinc-205 text-zinc-550"
+                            )}>
+                              <span className="font-bold flex items-center gap-1.5">📜 About Me Biography</span>
+                              <span className="font-black">{setupBiography.trim().length > 10 ? "✓ Done" : "+15%"}</span>
+                            </div>
+
+                            {/* Career details */}
+                            <div className={cn(
+                              "flex items-center justify-between p-2 rounded-xl border transition-all",
+                              (editJobTitle.trim() && editSchool.trim())
+                                ? isDarkMode ? "bg-emerald-950/20 border-emerald-500/20 text-emerald-400" : "bg-emerald-50 border-emerald-250 text-emerald-805"
+                                : isDarkMode ? "bg-zinc-900/40 border-zinc-800 text-zinc-450" : "bg-zinc-105 border-zinc-205 text-zinc-550"
+                            )}>
+                              <span className="font-bold flex items-center gap-1.5">💼 Career & Academy</span>
+                              <span className="font-black">{(editJobTitle.trim() && editSchool.trim()) ? "✓ Done" : "+10%"}</span>
+                            </div>
+
+                            {/* Habit details */}
+                            <div className={cn(
+                              "flex items-center justify-between p-2 rounded-xl border transition-all",
+                              (editDrinking.trim() && editSmoking.trim())
+                                ? isDarkMode ? "bg-emerald-950/20 border-emerald-500/20 text-emerald-400" : "bg-emerald-50 border-emerald-250 text-emerald-805"
+                                : isDarkMode ? "bg-zinc-900/40 border-zinc-800 text-zinc-450" : "bg-zinc-105 border-zinc-205 text-zinc-550"
+                            )}>
+                              <span className="font-bold flex items-center gap-1.5">🍷 Lifestyle Profile Chips</span>
+                              <span className="font-black">{(editDrinking.trim() && editSmoking.trim()) ? "✓ Done" : "+10%"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 {/* Left Form column */}
                 <div className="md:col-span-2 space-y-6">
@@ -4345,7 +4553,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         placeholder="Introduce your intellectual aspirations and recovery priorities..."
                         className={cn(
                           "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 resize-none transition-all",
-                          isDarkMode ? "bg-zinc-955 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
+                          isDarkMode ? "bg-zinc-955 border-zinc-700 text-zinc-100 placeholder-zinc-500 animate-fadeIn" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
                         )}
                       />
                     </div>
@@ -4383,24 +4591,6 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         />
                       </div>
 
-                      {/* Intent */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-350">Relationship Intent</label>
-                        <select
-                          value={editRelationshipIntent}
-                          onChange={(e) => setEditRelationshipIntent(e.target.value)}
-                          className={cn(
-                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 cursor-pointer transition-all",
-                            isDarkMode ? "bg-zinc-955 border-zinc-700 text-emerald-450" : "bg-white border-zinc-350 text-emerald-800 shadow-sm"
-                          )}
-                        >
-                          <option value="Long-term partnership">Long-term partnership</option>
-                          <option value="Deep philosophical connection">Deep philosophical connection</option>
-                          <option value="Intellectual calisthenic dyads">Intellectual calisthenic dyads</option>
-                          <option value="Mindful companionship">Mindful companionship</option>
-                        </select>
-                      </div>
-
                       {/* Training Focus */}
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-350">Workout & Recovery Focus</label>
@@ -4421,14 +4611,14 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       </div>
 
                       {/* Morning energy */}
-                      <div className="space-y-1.5 sm:col-span-2">
+                      <div className="space-y-1.5">
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Chronotype Chronology</label>
                         <select
                           value={editMorningEnergy}
                           onChange={(e) => setEditMorningEnergy(e.target.value)}
                           className={cn(
-                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                            "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 cursor-pointer transition-all",
+                            isDarkMode ? "bg-zinc-955 border-zinc-700 text-emerald-450" : "bg-white border-zinc-350 text-emerald-800 shadow-sm"
                           )}
                         >
                           <option value="Sharp morning riser">Sharp morning riser (Oura optimized)</option>
@@ -4438,11 +4628,283 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       </div>
                     </div>
 
+                    {/* Relationship/Alignment Intent (Tinder style visual cards) */}
+                    <div className="space-y-3 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-4">
+                      <div className="flex items-center gap-1.5">
+                        <Heart className="w-4 h-4 text-emerald-400" />
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-350">What are you looking for?</h4>
+                      </div>
+                      <p className="text-[10px] text-zinc-400">All good if it changes. There is a sanctuary category for everyone.</p>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {[
+                          { value: "Long-term partnership", title: "Scholarly Soulmate", desc: "Long-term commitment seeking deep intellectual and life coordination." },
+                          { value: "Deep philosophical connection", title: "Hermitage Dialogues", desc: "Open to long-term depth, or meaningful regular exchanges of substance." },
+                          { value: "Intellectual calisthenic dyads", title: "Resonant Sovereigns", desc: "Short-term intensity with openness to lifelong companionship." },
+                          { value: "Mindful companionship", title: "Quiet Sanctuary Friends", desc: "Peaceful friendship, workout partners, or debating peers." }
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setEditRelationshipIntent(opt.value)}
+                            className={cn(
+                              "p-4 rounded-2xl border text-left transition-all hover:scale-[1.01] active:scale-95 cursor-pointer relative overflow-hidden",
+                              editRelationshipIntent === opt.value
+                                ? "border-emerald-500 bg-emerald-500/5 ring-1 ring-emerald-500/20"
+                                : isDarkMode 
+                                  ? "bg-zinc-900/30 border-zinc-805 hover:border-zinc-700 text-zinc-300"
+                                  : "bg-white border-zinc-250 hover:border-zinc-350 text-zinc-700 shadow-sm"
+                            )}
+                          >
+                            <h5 className="font-bold text-xs text-emerald-400 uppercase tracking-wide flex items-center justify-between">
+                              {opt.title}
+                              {editRelationshipIntent === opt.value && (
+                                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                              )}
+                            </h5>
+                            <p className="text-[10.5px] text-zinc-500 dark:text-zinc-400 mt-1.5 leading-snug font-medium">
+                              {opt.desc}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Primary Academic and Career Context Coordinates */}
+                    <div className="space-y-4 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-4">
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-emerald-450 dark:text-emerald-400">Scholastic & Professional Coordinates</h4>
+                        <p className="text-[10px] text-zinc-400 mt-1">Declare your academic and societal career credentials to clarify compatibility.</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-350 flex items-center gap-1">
+                            <Briefcase className="w-3 h-3 text-zinc-500" /> Job Title
+                          </label>
+                          <input
+                            type="text"
+                            value={editJobTitle}
+                            onChange={(e) => setEditJobTitle(e.target.value)}
+                            placeholder="e.g. Chief Strategist, Biologist"
+                            className={cn(
+                              "w-full px-3 py-2 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 transition-all",
+                              isDarkMode ? "bg-zinc-955 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
+                            )}
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-350 flex items-center gap-1">
+                            <Briefcase className="w-3 h-3 text-zinc-500" /> Organization / Company
+                          </label>
+                          <input
+                            type="text"
+                            value={editCompany}
+                            onChange={(e) => setEditCompany(e.target.value)}
+                            placeholder="e.g. Bio-S Sanctuary, Ministry"
+                            className={cn(
+                              "w-full px-3 py-2 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 transition-all",
+                              isDarkMode ? "bg-zinc-955 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
+                            )}
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-350 flex items-center gap-1">
+                            <GraduationCap className="w-3 h-3 text-zinc-500" /> Institute / School
+                          </label>
+                          <input
+                            type="text"
+                            value={editSchool}
+                            onChange={(e) => setEditSchool(e.target.value)}
+                            placeholder="e.g. University of Zagreb"
+                            className={cn(
+                              "w-full px-3 py-2 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 transition-all",
+                              isDarkMode ? "bg-zinc-955 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Intellectual Anthem / Custom Maxim Quote */}
+                    <div className="space-y-1.5 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-4">
+                      <div className="flex items-center gap-1.5">
+                        <Music className="w-4 h-4 text-emerald-400" />
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-455 dark:text-zinc-350">My Intellectual Anthem / Core Maxim</label>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 mt-0.5">Select a classical maxim or customize a personal quote that sounds from your soul.</p>
+                      
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={editAnthem}
+                          onChange={(e) => setEditAnthem(e.target.value)}
+                          placeholder="e.g. 'Amor Fati' - Marcus Aurelius, or a custom philosophical maxim..."
+                          className={cn(
+                            "flex-1 px-3.5 py-2.5 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 transition-all",
+                            isDarkMode ? "bg-zinc-955 border-zinc-700 text-zinc-100 placeholder-zinc-500" : "bg-white border-zinc-350 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
+                          )}
+                        />
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              setEditAnthem(e.target.value);
+                            }
+                          }}
+                          className={cn(
+                            "px-2 py-2 text-xs rounded-xl border outline-none font-bold focus:ring-1 focus:ring-emerald-500 cursor-pointer transition-all shrink-0 max-w-[150px]",
+                            isDarkMode ? "bg-zinc-955 border-zinc-700 text-emerald-405" : "bg-white border-zinc-350 text-emerald-800"
+                          )}
+                          defaultValue=""
+                        >
+                          <option value="" disabled>-- Presets --</option>
+                          <option value="'Amor Fati' (Love of Fate) - Stoic Maxim">'Amor Fati' (Stoic)</option>
+                          <option value="'Memento Mori' (Remember death) - Classical Maxim">'Memento Mori' (Classical)</option>
+                          <option value="'Know Thyself' - Temple of Apollo, Delphi">'Know Thyself' (Delphi)</option>
+                          <option value="'The unexamined life is not worth living' - Socrates">Unexamined Life (Socrates)</option>
+                          <option value="'Silence is the sanctuary of wisdom' - Tesla">Silence (Tesla)</option>
+                          <option value="'The first recipe for happiness is: avoid too lengthy meditation' - Krleža">Happy (Krleža)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Lifestyle habits (Tinder style chips) */}
+                    <div className="space-y-5 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-5">
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-emerald-450 dark:text-emerald-400">Let's Talk Lifestyle Habits</h4>
+                        <p className="text-[10px] text-zinc-400 mt-1">Do your daily regimes and biological habits match? Declare yours below.</p>
+                      </div>
+                      
+                      {renderChoiceChips(
+                        "How often do you consume alcohol?",
+                        <Coffee className="w-3.5 h-3.5 text-zinc-400 animate-pulse" />,
+                        ["Not for me", "Newly teetotal", "Sober curious", "On special occasions", "Socially at weekends", "Most nights"],
+                        editDrinking,
+                        setEditDrinking
+                      )}
+
+                      {renderChoiceChips(
+                        "What is your relationship to smoking?",
+                        <Sparkles className="w-3.5 h-3.5 text-zinc-400" />,
+                        ["Non-smoker", "Social smoker", "Smoker when drinking", "Trying to quit", "Active smoker"],
+                        editSmoking,
+                        setEditSmoking
+                      )}
+
+                      {renderChoiceChips(
+                        "Animal Companions",
+                        <Users className="w-3.5 h-3.5 text-zinc-400" />,
+                        ["Dog", "Cat", "Reptile", "Amphibian", "Bird", "No pets, but love them", "None"],
+                        editPets,
+                        setEditPets
+                      )}
+                    </div>
+
+                    {/* More about me (Tinder style chips) */}
+                    <div className="space-y-5 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-5">
+                      <div>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-450 dark:text-emerald-400">More About Core Philosophy</h3>
+                        <p className="text-[10px] text-zinc-400 mt-1">Further specify your cosmic, scholastic, and relational alignment parameters.</p>
+                      </div>
+
+                      {renderChoiceChips(
+                        "Zodiac Alignment",
+                        <Clock className="w-3.5 h-3.5 text-zinc-400" />,
+                        ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"],
+                        editZodiac,
+                        setEditZodiac
+                      )}
+
+                      {renderChoiceChips(
+                        "Achieved Scholastic Degree",
+                        <GraduationCap className="w-3.5 h-3.5 text-zinc-400 animate-pulse" />,
+                        ["Secondary school", "Bachelor's degree", "Master's scholar", "PhD / Doctorate", "Self-educated polymath"],
+                        editEducation,
+                        setEditEducation
+                      )}
+
+                      {renderChoiceChips(
+                        "Philosophical Family Intention",
+                        <Users className="w-3.5 h-3.5 text-zinc-400" />,
+                        ["Want kids", "Don't want kids", "Open to kids", "Undecided / Not sure"],
+                        editFamilyPlans,
+                        setEditFamilyPlans
+                      )}
+
+                      {renderChoiceChips(
+                        "Preferred Dialogue Medium",
+                        <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />,
+                        ["Deep texts always", "In-person dialogue", "Voice notes scholar", "Quick check-ins", "Silence is golden"],
+                        editCommunicationStyle,
+                        setEditCommunicationStyle
+                      )}
+
+                      {renderChoiceChips(
+                        "Relational Love Theme",
+                        <Heart className="w-3.5 h-3.5 text-zinc-400" />,
+                        ["Intellectual debates", "Quality time", "Acts of support", "Words of wisdom", "Co-presence sync"],
+                        editLoveStyle,
+                        setEditLoveStyle
+                      )}
+                    </div>
+
+                    {/* Tinder-style Expandable "Ask me about" Prompts / Quizzes */}
+                    <div className="space-y-4 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-4">
+                      <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-emerald-450 dark:text-emerald-400">Ask Me About... (Scholarly Quizzes)</h4>
+                        <p className="text-[10px] text-zinc-400 mt-1">Add philosophical prompts to spark deep debates. Other seekers can ask you about these!</p>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {[
+                          { id: "quiz_going_out", title: "Going Out", icon: <Compass className="w-4 h-4 text-emerald-400" />, promptText: "My ideal Friday night involves debating Classical Rome under Croatian starlight..." },
+                          { id: "quiz_weekends", title: "My Weekends", icon: <Calendar className="w-4 h-4 text-emerald-400" />, promptText: "Heavy calisthenics by the Sava river, followed by deep coffee reading..." },
+                          { id: "quiz_phone", title: "Me + My Phone", icon: <MessageSquare className="w-4 h-4 text-emerald-400" />, promptText: "Strict sleep focus mode on. Checking daily HRV stats before speaking to civilization." }
+                        ].map((quiz) => {
+                          const hasIt = setupBiography.includes(quiz.promptText);
+                          return (
+                            <button
+                              key={quiz.id}
+                              type="button"
+                              onClick={() => {
+                                if (!setupBiography.includes(quiz.promptText)) {
+                                  setSetupBiography(prev => `${prev}\n\n[Ask me about ${quiz.title}]: ${quiz.promptText}`.trim());
+                                }
+                              }}
+                              className={cn(
+                                "w-full p-4 rounded-2xl border text-left flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer group",
+                                hasIt 
+                                  ? "bg-emerald-500/10 border-emerald-500" 
+                                  : isDarkMode 
+                                    ? "bg-zinc-950/60 border-zinc-850 hover:border-zinc-800"
+                                    : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm"
+                              )}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-emerald-500/10 rounded-xl">
+                                  {quiz.icon}
+                                </div>
+                                <div className="space-y-0.5">
+                                  <h5 className="font-bold text-xs text-zinc-900 dark:text-zinc-200">{quiz.title}</h5>
+                                  <p className="text-[10px] text-zinc-450 line-clamp-1">{quiz.promptText}</p>
+                                </div>
+                              </div>
+                              <span className="text-[10px] text-emerald-400 font-extrabold flex items-center gap-1 group-hover:underline">
+                                {hasIt ? "Added ✓" : "Add quiz"} <Plus className="w-3.5 h-3.5" />
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     {/* Academic Favorites (Philosophers & Psychologists) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-4">
                       {/* Favorite Philosophers */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Favorite Philosophers</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 font-bold">Favorite Philosophers</label>
                         <input
                           type="text"
                           value={editFavoritePhilosophers}
@@ -4457,7 +4919,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                       {/* Favorite Psychologists */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Favorite Psychologists</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 font-bold">Favorite Psychologists</label>
                         <input
                           type="text"
                           value={editFavoritePsychologists}
@@ -4465,7 +4927,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           placeholder="e.g. Carl Jung, Viktor Frankl, William James"
                           className={cn(
                             "w-full px-3.5 py-2.5 text-xs rounded-xl border outline-none font-medium focus:ring-1 focus:ring-emerald-500",
-                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                            isDarkMode ? "bg-zinc-955 border-zinc-805 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900"
                           )}
                         />
                       </div>
@@ -4774,10 +5236,17 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                           {/* Profile Details */}
                           <div>
-                            <h4 className={cn("font-black capitalize text-sm tracking-tight", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
+                            <h4 className={cn("font-black capitalize text-sm tracking-tight flex items-center gap-1.5", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
                               {setupName || "Anonymous Seeker"}
                             </h4>
-                            <span className="text-[7.5px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-black uppercase tracking-widest border border-emerald-500/10 inline-block mt-0.5">
+                            {(editJobTitle || editCompany || editSchool) && (
+                              <div className="text-[10px] text-zinc-500 font-semibold flex flex-wrap items-center gap-1 mt-0.5">
+                                {editJobTitle && <span className="flex items-center gap-0.5">💼 {editJobTitle}</span>}
+                                {editCompany && <span>at {editCompany}</span>}
+                                {editSchool && <span className="flex items-center gap-0.5">• 🎓 {editSchool}</span>}
+                              </div>
+                            )}
+                            <span className="text-[7.5px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-black uppercase tracking-widest border border-emerald-500/10 inline-block mt-1">
                               {thisPublicProfile?.mbti ? `${thisPublicProfile.mbti} · Archetype` : "Academically Verified Seeker"}
                             </span>
                           </div>
@@ -4785,6 +5254,16 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           <p className={cn("text-[11px] leading-relaxed line-clamp-3 font-semibold", isDarkMode ? "text-zinc-400" : "text-zinc-650")}>
                             {setupBiography || "No biography established yet. Living silently in contemplation."}
                           </p>
+
+                          {editAnthem && (
+                            <div className="p-2 py-1.5 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/5 border border-emerald-500/10 text-emerald-400 flex items-center gap-1.5 mt-1">
+                              <Music className="w-3 h-3 text-emerald-400 shrink-0 animate-pulse" />
+                              <div className="space-y-px overflow-hidden">
+                                <span className="text-[7px] font-black uppercase tracking-wider text-emerald-500/60 block">Theme Maxim / Soul Anthem</span>
+                                <span className="text-[10px] font-black italic line-clamp-1">{editAnthem}</span>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Chips Grid */}
                           <div className="flex flex-wrap gap-1 pb-1 pt-1">
@@ -4818,6 +5297,70 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             )}>
                               🌅 {editMorningEnergy}
                             </span>
+                            {editZodiac && (
+                              <span className={cn(
+                                "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                                isDarkMode ? "bg-zinc-850 border-zinc-800 text-teal-400" : "bg-zinc-100 border-zinc-200 text-teal-850"
+                              )}>
+                                🪐 {editZodiac}
+                              </span>
+                            )}
+                            {editEducation && (
+                              <span className={cn(
+                                "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                                isDarkMode ? "bg-zinc-850 border-zinc-800 text-purple-400" : "bg-zinc-100 border-zinc-200 text-purple-850"
+                              )}>
+                                🎓 {editEducation}
+                              </span>
+                            )}
+                            {editFamilyPlans && (
+                              <span className={cn(
+                                "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                                isDarkMode ? "bg-zinc-850 border-zinc-800 text-pink-400" : "bg-zinc-100 border-zinc-200 text-pink-850"
+                              )}>
+                                👪 {editFamilyPlans}
+                              </span>
+                            )}
+                            {editCommunicationStyle && (
+                              <span className={cn(
+                                "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                                isDarkMode ? "bg-zinc-850 border-zinc-800 text-sky-400" : "bg-zinc-100 border-zinc-200 text-sky-850"
+                              )}>
+                                💬 {editCommunicationStyle}
+                              </span>
+                            )}
+                            {editLoveStyle && (
+                              <span className={cn(
+                                "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                                isDarkMode ? "bg-zinc-850 border-zinc-800 text-emerald-400" : "bg-zinc-100 border-zinc-200 text-emerald-850"
+                              )}>
+                                💞 {editLoveStyle}
+                              </span>
+                            )}
+                            {editDrinking && (
+                              <span className={cn(
+                                "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                                isDarkMode ? "bg-zinc-850 border-zinc-800 text-amber-400" : "bg-zinc-100 border-zinc-200 text-amber-750"
+                              )}>
+                                🍷 {editDrinking}
+                              </span>
+                            )}
+                            {editSmoking && (
+                              <span className={cn(
+                                "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                                isDarkMode ? "bg-zinc-850 border-zinc-800 text-zinc-400" : "bg-zinc-100 border-zinc-200 text-zinc-650"
+                              )}>
+                                🚬 {editSmoking}
+                              </span>
+                            )}
+                            {editPets && (
+                              <span className={cn(
+                                "text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1",
+                                isDarkMode ? "bg-zinc-850 border-zinc-800 text-blue-400" : "bg-zinc-100 border-zinc-200 text-blue-650"
+                              )}>
+                                🐾 {editPets}
+                              </span>
+                            )}
                           </div>
 
                           {/* Scholarly Favorites */}
@@ -4995,6 +5538,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                 </div>
 
+              </div>
               </div>
             )}
 

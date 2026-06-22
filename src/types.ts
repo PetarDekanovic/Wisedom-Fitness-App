@@ -162,6 +162,7 @@ export interface UserProfile {
   gender?: 'male' | 'female' | 'other';
   age?: number;
   biography?: string;
+  mbti?: string;
   role?: 'user' | 'admin';
   integrations?: {
     fitbit?: {
@@ -277,6 +278,20 @@ export interface PublicProfile {
   compatibilityScore?: number;
   gender?: 'male' | 'female' | 'other';
   age?: number;
+
+  // Tinder-inspired premium profile attributes
+  jobTitle?: string;
+  company?: string;
+  school?: string;
+  anthem?: string;
+  zodiac?: string;
+  education?: string;
+  familyPlans?: string;
+  communicationStyle?: string;
+  loveStyle?: string;
+  pets?: string;
+  drinking?: string;
+  smoking?: string;
 }
 
 export interface FriendRequest {
