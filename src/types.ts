@@ -292,6 +292,9 @@ export interface PublicProfile {
   pets?: string;
   drinking?: string;
   smoking?: string;
+  askGoingOut?: string;
+  askMyWeekends?: string;
+  askMePhone?: string;
 }
 
 export interface FriendRequest {

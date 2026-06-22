@@ -479,6 +479,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [editPets, setEditPets] = useState('');
   const [editDrinking, setEditDrinking] = useState('');
   const [editSmoking, setEditSmoking] = useState('');
+  const [editAskGoingOut, setEditAskGoingOut] = useState('');
+  const [editAskMyWeekends, setEditAskMyWeekends] = useState('');
+  const [editAskMePhone, setEditAskMePhone] = useState('');
+  const [activePromptBuilder, setActivePromptBuilder] = useState<'going_out' | 'weekends' | 'phone' | null>(null);
 
   // Interactive scientific-philosophical compatibility simulator states
   const [selectedPartnerArchetype, setSelectedPartnerArchetype] = useState('');
@@ -1073,6 +1077,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       setEditPets(thisPublicProfile.pets || '');
       setEditDrinking(thisPublicProfile.drinking || '');
       setEditSmoking(thisPublicProfile.smoking || '');
+      setEditAskGoingOut(thisPublicProfile.askGoingOut || '');
+      setEditAskMyWeekends(thisPublicProfile.askMyWeekends || '');
+      setEditAskMePhone(thisPublicProfile.askMePhone || '');
       
       if (thisPublicProfile.bigFive) {
         setQuizCalculated(true);
@@ -1174,6 +1181,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         pets: editPets,
         drinking: editDrinking,
         smoking: editSmoking,
+        askGoingOut: editAskGoingOut,
+        askMyWeekends: editAskMyWeekends,
+        askMePhone: editAskMePhone,
 
         updatedAt: new Date().toISOString()
       };
@@ -4850,51 +4860,189 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       )}
                     </div>
 
-                    {/* Tinder-style Expandable "Ask me about" Prompts / Quizzes */}
-                    <div className="space-y-4 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-4">
+                    {/* Tinder-style Expandable "Ask me about" Prompts / Dialogues */}
+                    <div className="space-y-4 border-t border-zinc-800/10 dark:border-zinc-800/40 pt-4 animate-fadeIn">
                       <div>
-                        <h4 className="text-xs font-black uppercase tracking-widest text-emerald-450 dark:text-emerald-400">Ask Me About... (Scholarly Quizzes)</h4>
-                        <p className="text-[10px] text-zinc-400 mt-1">Add philosophical prompts to spark deep debates. Other seekers can ask you about these!</p>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-emerald-450 dark:text-emerald-400">Ask Me About... (Scholarly Prompts)</h4>
+                        <p className="text-[10px] text-zinc-400 mt-1">Configure conversational parameters other seekers can ask you about. Click to expand and configure your answers.</p>
                       </div>
 
-                      <div className="space-y-2.5">
+                      <div className="space-y-3">
                         {[
-                          { id: "quiz_going_out", title: "Going Out", icon: <Compass className="w-4 h-4 text-emerald-400" />, promptText: "My ideal Friday night involves debating Classical Rome under Croatian starlight..." },
-                          { id: "quiz_weekends", title: "My Weekends", icon: <Calendar className="w-4 h-4 text-emerald-400" />, promptText: "Heavy calisthenics by the Sava river, followed by deep coffee reading..." },
-                          { id: "quiz_phone", title: "Me + My Phone", icon: <MessageSquare className="w-4 h-4 text-emerald-400" />, promptText: "Strict sleep focus mode on. Checking daily HRV stats before speaking to civilization." }
+                          { 
+                            id: "going_out" as const, 
+                            title: "Going Out", 
+                            description: "Select pre-selected common options representing your social & intellectual excursions.",
+                            icon: <Compass className="w-4 h-4 text-emerald-400" />, 
+                            value: editAskGoingOut,
+                            setValue: setEditAskGoingOut,
+                            options: [
+                              "Debating Classical Rome under Croatian starlight with fine local wine",
+                              "Quiet coffee shop sessions reading Krleža and discussing bio-metrics",
+                              "A long nighttime walk down Zagreb routes to clear the mind",
+                              "Fringe theatrical play followed by rigorous intellectual deconstruction",
+                              "Heavy calisthenics by the Sava river followed by warm organic tea",
+                              "A classical concert to synchronize heart-rate-variability"
+                            ],
+                            hasCustomInput: false
+                          },
+                          { 
+                            id: "weekends" as const, 
+                            title: "My Weekends", 
+                            description: "Select from common academic weekend activities and/or type your own custom schedule.",
+                            icon: <Calendar className="w-4 h-4 text-emerald-400" />, 
+                            value: editAskMyWeekends,
+                            setValue: setEditAskMyWeekends,
+                            options: [
+                              "6am yoga ritual followed by zero screens until sunset",
+                              "Deep focus work, fast runs, and cold showers",
+                              "Sifting through ancient libraries and local open-air markets",
+                              "Croatian mountain hikes and deep metabolic recovery focus",
+                              "Intense dyads discussions and collaborative goal setting"
+                            ],
+                            hasCustomInput: true,
+                            placeholder: "Summarize your custom weekend routine e.g. reading, weight training..."
+                          },
+                          { 
+                            id: "phone" as const, 
+                            title: "Me + My Phone", 
+                            description: "Declare how you manage attention and biological connectivity relative to modern devices.",
+                            icon: <MessageSquare className="w-4 h-4 text-emerald-400" />, 
+                            value: editAskMePhone,
+                            setValue: setEditAskMePhone,
+                            options: [
+                              "Strict focus mode on; checking daily HRV stats before speaking to civilization",
+                              "Only used for classical audio streams and bio-metrics sensor syncing",
+                              "All notifications permanently muted, except for severe bio-recovery alerts",
+                              "Analog notebook companion. The screen is a secondary tool",
+                              "No social feeds. Fully offline and present"
+                            ],
+                            hasCustomInput: true,
+                            placeholder: "Type custom digital hygiene parameters..."
+                          }
                         ].map((quiz) => {
-                          const hasIt = setupBiography.includes(quiz.promptText);
+                          const isExpanded = activePromptBuilder === quiz.id;
+                          const hasValue = !!quiz.value;
+                          
                           return (
-                            <button
+                            <div 
                               key={quiz.id}
-                              type="button"
-                              onClick={() => {
-                                if (!setupBiography.includes(quiz.promptText)) {
-                                  setSetupBiography(prev => `${prev}\n\n[Ask me about ${quiz.title}]: ${quiz.promptText}`.trim());
-                                }
-                              }}
                               className={cn(
-                                "w-full p-4 rounded-2xl border text-left flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer group",
-                                hasIt 
-                                  ? "bg-emerald-500/10 border-emerald-500" 
+                                "rounded-2xl border transition-all duration-300 overflow-hidden",
+                                isExpanded 
+                                  ? "bg-zinc-955 dark:bg-zinc-950/40 border-emerald-500/40 shadow-md" 
                                   : isDarkMode 
                                     ? "bg-zinc-950/60 border-zinc-850 hover:border-zinc-800"
                                     : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm"
                               )}
                             >
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 bg-emerald-500/10 rounded-xl">
-                                  {quiz.icon}
+                              {/* Header trigger */}
+                              <button
+                                type="button"
+                                onClick={() => setActivePromptBuilder(isExpanded ? null : quiz.id)}
+                                className="w-full p-4 text-left flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-emerald-500/10 rounded-xl animate-pulse">
+                                    {quiz.icon}
+                                  </div>
+                                  <div className="space-y-0.5">
+                                    <h5 className="font-extrabold text-xs text-zinc-900 dark:text-zinc-200">{quiz.title}</h5>
+                                    <p className="text-[10px] text-zinc-400 line-clamp-1 leading-normal">
+                                      {quiz.value || "Not established. Click to configure."}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="space-y-0.5">
-                                  <h5 className="font-bold text-xs text-zinc-900 dark:text-zinc-200">{quiz.title}</h5>
-                                  <p className="text-[10px] text-zinc-450 line-clamp-1">{quiz.promptText}</p>
+                                <span className="text-[10px] text-emerald-400 font-extrabold flex items-center gap-1.5 shrink-0 bg-emerald-500/5 px-2.5 py-1 rounded-lg border border-emerald-500/10 hover:bg-emerald-500/15">
+                                  {isExpanded ? "Close" : hasValue ? "Configure ✓" : "Configure"} <Plus className={cn("w-3.5 h-3.5 transition-transform", isExpanded && "rotate-45 text-zinc-400")} />
+                                </span>
+                              </button>
+
+                              {/* Expanded Panel Details */}
+                              {isExpanded && (
+                                <div className="px-4 pb-4 pt-1 space-y-3.5 border-t border-zinc-800/10 dark:border-zinc-850/60 animate-fadeIn">
+                                  <p className="text-[10px] text-zinc-400 leading-normal font-medium">
+                                    {quiz.description}
+                                  </p>
+
+                                  {/* Presets Grid */}
+                                  <div className="space-y-1.5">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block">Pre-selected options</span>
+                                    <div className="flex flex-wrap gap-2 pt-0.5">
+                                      {quiz.options.map((opt) => {
+                                        const isSelected = quiz.value.includes(opt);
+                                        return (
+                                          <button
+                                            key={opt}
+                                            type="button"
+                                            onClick={() => {
+                                              if (isSelected) {
+                                                // Remove choice
+                                                const cleaned = quiz.value
+                                                  .replace(opt, "")
+                                                  .replace(/^[ ·\n]+|[ ·\n]+$/g, "")
+                                                  .replace(/ ·  · /g, " · ")
+                                                  .trim();
+                                                quiz.setValue(cleaned);
+                                              } else {
+                                                // Append choice
+                                                if (quiz.value) {
+                                                  quiz.setValue(`${quiz.value} · ${opt}`);
+                                                } else {
+                                                  quiz.setValue(opt);
+                                                }
+                                              }
+                                            }}
+                                            className={cn(
+                                              "px-3 py-1.5 text-[9.5px] font-bold rounded-xl border text-left cursor-pointer transition-all active:scale-95 leading-normal max-w-full",
+                                              isSelected
+                                                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-extrabold"
+                                                : isDarkMode
+                                                  ? "bg-zinc-900 border-zinc-800 hover:border-zinc-750 text-zinc-400"
+                                                  : "bg-zinc-50 border-zinc-200 hover:border-zinc-300 text-zinc-650 shadow-sm"
+                                            )}
+                                          >
+                                            {isSelected ? "✓ " : "+ "} {opt}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  {/* Custom Data Input field for weekends / phone */}
+                                  {quiz.hasCustomInput && (
+                                    <div className="space-y-1.5">
+                                      <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block">Custom Input Data Field</label>
+                                      <textarea
+                                        value={quiz.value}
+                                        onChange={(e) => quiz.setValue(e.target.value)}
+                                        placeholder={quiz.placeholder}
+                                        rows={2}
+                                        className={cn(
+                                          "w-full px-3 py-2 text-xs rounded-xl border outline-none font-semibold resize-none transition-all",
+                                          isDarkMode 
+                                            ? "bg-zinc-950 border-zinc-800 text-zinc-100 placeholder-zinc-500" 
+                                            : "bg-white border-zinc-250 text-zinc-900 placeholder-zinc-400 focus:bg-zinc-50"
+                                        )}
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Quick Actions */}
+                                  {quiz.value && (
+                                    <div className="flex justify-end pt-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => quiz.setValue("")}
+                                        className="text-[9px] text-rose-450 hover:underline font-bold uppercase tracking-wider cursor-pointer"
+                                      >
+                                        Clear parameters
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
-                              <span className="text-[10px] text-emerald-400 font-extrabold flex items-center gap-1 group-hover:underline">
-                                {hasIt ? "Added ✓" : "Add quiz"} <Plus className="w-3.5 h-3.5" />
-                              </span>
-                            </button>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
@@ -4965,39 +5113,59 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           );
                         })}
                       </div>
+                    </div>
 
-                      {/* Dropdown for other Wisdoms */}
-                      <div className="space-y-1.5 mt-3 pt-2 border-t border-zinc-800/10 dark:border-zinc-800/30">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block">Integrate Specialized Wisdom School</label>
-                        <select
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val && !editInterests.includes(val)) {
-                              setEditInterests([...editInterests, val]);
-                            }
-                            // Reset select value
-                            e.target.value = "";
-                          }}
-                          className={cn(
-                            "w-full px-3.5 py-2 text-xs rounded-xl border outline-none font-semibold focus:ring-1 focus:ring-emerald-500",
-                            isDarkMode ? "bg-zinc-955 border-zinc-800 text-zinc-300" : "bg-zinc-50 border-zinc-200 text-zinc-700"
-                          )}
-                          defaultValue=""
-                        >
-                          <option value="" disabled>-- Access additional academic philosophies --</option>
-                          <option value="Ancient Greek Philosophy">Ancient Greek Philosophy</option>
-                          <option value="Japanese Zen Buddhism">Japanese Zen Buddhism</option>
-                          <option value="Vedic Non-Duality">Vedic Non-Duality (Advaita)</option>
-                          <option value="Islamic Sufi Mysticism">Islamic Sufi Mysticism</option>
-                          <option value="Existential Phenomenology">Existential Phenomenology</option>
-                          <option value="Renaissance Hermeticism">Renaissance Hermeticism</option>
-                          <option value="Taois Classical Wisdom">Taoist Classical Wisdom</option>
-                          <option value="Balkan Gnosticism">Balkan Gnosticism</option>
-                          <option value="Analytical Jungianism">Analytical Jungianism</option>
-                          <option value="Frankl Logotherapy">Frankl Logotherapy</option>
-                        </select>
-                        <p className="text-[9px] text-zinc-500 font-medium">Adds supplementary wisdom pathways directly into your live profile card.</p>
+                    {/* Integrate Specialized Wisdom School click-to-add chips */}
+                    <div className="space-y-2 mt-3 pt-2 border-t border-zinc-800/10 dark:border-zinc-800/30 animate-fadeIn">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 block">Integrate Specialized Wisdom School</label>
+                      <p className="text-[10px] text-zinc-400">Click any specialized philosophy below to instantly one-add it to your Intellectual Core Axes:</p>
+                      
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {[
+                          "Ancient Greek Philosophy",
+                          "Japanese Zen Buddhism",
+                          "Vedic Non-Duality",
+                          "Islamic Sufi Mysticism",
+                          "Existential Phenomenology",
+                          "Renaissance Hermeticism",
+                          "Taoist Classical Wisdom",
+                          "Balkan Gnosticism",
+                          "Analytical Jungianism",
+                          "Frankl Logotherapy"
+                        ].map(wisdom => {
+                          const active = editInterests.includes(wisdom);
+                          return (
+                            <button
+                              key={wisdom}
+                              type="button"
+                              onClick={() => {
+                                if (active) {
+                                  setEditInterests(editInterests.filter(i => i !== wisdom));
+                                } else {
+                                  setEditInterests([...editInterests, wisdom]);
+                                }
+                              }}
+                              className={cn(
+                                "px-3 py-1.5 text-[10px] font-bold rounded-xl transition-all border flex items-center gap-1.5 cursor-pointer active:scale-95 group",
+                                active
+                                  ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-extrabold"
+                                  : isDarkMode
+                                    ? "bg-zinc-950/40 border-zinc-850 hover:border-zinc-800 text-zinc-400"
+                                    : "bg-white border-zinc-200 hover:border-zinc-300 text-zinc-650 shadow-sm"
+                              )}
+                            >
+                              {active ? (
+                                <Check className="w-3 h-3 text-emerald-400" />
+                              ) : (
+                                <Plus className="w-3 h-3 text-zinc-500 group-hover:text-emerald-400" />
+                              )}
+                              {wisdom}
+                            </button>
+                          );
+                        })}
                       </div>
+                      <p className="text-[9px] text-zinc-500 font-medium">Adds supplementary wisdom pathways directly into your live profile card.</p>
+                    </div>
                     </div>
 
                     {/* Seeker Custom Photo Album Section */}
@@ -5424,6 +5592,40 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             </div>
                           )}
 
+                          {/* Live render for Scholar Dialogues prompts */}
+                          {(editAskGoingOut || editAskMyWeekends || editAskMePhone) && (
+                            <div className="space-y-2 pt-2 border-t border-zinc-805/10 dark:border-zinc-800/35 text-left">
+                              <span className="text-[7.5px] font-black uppercase text-zinc-500 tracking-widest block leading-none">Scholar dialogues</span>
+                              
+                              {editAskGoingOut && (
+                                <div className="p-2 rounded-xl border border-emerald-500/10 bg-emerald-500/5 text-left">
+                                  <span className="text-[7.5px] font-black uppercase text-zinc-400 flex items-center gap-1 leading-none">
+                                    <Compass className="w-2.5 h-2.5 text-emerald-400" /> Going Out
+                                  </span>
+                                  <span className="text-[9.5px] font-medium block italic text-zinc-800 dark:text-zinc-200 mt-1">"{editAskGoingOut}"</span>
+                                </div>
+                              )}
+
+                              {editAskMyWeekends && (
+                                <div className="p-2 rounded-xl border border-emerald-500/10 bg-emerald-500/5 text-left">
+                                  <span className="text-[7.5px] font-black uppercase text-zinc-400 flex items-center gap-1 leading-none">
+                                    <Calendar className="w-2.5 h-2.5 text-emerald-400" /> My Weekends
+                                  </span>
+                                  <span className="text-[9.5px] font-medium block italic text-zinc-800 dark:text-zinc-200 mt-1">"{editAskMyWeekends}"</span>
+                                </div>
+                              )}
+
+                              {editAskMePhone && (
+                                <div className="p-2 rounded-xl border border-emerald-500/10 bg-emerald-500/5 text-left">
+                                  <span className="text-[7.5px] font-black uppercase text-zinc-400 flex items-center gap-1 leading-none">
+                                    <MessageSquare className="w-2.5 h-2.5 text-emerald-400" /> Me + My Phone
+                                  </span>
+                                  <span className="text-[9.5px] font-medium block italic text-zinc-800 dark:text-zinc-200 mt-1">"{editAskMePhone}"</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                         </div>
                       </div>
                     </div>
@@ -5538,7 +5740,6 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                 </div>
 
-              </div>
               </div>
             )}
 
@@ -6555,6 +6756,59 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     {selectedPeerWall.biography || 'This seeker choice was deep contemplation. No biography documented.'}
                   </p>
                 </div>
+
+                {/* Scholar Dialogues Prompt Cards rendering for Peer Wall */}
+                {(selectedPeerWall.askGoingOut || selectedPeerWall.askMyWeekends || selectedPeerWall.askMePhone) && (
+                  <div className="space-y-3 pt-1 animate-fadeIn">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Seeker Scholar Dialogues</h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      {selectedPeerWall.askGoingOut && (
+                        <div className={cn(
+                          "p-4 rounded-2xl border space-y-2 relative overflow-hidden transition-all duration-300 hover:scale-[1.01] shadow-sm",
+                          isDarkMode ? "bg-zinc-850/30 border-zinc-800 text-zinc-300" : "bg-white border-zinc-200 text-zinc-750"
+                        )}>
+                          <div className="flex items-center gap-2 border-b border-zinc-800/10 dark:border-zinc-800/30 pb-2">
+                            <Compass className="w-4 h-4 text-emerald-400" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-405">Going Out</span>
+                          </div>
+                          <p className="text-xs font-semibold leading-relaxed italic text-zinc-800 dark:text-zinc-200">
+                            "{selectedPeerWall.askGoingOut}"
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedPeerWall.askMyWeekends && (
+                        <div className={cn(
+                          "p-4 rounded-2xl border space-y-2 relative overflow-hidden transition-all duration-300 hover:scale-[1.01] shadow-sm",
+                          isDarkMode ? "bg-zinc-850/30 border-zinc-800 text-zinc-300" : "bg-white border-zinc-200 text-zinc-750"
+                        )}>
+                          <div className="flex items-center gap-2 border-b border-zinc-800/10 dark:border-zinc-800/30 pb-2">
+                            <Calendar className="w-4 h-4 text-emerald-400" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-405">My Weekends</span>
+                          </div>
+                          <p className="text-xs font-semibold leading-relaxed italic text-zinc-800 dark:text-zinc-200">
+                            "{selectedPeerWall.askMyWeekends}"
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedPeerWall.askMePhone && (
+                        <div className={cn(
+                          "p-4 rounded-2xl border space-y-2 relative overflow-hidden transition-all duration-300 hover:scale-[1.01] shadow-sm",
+                          isDarkMode ? "bg-zinc-850/30 border-zinc-800 text-zinc-300" : "bg-white border-zinc-200 text-zinc-750"
+                        )}>
+                          <div className="flex items-center gap-2 border-b border-zinc-800/10 dark:border-zinc-800/30 pb-2">
+                            <MessageSquare className="w-4 h-4 text-emerald-400" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-405">Me + My Phone</span>
+                          </div>
+                          <p className="text-xs font-semibold leading-relaxed italic text-zinc-800 dark:text-zinc-200">
+                            "{selectedPeerWall.askMePhone}"
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Seeker Premium Photo Gallery (Dating compatibility with visibility controls) */}
                 {(() => {
