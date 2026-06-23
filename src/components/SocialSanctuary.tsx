@@ -69,6 +69,7 @@ import {
   Grid
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { JitsiMeet } from './JitsiMeet';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
 import { 
   Briefcase, 
@@ -691,6 +692,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   // Direct messages states
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeChat, setActiveChat] = useState<Conversation | null>(null);
+  const [activeCallConvoId, setActiveCallConvoId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<DMMessage[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
   const chatBottomRef = useRef<HTMLDivElement>(null);
@@ -3807,6 +3809,23 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 <span>View Wall</span>
                               </button>
                             )}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveCallConvoId(activeCallConvoId === activeChat.id ? null : activeChat.id);
+                              }}
+                              className={cn(
+                                "inline-flex items-center gap-1 text-[8.5px] font-black uppercase px-2.5 py-1 rounded-xl transition-all cursor-pointer shadow ml-2 shrink-0 select-none border",
+                                activeCallConvoId === activeChat.id
+                                  ? "bg-rose-500/20 border-rose-500/30 text-rose-400 hover:text-rose-350"
+                                  : "bg-emerald-500/5 border-emerald-500/15 text-emerald-450 hover:text-emerald-350 hover:border-emerald-500/25"
+                              )}
+                              title={activeCallConvoId === activeChat.id ? "Disconnect Video Call" : "Initiate Secure Video Call"}
+                            >
+                              <Video className="w-3.5 h-3.5" />
+                              <span>{activeCallConvoId === activeChat.id ? "Disconnect" : "Video Call"}</span>
+                            </button>
                           </div>
                         );
                       })()}
@@ -3820,271 +3839,290 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     </button>
                   </div>
 
-                  {/* Messages container list */}
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1 mb-4 chat-scrollbar">
-                    {chatMessages.length === 0 ? (
-                      <div className="text-center py-16 text-[10px] text-zinc-500 italic">
-                        Channel cleared. Speak with rigor.
-                      </div>
-                    ) : (
-                      chatMessages.map(msg => {
-                        const isMine = msg.senderId === currentUser.uid;
-                        const isEditing = editingMessageId === msg.id;
-                        const isScholar = msg.senderId && msg.senderId.startsWith('dummy_');
+                  {activeCallConvoId === activeChat.id ? (
+                    <div className="flex-1 min-h-[500px] w-full rounded-2xl overflow-hidden relative border border-rose-500/10">
+                      <JitsiMeet
+                        roomName={`wisefit_call_${activeChat.id}`}
+                        displayName={thisPublicProfile?.name || userProfile?.name || 'Seeker'}
+                        email={currentUser?.email || undefined}
+                        subject={`Dialectical Inquiry with ${
+                          activeChat.participants[0] === currentUser?.uid 
+                            ? activeChat.participantNames[1] 
+                            : activeChat.participantNames[0]
+                        }`}
+                        onReadyToClose={() => setActiveCallConvoId(null)}
+                        onVideoConferenceLeft={() => setActiveCallConvoId(null)}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      {/* Messages container list */}
+                      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1 mb-4 chat-scrollbar">
+                        {chatMessages.length === 0 ? (
+                          <div className="text-center py-16 text-[10px] text-zinc-500 italic">
+                            Channel cleared. Speak with rigor.
+                          </div>
+                        ) : (
+                          chatMessages.map(msg => {
+                            const isMine = msg.senderId === currentUser.uid;
+                            const isEditing = editingMessageId === msg.id;
+                            const isScholar = msg.senderId && msg.senderId.startsWith('dummy_');
 
-                        // Resolve sender identity for the message bubble
-                        let senderAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
-                        let senderName = 'Scholar';
-                        let peerObj: any = null;
-                        
-                        if (isMine) {
-                          senderAvatar = thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
-                          senderName = thisPublicProfile?.name || userProfile?.name || 'Me';
-                        } else {
-                          const otherIndex = activeChat.participants[0] === currentUser.uid ? 1 : 0;
-                          const otherUid = activeChat.participants[otherIndex];
-                          peerObj = peers.find(p => p.uid === otherUid);
-                          senderAvatar = peerObj?.avatarUrl || (activeChat.participantAvatars ? activeChat.participantAvatars[otherIndex] : undefined) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
-                          senderName = peerObj?.name || activeChat.participantNames[otherIndex] || 'Peer';
-                        }
+                            // Resolve sender identity for the message bubble
+                            let senderAvatar = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+                            let senderName = 'Scholar';
+                            let peerObj: any = null;
+                            
+                            if (isMine) {
+                              senderAvatar = thisPublicProfile?.avatarUrl || userProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+                              senderName = thisPublicProfile?.name || userProfile?.name || 'Me';
+                            } else {
+                              const otherIndex = activeChat.participants[0] === currentUser.uid ? 1 : 0;
+                              const otherUid = activeChat.participants[otherIndex];
+                              peerObj = peers.find(p => p.uid === otherUid);
+                              senderAvatar = peerObj?.avatarUrl || (activeChat.participantAvatars ? activeChat.participantAvatars[otherIndex] : undefined) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+                              senderName = peerObj?.name || activeChat.participantNames[otherIndex] || 'Peer';
+                            }
 
-                        return (
-                          <div 
-                            key={msg.id}
-                            className={cn(
-                              "flex gap-2.5 w-full items-start",
-                              isMine ? "justify-end text-right" : "justify-start text-left"
-                            )}
-                          >
-                            {/* Recipient Profile Avatar on Incoming Messages */}
-                            {!isMine && (
-                              <div className="relative shrink-0 select-none group/msgavatar cursor-pointer">
-                                <img 
-                                  src={senderAvatar}
-                                  onClick={() => {
-                                    if (peerObj) {
-                                      setSelectedPeerWall(peerObj);
-                                    } else {
-                                      setActiveLightboxImg(senderAvatar);
-                                    }
-                                  }}
-                                  className="w-7.5 h-7.5 rounded-full object-cover border border-emerald-500/15 shadow transition-transform duration-300 group-hover/msgavatar:scale-110"
-                                  alt={senderName}
-                                  title={`Click to view ${senderName}'s Profile Wall`}
-                                  referrerPolicy="no-referrer"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover/msgavatar:bg-black/10 rounded-full transition-colors flex items-center justify-center">
-                                  <Maximize2 className="w-2.5 h-2.5 text-white opacity-0 group-hover/msgavatar:opacity-100 transition-opacity" />
-                                </div>
-                              </div>
-                            )}
-
-                            <div 
-                              className={cn(
-                                "flex flex-col max-w-[76%] rounded-2xl relative group transition-all",
-                                isMine 
-                                  ? "bg-emerald-500 text-zinc-950 ml-auto border-emerald-400/30 rounded-tr-none px-3.5 py-2.5 text-xs font-semibold border shadow-sm shadow-emerald-500/10" 
-                                  : isScholar
-                                    ? (isDarkMode 
-                                        ? "bg-zinc-900/80 border-emerald-500/20 text-emerald-100 rounded-tl-none shadow-md shadow-emerald-500/5 px-4 py-3 border" 
-                                        : "bg-emerald-50/50 border-emerald-205 text-emerald-950 rounded-tl-none shadow-sm px-4 py-3 border")
-                                    : isDarkMode 
-                                      ? "bg-zinc-800 border-zinc-700/80 text-zinc-50 rounded-tl-none shadow-sm px-3.5 py-2.5 text-xs font-semibold border" 
-                                      : "bg-zinc-100 border-zinc-200 text-zinc-900 rounded-tl-none shadow-sm px-3.5 py-2.5 text-xs font-semibold border"
-                              )}
-                            >
-                              {isEditing ? (
-                                <div className="space-y-2 min-w-[200px]">
-                                  <textarea
-                                    value={editingText}
-                                    onChange={(e) => setEditingText(e.target.value)}
-                                    className={cn(
-                                      "w-full p-2 text-xs rounded-lg border outline-none font-medium resize-none",
-                                      isMine 
-                                        ? "bg-emerald-600 text-zinc-950 border-emerald-700 placeholder-emerald-900" 
-                                        : "bg-zinc-700/50 text-white border-zinc-600"
-                                    )}
-                                    rows={2}
-                                  />
-                                  <div className="flex justify-end gap-1">
-                                    <button
-                                      onClick={() => setEditingMessageId(null)}
-                                      className={cn(
-                                        "px-2 py-1 text-[9px] font-black uppercase rounded-lg border",
-                                        isMine 
-                                          ? "border-zinc-950/20 text-zinc-900 hover:bg-zinc-950/10" 
-                                          : "border-zinc-700 text-zinc-400 hover:bg-zinc-800"
-                                      )}
-                                    >
-                                      Cancel
-                                    </button>
-                                    <button
-                                      onClick={() => handleSaveEditMessage(msg.id)}
-                                      disabled={!editingText.trim()}
-                                      className={cn(
-                                        "px-2 py-1 text-[9px] font-black uppercase rounded-lg shadow-sm",
-                                        isMine 
-                                          ? "bg-zinc-950 text-emerald-400 hover:bg-zinc-900" 
-                                          : "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
-                                      )}
-                                    >
-                                      Save
-                                    </button>
+                            return (
+                              <div 
+                                key={msg.id}
+                                className={cn(
+                                  "flex gap-2.5 w-full items-start",
+                                  isMine ? "justify-end text-right" : "justify-start text-left"
+                                )}
+                              >
+                                {/* Recipient Profile Avatar on Incoming Messages */}
+                                {!isMine && (
+                                  <div className="relative shrink-0 select-none group/msgavatar cursor-pointer">
+                                    <img 
+                                      src={senderAvatar}
+                                      onClick={() => {
+                                        if (peerObj) {
+                                          setSelectedPeerWall(peerObj);
+                                        } else {
+                                          setActiveLightboxImg(senderAvatar);
+                                        }
+                                      }}
+                                      className="w-7.5 h-7.5 rounded-full object-cover border border-emerald-500/15 shadow transition-transform duration-300 group-hover/msgavatar:scale-110"
+                                      alt={senderName}
+                                      title={`Click to view ${senderName}'s Profile Wall`}
+                                      referrerPolicy="no-referrer"
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover/msgavatar:bg-black/10 rounded-full transition-colors flex items-center justify-center">
+                                      <Maximize2 className="w-2.5 h-2.5 text-white opacity-0 group-hover/msgavatar:opacity-100 transition-opacity" />
+                                    </div>
                                   </div>
-                                </div>
-                              ) : (
-                                <>
-                                  {renderMessageTextWithAttachments(msg.text, isMine, isScholar)}
-                                  <div className="flex items-center justify-between gap-3 mt-1.5 leading-none shrink-0">
-                                    <span className={cn(
-                                      "text-[8px] select-none opacity-60 font-mono flex items-center gap-1",
-                                      isMine ? "text-zinc-950" : isDarkMode ? "text-zinc-500" : "text-zinc-500"
-                                    )}>
-                                      <span>
-                                        {new Date(msg.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                                      </span>
-                                      {msg.updatedAt && (
-                                        <span className="text-[7px] italic font-sans opacity-75">(edited)</span>
-                                      )}
-                                    </span>
+                                )}
 
-                                    {isMine && (
-                                      <div className="md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity flex items-center gap-2 select-none shrink-0 ml-2">
+                                <div 
+                                  className={cn(
+                                    "flex flex-col max-w-[76%] rounded-2xl relative group transition-all",
+                                    isMine 
+                                      ? "bg-emerald-500 text-zinc-950 ml-auto border-emerald-400/30 rounded-tr-none px-3.5 py-2.5 text-xs font-semibold border shadow-sm shadow-emerald-500/10" 
+                                      : isScholar
+                                        ? (isDarkMode 
+                                            ? "bg-zinc-900/80 border-emerald-500/20 text-emerald-100 rounded-tl-none shadow-md shadow-emerald-500/5 px-4 py-3 border" 
+                                            : "bg-emerald-50/50 border-emerald-205 text-emerald-950 rounded-tl-none shadow-sm px-4 py-3 border")
+                                        : isDarkMode 
+                                          ? "bg-zinc-800 border-zinc-700/80 text-zinc-50 rounded-tl-none shadow-sm px-3.5 py-2.5 text-xs font-semibold border" 
+                                          : "bg-zinc-100 border-zinc-200 text-zinc-900 rounded-tl-none shadow-sm px-3.5 py-2.5 text-xs font-semibold border"
+                                  )}
+                                >
+                                  {isEditing ? (
+                                    <div className="space-y-2 min-w-[200px]">
+                                      <textarea
+                                        value={editingText}
+                                        onChange={(e) => setEditingText(e.target.value)}
+                                        className={cn(
+                                          "w-full p-2 text-xs rounded-lg border outline-none font-medium resize-none",
+                                          isMine 
+                                            ? "bg-emerald-600 text-zinc-950 border-emerald-700 placeholder-emerald-900" 
+                                            : "bg-zinc-700/50 text-white border-zinc-600"
+                                        )}
+                                        rows={2}
+                                      />
+                                      <div className="flex justify-end gap-1">
                                         <button
-                                          type="button"
-                                          onClick={() => {
-                                            setEditingMessageId(msg.id);
-                                            setEditingText(msg.text);
-                                          }}
+                                          onClick={() => setEditingMessageId(null)}
                                           className={cn(
-                                            "p-1.5 rounded-lg transition-all active:scale-[0.93] flex items-center justify-center border shadow-md cursor-pointer",
+                                            "px-2 py-1 text-[9px] font-black uppercase rounded-lg border",
                                             isMine 
-                                              ? "bg-zinc-950 border-emerald-450/40 text-emerald-400 hover:bg-zinc-900" 
-                                              : "bg-zinc-850 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                                              ? "border-zinc-950/20 text-zinc-900 hover:bg-zinc-950/10" 
+                                              : "border-zinc-700 text-zinc-400 hover:bg-zinc-800"
                                           )}
-                                          title="Edit Message"
                                         >
-                                          <Edit className="w-3.5 h-3.5" />
+                                          Cancel
                                         </button>
                                         <button
-                                          type="button"
-                                          onClick={() => handleDeleteMessage(msg.id)}
+                                          onClick={() => handleSaveEditMessage(msg.id)}
+                                          disabled={!editingText.trim()}
                                           className={cn(
-                                            "p-1.5 rounded-lg transition-all active:scale-[0.93] flex items-center justify-center border shadow-md cursor-pointer",
+                                            "px-2 py-1 text-[9px] font-black uppercase rounded-lg shadow-sm",
                                             isMine 
-                                              ? "bg-zinc-950 border-red-500/40 text-red-400 hover:bg-zinc-900 hover:text-red-300" 
-                                              : "bg-zinc-850 border-zinc-700 text-red-405 hover:bg-zinc-800"
+                                              ? "bg-zinc-950 text-emerald-400 hover:bg-zinc-900" 
+                                              : "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
                                           )}
-                                          title="Delete Message"
                                         >
-                                          <Trash2 className="w-3.5 h-3.5" />
+                                          Save
                                         </button>
                                       </div>
-                                    )}
-                                  </div>
-                                </>
-                              )}
-                            </div>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {renderMessageTextWithAttachments(msg.text, isMine, isScholar)}
+                                      <div className="flex items-center justify-between gap-3 mt-1.5 leading-none shrink-0">
+                                        <span className={cn(
+                                          "text-[8px] select-none opacity-60 font-mono flex items-center gap-1",
+                                          isMine ? "text-zinc-950" : isDarkMode ? "text-zinc-500" : "text-zinc-500"
+                                        )}>
+                                          <span>
+                                            {new Date(msg.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+                                          {msg.updatedAt && (
+                                            <span className="text-[7px] italic font-sans opacity-75">(edited)</span>
+                                          )}
+                                        </span>
 
-                            {/* My Profile Avatar on Outgoing Messages */}
-                            {isMine && (
-                              <div className="relative shrink-0 select-none group/mymsgavatar cursor-pointer">
-                                <img 
-                                  src={senderAvatar}
-                                  onClick={() => setActiveLightboxImg(senderAvatar)}
-                                  className="w-7.5 h-7.5 rounded-full object-cover border border-emerald-500/15 shadow transition-transform duration-300 group-hover/mymsgavatar:scale-110"
-                                  alt={senderName}
-                                  title="Click to zoom your photo"
-                                  referrerPolicy="no-referrer"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover/mymsgavatar:bg-black/10 rounded-full transition-colors flex items-center justify-center">
-                                  <Maximize2 className="w-2.5 h-2.5 text-white opacity-0 group-hover/mymsgavatar:opacity-100 transition-opacity" />
+                                        {isMine && (
+                                          <div className="md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity flex items-center gap-2 select-none shrink-0 ml-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setEditingMessageId(msg.id);
+                                                setEditingText(msg.text);
+                                              }}
+                                              className={cn(
+                                                "p-1.5 rounded-lg transition-all active:scale-[0.93] flex items-center justify-center border shadow-md cursor-pointer",
+                                                isMine 
+                                                  ? "bg-zinc-950 border-emerald-450/40 text-emerald-400 hover:bg-zinc-900" 
+                                                  : "bg-zinc-850 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                                              )}
+                                              title="Edit Message"
+                                            >
+                                              <Edit className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleDeleteMessage(msg.id)}
+                                              className={cn(
+                                                "p-1.5 rounded-lg transition-all active:scale-[0.93] flex items-center justify-center border shadow-md cursor-pointer",
+                                                isMine 
+                                                  ? "bg-zinc-950 border-red-500/40 text-red-400 hover:bg-zinc-900 hover:text-red-300" 
+                                                  : "bg-zinc-850 border-zinc-700 text-red-405 hover:bg-zinc-800"
+                                              )}
+                                              title="Delete Message"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </>
+                                  )}
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                    {dummyTypingState && (
-                      <div className={cn(
-                        "flex items-center gap-2 self-start rounded-2xl px-3.5 py-2.5 text-xs font-semibold border border-dashed rounded-tl-none animate-pulse max-w-[80%] mr-auto w-fit",
-                        isDarkMode
-                          ? "bg-emerald-500/5 text-emerald-400 border-emerald-500/10"
-                          : "bg-emerald-50 text-emerald-600 border-emerald-200"
-                      )}>
-                        <span>{dummyTypingState} is responding...</span>
-                      </div>
-                    )}
-                    <div ref={chatBottomRef} />
-                  </div>
 
-                  {/* Emoji selection & file uploads row bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
-                    <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar">
-                      {['❤️', '💔', '💖', '💝', '💕', '🫶', '🔥', '⚡', '✨', '🚀', '🎭', '🌌', '🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          onClick={() => setNewMessageText(prev => prev + emoji)}
-                          className={cn(
-                            "w-7 h-7 flex items-center justify-center text-sm rounded-lg border transition-all active:scale-95 shrink-0",
+                                {/* My Profile Avatar on Outgoing Messages */}
+                                {isMine && (
+                                  <div className="relative shrink-0 select-none group/mymsgavatar cursor-pointer">
+                                    <img 
+                                      src={senderAvatar}
+                                      onClick={() => setActiveLightboxImg(senderAvatar)}
+                                      className="w-7.5 h-7.5 rounded-full object-cover border border-emerald-500/15 shadow transition-transform duration-300 group-hover/mymsgavatar:scale-110"
+                                      alt={senderName}
+                                      title="Click to zoom your photo"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover/mymsgavatar:bg-black/10 rounded-full transition-colors flex items-center justify-center">
+                                      <Maximize2 className="w-2.5 h-2.5 text-white opacity-0 group-hover/mymsgavatar:opacity-100 transition-opacity" />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                        {dummyTypingState && (
+                          <div className={cn(
+                            "flex items-center gap-2 self-start rounded-2xl px-3.5 py-2.5 text-xs font-semibold border border-dashed rounded-tl-none animate-pulse max-w-[80%] mr-auto w-fit",
+                            isDarkMode
+                              ? "bg-emerald-500/5 text-emerald-400 border-emerald-500/10"
+                              : "bg-emerald-50 text-emerald-600 border-emerald-200"
+                          )}>
+                            <span>{dummyTypingState} is responding...</span>
+                          </div>
+                        )}
+                        <div ref={chatBottomRef} />
+                      </div>
+
+                      {/* Emoji selection & file uploads row bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
+                        <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar">
+                          {['❤️', '💔', '💖', '💝', '💕', '🫶', '🔥', '⚡', '✨', '🚀', '🎭', '🌌', '🧘', '🧠', '💪', '🏛️', '⚓', '📜', '🛡️', '⏳'].map((emoji) => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => setNewMessageText(prev => prev + emoji)}
+                              className={cn(
+                                "w-7 h-7 flex items-center justify-center text-sm rounded-lg border transition-all active:scale-95 shrink-0",
+                                isDarkMode 
+                                  ? "bg-zinc-850 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 text-zinc-300" 
+                                  : "bg-zinc-50 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300 text-zinc-700"
+                              )}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                           <label className={cn(
+                            "w-7 h-7 flex items-center justify-center rounded-lg border cursor-pointer transition-all hover:bg-emerald-500/10 active:scale-95 shrink-0",
+                            isUploadingFile ? "animate-pulse" : "",
                             isDarkMode 
-                              ? "bg-zinc-850 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 text-zinc-300" 
-                              : "bg-zinc-50 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300 text-zinc-700"
+                              ? "bg-zinc-850 border-zinc-800 text-zinc-400 hover:text-emerald-400" 
+                              : "bg-zinc-50 border-zinc-200 text-zinc-505 hover:text-emerald-600"
+                          )}>
+                            <Paperclip className="w-3.5 h-3.5" />
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              disabled={isUploadingFile} 
+                              onChange={(e) => handleFileUpload(e, false)} 
+                              accept="image/*,video/mp4,application/pdf"
+                            />
+                          </label>
+                          {isUploadingFile && (
+                            <span className="text-[9px] font-mono text-emerald-500 animate-pulse">Uploading...</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Input sending bottom form or locked for AI Scholars */}
+                      <form onSubmit={handleSendDMMessage} className="flex gap-2 shrink-0">
+                        <input 
+                          type="text"
+                          value={newMessageText}
+                          onChange={(e) => setNewMessageText(e.target.value)}
+                          placeholder="Transcribe peaceful thoughts or structured critiques..."
+                          className={cn(
+                            "flex-1 px-4 py-3 text-[18px] rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none font-handwritten tracking-wide font-semibold placeholder:font-sans placeholder:text-xs",
+                            isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
+                          )}
+                        />
+                        <button 
+                          type="submit" 
+                          disabled={!newMessageText.trim() || isUploadingFile}
+                          className={cn(
+                            "p-3 rounded-xl bg-emerald-500 text-zinc-950 active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-emerald-500/10",
+                            (!newMessageText.trim() || isUploadingFile) && "opacity-50 pointer-events-none"
                           )}
                         >
-                          {emoji}
+                          <Send className="w-4 h-4" />
                         </button>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                       <label className={cn(
-                        "w-7 h-7 flex items-center justify-center rounded-lg border cursor-pointer transition-all hover:bg-emerald-500/10 active:scale-95 shrink-0",
-                        isUploadingFile ? "animate-pulse" : "",
-                        isDarkMode 
-                          ? "bg-zinc-850 border-zinc-800 text-zinc-400 hover:text-emerald-400" 
-                          : "bg-zinc-50 border-zinc-200 text-zinc-505 hover:text-emerald-600"
-                      )}>
-                        <Paperclip className="w-3.5 h-3.5" />
-                        <input 
-                          type="file" 
-                          className="hidden" 
-                          disabled={isUploadingFile} 
-                          onChange={(e) => handleFileUpload(e, false)} 
-                          accept="image/*,video/mp4,application/pdf"
-                        />
-                      </label>
-                      {isUploadingFile && (
-                        <span className="text-[9px] font-mono text-emerald-500 animate-pulse">Uploading...</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Input sending bottom form or locked for AI Scholars */}
-                  <form onSubmit={handleSendDMMessage} className="flex gap-2 shrink-0">
-                      <input 
-                        type="text"
-                        value={newMessageText}
-                        onChange={(e) => setNewMessageText(e.target.value)}
-                        placeholder="Transcribe peaceful thoughts or structured critiques..."
-                        className={cn(
-                          "flex-1 px-4 py-3 text-[18px] rounded-xl border focus:ring-1 focus:ring-emerald-500 outline-none font-handwritten tracking-wide font-semibold placeholder:font-sans placeholder:text-xs",
-                          isDarkMode ? "bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500" : "bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400"
-                        )}
-                      />
-                      <button 
-                        type="submit" 
-                        disabled={!newMessageText.trim() || isUploadingFile}
-                        className={cn(
-                          "p-3 rounded-xl bg-emerald-500 text-zinc-950 active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-emerald-500/10",
-                          (!newMessageText.trim() || isUploadingFile) && "opacity-50 pointer-events-none"
-                        )}
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </form>
+                      </form>
+                    </>
+                  )}
 
                 </div>
               ) : (
