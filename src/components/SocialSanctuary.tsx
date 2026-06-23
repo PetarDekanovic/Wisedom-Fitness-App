@@ -400,6 +400,146 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
       'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=400',
       'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&q=80&w=400'
     ]
+  },
+  {
+    uid: 'dummy_athena_pallas',
+    name: 'Athena Pallas',
+    avatarUrl: 'https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&q=80&w=300',
+    coverUrl: 'https://images.unsplash.com/photo-1608178398319-48f814d0750c?auto=format&fit=crop&q=80&w=600',
+    relationshipIntent: 'Strategic intellectual pairing',
+    location: 'Athens, Greece',
+    height: '175',
+    biography: 'Goddess of wisdom, strategic warfare, and handicraft. Famous for her birth fully formed and armed from Zeus\'s forehead, guarding the Parthenon, and guiding Odysseus with cunning counsel. Seeking rigorous physical strategy and dialectical debate.',
+    isOnline: true,
+    lastActive: new Date().toISOString(),
+    friends: [],
+    gender: 'female',
+    age: 28,
+    isDatingModeEnabled: true,
+    datingPreferences: {
+      genderInterest: 'all',
+      minAge: 20,
+      maxAge: 50
+    },
+    mbti: 'INTJ',
+    mbtiName: 'The Architect / Strategist',
+    bigFive: {
+      openness: 99,
+      conscientiousness: 98,
+      extraversion: 30,
+      agreeableness: 75,
+      neuroticism: 10
+    },
+    intellectualInterests: ['Strategy', 'Logic', 'Epistemology', 'Physical Calisthenics'],
+    userPhotos: [
+      'https://images.unsplash.com/photo-1554151228-14d9def656e4?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1534751516642-a131fed10495?auto=format&fit=crop&q=80&w=400'
+    ]
+  },
+  {
+    uid: 'dummy_aphrodite_ourania',
+    name: 'Aphrodite Ourania',
+    avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300',
+    coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=600',
+    relationshipIntent: 'Soul-stirring romance & beauty',
+    location: 'Cyprus, Greece',
+    height: '167',
+    biography: 'Goddess of love, aesthetic beauty, and sexual desire. Famous for rising divine from the sea foam, possessing a magic girdle that makes everyone fall in love with her, and guiding artists to absolute aesthetic perfection. Seeking a high-signal soul connection.',
+    isOnline: true,
+    lastActive: new Date().toISOString(),
+    friends: [],
+    gender: 'female',
+    age: 25,
+    isDatingModeEnabled: true,
+    datingPreferences: {
+      genderInterest: 'all',
+      minAge: 20,
+      maxAge: 50
+    },
+    mbti: 'ENFP',
+    mbtiName: 'The Campaigner / Inspirer',
+    bigFive: {
+      openness: 95,
+      conscientiousness: 60,
+      extraversion: 90,
+      agreeableness: 85,
+      neuroticism: 30
+    },
+    intellectualInterests: ['Aesthetics', 'Eros Philosophy', 'Fine Arts', 'Poetry'],
+    userPhotos: [
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1520512202623-51c5c53957df?auto=format&fit=crop&q=80&w=400'
+    ]
+  },
+  {
+    uid: 'dummy_artemis_cynthia',
+    name: 'Artemis Cynthia',
+    avatarUrl: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=300',
+    coverUrl: 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&q=80&w=600',
+    relationshipIntent: 'Companionship in the wild wilderness',
+    location: 'Delos, Greece',
+    height: '172',
+    biography: 'Goddess of the wild hunt, wilderness, child birth, and protector of young girls. Famous for her absolute independence, roaming wild forests with her hunting hounds, and shooting silver arrows from her crescent moon bow. Seeking active, undisrupted seekers.',
+    isOnline: true,
+    lastActive: new Date().toISOString(),
+    friends: [],
+    gender: 'female',
+    age: 24,
+    isDatingModeEnabled: true,
+    datingPreferences: {
+      genderInterest: 'all',
+      minAge: 18,
+      maxAge: 40
+    },
+    mbti: 'ISTP',
+    mbtiName: 'The Virtuoso / Wilderness Huntress',
+    bigFive: {
+      openness: 88,
+      conscientiousness: 95,
+      extraversion: 25,
+      agreeableness: 65,
+      neuroticism: 15
+    },
+    intellectualInterests: ['Wilderness Survival', 'Biology', 'Archery', 'Forestry'],
+    userPhotos: [
+      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&q=80&w=400'
+    ]
+  },
+  {
+    uid: 'dummy_persephone_kore',
+    name: 'Persephone Kore',
+    avatarUrl: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=300',
+    coverUrl: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?auto=format&fit=crop&q=80&w=600',
+    relationshipIntent: 'Dynamic balance of light & darkness',
+    location: 'Eleusis, Greece',
+    height: '165',
+    biography: 'Goddess of spring growth and queen of the Underworld. Famous for eating pomegranate seeds, dividing her year between the bloom of earth and the dark majesty of Hades, and inspiring the Eleusinian Mysteries of rebirth. Seeking deep somatic alignment.',
+    isOnline: true,
+    lastActive: new Date().toISOString(),
+    friends: [],
+    gender: 'female',
+    age: 23,
+    isDatingModeEnabled: true,
+    datingPreferences: {
+      genderInterest: 'all',
+      minAge: 18,
+      maxAge: 45
+    },
+    mbti: 'INFP',
+    mbtiName: 'The Dreamer / Mediator',
+    bigFive: {
+      openness: 96,
+      conscientiousness: 80,
+      extraversion: 40,
+      agreeableness: 92,
+      neuroticism: 28
+    },
+    intellectualInterests: ['Mythology', 'Mysteries', 'Botanical Arts', 'Somatic Movement'],
+    userPhotos: [
+      'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=400',
+      'https://images.unsplash.com/photo-1520512202623-51c5c53957df?auto=format&fit=crop&q=80&w=400'
+    ]
   }
 ];
 
