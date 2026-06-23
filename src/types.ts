@@ -296,6 +296,8 @@ export interface PublicProfile {
   askGoingOut?: string;
   askMyWeekends?: string;
   askMePhone?: string;
+  likedUids?: string[];
+  dislikedUids?: string[];
 }
 
 export interface FriendRequest {

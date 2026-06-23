@@ -64,7 +64,9 @@ import {
   Upload,
   MessageCircle,
   Lock,
-  Unlock
+  Unlock,
+  Layers,
+  Grid
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
@@ -519,6 +521,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [isSendingEngage, setIsSendingEngage] = useState(false);
   const [engageSuccess, setEngageSuccess] = useState(false);
   const [engageError, setEngageError] = useState<string | null>(null);
+
+  // Swipe Deck / Dating states
+  const [datingViewMode, setDatingViewMode] = useState<'swipe' | 'grid'>('swipe');
+  const [activeMatchOverlay, setActiveMatchOverlay] = useState<PublicProfile | null>(null);
+  const [isSwipingInProgress, setIsSwipingInProgress] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [currentPhotoIndices, setCurrentPhotoIndices] = useState<{ [uid: string]: number }>({});
 
   // Sync setup name when profile loads
   useEffect(() => {
@@ -1782,6 +1791,76 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
   };
 
+  // Action: Tinder Swipe Deck / Matchmaking Operations
+  const handleSwipeAction = async (peer: PublicProfile, liked: boolean) => {
+    if (isSwipingInProgress || !currentUser) return;
+
+    setIsSwipingInProgress(true);
+    setSwipeDirection(liked ? 'right' : 'left');
+
+    const likedUids = thisPublicProfile?.likedUids || [];
+    const dislikedUids = thisPublicProfile?.dislikedUids || [];
+    const updatedLikes = liked ? [...likedUids, peer.uid] : likedUids;
+    const updatedDislikes = !liked ? [...dislikedUids, peer.uid] : dislikedUids;
+
+    setTimeout(async () => {
+      try {
+        const docRef = doc(db, 'public_profiles', currentUser.uid);
+        await setDoc(docRef, {
+          likedUids: updatedLikes,
+          dislikedUids: updatedDislikes,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        // Update local state immediately for visual responsiveness
+        setThisPublicProfile(prev => prev ? { ...prev, likedUids: updatedLikes, dislikedUids: updatedDislikes } : null);
+
+        if (liked) {
+          // Determine if we match!
+          let isMatch = false;
+          if (peer.uid.startsWith('dummy_')) {
+            // For historical bots: check if compatibility score is high
+            const score = computeScholarMatchingScore(thisPublicProfile, peer) || 75;
+            isMatch = score > 60 ? Math.random() < 0.95 : Math.random() < 0.70;
+          } else {
+            // For real users, match if they liked us back
+            isMatch = Array.isArray(peer.likedUids) && peer.likedUids.includes(currentUser.uid);
+          }
+
+          if (isMatch) {
+            // Trigger match celebration!
+            setActiveMatchOverlay(peer);
+
+            // Establish direct friendship instantly in the database!
+            await handleSendFriendRequest(peer);
+          }
+        }
+      } catch (err) {
+        console.error("Error writing swipe evaluation to Firestore:", err);
+      } finally {
+        setIsSwipingInProgress(false);
+        setSwipeDirection(null);
+      }
+    }, 400);
+  };
+
+  const handleResetSwipes = async () => {
+    if (!currentUser) return;
+    if (!window.confirm("Do you wish to reset your evaluation history so you can see all seekers again?")) return;
+    try {
+      const docRef = doc(db, 'public_profiles', currentUser.uid);
+      await setDoc(docRef, {
+        likedUids: [],
+        dislikedUids: [],
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      setThisPublicProfile(prev => prev ? { ...prev, likedUids: [], dislikedUids: [] } : null);
+    } catch (err) {
+      console.error("Error resetting swipes in Firestore:", err);
+      alert("Failed to reset history: " + err.message);
+    }
+  };
+
   // Action: Friend Request Operations
   const handleSendFriendRequest = async (peer: PublicProfile) => {
     if (!currentUser) return;
@@ -2277,6 +2356,37 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
     return matchesSearch;
   });
+
+  // Calculate remaining dating peers for swiping deck view
+  const datingPeersDeck = React.useMemo(() => {
+    const likedUids = thisPublicProfile?.likedUids || [];
+    const dislikedUids = thisPublicProfile?.dislikedUids || [];
+    const evaluatedUids = new Set([...likedUids, ...dislikedUids]);
+
+    return peers.filter(p => 
+      p.isDatingModeEnabled === true && 
+      p.uid !== currentUser?.uid && 
+      !evaluatedUids.has(p.uid) &&
+      (p.name.toLowerCase().includes(peerSearchQuery.toLowerCase()) || (p.biography?.toLowerCase() || '').includes(peerSearchQuery.toLowerCase()))
+    );
+  }, [peers, thisPublicProfile, currentUser, peerSearchQuery]);
+
+  // Bind keyboard navigation (ArrowLeft = Pass, ArrowRight = Like)
+  useEffect(() => {
+    if (activeTab !== 'peers' || peerFilter !== 'dating' || datingViewMode !== 'swipe' || datingPeersDeck.length === 0 || isSwipingInProgress) return;
+    
+    const activePeer = datingPeersDeck[0];
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        handleSwipeAction(activePeer, false);
+      } else if (e.key === 'ArrowRight') {
+        handleSwipeAction(activePeer, true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, peerFilter, datingViewMode, datingPeersDeck, isSwipingInProgress, thisPublicProfile]);
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 pb-24 space-y-6">
@@ -3921,6 +4031,50 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
               </div>
             </div>
 
+            {/* Tinder Swipe Switcher Panel */}
+            {peerFilter === 'dating' && (
+              <div className={cn(
+                "flex justify-between items-center p-3 rounded-2xl border transition-all duration-300",
+                isDarkMode ? "bg-zinc-950/40 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+              )}>
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                  </span>
+                  <span className="text-[9.5px] font-black uppercase tracking-wider text-rose-500">
+                    Dialectical Swarm Matcher
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setDatingViewMode('swipe')}
+                    className={cn(
+                      "px-3 py-1 text-[8.5px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer active:scale-95",
+                      datingViewMode === 'swipe'
+                        ? "bg-rose-500 text-white font-black italic shadow-md shadow-rose-500/15"
+                        : isDarkMode ? "bg-zinc-900 text-zinc-500 hover:text-zinc-300" : "bg-white text-zinc-500 hover:text-zinc-700 border border-zinc-200"
+                    )}
+                  >
+                    <Layers className="w-3 h-3" /> Dialectic Deck
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDatingViewMode('grid')}
+                    className={cn(
+                      "px-3 py-1 text-[8.5px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1 transition-all cursor-pointer active:scale-95",
+                      datingViewMode === 'grid'
+                        ? "bg-rose-500 text-white font-black italic shadow-md shadow-rose-500/15"
+                        : isDarkMode ? "bg-zinc-900 text-zinc-500 hover:text-zinc-300" : "bg-white text-zinc-500 hover:text-zinc-700 border border-zinc-200"
+                    )}
+                  >
+                    <Grid className="w-3 h-3" /> Directory Grid
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Pending Requests component header bucket */}
             {incomingPending.length > 0 && (
               <div className={cn(
@@ -3973,8 +4127,253 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
               </div>
             )}
 
-            {/* Grid display */}
-            {filteredPeers.length === 0 ? (
+            {/* Swipe / Grid conditional views */}
+            {peerFilter === 'dating' && datingViewMode === 'swipe' ? (
+              <div className="max-w-md mx-auto w-full py-4 text-center">
+                {datingPeersDeck.length === 0 ? (
+                  <div className={cn(
+                    "p-10 rounded-3xl border flex flex-col items-center justify-center space-y-4",
+                    isDarkMode ? "bg-zinc-900/30 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                  )}>
+                    <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center animate-pulse">
+                      <Sparkles className="w-8 h-8 text-rose-500" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black uppercase tracking-wider text-rose-500">Evaluation Path Exhausted</h4>
+                      <p className={cn("text-[11px] leading-relaxed mt-1 max-w-xs mx-auto", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                        You have evaluated all active seekers in the dating swarm directory. Search filters or reset history to re-seek connection sparks!
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleResetSwipes}
+                      className="px-5 py-2.5 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-rose-500/15 cursor-pointer hover:bg-rose-400"
+                    >
+                      Reset Swiping History
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative space-y-6">
+                    {/* The Swiping Card Container */}
+                    <div className="relative aspect-[3/4.2] sm:aspect-[3/4.5] w-full max-w-md mx-auto select-none">
+                      {datingPeersDeck.slice(0, 3).map((peer, idx) => {
+                        // Only render the top cards in the deck
+                        const isTopCard = idx === 0;
+                        const score = computeScholarMatchingScore(thisPublicProfile, peer) || 75;
+                        const compDetails = getDetailedCompatibility(thisPublicProfile, peer);
+                        
+                        const photoIdx = currentPhotoIndices[peer.uid] || 0;
+                        const photos = peer.userPhotos && peer.userPhotos.length > 0 ? peer.userPhotos : [peer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300'];
+
+                        return (
+                          <div
+                            key={peer.uid}
+                            className={cn(
+                              "absolute inset-0 rounded-3xl border flex flex-col justify-end overflow-hidden shadow-2xl transition-all duration-300 bg-zinc-950",
+                              isTopCard 
+                                ? cn(
+                                    "z-30 border-rose-500/30",
+                                    isSwipingInProgress && swipeDirection === 'right' && "translate-x-full rotate-12 opacity-0 scale-95 pointer-events-none transition-all duration-350 ease-out",
+                                    isSwipingInProgress && swipeDirection === 'left' && "-translate-x-full -rotate-12 opacity-0 scale-95 pointer-events-none transition-all duration-350 ease-out"
+                                  )
+                                : idx === 1
+                                  ? "z-20 scale-[0.96] translate-y-2 opacity-80 border-zinc-800/80 pointer-events-none"
+                                  : "z-10 scale-[0.92] translate-y-4 opacity-40 border-zinc-900 pointer-events-none"
+                            )}
+                          >
+                            {/* Slideshow image viewport */}
+                            <div className="absolute inset-0 z-0">
+                              <img 
+                                src={photos[photoIdx]} 
+                                className="w-full h-full object-cover select-none pointer-events-none" 
+                                alt={peer.name}
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/45 to-zinc-900/10 pointer-events-none" />
+                            </div>
+
+                            {/* Slideshow progress lines */}
+                            {photos.length > 1 && isTopCard && (
+                              <div className="absolute top-3 inset-x-3 flex gap-1 z-20">
+                                {photos.map((_, pIdx) => (
+                                  <div 
+                                    key={pIdx} 
+                                    className={cn(
+                                      "h-1 flex-1 rounded-full transition-all",
+                                      pIdx === photoIdx ? "bg-rose-500" : "bg-white/35"
+                                    )} 
+                                  />
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Click sectors for cycling pictures */}
+                            {photos.length > 1 && isTopCard && (
+                              <>
+                                <div 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const prev = (photoIdx - 1 + photos.length) % photos.length;
+                                    setCurrentPhotoIndices({ ...currentPhotoIndices, [peer.uid]: prev });
+                                  }}
+                                  className="absolute left-0 top-0 bottom-0 w-1/2 z-10 cursor-pointer"
+                                  title="Previous Photo"
+                                />
+                                <div 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const next = (photoIdx + 1) % photos.length;
+                                    setCurrentPhotoIndices({ ...currentPhotoIndices, [peer.uid]: next });
+                                  }}
+                                  className="absolute right-0 top-0 bottom-0 w-1/2 z-10 cursor-pointer"
+                                  title="Next Photo"
+                                />
+                              </>
+                            )}
+
+                            {/* Swipe Stamp Overlays */}
+                            {isTopCard && isSwipingInProgress && swipeDirection === 'right' && (
+                              <div className="absolute top-10 left-6 z-40 border-4 border-emerald-500 text-emerald-500 font-black uppercase text-xl px-4 py-1.5 rounded-xl rotate-[-12deg] tracking-widest bg-zinc-950/70 select-none">
+                                resonate
+                              </div>
+                            )}
+                            {isTopCard && isSwipingInProgress && swipeDirection === 'left' && (
+                              <div className="absolute top-10 right-6 z-40 border-4 border-red-500 text-red-500 font-black uppercase text-xl px-4 py-1.5 rounded-xl rotate-[12deg] tracking-widest bg-zinc-950/70 select-none">
+                                bypass
+                              </div>
+                            )}
+
+                            {/* Information card overlay */}
+                            <div className="p-5 space-y-3.5 z-25 relative bg-gradient-to-t from-zinc-950 via-zinc-950 to-transparent pt-12">
+                              
+                              {/* Name, age, Match rating */}
+                              <div className="text-left">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="text-base font-black uppercase tracking-tight text-white">{peer.name}</h4>
+                                  {peer.age && <span className="text-sm font-bold text-zinc-400">, {peer.age}</span>}
+                                  {score !== null && (
+                                    <span className="text-[7.5px] font-black px-2 py-0.5 rounded bg-rose-500 text-white flex items-center gap-0.5 leading-none shadow-md shadow-rose-500/15 animate-pulse ml-auto shrink-0">
+                                      💖 {score}% Fit
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  {peer.location && <span className="text-[9px] text-zinc-400 font-bold">📍 {peer.location}</span>}
+                                  <span className="text-[8px] px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 font-extrabold uppercase tracking-wider">{peer.mbti || "Seeker"}</span>
+                                </div>
+                              </div>
+
+                              {/* Biography */}
+                              <p className="text-[11.5px] leading-relaxed text-zinc-300 font-semibold italic text-left">
+                                "{peer.biography || 'Seeking intellectual and physical discipline in the sanctuary.'}"
+                              </p>
+
+                              {/* Personal preferences tags */}
+                              {(peer.relationshipIntent || peer.fitnessStyle || peer.morningEnergy) && (
+                                <div className="flex flex-wrap gap-1">
+                                  {peer.relationshipIntent && (
+                                    <span className="text-[8px] font-black px-2 py-0.5 bg-rose-500/10 border border-rose-500/15 text-rose-400 rounded-md">
+                                      ❤️ {peer.relationshipIntent}
+                                    </span>
+                                  )}
+                                  {peer.fitnessStyle && (
+                                    <span className="text-[8px] font-black px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/15 text-emerald-400 rounded-md">
+                                      ⚡ {peer.fitnessStyle}
+                                    </span>
+                                  )}
+                                  {peer.morningEnergy && (
+                                    <span className="text-[8px] font-black px-2 py-0.5 bg-sky-500/10 border border-sky-500/15 text-sky-400 rounded-md">
+                                      🌅 {peer.morningEnergy}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Big five summary */}
+                              {peer.bigFive && (
+                                <div className="p-2.5 rounded-xl bg-zinc-900/50 border border-zinc-850 text-left space-y-1">
+                                  <div className="flex justify-between text-[7px] font-black text-zinc-500 uppercase tracking-widest">
+                                    <span>Intellectual Dimensions</span>
+                                    <span>OCEAN Diagnostics</span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1 leading-none">
+                                    <span className="px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 text-[7px] font-bold">O: {peer.bigFive.openness}%</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[7px] font-bold">C: {peer.bigFive.conscientiousness}%</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[7px] font-bold">E: {peer.bigFive.extraversion}%</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-pink-500/10 text-pink-400 text-[7px] font-bold">A: {peer.bigFive.agreeableness}%</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[7px] font-bold">N: {peer.bigFive.neuroticism}%</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Compatibility Anchor Bullet */}
+                              {!compDetails.isError && compDetails.reasons.length > 0 && (
+                                <div className="p-2.5 rounded-xl bg-rose-500/5 border border-rose-500/10 text-left space-y-0.5">
+                                  <span className="text-[7.5px] font-black uppercase tracking-widest text-rose-400">Resonance Anchors</span>
+                                  <p className="text-[10px] text-zinc-300 font-medium leading-normal flex items-start gap-1">
+                                    <span className="text-rose-500 mt-0.5 text-[8px]">✦</span>
+                                    <span>{compDetails.reasons[0]}</span>
+                                  </p>
+                                </div>
+                              )}
+
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Tinder Swipe Control Buttons */}
+                    {(() => {
+                      const activePeer = datingPeersDeck[0];
+                      return (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-center gap-6">
+                            {/* PASS BUTTON (LEFT SWIPE) */}
+                            <button
+                              type="button"
+                              onClick={() => handleSwipeAction(activePeer, false)}
+                              disabled={isSwipingInProgress}
+                              className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-red-500/20 active:scale-95 cursor-pointer disabled:opacity-50"
+                              title="Pass (Swipe Left)"
+                            >
+                              <X className="w-6 h-6" />
+                            </button>
+
+                            {/* DETAIL / WALL BUTTON */}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPeerWall(activePeer)}
+                              disabled={isSwipingInProgress}
+                              className="w-11 h-11 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center transition-all duration-300 hover:border-zinc-700 active:scale-95 cursor-pointer disabled:opacity-50"
+                              title="Open Seeker Wall"
+                            >
+                              <FileText className="w-5 h-5" />
+                            </button>
+
+                            {/* LIKE BUTTON (RIGHT SWIPE) */}
+                            <button
+                              type="button"
+                              onClick={() => handleSwipeAction(activePeer, true)}
+                              disabled={isSwipingInProgress}
+                              className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all duration-300 hover:shadow-lg hover:shadow-rose-500/20 active:scale-95 cursor-pointer disabled:opacity-50"
+                              title="Resonate (Swipe Right)"
+                            >
+                              <Heart className="w-6 h-6 fill-current" />
+                            </button>
+                          </div>
+
+                          {/* Keyboard Tip Helper */}
+                          <p className="text-[9px] font-mono font-bold tracking-tight text-zinc-500 uppercase">
+                            💡 Keyboard: <span className="text-zinc-400">← Arrow</span> to Pass, <span className="text-zinc-400">Arrow →</span> to Resonate
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            ) : filteredPeers.length === 0 ? (
               <div className="text-center py-12 text-xs text-zinc-500 italic">
                 {peerFilter === 'friends' 
                   ? 'No checked scholar friends matching filters in directory. Secure connection links first!'
@@ -7664,6 +8063,100 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
               >
                 Close Report
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 4. Tinder Match Celebration Overlay */}
+      <AnimatePresence>
+        {activeMatchOverlay && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-55 bg-black/95 flex flex-col items-center justify-center p-6 text-center"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="max-w-md w-full space-y-8"
+            >
+              {/* Splendid glowing headline */}
+              <div className="space-y-2">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  className="mx-auto w-16 h-16 rounded-full bg-rose-500/15 flex items-center justify-center border border-rose-500/30"
+                >
+                  <Heart className="w-8 h-8 text-rose-500 fill-current" />
+                </motion.div>
+                <h3 className="text-2xl font-black uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-rose-500 to-pink-500">
+                  Dialectical Resonance Achieved
+                </h3>
+                <p className="text-xs text-zinc-400 font-bold tracking-wide uppercase">
+                  A new intellectual connection is forged!
+                </p>
+              </div>
+
+              {/* Overlapping glowing avatars */}
+              <div className="flex items-center justify-center -space-x-6 py-4">
+                <div className="relative z-10">
+                  <img
+                    src={thisPublicProfile?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
+                    className="w-24 h-24 rounded-full object-cover border-4 border-emerald-500 ring-4 ring-emerald-500/10 shadow-lg shadow-emerald-500/20"
+                    alt="you"
+                    referrerPolicy="no-referrer"
+                  />
+                  <span className="absolute -top-1 -left-1 bg-emerald-500 text-zinc-950 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-md">
+                    You
+                  </span>
+                </div>
+                <div className="relative z-20">
+                  <img
+                    src={activeMatchOverlay.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
+                    className="w-24 h-24 rounded-full object-cover border-4 border-rose-500 ring-4 ring-rose-500/10 shadow-lg shadow-rose-500/20"
+                    alt={activeMatchOverlay.name}
+                    referrerPolicy="no-referrer"
+                  />
+                  <span className="absolute -bottom-1 -right-1 bg-rose-500 text-white text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-md">
+                    Scholar
+                  </span>
+                </div>
+              </div>
+
+              {/* Compatibility breakdown text */}
+              <div className="space-y-2 bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800/80 text-center">
+                <span className="text-[8px] font-black tracking-widest uppercase text-rose-400">
+                  Resonance Coefficient: {computeScholarMatchingScore(thisPublicProfile, activeMatchOverlay) || 85}%
+                </span>
+                <p className="text-xs text-zinc-300 leading-relaxed font-medium">
+                  Your Big Five psychometric vectors and physical training objectives share high intellectual convergence with <strong className="text-white">{activeMatchOverlay.name}</strong>.
+                </p>
+              </div>
+
+              {/* Interactive buttons */}
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    setEngagePeer(activeMatchOverlay);
+                    setEngageMessage(`Greetings ${activeMatchOverlay.name}. I feel a strong intellectual resonance with your philosophy. Let us begin our dialectic inquiry.`);
+                    setActiveMatchOverlay(null);
+                    setEngageSuccess(false);
+                    setEngageError(null);
+                  }}
+                  className="w-full py-3.5 bg-rose-500 hover:bg-rose-400 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-rose-500/20 active:scale-95 transition-transform flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Send className="w-4 h-4" /> Initiate Dialectic Transmission
+                </button>
+                <button
+                  onClick={() => setActiveMatchOverlay(null)}
+                  className="w-full py-3.5 bg-transparent border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/20 text-zinc-400 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-2xl active:scale-95 transition-all cursor-pointer"
+                >
+                  Continue Seeking Sparks
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
