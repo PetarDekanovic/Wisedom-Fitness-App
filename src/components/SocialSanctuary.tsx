@@ -3723,8 +3723,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   isDarkMode ? "bg-zinc-900/40 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"
                 )}>
                   {/* Active Header user info */}
-                  <div className="flex items-center justify-between pb-3 border-b border-zinc-855 leading-none shrink-0 mb-3">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between pb-3 border-b border-zinc-800 leading-none shrink-0 mb-3 gap-2">
+                    {/* Left side: Avatar, Name, and Status */}
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       {(() => {
                         const otherIndex = activeChat.participants[0] === currentUser.uid ? 1 : 0;
                         const otherUid = activeChat.participants[otherIndex];
@@ -3734,12 +3735,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           ? activeChat.participantNames[1] 
                           : activeChat.participantNames[0];
                         const otherAvatar = otherPeer?.avatarUrl || (activeChat.participantAvatars ? activeChat.participantAvatars[otherIndex] : undefined) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+                        
                         return (
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
                             <button
                               type="button"
                               onClick={() => setActiveChat(null)}
-                              className="md:hidden p-1 mr-0.5 rounded-xl bg-zinc-850 border border-zinc-800 hover:bg-zinc-800 text-emerald-500 transition-colors"
+                              className="md:hidden p-1 mr-0.5 rounded-xl bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-emerald-500 transition-colors shrink-0"
                               title="Back to conversation list"
                             >
                               <ChevronLeft className="w-4 h-4" />
@@ -3766,21 +3768,21 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 online ? "bg-emerald-500" : "bg-zinc-600"
                               )} />
                             </div>
-
-                            <div className="leading-tight">
-                              <div className="flex items-center gap-2">
+ 
+                            <div className="leading-tight min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <h4 
                                   onClick={() => {
                                     if (otherPeer) {
                                       setSelectedPeerWall(otherPeer);
                                     }
                                   }}
-                                  className="text-[12px] font-black uppercase tracking-wider cursor-pointer hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                                  className="text-[12px] font-black uppercase tracking-wider cursor-pointer hover:text-emerald-400 transition-colors truncate max-w-[100px] sm:max-w-[180px]"
                                 >
                                   {otherName}
                                 </h4>
                                 <span className={cn(
-                                  "text-[7px] font-bold px-1.5 py-0.5 rounded uppercase leading-none border select-none scale-90 origin-left",
+                                  "text-[7px] font-bold px-1.5 py-0.5 rounded uppercase leading-none border select-none shrink-0 scale-90 origin-left",
                                   online 
                                     ? "bg-emerald-500/10 border-emerald-500/15 text-emerald-400 font-mono animate-pulse" 
                                     : "bg-zinc-500/5 border-zinc-800 text-zinc-500 font-mono"
@@ -3789,24 +3791,37 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 </span>
                               </div>
                               {otherPeer?.biography ? (
-                                <p className="text-[9px] text-zinc-400 font-medium italic line-clamp-1 max-w-[155px] sm:max-w-[280px]">
+                                <p className="text-[9px] text-zinc-400 font-medium italic truncate max-w-[110px] sm:max-w-[240px] mt-0.5">
                                   "{otherPeer.biography}"
                                 </p>
                               ) : (
-                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest">
+                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
                                   WiseFit Seeker
                                 </p>
                               )}
                             </div>
-                            
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Right side: Actions & Close button */}
+                    <div className="flex items-center gap-1.5 shrink-0 select-none">
+                      {(() => {
+                        const otherIndex = activeChat.participants[0] === currentUser.uid ? 1 : 0;
+                        const otherUid = activeChat.participants[otherIndex];
+                        const otherPeer = peers.find(p => p.uid === otherUid);
+                        
+                        return (
+                          <>
                             {otherPeer && (
                               <button
                                 type="button"
                                 onClick={() => setSelectedPeerWall(otherPeer)}
-                                className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-black uppercase text-emerald-450 hover:text-emerald-350 border border-emerald-500/15 bg-emerald-500/5 hover:border-emerald-500/25 px-2.5 py-1 rounded-xl transition-all cursor-pointer shadow ml-2 shrink-0 select-none"
+                                className="hidden sm:inline-flex items-center gap-1 text-[8.5px] font-black uppercase text-emerald-450 hover:text-emerald-350 border border-emerald-500/15 bg-emerald-500/5 hover:border-emerald-500/25 px-2.5 py-1 rounded-xl transition-all cursor-pointer shadow shrink-0 select-none"
                               >
                                 <Users className="w-3 h-3" />
-                                <span>View Wall</span>
+                                <span>Wall</span>
                               </button>
                             )}
 
@@ -3816,7 +3831,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 setActiveCallConvoId(activeCallConvoId === activeChat.id ? null : activeChat.id);
                               }}
                               className={cn(
-                                "inline-flex items-center gap-1 text-[8.5px] font-black uppercase px-2.5 py-1 rounded-xl transition-all cursor-pointer shadow ml-2 shrink-0 select-none border",
+                                "inline-flex items-center gap-1 text-[8.5px] font-black uppercase px-2 py-1.5 sm:px-2.5 sm:py-1 rounded-xl transition-all cursor-pointer shadow shrink-0 select-none border",
                                 activeCallConvoId === activeChat.id
                                   ? "bg-rose-500/20 border-rose-500/30 text-rose-400 hover:text-rose-350"
                                   : "bg-emerald-500/5 border-emerald-500/15 text-emerald-450 hover:text-emerald-350 hover:border-emerald-500/25"
@@ -3824,19 +3839,25 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               title={activeCallConvoId === activeChat.id ? "Disconnect Video Call" : "Initiate Secure Video Call"}
                             >
                               <Video className="w-3.5 h-3.5" />
-                              <span>{activeCallConvoId === activeChat.id ? "Disconnect" : "Video Call"}</span>
+                              <span className="hidden min-[400px]:inline">
+                                {activeCallConvoId === activeChat.id ? "Disconnect" : "Video Call"}
+                              </span>
+                              <span className="min-[400px]:hidden">
+                                {activeCallConvoId === activeChat.id ? "End" : "Call"}
+                              </span>
                             </button>
-                          </div>
+                          </>
                         );
                       })()}
+
+                      <button 
+                        onClick={() => setActiveChat(null)}
+                        className="p-1.5 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-950/30 active:scale-95 flex items-center justify-center cursor-pointer border border-rose-400 shrink-0"
+                        title="Exit Dialogue"
+                      >
+                        <X className="w-3.5 h-3.5 stroke-[3px]" />
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => setActiveChat(null)}
-                      className="p-1.5 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-950/30 active:scale-95 flex items-center justify-center cursor-pointer border border-rose-450"
-                      title="Exit Dialogue"
-                    >
-                      <X className="w-4 h-4 stroke-[3px]" />
-                    </button>
                   </div>
 
                   {activeCallConvoId === activeChat.id ? (
