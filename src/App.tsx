@@ -9465,14 +9465,51 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                               if (!file || !user) return;
                               setIsUploadingAvatar(true);
                               try {
-                                const reader = new FileReader();
-                                const fileLoadedPromise = new Promise<string>((resolve, reject) => {
-                                  reader.onload = () => resolve(reader.result as string);
-                                  reader.onerror = (err) => reject(err);
-                                });
-                                
-                                reader.readAsDataURL(file);
-                                const base64Data = await fileLoadedPromise;
+                                // Client-side image optimization/compression (keeps file size ~50-100KB)
+                                const optimizeImage = (f: File): Promise<{ base64: string, type: string, name: string }> => {
+                                  return new Promise((resolve, reject) => {
+                                    const reader = new FileReader();
+                                    reader.onload = (ev) => {
+                                      const img = new window.Image();
+                                      img.onload = () => {
+                                        const canvas = document.createElement('canvas');
+                                        const maxDim = 600;
+                                        let w = img.width;
+                                        let h = img.height;
+                                        if (w > h) {
+                                          if (w > maxDim) {
+                                            h = Math.round((h * maxDim) / w);
+                                            w = maxDim;
+                                          }
+                                        } else {
+                                          if (h > maxDim) {
+                                            w = Math.round((w * maxDim) / h);
+                                            h = maxDim;
+                                          }
+                                        }
+                                        canvas.width = w;
+                                        canvas.height = h;
+                                        const ctx = canvas.getContext('2d');
+                                        if (!ctx) {
+                                          reject(new Error("Canvas context failed"));
+                                          return;
+                                        }
+                                        ctx.drawImage(img, 0, 0, w, h);
+                                        resolve({
+                                          base64: canvas.toDataURL('image/jpeg', 0.8),
+                                          type: 'image/jpeg',
+                                          name: f.name.replace(/\.[^/.]+$/, "") + ".jpg"
+                                        });
+                                      };
+                                      img.onerror = () => reject(new Error("Image decoding failed. Please use standard format (JPEG, PNG, WebP)"));
+                                      img.src = ev.target?.result as string;
+                                    };
+                                    reader.onerror = (err) => reject(err);
+                                    reader.readAsDataURL(f);
+                                  });
+                                };
+
+                                const optimized = await optimizeImage(file);
 
                                 const response = await fetch('/api/upload', {
                                   method: 'POST',
@@ -9480,9 +9517,9 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                     'Content-Type': 'application/json'
                                   },
                                   body: JSON.stringify({
-                                    filename: file.name,
-                                    fileType: file.type,
-                                    base64Data
+                                    filename: optimized.name,
+                                    fileType: optimized.type,
+                                    base64Data: optimized.base64
                                   })
                                 });
 
@@ -9512,6 +9549,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                 alert('Failed to upload image: ' + uploadErr.message);
                               } finally {
                                 setIsUploadingAvatar(false);
+                                // Clear file input value to allow uploading the same file again
+                                e.target.value = '';
                               }
                             }}
                           />

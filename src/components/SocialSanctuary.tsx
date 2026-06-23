@@ -1200,31 +1200,62 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const handleUploadPhoto = async (index: number, file: File) => {
     if (!currentUser) return;
     
-    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      alert("Only JPEG and PNG image formats are securely supported as genuine representations.");
+    // Support standard image types, plus HEIC/HEIF format (very common on iPhones)
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'image/heic', 'image/heif'];
+    if (!validTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
+      alert("Only JPEG, PNG, WebP, and HEIC image formats are securely supported as genuine representations.");
       return;
     }
     
-    // Check size limit: 8MB
-    const MAX_SIZE = 8 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      alert("This photograph exceeds our 8MB sanctuary limit for rapid modern rendering.");
-      return;
-    }
-
     setUploadingSlots(prev => ({ ...prev, [index]: true }));
     setUploadProgressSlots(prev => ({ ...prev, [index]: 20 }));
 
     try {
-      const reader = new FileReader();
-      const fileLoadedPromise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (err) => reject(err);
-      });
-      
-      reader.readAsDataURL(file);
-      const base64Data = await fileLoadedPromise;
+      // Client-side image optimization/compression (keeps file size ~50-100KB)
+      const optimizeImage = (f: File): Promise<{ base64: string, type: string, name: string }> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const img = new window.Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const maxDim = 800; // slightly higher resolution for photo album
+              let w = img.width;
+              let h = img.height;
+              if (w > h) {
+                if (w > maxDim) {
+                  h = Math.round((h * maxDim) / w);
+                  w = maxDim;
+                }
+              } else {
+                if (h > maxDim) {
+                  w = Math.round((w * maxDim) / h);
+                  h = maxDim;
+                }
+              }
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                reject(new Error("Canvas context failed"));
+                return;
+              }
+              ctx.drawImage(img, 0, 0, w, h);
+              resolve({
+                base64: canvas.toDataURL('image/jpeg', 0.82), // Excellent quality, small size
+                type: 'image/jpeg',
+                name: f.name.replace(/\.[^/.]+$/, "") + ".jpg"
+              });
+            };
+            img.onerror = () => reject(new Error("Image decoding failed. Please use standard format (JPEG, PNG, WebP)"));
+            img.src = ev.target?.result as string;
+          };
+          reader.onerror = (err) => reject(err);
+          reader.readAsDataURL(f);
+        });
+      };
+
+      const optimized = await optimizeImage(file);
       setUploadProgressSlots(prev => ({ ...prev, [index]: 50 }));
 
       const response = await fetch('/api/upload', {
@@ -1233,9 +1264,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          filename: file.name,
-          fileType: file.type,
-          base64Data
+          filename: optimized.name,
+          fileType: optimized.type,
+          base64Data: optimized.base64
         })
       });
 
