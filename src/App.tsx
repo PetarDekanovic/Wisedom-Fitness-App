@@ -9471,16 +9471,16 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                           type="button"
                           onClick={() => setUserProfile({ ...userProfile, avatarUrl: avatar.url })}
                           className={cn(
-                            "relative aspect-square rounded-2xl overflow-hidden border-2 transition-all active:scale-95 cursor-pointer",
+                            "relative aspect-square rounded-2xl overflow-hidden border-2 transition-all duration-350 active:scale-95 hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/5 cursor-pointer group z-10 hover:z-20",
                             userProfile.avatarUrl === avatar.url 
                               ? "border-emerald-500 ring-2 ring-emerald-500/20" 
-                              : (isDarkMode ? "border-zinc-700 bg-zinc-800 hover:border-zinc-650" : "border-zinc-200 bg-zinc-100 hover:border-zinc-300")
+                              : (isDarkMode ? "border-zinc-700 bg-zinc-800 hover:border-zinc-600" : "border-zinc-200 bg-zinc-100 hover:border-zinc-300")
                           )}
                         >
                           <img 
                             src={avatar.url} 
                             alt={avatar.name} 
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-120"
                             referrerPolicy="no-referrer"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';
@@ -9501,16 +9501,16 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                             type="button"
                             onClick={() => setUserProfile({ ...userProfile, avatarUrl: url })}
                             className={cn(
-                              "w-full h-full rounded-2xl overflow-hidden border-2 transition-all active:scale-95 cursor-pointer relative",
+                              "w-full h-full rounded-2xl overflow-hidden border-2 transition-all duration-350 active:scale-95 hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/5 cursor-pointer relative group z-10 hover:z-20",
                               userProfile.avatarUrl === url 
                                 ? "border-emerald-500 ring-2 ring-emerald-500/20" 
-                                : (isDarkMode ? "border-zinc-700 bg-zinc-800 hover:border-zinc-650" : "border-zinc-200 bg-zinc-100 hover:border-zinc-300")
+                                : (isDarkMode ? "border-zinc-700 bg-zinc-800 hover:border-zinc-600" : "border-zinc-200 bg-zinc-100 hover:border-zinc-300")
                             )}
                           >
                             <img 
                               src={url} 
                               alt={`Custom Uploaded ${idx + 1}`} 
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-120"
                               referrerPolicy="no-referrer"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200';

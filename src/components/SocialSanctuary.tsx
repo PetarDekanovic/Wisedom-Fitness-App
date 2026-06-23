@@ -4018,7 +4018,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           <div className="relative shrink-0 select-none group/avatar">
                             <img 
                               src={peer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                              className="w-11 h-11 rounded-full object-cover border border-zinc-500/20 cursor-zoom-in transition-transform duration-300 group-hover/avatar:scale-105 relative z-10"
+                              className="w-11 h-11 rounded-full object-cover border border-zinc-500/20 cursor-zoom-in transition-all duration-300 ease-out group-hover/avatar:scale-125 group-hover/avatar:ring-2 group-hover/avatar:ring-emerald-400 group-hover/avatar:shadow-lg group-hover/avatar:shadow-emerald-500/20 relative z-30"
                               alt="peer"
                               referrerPolicy="no-referrer"
                               onClick={(e) => {
@@ -4032,9 +4032,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 e.stopPropagation();
                                 setActiveLightboxImg(peer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200');
                               }}
-                              className="absolute inset-0 bg-black/0 group-hover/avatar:bg-black/25 rounded-full transition-colors flex items-center justify-center z-20 cursor-zoom-in"
+                              className="absolute inset-0 bg-black/0 group-hover/avatar:bg-black/30 rounded-full transition-all duration-300 ease-out group-hover/avatar:scale-125 z-40 cursor-zoom-in flex items-center justify-center"
                             >
-                              <Maximize2 className="w-3.5 h-3.5 text-white opacity-0 group-hover/avatar:opacity-100 transition-opacity" />
+                              <Maximize2 className="w-3.5 h-3.5 text-white opacity-0 group-hover/avatar:opacity-100 transition-all" />
                             </div>
                             {online ? (
                               <span className="absolute bottom-0 right-0 flex h-3 w-3">
@@ -5290,12 +5290,27 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      const updated = [...editUserPhotos];
-                                      updated[index] = '';
-                                      setEditUserPhotos(updated);
+                                    onClick={async () => {
+                                      if (confirm(`Are you sure you want to remove photo ${index + 1}?`)) {
+                                        const updated = [...editUserPhotos];
+                                        updated[index] = '';
+                                        setEditUserPhotos(updated);
+                                        if (currentUser) {
+                                          try {
+                                            const docRef = doc(db, 'public_profiles', currentUser.uid);
+                                            await setDoc(docRef, {
+                                              userPhotos: updated,
+                                              updatedAt: new Date().toISOString()
+                                            }, { merge: true });
+                                            setThisPublicProfile(prev => prev ? { ...prev, userPhotos: updated } : null);
+                                          } catch (err: any) {
+                                            console.error('Error synced image removal to Firestore:', err);
+                                            alert('Removal saved locally, but database sync failed: ' + err.message);
+                                          }
+                                        }
+                                      }
                                     }}
-                                    className="absolute top-1.5 right-1.5 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors z-10 cursor-pointer"
+                                    className="absolute top-1.5 right-1.5 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-all z-10 cursor-pointer active:scale-95"
                                     title="Remove Photo"
                                   >
                                     <X className="w-3 h-3" />
@@ -6783,16 +6798,16 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     <div className="flex items-end gap-3.5">
                       <div 
                         onClick={() => setActiveLightboxImg(selectedPeerWall.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200')}
-                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-emerald-500 bg-zinc-950 cursor-zoom-in shrink-0 shadow-xl group"
+                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-emerald-500 bg-zinc-950 cursor-zoom-in shrink-0 shadow-xl group transition-all duration-350 ease-out hover:scale-110 active:scale-95 hover:shadow-2xl hover:shadow-emerald-500/10 hover:border-emerald-400"
                         title="Click to enlarge"
                       >
                         <img 
                           src={selectedPeerWall.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-115 transition-transform duration-500 ease-out"
                           alt="avatar"
                           referrerPolicy="no-referrer"
                         />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all duration-300 flex items-center justify-center">
                           <Maximize2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
                         </div>
                       </div>
