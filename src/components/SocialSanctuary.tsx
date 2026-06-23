@@ -5847,22 +5847,21 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                   <button
                                     type="button"
                                     onClick={async () => {
-                                      if (confirm(`Are you sure you want to remove photo ${index + 1}?`)) {
-                                        const updated = [...editUserPhotos];
-                                        updated[index] = '';
-                                        setEditUserPhotos(updated);
-                                        if (currentUser) {
-                                          try {
-                                            const docRef = doc(db, 'public_profiles', currentUser.uid);
-                                            await setDoc(docRef, {
-                                              userPhotos: updated,
-                                              updatedAt: new Date().toISOString()
-                                            }, { merge: true });
-                                            setThisPublicProfile(prev => prev ? { ...prev, userPhotos: updated } : null);
-                                          } catch (err: any) {
-                                            console.error('Error synced image removal to Firestore:', err);
-                                            alert('Removal saved locally, but database sync failed: ' + err.message);
-                                          }
+                                      const updated = [...editUserPhotos];
+                                      updated[index] = '';
+                                      setEditUserPhotos(updated);
+                                      if (currentUser) {
+                                        try {
+                                          const docRef = doc(db, 'public_profiles', currentUser.uid);
+                                          await setDoc(docRef, {
+                                            userPhotos: updated,
+                                            updatedAt: new Date().toISOString()
+                                          }, { merge: true });
+                                          setThisPublicProfile(prev => prev ? { ...prev, userPhotos: updated } : null);
+                                          setSaveSuccessMessage(`Photo ${index + 1} removed successfully.`);
+                                          setTimeout(() => setSaveSuccessMessage(null), 3000);
+                                        } catch (err: any) {
+                                          console.error('Error synced image removal to Firestore:', err);
                                         }
                                       }
                                     }}
