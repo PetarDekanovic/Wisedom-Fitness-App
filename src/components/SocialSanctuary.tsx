@@ -924,7 +924,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       <div className="space-y-2">
         {remainsText.trim() && (
           <div className={cn(
-            "whitespace-pre-wrap select-text leading-relaxed pt-0.5 text-left font-handwritten text-[18px] sm:text-[20px] font-bold tracking-wide",
+            "whitespace-pre-wrap select-text leading-relaxed pt-0.5 text-left font-handwritten text-[18px] sm:text-[20px] font-bold tracking-wide break-words overflow-hidden max-w-full",
             isMine ? "text-zinc-950" : isDarkMode ? "text-emerald-50" : "text-emerald-950"
           )}>
             {hasUrls ? textSegments : <ReactMarkdown>{remainsText}</ReactMarkdown>}
@@ -1155,48 +1155,6 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
     return () => unsub();
   }, [currentUser, userProfile]);
-
-  // Presence keeper: Updates isOnline to true and regularly updates lastActive timestamp
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const profileRef = doc(db, 'public_profiles', currentUser.uid);
-
-    const setPresence = async (status: boolean) => {
-      try {
-        const snap = await getDoc(profileRef);
-        // Only update if public profile already registered
-        if (snap.exists()) {
-          await updateDoc(profileRef, {
-            isOnline: status,
-            lastActive: new Date().toISOString()
-          });
-        }
-      } catch (err) {
-        // Safe fail-silent if rules or network transient
-        console.warn('Presence update skipped during setup:', err);
-      }
-    };
-
-    // Begin session-online status
-    setPresence(true);
-
-    // Maintain session check interval
-    const presenceInterval = setInterval(() => {
-      setPresence(true);
-    }, 40000);
-
-    const handleBeforeUnload = () => {
-      setPresence(false);
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      clearInterval(presenceInterval);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      setPresence(false);
-    };
-  }, [currentUser]);
 
   // Synchronize persona inputs when the user's public profile is fetched
   useEffect(() => {
@@ -2531,7 +2489,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   }, [activeTab, peerFilter, datingViewMode, datingPeersDeck, isSwipingInProgress, thisPublicProfile]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-6 pb-24 space-y-6">
+    <div className="w-full max-w-4xl mx-auto px-4 py-6 pb-24 space-y-6 overflow-x-hidden">
       
       {/* 1. Profile Setup Modal/Prompt */}
       <AnimatePresence>
@@ -3806,7 +3764,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     </div>
 
                     {/* Right side: Actions & Close button */}
-                    <div className="flex items-center gap-1.5 shrink-0 select-none">
+                    <div className="flex items-center gap-3 sm:gap-4 shrink-0 flex-nowrap select-none ml-auto">
                       {(() => {
                         const otherIndex = activeChat.participants[0] === currentUser.uid ? 1 : 0;
                         const otherUid = activeChat.participants[otherIndex];

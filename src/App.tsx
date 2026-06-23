@@ -274,90 +274,101 @@ function CommunityStats({ isDarkMode, currentUser, isQuotaExceeded, setIsQuotaEx
   const [dailyTraffic, setDailyTraffic] = useState(0);
 
   useEffect(() => {
-    // 1. Guests see cached/static data ONLY to save quota
-    if (!currentUser) {
+    // 1. Fetch real-time active users (both guests and logged-in users because of public read-rules)
+    const fetchLiveUsers = async () => {
+      if (isQuotaExceeded) {
+        setLiveUsers(1);
+        return;
+      }
       try {
-        const cachedCount = localStorage.getItem('wisefit_total_subs');
-        setLiveUsers(0);
-        setTotalSubscribers(cachedCount ? Number(cachedCount) : 1000);
-        setDailyTraffic(245);
-      } catch (e) {}
-      return;
-    }
-
-    const updatePresenceAndFetch = async () => {
-      // 0. STOP ALL if quota exceeded
-      if (isQuotaExceeded) return;
-
-      try {
-        // Only Admin or specific members contribute to writes to save credits
-        if (currentUser && !isQuotaExceeded) {
-          const userRef = doc(db, 'users', currentUser.uid);
-          await updateDoc(userRef, {
-            lastActive: serverTimestamp()
-          }).catch((err) => {
-            if (err?.message?.includes('quota')) setIsQuotaExceeded(true);
-          });
-        }
-
-        // Cache management
-        const lastFetchTime = localStorage.getItem('wisefit_community_fetch_time');
-        const now = Date.now();
-        
-    // Increase cache time to 24 hours if quota is tight, or just 12 hours
-    const CACHE_DURATION = 12 * 60 * 60 * 1000;
-        
-        if (lastFetchTime && now - Number(lastFetchTime) < CACHE_DURATION) {
+        const publicProfilesRef = collection(db, 'public_profiles');
+        const q = query(publicProfilesRef, where('isOnline', '==', true));
+        const liveSnap = await getCountFromServer(q);
+        const liveCount = liveSnap.data().count || 1;
+        setLiveUsers(liveCount);
+        localStorage.setItem('wisefit_live_users', liveCount.toString());
+      } catch (err: any) {
+        if (err?.message?.includes('quota')) {
+          setIsQuotaExceeded(true);
+          setLiveUsers(1);
+        } else {
+          console.warn("Could not fetch real-time active users count:", err);
           const cachedLive = localStorage.getItem('wisefit_live_users');
-          const cachedSubs = localStorage.getItem('wisefit_total_subs');
-          if (cachedLive) setLiveUsers(Number(cachedLive));
-          if (cachedSubs) {
-             setTotalSubscribers(Number(cachedSubs));
-             setDailyTraffic(Math.max(245, Number(cachedSubs) * 0.08));
-          }
-          return;
-        }
-
-        // Total (Only if user is logged in and it's been 4 hours)
-        if (currentUser) {
-          const usersRef = collection(db, 'users');
-          
-          // Live estimate (to save query units)
-          const liveCount = Math.floor(Math.random() * 50) + 12;
-          setLiveUsers(liveCount);
-
-          // Total count (Only every 4 hours max)
-          const totalSnap = await getCountFromServer(usersRef);
-          const count = totalSnap.data().count;
-          const subCount = 28450 + (count * 12);
-          setTotalSubscribers(subCount);
-          setDailyTraffic(Math.max(1245, Math.floor(subCount * 0.15)));
-
-          // Update cache
-          localStorage.setItem('wisefit_live_users', liveCount.toString());
-          localStorage.setItem('wisefit_total_subs', subCount.toString());
-          localStorage.setItem('wisefit_community_fetch_time', now.toString());
-        } else {
-           // Guests get static fallbacks
-           setLiveUsers(Math.floor(Math.random() * 20) + 5);
-           setTotalSubscribers(28450);
-           setDailyTraffic(1245);
-        }
-      } catch (error: any) {
-        if (error?.message?.includes('quota')) {
-          console.log("Firestore Quota hit, using local defaults for community stats.");
-          setLiveUsers(0);
-          setTotalSubscribers(28000);
-        } else {
-          console.error("Presence system error:", error);
+          setLiveUsers(cachedLive ? Number(cachedLive) : 1);
         }
       }
     };
 
-    updatePresenceAndFetch();
-    const interval = setInterval(updatePresenceAndFetch, 1000 * 60 * 15); // Every 15 mins
-    
-    return () => clearInterval(interval);
+    fetchLiveUsers();
+    // Regular interval (every 30 seconds) to keep nodes active updated in real-time
+    const liveInterval = setInterval(fetchLiveUsers, 30000);
+
+    // 2. Fetch total subscribers (cached up to 12 hours)
+    const fetchTotalStats = async () => {
+      try {
+        const cachedSubs = localStorage.getItem('wisefit_total_subs');
+        const cachedTraffic = localStorage.getItem('wisefit_daily_traffic');
+        const lastFetchTime = localStorage.getItem('wisefit_community_fetch_time');
+        const now = Date.now();
+        const CACHE_DURATION = 12 * 60 * 60 * 1000;
+
+        if (lastFetchTime && now - Number(lastFetchTime) < CACHE_DURATION && cachedSubs) {
+          setTotalSubscribers(Number(cachedSubs));
+          setDailyTraffic(cachedTraffic ? Number(cachedTraffic) : 1245);
+          return;
+        }
+
+        // Only query total registered users if logged in to save quota
+        if (currentUser && !isQuotaExceeded) {
+          const usersRef = collection(db, 'users');
+          const totalSnap = await getCountFromServer(usersRef);
+          const count = totalSnap.data().count || 5;
+          const subCount = 28450 + (count * 12);
+          const traffic = Math.max(1245, Math.floor(subCount * 0.15));
+
+          setTotalSubscribers(subCount);
+          setDailyTraffic(traffic);
+
+          localStorage.setItem('wisefit_total_subs', subCount.toString());
+          localStorage.setItem('wisefit_daily_traffic', traffic.toString());
+          localStorage.setItem('wisefit_community_fetch_time', now.toString());
+        } else {
+          setTotalSubscribers(cachedSubs ? Number(cachedSubs) : 28450);
+          setDailyTraffic(cachedTraffic ? Number(cachedTraffic) : 1245);
+        }
+      } catch (err: any) {
+        if (err?.message?.includes('quota')) {
+          setIsQuotaExceeded(true);
+        }
+        console.warn("Stats retrieval error:", err);
+        setTotalSubscribers(28450);
+        setDailyTraffic(1245);
+      }
+    };
+
+    fetchTotalStats();
+
+    // 3. Update my user heartbeat (lastActive)
+    const updateMyHeartbeat = async () => {
+      if (currentUser && !isQuotaExceeded) {
+        try {
+          const userRef = doc(db, 'users', currentUser.uid);
+          await updateDoc(userRef, {
+            lastActive: serverTimestamp()
+          });
+        } catch (err: any) {
+          if (err?.message?.includes('quota')) setIsQuotaExceeded(true);
+        }
+      }
+    };
+
+    updateMyHeartbeat();
+    const heartbeatInterval = setInterval(updateMyHeartbeat, 60000);
+
+    return () => {
+      clearInterval(liveInterval);
+      clearInterval(heartbeatInterval);
+    };
   }, [currentUser, isQuotaExceeded]);
 
   const discCount = Math.floor(Number(totalSubscribers) * 0.62) || 17639;
@@ -4167,6 +4178,48 @@ function AppContent() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Global presence keeper: Updates isOnline to true and regularly updates lastActive timestamp
+  useEffect(() => {
+    if (!user) return;
+
+    const profileRef = doc(db, 'public_profiles', user.uid);
+
+    const setPresence = async (status: boolean) => {
+      try {
+        const snap = await getDoc(profileRef);
+        // Only update if public profile already registered
+        if (snap.exists()) {
+          await updateDoc(profileRef, {
+            isOnline: status,
+            lastActive: new Date().toISOString()
+          });
+        }
+      } catch (err) {
+        // Safe fail-silent if rules or network transient
+        console.warn('Global presence update skipped:', err);
+      }
+    };
+
+    // Begin session-online status
+    setPresence(true);
+
+    // Maintain session check interval
+    const presenceInterval = setInterval(() => {
+      setPresence(true);
+    }, 40000);
+
+    const handleBeforeUnload = () => {
+      setPresence(false);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(presenceInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      setPresence(false);
+    };
+  }, [user]);
 
   const fetchLibraryQuotes = useCallback(async () => {
     if (!user || isQuotaExceeded) {

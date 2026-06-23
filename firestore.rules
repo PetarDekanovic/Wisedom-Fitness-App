@@ -178,7 +178,7 @@ service cloud.firestore {
     }
 
     match /public_profiles/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update: if (isOwner(userId) && isValidPublicProfile(request.resource.data)) || isAdmin();
     }
 
