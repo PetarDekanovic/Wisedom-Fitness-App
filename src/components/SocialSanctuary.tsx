@@ -685,6 +685,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [newPostMediaType, setNewPostMediaType] = useState<'none' | 'image' | 'video' | 'youtube' | 'tiktok'>('none');
   const [isUploadingPostVideo, setIsUploadingPostVideo] = useState(false);
   const [postVideoProgress, setPostVideoProgress] = useState(0);
+  const [isUploadingPostImage, setIsUploadingPostImage] = useState(false);
+  const [postImageProgress, setPostImageProgress] = useState(0);
   const [newPostMediaUrl, setNewPostMediaUrl] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
@@ -2983,27 +2985,143 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       )}
                     >
                       <option value="none">None</option>
-                      <option value="image">Image Link</option>
+                      <option value="image">Image (Upload or Link)</option>
                       <option value="video">Direct Video Upload</option>
                       <option value="youtube">YouTube Embed</option>
                       <option value="tiktok">TikTok Video</option>
                     </select>
 
                     {newPostMediaType !== 'none' && newPostMediaType !== 'video' && (
-                      <input 
-                        type="url"
-                        value={newPostMediaUrl}
-                        onChange={(e) => setNewPostMediaUrl(e.target.value)}
-                        placeholder={
-                          newPostMediaType === 'youtube' ? 'YouTube watch/share URL' :
-                          newPostMediaType === 'tiktok' ? 'TikTok URL' : 'Image attachment URL'
-                        }
-                        className={cn(
-                          "flex-1 px-3 py-1.5 text-[10px] rounded-lg border outline-none max-w-[150px] sm:max-w-xs font-semibold",
-                          isDarkMode ? "bg-zinc-800 border-zinc-650 text-white placeholder-zinc-500" : "bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 shadow-sm"
+                      <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[200px]">
+                        <input 
+                          type="url"
+                          value={newPostMediaUrl}
+                          onChange={(e) => setNewPostMediaUrl(e.target.value)}
+                          placeholder={
+                            newPostMediaType === 'youtube' ? 'YouTube watch/share URL' :
+                            newPostMediaType === 'tiktok' ? 'TikTok URL' : 'Image attachment URL'
+                          }
+                          className={cn(
+                            "flex-1 px-3 py-1.5 text-[10px] rounded-lg border outline-none max-w-[150px] sm:max-w-xs font-semibold",
+                            isDarkMode ? "bg-zinc-800 border-zinc-650 text-white placeholder-zinc-500" : "bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 shadow-sm"
+                          )}
+                          required
+                        />
+
+                        {newPostMediaType === 'image' && (
+                          <div className="flex items-center gap-1.5">
+                            <label className={cn(
+                              "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed cursor-pointer hover:bg-emerald-500/10 hover:border-emerald-500/40 text-[9px] font-black transition-all uppercase tracking-wider",
+                              isDarkMode ? "bg-zinc-800 border-zinc-650 text-emerald-450 hover:text-emerald-400" : "bg-white border-zinc-300 text-emerald-700 hover:text-emerald-600 shadow-sm"
+                            )}>
+                              {isUploadingPostImage ? (
+                                <span className="animate-pulse text-emerald-500 flex items-center gap-1">
+                                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                  Uploading {postImageProgress}%
+                                </span>
+                              ) : (
+                                <>
+                                  <Upload className="w-2.5 h-2.5 text-emerald-500" />
+                                  <span>{newPostMediaUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                                </>
+                              )}
+                              <input 
+                                type="file" 
+                                accept="image/jpeg,image/png,image/jpg,image/webp,image/heic,image/heif"
+                                className="hidden" 
+                                disabled={isUploadingPostImage}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+
+                                  setIsUploadingPostImage(true);
+                                  setPostImageProgress(10);
+
+                                  try {
+                                    const optimizeImage = (f: File): Promise<{ base64: string, type: string, name: string }> => {
+                                      return new Promise((resolve, reject) => {
+                                        const reader = new FileReader();
+                                        reader.onload = (ev) => {
+                                          const img = new window.Image();
+                                          img.onload = () => {
+                                            const canvas = document.createElement('canvas');
+                                            const maxDim = 1200; // high quality for user food/travel posts
+                                            let w = img.width;
+                                            let h = img.height;
+                                            if (w > h) {
+                                              if (w > maxDim) {
+                                                h = Math.round((h * maxDim) / w);
+                                                w = maxDim;
+                                              }
+                                            } else {
+                                              if (h > maxDim) {
+                                                w = Math.round((w * maxDim) / h);
+                                                h = maxDim;
+                                              }
+                                            }
+                                            canvas.width = w;
+                                            canvas.height = h;
+                                            const ctx = canvas.getContext('2d');
+                                            if (!ctx) {
+                                              reject(new Error("Canvas context failed"));
+                                              return;
+                                            }
+                                            ctx.drawImage(img, 0, 0, w, h);
+                                            resolve({
+                                              base64: canvas.toDataURL('image/jpeg', 0.85),
+                                              type: 'image/jpeg',
+                                              name: f.name.replace(/\.[^/.]+$/, "") + ".jpg"
+                                            });
+                                          };
+                                          img.onerror = () => reject(new Error("Image decoding failed"));
+                                          img.src = ev.target?.result as string;
+                                        };
+                                        reader.onerror = (err) => reject(err);
+                                        reader.readAsDataURL(f);
+                                      });
+                                    };
+
+                                    setPostImageProgress(40);
+                                    const optimized = await optimizeImage(file);
+                                    setPostImageProgress(70);
+
+                                    const response = await fetch('/api/upload', {
+                                      method: 'POST',
+                                      headers: {
+                                        'Content-Type': 'application/json'
+                                      },
+                                      body: JSON.stringify({
+                                        filename: optimized.name,
+                                        fileType: optimized.type,
+                                        base64Data: optimized.base64
+                                      })
+                                    });
+
+                                    if (!response.ok) {
+                                      const errJson = await response.json();
+                                      throw new Error(errJson.error || 'Server rejected image upload.');
+                                    }
+
+                                    const uploadResult = await response.json();
+                                    setNewPostMediaUrl(uploadResult.url);
+                                    setPostImageProgress(100);
+                                  } catch (err: any) {
+                                    console.error('Feed image upload failed:', err);
+                                    alert('Upload failed: ' + err.message);
+                                  } finally {
+                                    setIsUploadingPostImage(false);
+                                    // Reset file input target value
+                                    e.target.value = '';
+                                  }
+                                }}
+                              />
+                            </label>
+                            {newPostMediaUrl && (
+                              <span className="text-[8.5px] font-bold text-emerald-500 whitespace-nowrap">Loaded!</span>
+                            )}
+                          </div>
                         )}
-                        required
-                      />
+                      </div>
                     )}
 
                     {newPostMediaType === 'video' && (
@@ -7856,8 +7974,22 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                             {/* Optional post image rendering */}
                             {p.mediaType === 'image' && p.mediaUrl && (
-                              <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-zinc-800/10 bg-zinc-950">
-                                <img src={p.mediaUrl} className="w-full h-full object-cover" alt="wall-image" />
+                              <div 
+                                onClick={() => setActiveLightboxImg(p.mediaUrl)}
+                                className="relative aspect-video w-full rounded-xl overflow-hidden border border-zinc-800/10 bg-zinc-950 cursor-zoom-in group shadow hover:shadow-md transition-all duration-300"
+                                title="Click to enlarge image"
+                              >
+                                <img 
+                                  src={p.mediaUrl} 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" 
+                                  alt="wall-image" 
+                                  onError={(e) => {
+                                    (e.target as any).src = 'https://images.unsplash.com/photo-1518152006812-cdff2f4a4c35?auto=format&fit=crop&q=80&w=600';
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                  <Maximize2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                                </div>
                               </div>
                             )}
 
