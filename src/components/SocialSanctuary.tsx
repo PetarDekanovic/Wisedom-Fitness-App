@@ -562,6 +562,19 @@ const DUMMY_SCHOLARS: PublicProfile[] = [
   }
 ];
 
+const THERAPEUTIC_PHRASES = [
+  "Don't be afraid.",
+  "It's going to be ok.",
+  "You are overreacting.",
+  "Take a deep breath.",
+  "Ground yourself in the present.",
+  "This too shall pass.",
+  "You are safe here.",
+  "Observe, don't absorb.",
+  "Be kind to your mind.",
+  "One step at a time."
+];
+
 export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProfile, isPremiumUser }: SocialSanctuaryProps) {
   const [activeTab, setActiveTab] = useState<'feed' | 'messages' | 'peers' | 'moderation' | 'personality'>('feed');
 
@@ -715,6 +728,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [activeCallConvoId, setActiveCallConvoId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<DMMessage[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
+  const chatInputRef = useRef<HTMLInputElement>(null);
+  const [showTherapyPhrases, setShowTherapyPhrases] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const [dummyTypingState, setDummyTypingState] = useState<string | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -2216,6 +2231,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
   };
 
+  const handleSelectTherapeuticPhrase = (phrase: string) => {
+    setNewMessageText(phrase);
+    if (chatInputRef.current) {
+      chatInputRef.current.focus();
+    }
+  };
+
   // Action: Send direct message inside active DM channel
   const handleSendDMMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2715,8 +2737,32 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       )}
                     </p>
 
-                    <div>
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1">Dialogue Transmission</label>
+                     <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Dialogue Transmission</label>
+                        <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono flex items-center gap-1">
+                          <Brain className="w-2.5 h-2.5 text-emerald-500" /> Click to insert clinical shortcut
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1 overflow-x-auto py-1 no-scrollbar mb-2 select-none">
+                        {THERAPEUTIC_PHRASES.map((phrase) => (
+                          <button
+                            key={phrase}
+                            type="button"
+                            onClick={() => setEngageMessage(phrase)}
+                            className={cn(
+                              "px-2 py-0.5 text-[9px] font-bold rounded-md border transition-all active:scale-95 duration-150 shrink-0",
+                              isDarkMode 
+                                ? "bg-zinc-850 hover:bg-emerald-500/10 border-zinc-800 hover:border-emerald-500/40 text-zinc-400 hover:text-emerald-400" 
+                                : "bg-white hover:bg-emerald-50 border-zinc-200 hover:border-emerald-500/40 text-zinc-500 hover:text-emerald-600"
+                            )}
+                          >
+                            {phrase}
+                          </button>
+                        ))}
+                      </div>
+
                       <textarea 
                         value={engageMessage}
                         onChange={(e) => setEngageMessage(e.target.value)}
@@ -4222,6 +4268,23 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         </div>
 
                         <div className="flex items-center gap-2">
+                          {/* Psychologist Helper Phrases Button */}
+                          <button
+                            type="button"
+                            onClick={() => setShowTherapyPhrases(!showTherapyPhrases)}
+                            className={cn(
+                              "w-7 h-7 flex items-center justify-center rounded-lg border cursor-pointer transition-all active:scale-95 shrink-0 relative",
+                              showTherapyPhrases 
+                                ? "bg-emerald-500 border-emerald-400 text-zinc-950 shadow-md shadow-emerald-500/20" 
+                                : isDarkMode 
+                                  ? "bg-zinc-850 border-zinc-800 text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10" 
+                                  : "bg-zinc-50 border-zinc-200 text-zinc-505 hover:text-emerald-600 hover:bg-emerald-500/10"
+                            )}
+                            title="Psychologist / Clinical response aids"
+                          >
+                            <Brain className="w-3.5 h-3.5" />
+                          </button>
+
                            <label className={cn(
                             "w-7 h-7 flex items-center justify-center rounded-lg border cursor-pointer transition-all hover:bg-emerald-500/10 active:scale-95 shrink-0",
                             isUploadingFile ? "animate-pulse" : "",
@@ -4244,10 +4307,61 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         </div>
                       </div>
 
+                      {/* Therapeutic pre-made psychologist phrases tray */}
+                      <AnimatePresence>
+                        {showTherapyPhrases && (
+                          <motion.div 
+                            initial={{ opacity: 0, height: 0, y: 10 }}
+                            animate={{ opacity: 1, height: 'auto', y: 0 }}
+                            exit={{ opacity: 0, height: 0, y: 10 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="overflow-hidden mb-3 shrink-0 z-10"
+                          >
+                            <div className={cn(
+                              "p-2.5 rounded-xl border flex flex-col gap-2 shadow-inner",
+                              isDarkMode 
+                                ? "bg-zinc-900/60 border-zinc-800/80" 
+                                : "bg-zinc-100/60 border-zinc-200/80"
+                            )}>
+                              <div className="flex items-center justify-between px-1">
+                                <span className="text-[10px] font-mono font-black tracking-widest text-emerald-500 uppercase flex items-center gap-1 select-none">
+                                  <Brain className="w-3 h-3 text-emerald-400" /> Clinical Response Aids
+                                </span>
+                                <button 
+                                  type="button" 
+                                  onClick={() => setShowTherapyPhrases(false)}
+                                  className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 active:scale-95"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto pr-1 no-scrollbar">
+                                {THERAPEUTIC_PHRASES.map((phrase) => (
+                                  <button
+                                    key={phrase}
+                                    type="button"
+                                    onClick={() => handleSelectTherapeuticPhrase(phrase)}
+                                    className={cn(
+                                      "px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all active:scale-95 duration-200 text-left hover:-translate-y-0.5",
+                                      isDarkMode 
+                                        ? "bg-zinc-850 hover:bg-emerald-500/10 border-zinc-800 hover:border-emerald-500/55 text-zinc-300 hover:text-emerald-400" 
+                                        : "bg-white hover:bg-emerald-50 border-zinc-200 hover:border-emerald-500/55 text-zinc-700 hover:text-emerald-600"
+                                    )}
+                                  >
+                                    {phrase}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
                       {/* Input sending bottom form or locked for AI Scholars */}
                       <form onSubmit={handleSendDMMessage} className="flex gap-2 shrink-0">
                         <input 
                           type="text"
+                          ref={chatInputRef}
                           value={newMessageText}
                           onChange={(e) => setNewMessageText(e.target.value)}
                           placeholder="Transcribe peaceful thoughts or structured critiques..."
