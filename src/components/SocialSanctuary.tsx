@@ -108,6 +108,24 @@ interface FirestoreErrorInfo {
   }
 }
 
+
+const getPeerAvatarUrl = (peer: PublicProfile | null | undefined): string => {
+  if (!peer) return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+  
+  if (peer.avatarUrl && peer.avatarUrl.trim() !== '') {
+    return peer.avatarUrl.trim();
+  }
+  
+  if (peer.userPhotos && peer.userPhotos.length > 0) {
+    const validPhotos = peer.userPhotos.filter(p => p && p.trim() !== '');
+    if (validPhotos.length > 0) {
+      return validPhotos[validPhotos.length - 1];
+    }
+  }
+  
+  return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+};
+
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
@@ -2994,18 +3012,18 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     {newPostMediaType !== 'none' && newPostMediaType !== 'video' && (
                       <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[200px]">
                         <input 
-                          type="url"
+                          type="text"
                           value={newPostMediaUrl}
                           onChange={(e) => setNewPostMediaUrl(e.target.value)}
                           placeholder={
                             newPostMediaType === 'youtube' ? 'YouTube watch/share URL' :
-                            newPostMediaType === 'tiktok' ? 'TikTok URL' : 'Image attachment URL'
+                            newPostMediaType === 'tiktok' ? 'TikTok URL' : 'Image URL (or upload below)'
                           }
                           className={cn(
                             "flex-1 px-3 py-1.5 text-[10px] rounded-lg border outline-none max-w-[150px] sm:max-w-xs font-semibold",
                             isDarkMode ? "bg-zinc-800 border-zinc-650 text-white placeholder-zinc-500" : "bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 shadow-sm"
                           )}
-                          required
+                          required={newPostMediaType !== 'image'}
                         />
 
                         {newPostMediaType === 'image' && (
@@ -4721,26 +4739,37 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         {/* Top Profile Header */}
                         <div className="flex items-center gap-3">
                           <div className="relative shrink-0 select-none group/avatar">
-                            <img 
-                              src={peer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                              className="w-11 h-11 rounded-full object-cover border border-zinc-500/20 cursor-zoom-in transition-all duration-300 ease-out group-hover/avatar:scale-125 group-hover/avatar:ring-2 group-hover/avatar:ring-emerald-400 group-hover/avatar:shadow-lg group-hover/avatar:shadow-emerald-500/20 relative z-30"
-                              alt="peer"
-                              referrerPolicy="no-referrer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveLightboxImg(peer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200');
-                              }}
-                              title="Click to enlarge avatar"
-                            />
-                            <div 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveLightboxImg(peer.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200');
-                              }}
-                              className="absolute inset-0 bg-black/0 group-hover/avatar:bg-black/30 rounded-full transition-all duration-300 ease-out group-hover/avatar:scale-125 z-40 cursor-zoom-in flex items-center justify-center"
-                            >
-                              <Maximize2 className="w-3.5 h-3.5 text-white opacity-0 group-hover/avatar:opacity-100 transition-all" />
-                            </div>
+                            {(() => {
+                              const resolvedAvatar = getPeerAvatarUrl(peer);
+                              return (
+                                <>
+                                  <img 
+                                    src={resolvedAvatar}
+                                    className="w-11 h-11 rounded-full object-cover border border-zinc-500/20 cursor-zoom-in transition-all duration-300 ease-out group-hover/avatar:scale-125 group-hover/avatar:ring-2 group-hover/avatar:ring-emerald-400 group-hover/avatar:shadow-lg group-hover/avatar:shadow-emerald-500/20 relative z-30"
+                                    alt="peer"
+                                    referrerPolicy="no-referrer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveLightboxImg(resolvedAvatar);
+                                    }}
+                                    onError={(e) => {
+                                      const target = e.currentTarget;
+                                      target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+                                    }}
+                                    title="Click to enlarge avatar"
+                                  />
+                                  <div 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveLightboxImg(resolvedAvatar);
+                                    }}
+                                    className="absolute inset-0 bg-black/0 group-hover/avatar:bg-black/30 rounded-full transition-all duration-300 ease-out group-hover/avatar:scale-125 z-40 cursor-zoom-in flex items-center justify-center"
+                                  >
+                                    <Maximize2 className="w-3.5 h-3.5 text-white opacity-0 group-hover/avatar:opacity-100 transition-all" />
+                                  </div>
+                                </>
+                              );
+                            })()}
                             {online ? (
                               <span className="absolute bottom-0 right-0 flex h-3 w-3">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -7500,21 +7529,170 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                   <div className="px-5 pb-5 relative -mt-14 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
                     <div className="flex items-end gap-3.5">
-                      <div 
-                        onClick={() => setActiveLightboxImg(selectedPeerWall.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200')}
-                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-emerald-500 bg-zinc-950 cursor-zoom-in shrink-0 shadow-xl group transition-all duration-350 ease-out hover:scale-110 active:scale-95 hover:shadow-2xl hover:shadow-emerald-500/10 hover:border-emerald-400"
-                        title="Click to enlarge"
-                      >
-                        <img 
-                          src={selectedPeerWall.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                          className="w-full h-full object-cover group-hover:scale-115 transition-transform duration-500 ease-out"
-                          alt="avatar"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all duration-300 flex items-center justify-center">
-                          <Maximize2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
-                        </div>
-                      </div>
+                      {(() => {
+                        const isPetar = currentUser?.email === 'petar.dekanovic@gmail.com';
+                        const resolvedAvatar = getPeerAvatarUrl(selectedPeerWall);
+                        return (
+                          <div className="relative group/avatar-container shrink-0">
+                            <div 
+                              onClick={() => {
+                                if (!isPetar) {
+                                  setActiveLightboxImg(resolvedAvatar);
+                                }
+                              }}
+                              className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-emerald-500 bg-zinc-950 cursor-zoom-in shadow-xl group transition-all duration-350 ease-out hover:scale-105 active:scale-95 hover:shadow-2xl hover:shadow-emerald-500/10 hover:border-emerald-400"
+                              title={isPetar ? "Petar: Click camera icon to edit avatar" : "Click to enlarge"}
+                            >
+                              <img 
+                                src={resolvedAvatar}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                                alt="avatar"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  // Live fallback if loaded image fails
+                                  const target = e.currentTarget;
+                                  target.src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all duration-300 flex items-center justify-center">
+                                <Maximize2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
+                              </div>
+                            </div>
+
+                            {/* Petar-Only Admin Profile Image Edit Input */}
+                            {isPetar && (
+                              <div className="absolute -bottom-2 -right-2 z-40">
+                                <label 
+                                  className="flex items-center justify-center w-7 h-7 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 rounded-full cursor-pointer shadow-lg active:scale-90 transition-transform border border-emerald-400"
+                                  title="Change profile picture"
+                                >
+                                  <Camera className="w-3.5 h-3.5" />
+                                  <input 
+                                    type="file" 
+                                    accept="image/jpeg,image/png,image/jpg,image/webp,image/heic,image/heif"
+                                    className="hidden" 
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+
+                                      const confirmChange = window.confirm(`Are you sure you want to change ${selectedPeerWall.name}'s profile picture?`);
+                                      if (!confirmChange) return;
+
+                                      try {
+                                        const optimizeImage = (f: File): Promise<{ base64: string, type: string, name: string }> => {
+                                          return new Promise((resolve, reject) => {
+                                            const reader = new FileReader();
+                                            reader.onload = (ev) => {
+                                              const img = new window.Image();
+                                              img.onload = () => {
+                                                const canvas = document.createElement('canvas');
+                                                const maxDim = 800;
+                                                let w = img.width;
+                                                let h = img.height;
+                                                if (w > h) {
+                                                  if (w > maxDim) {
+                                                    h = Math.round((h * maxDim) / w);
+                                                    w = maxDim;
+                                                  }
+                                                } else {
+                                                  if (h > maxDim) {
+                                                    w = Math.round((w * maxDim) / h);
+                                                    h = maxDim;
+                                                  }
+                                                }
+                                                canvas.width = w;
+                                                canvas.height = h;
+                                                const ctx = canvas.getContext('2d');
+                                                if (!ctx) {
+                                                  reject(new Error("Canvas context failed"));
+                                                  return;
+                                                }
+                                                ctx.drawImage(img, 0, 0, w, h);
+                                                resolve({
+                                                  base64: canvas.toDataURL('image/jpeg', 0.85),
+                                                  type: 'image/jpeg',
+                                                  name: f.name.replace(/\.[^/.]+$/, "") + ".jpg"
+                                                });
+                                              };
+                                              img.onerror = () => reject(new Error("Image decoding failed"));
+                                              img.src = ev.target?.result as string;
+                                            };
+                                            reader.onerror = (err) => reject(err);
+                                            reader.readAsDataURL(f);
+                                          });
+                                        };
+
+                                        const optimized = await optimizeImage(file);
+                                        const response = await fetch('/api/upload', {
+                                          method: 'POST',
+                                          headers: {
+                                            'Content-Type': 'application/json'
+                                          },
+                                          body: JSON.stringify({
+                                            filename: optimized.name,
+                                            fileType: optimized.type,
+                                            base64Data: optimized.base64
+                                          })
+                                        });
+
+                                        if (!response.ok) {
+                                          const errJson = await response.json();
+                                          throw new Error(errJson.error || 'Server rejected image upload.');
+                                        }
+
+                                        const uploadResult = await response.json();
+                                        const downloadUrl = uploadResult.url;
+
+                                        // Update Firestore under selectedPeerWall's UID
+                                        const targetUid = selectedPeerWall.uid;
+                                        const peerDocRef = doc(db, 'public_profiles', targetUid);
+                                        
+                                        // Add to their userPhotos album if defined
+                                        const currentPhotos = selectedPeerWall.userPhotos || [];
+                                        const updatedPhotos = [...currentPhotos];
+                                        if (updatedPhotos.length < 4) {
+                                          updatedPhotos.push(downloadUrl);
+                                        } else {
+                                          updatedPhotos[0] = downloadUrl; // replace first slot
+                                        }
+
+                                        await setDoc(peerDocRef, {
+                                          avatarUrl: downloadUrl,
+                                          userPhotos: updatedPhotos,
+                                          updatedAt: new Date().toISOString()
+                                        }, { merge: true });
+
+                                        // Sync users collection
+                                        const peerUserRef = doc(db, 'users', targetUid);
+                                        await setDoc(peerUserRef, {
+                                          avatarUrl: downloadUrl
+                                        }, { merge: true });
+
+                                        // Update states
+                                        const updatedProfile = {
+                                          ...selectedPeerWall,
+                                          avatarUrl: downloadUrl,
+                                          userPhotos: updatedPhotos
+                                        };
+                                        setSelectedPeerWall(updatedProfile);
+                                        setPeers(prev => prev.map(p => p.uid === targetUid ? updatedProfile : p));
+
+                                        alert(`Successfully updated profile image for ${selectedPeerWall.name}!`);
+
+                                      } catch (err: any) {
+                                        console.error('Admin image change failed:', err);
+                                        alert('Admin edit failed: ' + err.message);
+                                      } finally {
+                                        e.target.value = '';
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       <div className="space-y-1 mb-1">
                         <h3 className="font-extrabold text-xl uppercase tracking-tighter leading-none">{selectedPeerWall.name}</h3>
