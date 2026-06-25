@@ -7648,8 +7648,9 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                         <p className="text-xs text-emerald-600 font-medium tracking-tight">The Practitioner</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-black italic">€15</p>
+                        <p className="text-2xl font-black italic">€5</p>
                         <p className="text-[10px] uppercase font-bold text-zinc-500">per month</p>
+                        <p className="text-[9px] font-bold text-emerald-500 tracking-tight text-right mt-0.5">Monthly Subscription</p>
                       </div>
                     </div>
                     <ul className="space-y-2 mb-6">
