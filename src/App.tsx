@@ -66,7 +66,7 @@ import {
   Layout,
   Cloud,
   Lock,
-  DollarSign,
+  Euro,
   Clover,
   Radio,
   Sword,
@@ -268,6 +268,12 @@ const getWisdomLevel = (count: number) => {
 };
 
 const ADMIN_EMAILS = ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com", "stjepan.dekanovic@gmail.com"];
+const AUTHORIZED_EMAILS = [
+  "petar.dekanovic@gmail.com",
+  "stjepan.dekanovic@gmail.com",
+  "esmeraldadarkomanila@gmail.com",
+  "miljkica79@gmail.com"
+];
 
 function CommunityStats({ isDarkMode, currentUser, isQuotaExceeded, setIsQuotaExceeded }: { isDarkMode: boolean, currentUser: FirebaseUser | null, isQuotaExceeded: boolean, setIsQuotaExceeded: (val: boolean) => void }) {
   const [liveUsers, setLiveUsers] = useState<number | string>('...');
@@ -2746,11 +2752,6 @@ function AppContent() {
   };
 
   // AI AUTHORIZATION
-  const AUTHORIZED_EMAILS = [
-    "petar.dekanovic@gmail.com",
-    "stjepan.dekanovic@gmail.com",
-    "esmeraldadarkomanila@gmail.com"
-  ];
   const isAuthorized = user && user.email && AUTHORIZED_EMAILS.includes(user.email.toLowerCase());
   const isPremiumUser = (userProfile?.isSubscribed === true) || isAuthorized;
 
@@ -4514,14 +4515,22 @@ function AppContent() {
     const preAuthRef = doc(db, 'pre_authorized_emails', firebaseUser.email?.toLowerCase() || 'none');
     let isPreAuthorized = false;
     let preAuthTier = 'monthly';
-    try {
-      const preAuthSnap = await getDoc(preAuthRef);
-      if (preAuthSnap.exists() && preAuthSnap.data()?.active === true) {
-        isPreAuthorized = true;
-        preAuthTier = preAuthSnap.data()?.tier || 'monthly';
+    
+    // Check if user is inside AUTHORIZED_EMAILS list
+    const isAuthorizedEmail = firebaseUser.email && AUTHORIZED_EMAILS.includes(firebaseUser.email.toLowerCase());
+    if (isAuthorizedEmail) {
+      isPreAuthorized = true;
+      preAuthTier = 'lifetime';
+    } else {
+      try {
+        const preAuthSnap = await getDoc(preAuthRef);
+        if (preAuthSnap.exists() && preAuthSnap.data()?.active === true) {
+          isPreAuthorized = true;
+          preAuthTier = preAuthSnap.data()?.tier || 'monthly';
+        }
+      } catch (err) {
+        console.error("Error reading pre_authorized_emails reference:", err);
       }
-    } catch (err) {
-      console.error("Error reading pre_authorized_emails reference:", err);
     }
 
     if (!userDoc.exists()) {
@@ -4539,7 +4548,7 @@ function AppContent() {
       setUserProfile(newProfile);
     } else {
       const data = userDoc.data();
-      if (isPreAuthorized && !data.isSubscribed) {
+      if (isPreAuthorized && (!data.isSubscribed || data.subscriptionType !== preAuthTier)) {
         data.isSubscribed = true;
         data.subscriptionType = preAuthTier;
         console.log('Pre-authorizing existing profile subscription on load:', firebaseUser.email);
@@ -5449,7 +5458,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   ) : currentQuote.source === 'Christian' ? (
                     <Heart className="w-24 h-24 text-indigo-500" />
                   ) : currentQuote.category === 'finance' ? (
-                    <DollarSign className="w-24 h-24 text-emerald-500" />
+                    <Euro className="w-24 h-24 text-emerald-500" />
                   ) : (
                     <Flame className="w-24 h-24 text-emerald-500" />
                   )}
@@ -5495,7 +5504,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                               "flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[8px] font-bold uppercase tracking-tighter",
                               isDarkMode ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-emerald-50 border-emerald-100 text-emerald-600"
                             )}>
-                              <DollarSign className="w-2 h-2" />
+                              <Euro className="w-2 h-2" />
                               Financial Wisdom
                             </div>
                           )}
@@ -7639,7 +7648,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                         <p className="text-xs text-emerald-600 font-medium tracking-tight">The Practitioner</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-black italic">$15</p>
+                        <p className="text-2xl font-black italic">€15</p>
                         <p className="text-[10px] uppercase font-bold text-zinc-500">per month</p>
                       </div>
                     </div>
@@ -7666,7 +7675,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                         <p className="text-xs text-purple-500 font-medium tracking-tight">The Master</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-black italic">$249</p>
+                        <p className="text-2xl font-black italic">€249</p>
                         <p className="text-[10px] uppercase font-bold text-zinc-500">per year</p>
                       </div>
                     </div>
