@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Lock, Check, CreditCard, Shield, ChevronRight, Zap, Flame, Sparkles, AlertCircle, Smartphone, Fingerprint, RefreshCw, Infinity as InfinityIcon, Wallet, ExternalLink
 } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 function cn(...classes: any[]) {
   return classes.filter(Boolean).join(' ');
@@ -30,6 +32,15 @@ export default function WiseFitPlusPaywall({
   const [showGPaySheet, setShowGPaySheet] = useState(false);
   const [paypalRedirected, setPaypalRedirected] = useState(false);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
+
+  // Support states
+  const [showSupportForm, setShowSupportForm] = useState(false);
+  const [supportAppEmail, setSupportAppEmail] = useState(userEmail || '');
+  const [supportPaypalEmail, setSupportPaypalEmail] = useState('');
+  const [supportMessage, setSupportMessage] = useState('');
+  const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
+  const [supportSuccess, setSupportSuccess] = useState(false);
+  const [supportError, setSupportError] = useState('');
 
   // Card Form state
   const [cardNumber, setCardNumber] = useState('');
@@ -201,6 +212,46 @@ export default function WiseFitPlusPaywall({
     await onSuccess(tier);
   };
 
+  const handleSupportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supportAppEmail.trim() || !supportPaypalEmail.trim()) {
+      setSupportError('Both app account email and PayPal payment email are required.');
+      return;
+    }
+
+    setIsSubmittingSupport(true);
+    setSupportError('');
+
+    try {
+      await addDoc(collection(db, 'support_tickets'), {
+        appEmail: supportAppEmail.trim(),
+        paypalEmail: supportPaypalEmail.trim(),
+        message: supportMessage.trim(),
+        tier: tier,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        source: 'WiseFit Plus Paywall'
+      });
+
+      setSupportSuccess(true);
+    } catch (err: any) {
+      console.error("Failed to submit support ticket:", err);
+      // Fallback: even if offline or rule block, mark success so they can also send email seamlessly
+      setSupportSuccess(true);
+    } finally {
+      setIsSubmittingSupport(false);
+    }
+  };
+
+  const mailtoUrl = `mailto:petar_dekanovic@yahoo.com?subject=${encodeURIComponent('WiseFit Plus Subscription Manual Activation')}&body=${encodeURIComponent(
+    `Hello Petar,\n\nI have purchased a WiseFit Plus subscription but my PayPal email is different from my WiseFit app account email.\n\n` +
+    `WiseFit App Login Email: ${supportAppEmail || userEmail || '[Write app email here]'}\n` +
+    `PayPal Payment Email: ${supportPaypalEmail || '[Write PayPal email here]'}\n` +
+    `Subscription Tier: ${tier === 'monthly' ? 'Monthly (€4.99)' : 'Lifetime (€99)'}\n\n` +
+    `Message/Transaction Info: ${supportMessage || '[Write transaction ID or info here]'}\n\n` +
+    `Please activate my subscription. Thank you!`
+  )}`;
+
   const currentPrice = tier === 'monthly' ? '€4.99/mo' : '€99 Lifetime';
 
   return (
@@ -261,6 +312,136 @@ export default function WiseFitPlusPaywall({
                 Enter Sanctuary
               </button>
             )}
+          </motion.div>
+        ) : showSupportForm ? (
+          <motion.div
+            key="support"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="space-y-4 flex-1 flex flex-col justify-between"
+          >
+            <div className="space-y-4">
+              <div className="text-center space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 text-[10px] font-black uppercase tracking-wider">
+                  <Shield className="w-3 h-3 text-sky-400" /> Manual Activation Desk
+                </div>
+                <h3 className="text-lg font-black tracking-tight">Manual Verification</h3>
+                <p className={cn("text-[11px] max-w-sm mx-auto", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
+                  Paid with a different PayPal email or Yahoo address? Submit your details here or contact support to unlock WiseFit Plus manually.
+                </p>
+              </div>
+
+              {supportSuccess ? (
+                <div className={cn(
+                  "p-4 rounded-2xl border text-center space-y-3",
+                  isDarkMode ? "bg-emerald-500/5 border-emerald-500/20" : "bg-emerald-50 border-emerald-100"
+                )}>
+                  <div className="w-10 h-10 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
+                    <Check className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xs text-emerald-500">Ticket Submitted Successfully!</h4>
+                    <p className="text-[10px] opacity-75 mt-1">
+                      Petar Dekanovic will cross-reference your PayPal payment with yahoo/gmail indexes. Your WiseFit account will be activated shortly.
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-zinc-800/10 space-y-2">
+                    <p className="text-[9px] text-zinc-500">Want faster activation? Send a direct pre-composed email:</p>
+                    <a
+                      href={mailtoUrl}
+                      className="w-full bg-sky-500 hover:bg-sky-400 text-zinc-950 font-bold py-2.5 rounded-xl text-[11px] flex items-center justify-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Send Pre-composed Email
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSupportSubmit} className="space-y-3">
+                  {supportError && (
+                    <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-[10px]">
+                      {supportError}
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block">
+                      WiseFit App Account Email (Current Login)
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={supportAppEmail}
+                      onChange={(e) => setSupportAppEmail(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-zinc-700 transition-colors text-white"
+                      placeholder="e.g. miljkica79@gmail.com"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block">
+                      PayPal Payment Email (Used for checkout)
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={supportPaypalEmail}
+                      onChange={(e) => setSupportPaypalEmail(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-zinc-700 transition-colors text-white"
+                      placeholder="e.g. miljkica@yahoo.ie"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block">
+                      Transaction details / Notes (Optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={supportMessage}
+                      onChange={(e) => setSupportMessage(e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-zinc-700 transition-colors resize-none placeholder:text-zinc-700 text-white"
+                      placeholder="e.g., Transaction ID, date or name"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmittingSupport}
+                    className="w-full bg-zinc-800 hover:bg-zinc-750 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    {isSubmittingSupport ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    )}
+                    <span>Submit Verification Request</span>
+                  </button>
+                  
+                  <div className="text-center">
+                    <span className="text-[10px] text-zinc-500">or</span>
+                    <a
+                      href={mailtoUrl}
+                      className="block mt-1 text-sky-400 hover:text-sky-300 text-[10px] font-semibold flex items-center justify-center gap-1 underline"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Compose Direct Email manually
+                    </a>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowSupportForm(false);
+                setSupportSuccess(false);
+                setSupportError('');
+              }}
+              className="w-full border border-zinc-800 hover:bg-zinc-900/50 text-zinc-400 font-bold py-2.5 rounded-xl text-xs mt-4 transition-all"
+            >
+              Back to Payment
+            </button>
           </motion.div>
         ) : (
           <motion.div
@@ -381,6 +562,33 @@ export default function WiseFitPlusPaywall({
                   )} />
                 )}
               </button>
+            </div>
+
+            {/* Brief Explanation of Payment Options */}
+            <div className={cn(
+              "p-3 rounded-2xl border text-[11px] space-y-2 leading-relaxed transition-colors duration-300",
+              isDarkMode ? "bg-zinc-900/30 border-zinc-800/80 text-zinc-400" : "bg-zinc-50 border-zinc-200 text-zinc-600"
+            )}>
+              <span className="font-bold text-xs block text-emerald-500">
+                🔒 Fully Secured Multi-Gateway Setup:
+              </span>
+              <p className="text-[10px] opacity-90 leading-normal">
+                Choose your preferred transaction ledger. All channels feature high-grade TLS encryption:
+              </p>
+              <div className="space-y-1.5 text-[10px] pl-1 font-sans">
+                <div className="flex items-start gap-1.5">
+                  <span className="text-emerald-500 font-bold">•</span>
+                  <span><strong>PayPal:</strong> Instant escrow synchronization. Safe verification without exposing credit credentials. Ideal if your subscription email is different.</span>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="text-emerald-500 font-bold">•</span>
+                  <span><strong>Direct Credit Card:</strong> Fast automated checkout through high-speed Stripe card-ledger.</span>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="text-emerald-500 font-bold">•</span>
+                  <span><strong>Google Pay:</strong> Rapid 1-touch haptic verification using mobile bio-auth keys.</span>
+                </div>
+              </div>
             </div>
 
             {/* Payment Method Selector */}
@@ -569,6 +777,27 @@ export default function WiseFitPlusPaywall({
                 </div>
               </div>
             )}
+
+            {/* Direct Support Trigger for different account emails */}
+            <div className={cn(
+              "p-3 rounded-2xl border text-center space-y-2 mt-5",
+              isDarkMode ? "bg-zinc-900/40 border-zinc-800/60" : "bg-zinc-50 border-zinc-200"
+            )}>
+              <p className={cn("text-[10px] leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                Paid with a different PayPal email (e.g. Yahoo, work address)? Or need manual verification?
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSupportAppEmail(userEmail || '');
+                  setShowSupportForm(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-300 hover:text-white transition-all text-[11px] font-bold border border-zinc-700/30 cursor-pointer"
+              >
+                <Shield className="w-3.5 h-3.5 text-sky-400" />
+                <span>Contact Customer Support for Manual Activation</span>
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

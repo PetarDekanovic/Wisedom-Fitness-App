@@ -91,6 +91,7 @@ import {
   Camera,
   Image,
   Save,
+  Wallet,
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -2357,8 +2358,11 @@ function AppContent() {
   const [wisdomTradition, setWisdomTradition] = useState<'all' | 'psychology' | 'daily'>('all');
   const [isGeneratingAIQuote, setIsGeneratingAIQuote] = useState(false);
   const [aiCountdown, setAiCountdown] = useState(0);
-  const [isSaved, setIsSaved] = useState(false);
+   const [isSaved, setIsSaved] = useState(false);
   const [isSeedingInsights, setIsSeedingInsights] = useState(false);
+  const [supportTickets, setSupportTickets] = useState<any[]>([]);
+  const [isFetchingTickets, setIsFetchingTickets] = useState(false);
+  const [isActivatingTicket, setIsActivatingTicket] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -2513,6 +2517,13 @@ function AppContent() {
     return () => window.removeEventListener('message', handleOAuthMessage);
   }, [user, userProfile]);
 
+  // Auto-fetch support tickets for Admin Sanctuary
+  useEffect(() => {
+    if (user && ADMIN_EMAILS.includes(user.email || '')) {
+      fetchSupportTickets();
+    }
+  }, [user]);
+
   // Sync Health Data on Load
   useEffect(() => {
     const googleFit = userProfile.integrations?.googleFit;
@@ -2556,6 +2567,78 @@ function AppContent() {
       );
     } finally {
       setIsSeedingInsights(false);
+    }
+  };
+
+  const fetchSupportTickets = async () => {
+    if (!user || !ADMIN_EMAILS.includes(user.email || '')) return;
+    setIsFetchingTickets(true);
+    try {
+      const ticketsRef = collection(db, 'support_tickets');
+      const q = query(ticketsRef, where('status', '==', 'pending'));
+      const querySnapshot = await getDocs(q);
+      const tickets: any[] = [];
+      querySnapshot.forEach((docSnap) => {
+        tickets.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      // Sort manually to bypass index requirement
+      tickets.sort((a, b) => {
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dbVal = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dbVal - da;
+      });
+      setSupportTickets(tickets);
+    } catch (err) {
+      console.error("Failed to fetch support tickets:", err);
+    } finally {
+      setIsFetchingTickets(false);
+    }
+  };
+
+  const handleActivateTicket = async (ticket: any) => {
+    if (!user || !ADMIN_EMAILS.includes(user.email || '')) return;
+    setIsActivatingTicket(ticket.id);
+    try {
+      // 1. Mark ticket as resolved
+      await setDoc(doc(db, 'support_tickets', ticket.id), {
+        status: 'resolved',
+        resolvedAt: new Date().toISOString(),
+        resolvedBy: user.email
+      }, { merge: true });
+
+      // 2. Pre-authorize this email lowercased so they are unlocked instantly on any device login
+      const cleanEmail = ticket.appEmail.trim().toLowerCase();
+      await setDoc(doc(db, 'pre_authorized_emails', cleanEmail), {
+        active: true,
+        tier: ticket.tier || 'monthly',
+        activatedAt: new Date().toISOString(),
+        activatedBy: user.email,
+        paypalEmail: ticket.paypalEmail.trim().toLowerCase()
+      });
+
+      // 3. Search and update user record in users collection if already exists
+      const usersQuery = query(collection(db, 'users'), where('email', '==', ticket.appEmail.trim()));
+      const userSnapshot = await getDocs(usersQuery);
+      if (!userSnapshot.empty) {
+        const userDoc = userSnapshot.docs[0];
+        await setDoc(doc(db, 'users', userDoc.id), {
+          isSubscribed: true,
+          subscriptionType: ticket.tier || 'monthly'
+        }, { merge: true });
+        
+        // If the current logged-in user is the one being activated, update their local state immediately
+        if (user.email?.toLowerCase() === cleanEmail) {
+          setUserProfile(prev => ({ ...prev, isSubscribed: true, subscriptionType: ticket.tier || 'monthly' }));
+        }
+      }
+
+      alert(`Successfully activated WiseFit Plus subscription for: ${ticket.appEmail}`);
+      fetchSupportTickets();
+    } catch (err: any) {
+      console.error("Activation error:", err);
+      alert(`Activation error: ${err.message || err}`);
+    } finally {
+      setIsActivatingTicket(null);
     }
   };
 
@@ -4428,19 +4511,40 @@ function AppContent() {
       'stjepan.dekanovic@gmail.com'
     ].includes(firebaseUser.email.toLowerCase());
 
+    const preAuthRef = doc(db, 'pre_authorized_emails', firebaseUser.email?.toLowerCase() || 'none');
+    let isPreAuthorized = false;
+    let preAuthTier = 'monthly';
+    try {
+      const preAuthSnap = await getDoc(preAuthRef);
+      if (preAuthSnap.exists() && preAuthSnap.data()?.active === true) {
+        isPreAuthorized = true;
+        preAuthTier = preAuthSnap.data()?.tier || 'monthly';
+      }
+    } catch (err) {
+      console.error("Error reading pre_authorized_emails reference:", err);
+    }
+
     if (!userDoc.exists()) {
       const newProfile: UserProfile = {
         ...INITIAL_PROFILE,
         uid: firebaseUser.uid,
         name: firebaseUser.displayName || 'User',
         email: firebaseUser.email || '',
-        role: isAdminEmail ? 'admin' : 'user'
+        role: isAdminEmail ? 'admin' : 'user',
+        isSubscribed: isPreAuthorized ? true : false,
+        subscriptionType: isPreAuthorized ? (preAuthTier as any) : undefined
       };
-      console.log('Creating new user profile for:', firebaseUser.uid);
+      console.log('Creating new user profile for:', firebaseUser.uid, 'PreAuthorized:', isPreAuthorized);
       await setDoc(userDocRef, newProfile);
       setUserProfile(newProfile);
     } else {
       const data = userDoc.data();
+      if (isPreAuthorized && !data.isSubscribed) {
+        data.isSubscribed = true;
+        data.subscriptionType = preAuthTier;
+        console.log('Pre-authorizing existing profile subscription on load:', firebaseUser.email);
+        await setDoc(userDocRef, { isSubscribed: true, subscriptionType: preAuthTier }, { merge: true });
+      }
       if (isAdminEmail && data.role !== 'admin') {
         data.role = 'admin';
         console.log('Upgrading role to admin in Firestore for:', firebaseUser.email);
@@ -7684,6 +7788,83 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     <p className="text-[9px] text-purple-500/60 font-medium leading-relaxed px-1">
                       * This will populate the 'psychology_insights' collection in Firestore with the 100 specialized insights for revision.
                     </p>
+                  </div>
+
+                  {/* Manual PayPal activations section */}
+                  <div className="border-t border-purple-500/10 pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Wallet className="w-4 h-4 text-sky-400" />
+                        <span className="text-xs font-bold text-zinc-300">Pending PayPal Activations</span>
+                      </div>
+                      <button
+                        onClick={fetchSupportTickets}
+                        disabled={isFetchingTickets}
+                        className="p-1 hover:bg-purple-500/10 rounded-lg text-purple-400 transition-all cursor-pointer"
+                        title="Reload tickets"
+                      >
+                        <RefreshCw className={cn("w-3.5 h-3.5", isFetchingTickets && "animate-spin")} />
+                      </button>
+                    </div>
+
+                    {isFetchingTickets ? (
+                      <div className="text-center py-4 text-zinc-500 text-[10px]">
+                        Scanning Firestore secure ledger...
+                      </div>
+                    ) : supportTickets.length === 0 ? (
+                      <div className="text-center py-4 text-purple-400/50 text-[10px] bg-zinc-950/20 rounded-2xl border border-purple-500/5">
+                        No pending activation claims detected.
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        {supportTickets.map((ticket) => (
+                          <div 
+                            key={ticket.id}
+                            className="p-3 rounded-2xl bg-zinc-950/40 border border-purple-500/10 space-y-2 text-[10px]"
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-0.5 text-left">
+                                <p className="text-zinc-500 text-[9px]">App Login Account:</p>
+                                <p className="font-bold text-white font-mono break-all">{ticket.appEmail}</p>
+                              </div>
+                              <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-400 rounded text-[8px] font-black uppercase tracking-wider shrink-0 ml-2">
+                                {ticket.tier === 'monthly' ? 'Monthly' : 'Lifetime'}
+                              </span>
+                            </div>
+
+                            <div className="space-y-0.5 text-left">
+                              <p className="text-zinc-500 text-[9px]">PayPal Checkout Email:</p>
+                              <p className="font-bold text-sky-400 font-mono break-all">{ticket.paypalEmail}</p>
+                            </div>
+
+                            {ticket.message && (
+                              <div className="p-1.5 bg-black/30 rounded-lg text-zinc-400 leading-normal italic text-[9px] border border-zinc-800/20 text-left">
+                                "{ticket.message}"
+                              </div>
+                            )}
+
+                            <div className="flex justify-between items-center pt-1 border-t border-purple-500/5">
+                              <span className="text-zinc-500 text-[8px]">
+                                Claimed: {ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : 'Unknown'}
+                              </span>
+                              
+                              <button
+                                onClick={() => handleActivateTicket(ticket)}
+                                disabled={isActivatingTicket === ticket.id}
+                                className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-450 text-zinc-950 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                              >
+                                {isActivatingTicket === ticket.id ? (
+                                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                ) : (
+                                  <Check className="w-2.5 h-2.5" />
+                                )}
+                                Approve & Activate
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
