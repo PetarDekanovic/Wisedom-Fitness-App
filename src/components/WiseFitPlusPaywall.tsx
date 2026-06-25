@@ -24,7 +24,7 @@ export default function WiseFitPlusPaywall({
   onClose
 }: WiseFitPlusPaywallProps) {
   const [tier, setTier] = useState<'monthly' | 'lifetime'>('monthly');
-  const [payMethod, setPayMethod] = useState<'card' | 'gpay' | 'paypal'>('card');
+  const [payMethod, setPayMethod] = useState<'card' | 'gpay' | 'paypal'>('paypal');
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [showGPaySheet, setShowGPaySheet] = useState(false);
@@ -387,6 +387,16 @@ export default function WiseFitPlusPaywall({
             <div className="grid grid-cols-3 gap-1 rounded-xl p-1 bg-zinc-900 border border-zinc-800">
               <button
                 type="button"
+                onClick={() => setPayMethod('paypal')}
+                className={cn(
+                  "py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1",
+                  payMethod === 'paypal' ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-400"
+                )}
+              >
+                <Wallet className="w-3.5 h-3.5 text-sky-400" /> PayPal
+              </button>
+              <button
+                type="button"
                 onClick={() => { setPayMethod('card'); setPaypalRedirected(false); }}
                 className={cn(
                   "py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1",
@@ -404,16 +414,6 @@ export default function WiseFitPlusPaywall({
                 )}
               >
                 <Smartphone className="w-3.5 h-3.5" /> GPay
-              </button>
-              <button
-                type="button"
-                onClick={() => setPayMethod('paypal')}
-                className={cn(
-                  "py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1",
-                  payMethod === 'paypal' ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-400"
-                )}
-              >
-                <Wallet className="w-3.5 h-3.5 text-sky-400" /> PayPal
               </button>
             </div>
 
