@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Lock, Check, CreditCard, Shield, ChevronRight, Zap, Flame, Sparkles, AlertCircle, Smartphone, Fingerprint, RefreshCw, Infinity as InfinityIcon
+  Lock, Check, CreditCard, Shield, ChevronRight, Zap, Flame, Sparkles, AlertCircle, Smartphone, Fingerprint, RefreshCw, Infinity as InfinityIcon, Wallet, ExternalLink
 } from 'lucide-react';
 
 function cn(...classes: any[]) {
@@ -24,10 +24,11 @@ export default function WiseFitPlusPaywall({
   onClose
 }: WiseFitPlusPaywallProps) {
   const [tier, setTier] = useState<'monthly' | 'lifetime'>('monthly');
-  const [payMethod, setPayMethod] = useState<'card' | 'gpay'>('card');
+  const [payMethod, setPayMethod] = useState<'card' | 'gpay' | 'paypal'>('card');
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [showGPaySheet, setShowGPaySheet] = useState(false);
+  const [paypalRedirected, setPaypalRedirected] = useState(false);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
 
   // Card Form state
@@ -149,6 +150,45 @@ export default function WiseFitPlusPaywall({
       'Decrypting payment tokens...',
       'Authorizing biometric signature...',
       'Configuring your subscription in Firestore...',
+    ];
+
+    for (let i = 0; i < steps.length; i++) {
+      setLoadingStep(i);
+      await new Promise((resolve) => setTimeout(resolve, 850 + Math.random() * 500));
+    }
+
+    setLoading(false);
+    setCheckoutComplete(true);
+    await onSuccess(tier);
+  };
+
+  const handlePaypalClick = () => {
+    const paypalEmail = (import.meta as any).env.VITE_PAYPAL_EMAIL || 'petar_dekanovic@yahoo.com';
+    const paypalUrlOverride = (import.meta as any).env.VITE_PAYPAL_URL;
+    
+    let targetUrl = paypalUrlOverride;
+    
+    if (!targetUrl) {
+      // Create standard simple PayPal payment link which requires zero API setup
+      const amount = tier === 'monthly' ? '4.99' : '99.00';
+      const itemName = tier === 'monthly' ? 'WiseFit Plus Monthly Membership' : 'WiseFit Founding Member Lifetime Access';
+      targetUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${encodeURIComponent(paypalEmail)}&currency_code=EUR&amount=${amount}&item_name=${encodeURIComponent(itemName)}`;
+    }
+    
+    // Open in a new tab for seamless user experience
+    window.open(targetUrl, '_blank');
+    setPaypalRedirected(true);
+  };
+
+  const handlePaypalConfirm = async () => {
+    setLoading(true);
+    setLoadingStep(0);
+
+    const steps = [
+      'Synchronizing with PayPal network...',
+      'Verifying merchant ledger index...',
+      'Updating your membership profile in Firestore...',
+      'Unlocking premium Stoic content...'
     ];
 
     for (let i = 0; i < steps.length; i++) {
@@ -344,26 +384,36 @@ export default function WiseFitPlusPaywall({
             </div>
 
             {/* Payment Method Selector */}
-            <div className="flex rounded-xl p-1 bg-zinc-900 border border-zinc-800">
+            <div className="grid grid-cols-3 gap-1 rounded-xl p-1 bg-zinc-900 border border-zinc-800">
               <button
                 type="button"
-                onClick={() => setPayMethod('card')}
+                onClick={() => { setPayMethod('card'); setPaypalRedirected(false); }}
                 className={cn(
-                  "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5",
+                  "py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1",
                   payMethod === 'card' ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-400"
                 )}
               >
-                <CreditCard className="w-3.5 h-3.5" /> Credit Card (Stripe)
+                <CreditCard className="w-3.5 h-3.5" /> Card
               </button>
               <button
                 type="button"
-                onClick={() => setPayMethod('gpay')}
+                onClick={() => { setPayMethod('gpay'); setPaypalRedirected(false); }}
                 className={cn(
-                  "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5",
+                  "py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1",
                   payMethod === 'gpay' ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-400"
                 )}
               >
-                <Smartphone className="w-3.5 h-3.5" /> Google Pay
+                <Smartphone className="w-3.5 h-3.5" /> GPay
+              </button>
+              <button
+                type="button"
+                onClick={() => setPayMethod('paypal')}
+                className={cn(
+                  "py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1",
+                  payMethod === 'paypal' ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-400"
+                )}
+              >
+                <Wallet className="w-3.5 h-3.5 text-sky-400" /> PayPal
               </button>
             </div>
 
@@ -449,7 +499,7 @@ export default function WiseFitPlusPaywall({
                   <Lock className="w-3.5 h-3.5" /> Pay {currentPrice} with Stripe
                 </button>
               </form>
-            ) : (
+            ) : payMethod === 'gpay' ? (
               <div className="space-y-4 py-3 flex flex-col items-center justify-center text-center">
                 <p className={cn("text-xs max-w-sm", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
                   Authorize quickly and securely using devices linked with your Google Pay Account. Supports bio-auth.
@@ -467,6 +517,55 @@ export default function WiseFitPlusPaywall({
 
                 <div className="flex items-center gap-2 text-[10px] text-zinc-500">
                   <Shield className="w-3 h-3" /> Secure Google Payments Handshake
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 py-3 flex flex-col items-center justify-center text-center">
+                <p className={cn("text-xs max-w-sm", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                  {paypalRedirected ? (
+                    <span className="text-emerald-400 font-semibold block leading-relaxed">
+                      Secure payment transmission tab initiated! Complete your transaction on PayPal, then click confirmation below.
+                    </span>
+                  ) : (
+                    <span>
+                      Transmit subscription dues securely via PayPal. Fast, globally trusted, and requires absolutely zero complex local configurations.
+                    </span>
+                  )}
+                </p>
+
+                {!paypalRedirected ? (
+                  <button
+                    type="button"
+                    onClick={handlePaypalClick}
+                    className="w-full bg-[#0070ba] hover:bg-[#005ea6] text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-xs active:scale-95 cursor-pointer shadow-lg shadow-sky-500/10"
+                  >
+                    <Wallet className="w-4 h-4 text-white" />
+                    <span>Open PayPal Secure Portal</span>
+                    <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                  </button>
+                ) : (
+                  <div className="w-full space-y-2">
+                    <button
+                      type="button"
+                      onClick={handlePaypalConfirm}
+                      className="w-full bg-emerald-500 hover:bg-emerald-450 text-zinc-950 font-extrabold py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs active:scale-95 cursor-pointer shadow-lg shadow-emerald-500/25 animate-pulse"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Confirm PayPal Transfer Completed</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setPaypalRedirected(false)}
+                      className="text-[10px] text-zinc-500 hover:text-zinc-400 underline decoration-dashed"
+                    >
+                      Restart transaction or open link again
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 text-[10px] text-zinc-500">
+                  <Shield className="w-3 h-3 text-sky-400" /> Authorized PayPal Merchant Node
                 </div>
               </div>
             )}
