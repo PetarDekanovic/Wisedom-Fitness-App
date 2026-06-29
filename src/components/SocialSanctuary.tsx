@@ -725,6 +725,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
   // Direct messages states
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const totalUnreadMessages = conversations.reduce((acc, convo) => {
+    return acc + (convo.unreadCounts?.[currentUser?.uid || ''] || 0);
+  }, 0);
   const [activeChat, setActiveChat] = useState<Conversation | null>(null);
   const [activeCallConvoId, setActiveCallConvoId] = useState<string | null>(null);
   const [activeCallType, setActiveCallType] = useState<'video' | 'audio' | null>(null);
@@ -1750,6 +1753,28 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     return () => unsub();
   }, [currentUser, activeChat]);
 
+  // Reset unread count when active chat conversation is opened/viewed
+  useEffect(() => {
+    if (!currentUser || !activeChat) return;
+
+    const currentChatDoc = conversations.find(c => c.id === activeChat.id);
+    const myUnread = currentChatDoc?.unreadCounts?.[currentUser.uid] || 0;
+
+    if (myUnread > 0) {
+      const resetMyUnreads = async () => {
+        try {
+          const convoRef = doc(db, 'conversations', activeChat.id);
+          await updateDoc(convoRef, {
+            [`unreadCounts.${currentUser.uid}`]: 0
+          });
+        } catch (err) {
+          console.error("Error resetting unread counts:", err);
+        }
+      };
+      resetMyUnreads();
+    }
+  }, [activeChat?.id, conversations, currentUser?.uid]);
+
   // 6c. Database Calling Signaling & Sync Engine
   const currentChatState = conversations.find(c => c.id === activeChat?.id) || activeChat;
 
@@ -1883,10 +1908,14 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           await setDoc(msgRef, msgPayload);
 
           // Update head conversation document
+          const currentChatDoc = conversations.find(c => c.id === activeChat.id);
+          const currentUnreads = currentChatDoc?.unreadCounts || {};
+          const newCount = (currentUnreads[currentUser.uid] || 0) + 1;
           const convoRef = doc(db, 'conversations', activeChat.id);
           await updateDoc(convoRef, {
             lastMessage: replyText,
-            lastMessageAt: new Date().toISOString()
+            lastMessageAt: new Date().toISOString(),
+            [`unreadCounts.${currentUser.uid}`]: newCount
           });
 
         } catch (err) {
@@ -2251,11 +2280,17 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         ]
       };
 
+      const otherUid = engagePeer.uid;
+
       if (!convoDoc.exists()) {
         await setDoc(convoRef, {
           ...computedConvo,
           lastMessage: engageMessage,
-          lastMessageAt: new Date().toISOString()
+          lastMessageAt: new Date().toISOString(),
+          unreadCounts: {
+            [currentUser.uid]: 0,
+            [otherUid]: 1
+          }
         });
       }
 
@@ -2274,9 +2309,13 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
       // Only update head if it already existed (prevent dual uncommitted write trigger in security rules)
       if (convoDoc.exists()) {
+        const existingData = convoDoc.data();
+        const currentUnreads = existingData?.unreadCounts || {};
+        const newCount = (currentUnreads[otherUid] || 0) + 1;
         await updateDoc(convoRef, {
           lastMessage: engageMessage,
-          lastMessageAt: new Date().toISOString()
+          lastMessageAt: new Date().toISOString(),
+          [`unreadCounts.${otherUid}`]: newCount
         });
       }
 
@@ -2328,10 +2367,17 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       // 1. Submit message payload
       await setDoc(msgRef, msgPayload);
 
-      // 2. Update head node for active list sorting
+      // 2. Update head node for active list sorting & increment recipient unread
+      const otherIndex = activeChat.participants[0] === currentUser.uid ? 1 : 0;
+      const otherUid = activeChat.participants[otherIndex];
+      const currentChatDoc = conversations.find(c => c.id === activeChat.id);
+      const currentUnreads = currentChatDoc?.unreadCounts || {};
+      const newCount = (currentUnreads[otherUid] || 0) + 1;
+
       await updateDoc(convoRef, {
         lastMessage: newMessageText,
-        lastMessageAt: new Date().toISOString()
+        lastMessageAt: new Date().toISOString(),
+        [`unreadCounts.${otherUid}`]: newCount
       });
 
       setNewMessageText('');
@@ -3013,7 +3059,12 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         >
           {[
             { id: 'feed', label: 'Scholarly Feed', mobileLabel: 'Feed', icon: <Globe className="w-3.5 h-3.5" /> },
-            { id: 'messages', label: 'Direct Dialogs', mobileLabel: 'Dialogs', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+            { 
+              id: 'messages', 
+              label: totalUnreadMessages > 0 ? `Direct Dialogs (${totalUnreadMessages})` : 'Direct Dialogs', 
+              mobileLabel: totalUnreadMessages > 0 ? `Dialogs (${totalUnreadMessages})` : 'Dialogs', 
+              icon: <MessageSquare className={cn("w-3.5 h-3.5 transition-transform duration-500", totalUnreadMessages > 0 && "text-rose-400 animate-[bounce_1.5s_infinite] scale-110")} /> 
+            },
             { id: 'peers', label: 'Seekers Swarm', mobileLabel: 'Swarm', icon: <Users className="w-3.5 h-3.5" /> },
             { id: 'personality', label: 'Personality', mobileLabel: 'Personality', icon: <Heart className="w-3.5 h-3.5" /> },
             { id: 'moderation', label: `Moderation (${pendingPosts.length})`, mobileLabel: `Mod (${pendingPosts.length})`, icon: <ShieldCheck className="w-3.5 h-3.5" />, adminOnly: true }
@@ -3030,7 +3081,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                   active 
                     ? "bg-emerald-500 text-zinc-950 font-black italic scale-[0.98] shadow-md shadow-emerald-500/15" 
                     : isMessagesTab
-                      ? "bg-zinc-800 border border-emerald-500/35 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/50 animate-pulse duration-[2000ms] shadow-[0_0_8px_rgba(16,185,129,0.15)] font-black"
+                      ? totalUnreadMessages > 0
+                        ? "bg-rose-950/10 border border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/60 shadow-[0_0_12px_rgba(244,63,94,0.2)] font-black animate-[pulse_2.5s_infinite]"
+                        : "bg-zinc-800 border border-emerald-500/35 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/50 animate-pulse duration-[2000ms] shadow-[0_0_8px_rgba(16,185,129,0.15)] font-black"
                       : isDarkMode
                         ? "text-zinc-500 hover:text-zinc-350 hover:bg-zinc-800/30"
                         : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
@@ -3041,10 +3094,10 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                 <span className="inline sm:hidden">{tab.mobileLabel}</span>
                 
                 {/* Visual red/emerald indicator dot on Direct Dialogs */}
-                {isMessagesTab && !active && (
-                  <span className="absolute -top-1 -right-1 flex h-2 w-2 z-30">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                {isMessagesTab && totalUnreadMessages > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[8px] font-black text-white shadow-lg shadow-rose-500/30 z-30 border border-zinc-950 animate-[bounce_1.2s_infinite]">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-40"></span>
+                    <span className="relative">{totalUnreadMessages}</span>
                   </span>
                 )}
               </button>
@@ -3935,21 +3988,35 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[10px] font-black uppercase tracking-tight truncate flex items-center gap-1.5">
-                            <span className="truncate">{otherName}</span>
-                            {online && (
-                              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                            )}
-                            {convo.activeCall && convo.activeCall.callerId !== currentUser?.uid && (
-                              <span className="ml-auto shrink-0 inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[6.5px] font-black uppercase tracking-wider bg-emerald-500 text-black animate-bounce shadow-md">
-                                {convo.activeCall.type === 'video' ? <Video className="w-1.5 h-1.5" /> : <Phone className="w-1.5 h-1.5" />}
-                                CALL
-                              </span>
-                            )}
-                          </p>
-                          <p className={cn("text-[9px] truncate mt-0.5", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
-                            {convo.activeCall ? `Active ${convo.activeCall.type} call...` : (convo.lastMessage || 'Open private exchange loop.')}
-                          </p>
+                          {(() => {
+                            const unreadCount = convo.unreadCounts?.[currentUser?.uid || ''] || 0;
+                            return (
+                              <>
+                                <p className="text-[10px] font-black uppercase tracking-tight truncate flex items-center gap-1.5 w-full">
+                                  <span className={cn("truncate", unreadCount > 0 ? "text-rose-400 font-extrabold animate-[pulse_2s_infinite]" : "")}>
+                                    {otherName}
+                                  </span>
+                                  {online && (
+                                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  )}
+                                  {unreadCount > 0 && (
+                                    <span className="ml-auto shrink-0 inline-flex items-center justify-center bg-rose-500 text-white font-black text-[7.5px] h-3.5 min-w-[14px] px-1 rounded-full animate-pulse shadow-md border border-zinc-950">
+                                      {unreadCount}
+                                    </span>
+                                  )}
+                                  {convo.activeCall && convo.activeCall.callerId !== currentUser?.uid && (
+                                    <span className={cn("shrink-0 inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[6.5px] font-black uppercase tracking-wider bg-emerald-500 text-black animate-bounce shadow-md", unreadCount === 0 && "ml-auto")}>
+                                      {convo.activeCall.type === 'video' ? <Video className="w-1.5 h-1.5" /> : <Phone className="w-1.5 h-1.5" />}
+                                      CALL
+                                    </span>
+                                  )}
+                                </p>
+                                <p className={cn("text-[9px] truncate mt-0.5", unreadCount > 0 ? "text-zinc-200 font-bold" : (isDarkMode ? "text-zinc-500" : "text-zinc-400"))}>
+                                  {convo.activeCall ? `Active ${convo.activeCall.type} call...` : (convo.lastMessage || 'Open private exchange loop.')}
+                                </p>
+                              </>
+                            );
+                          })()}
                         </div>
                       </button>
                     );

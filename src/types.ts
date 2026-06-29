@@ -335,6 +335,9 @@ export interface Conversation {
     type: 'video' | 'audio';
     startedAt: any;
   } | null;
+  unreadCounts?: {
+    [userId: string]: number;
+  };
 }
 
 export interface DMMessage {

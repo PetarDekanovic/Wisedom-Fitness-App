@@ -216,7 +216,7 @@ service cloud.firestore {
                     (request.resource.data.participants is list && request.auth.uid in request.resource.data.participants);
       allow update: if isAuthenticated() && 
                     (resource.data.get('participants', null) != null && request.auth.uid in resource.data.participants) &&
-                    request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastMessage', 'lastMessageAt']);
+                    request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastMessage', 'lastMessageAt', 'activeCall', 'unreadCounts']);
       allow delete: if isAdmin();
     }
 
