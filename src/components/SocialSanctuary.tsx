@@ -4083,32 +4083,32 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             </div>
  
                             <div className="leading-tight min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
+                              <div className="flex items-center gap-1.5 flex-nowrap min-w-0">
                                 <h4 
                                   onClick={() => {
                                     if (otherPeer) {
                                       setSelectedPeerWall(otherPeer);
                                     }
                                   }}
-                                  className="text-[12px] font-black uppercase tracking-wider cursor-pointer hover:text-emerald-400 transition-colors truncate max-w-[100px] sm:max-w-[180px]"
+                                  className="text-[12px] font-black uppercase tracking-wider cursor-pointer hover:text-emerald-400 transition-colors truncate"
                                 >
                                   {otherName}
                                 </h4>
                                 <span className={cn(
                                   "text-[7px] font-bold px-1.5 py-0.5 rounded uppercase leading-none border select-none shrink-0 scale-90 origin-left",
                                   online 
-                                    ? "bg-emerald-500/10 border-emerald-500/15 text-emerald-400 font-mono animate-pulse" 
+                                    ? "bg-emerald-500/10 border-emerald-500/15 text-emerald-450 font-mono animate-pulse" 
                                     : "bg-zinc-500/5 border-zinc-800 text-zinc-500 font-mono"
                                 )}>
                                   {online ? 'ONLINE' : 'OFFLINE'}
                                 </span>
                               </div>
                               {otherPeer?.biography ? (
-                                <p className="text-[9px] text-zinc-400 font-medium italic truncate max-w-[110px] sm:max-w-[240px] mt-0.5">
+                                <p className="text-[9px] text-zinc-400 font-medium italic truncate mt-0.5">
                                   "{otherPeer.biography}"
                                 </p>
                               ) : (
-                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
+                                <p className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5 truncate">
                                   WiseFit Seeker
                                 </p>
                               )}
@@ -4119,7 +4119,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     </div>
 
                     {/* Right side: Actions & Close button */}
-                    <div className="flex items-center gap-3 sm:gap-4 shrink-0 flex-nowrap select-none ml-auto">
+                    <div className="flex items-center gap-1.5 sm:gap-3.5 shrink-0 flex-nowrap select-none ml-auto">
                       {(() => {
                         const otherIndex = activeChat.participants[0] === currentUser.uid ? 1 : 0;
                         const otherUid = activeChat.participants[otherIndex];
@@ -4149,7 +4149,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 }
                               }}
                               className={cn(
-                                "inline-flex items-center gap-1 text-[8.5px] font-black uppercase px-2 py-1.5 sm:px-2.5 sm:py-1 rounded-xl transition-all cursor-pointer shadow shrink-0 select-none border",
+                                "inline-flex items-center justify-center gap-1 text-[8.5px] font-black uppercase p-2 sm:px-2.5 sm:py-1 rounded-xl transition-all cursor-pointer shadow shrink-0 select-none border",
                                 activeCallConvoId === activeChat.id && activeCallType === 'audio'
                                   ? "bg-rose-500/20 border-rose-500/30 text-rose-400 hover:text-rose-350"
                                   : "bg-emerald-500/5 border-emerald-500/15 text-emerald-450 hover:text-emerald-350 hover:border-emerald-500/25"
@@ -4157,11 +4157,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               title={activeCallConvoId === activeChat.id && activeCallType === 'audio' ? "Disconnect Voice Call" : "Initiate Secure Voice Call"}
                             >
                               <Phone className="w-3.5 h-3.5" />
-                              <span className="hidden min-[400px]:inline">
+                              <span className="hidden sm:inline">
                                 {activeCallConvoId === activeChat.id && activeCallType === 'audio' ? "Disconnect" : "Voice Call"}
-                              </span>
-                              <span className="min-[400px]:hidden">
-                                {activeCallConvoId === activeChat.id && activeCallType === 'audio' ? "End" : "Voice"}
                               </span>
                             </button>
 
@@ -4176,7 +4173,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 }
                               }}
                               className={cn(
-                                "inline-flex items-center gap-1 text-[8.5px] font-black uppercase px-2 py-1.5 sm:px-2.5 sm:py-1 rounded-xl transition-all cursor-pointer shadow shrink-0 select-none border",
+                                "inline-flex items-center justify-center gap-1 text-[8.5px] font-black uppercase p-2 sm:px-2.5 sm:py-1 rounded-xl transition-all cursor-pointer shadow shrink-0 select-none border",
                                 activeCallConvoId === activeChat.id && activeCallType === 'video'
                                   ? "bg-rose-500/20 border-rose-500/30 text-rose-400 hover:text-rose-350"
                                   : "bg-emerald-500/5 border-emerald-500/15 text-emerald-450 hover:text-emerald-350 hover:border-emerald-500/25"
@@ -4184,11 +4181,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               title={activeCallConvoId === activeChat.id && activeCallType === 'video' ? "Disconnect Video Call" : "Initiate Secure Video Call"}
                             >
                               <Video className="w-3.5 h-3.5" />
-                              <span className="hidden min-[400px]:inline">
+                              <span className="hidden sm:inline">
                                 {activeCallConvoId === activeChat.id && activeCallType === 'video' ? "Disconnect" : "Video Call"}
-                              </span>
-                              <span className="min-[400px]:hidden">
-                                {activeCallConvoId === activeChat.id && activeCallType === 'video' ? "End" : "Video"}
                               </span>
                             </button>
                           </>
@@ -4197,7 +4191,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                       <button 
                         onClick={() => setActiveChat(null)}
-                        className="p-1.5 rounded-full transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-950/30 active:scale-95 flex items-center justify-center cursor-pointer border border-rose-400 shrink-0"
+                        className="p-2 rounded-xl transition-all bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-950/30 active:scale-95 flex items-center justify-center cursor-pointer border border-rose-400 shrink-0"
                         title="Exit Dialogue"
                       >
                         <X className="w-3.5 h-3.5 stroke-[3px]" />
