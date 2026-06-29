@@ -36,6 +36,7 @@ import {
   Link as LinkIcon, 
   Youtube, 
   Video, 
+  Phone,
   CheckCircle2, 
   AlertCircle, 
   FileText, 
@@ -726,6 +727,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeChat, setActiveChat] = useState<Conversation | null>(null);
   const [activeCallConvoId, setActiveCallConvoId] = useState<string | null>(null);
+  const [activeCallType, setActiveCallType] = useState<'video' | 'audio' | null>(null);
   const [chatMessages, setChatMessages] = useState<DMMessage[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
   const chatInputRef = useRef<HTMLInputElement>(null);
@@ -1747,6 +1749,73 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
     return () => unsub();
   }, [currentUser, activeChat]);
+
+  // 6c. Database Calling Signaling & Sync Engine
+  const currentChatState = conversations.find(c => c.id === activeChat?.id) || activeChat;
+
+  const initiateCall = async (type: 'audio' | 'video') => {
+    if (!activeChat || !currentUser) return;
+    try {
+      const convoRef = doc(db, 'conversations', activeChat.id);
+      await updateDoc(convoRef, {
+        activeCall: {
+          callerId: currentUser.uid,
+          type,
+          startedAt: new Date().toISOString()
+        }
+      });
+      setActiveCallConvoId(activeChat.id);
+      setActiveCallType(type);
+    } catch (err) {
+      console.error("Error starting call:", err);
+    }
+  };
+
+  const endCall = async () => {
+    if (!activeChat) return;
+    try {
+      const convoRef = doc(db, 'conversations', activeChat.id);
+      await updateDoc(convoRef, {
+        activeCall: null
+      });
+    } catch (err) {
+      console.error("Error ending call:", err);
+    } finally {
+      setActiveCallConvoId(null);
+      setActiveCallType(null);
+    }
+  };
+
+  // Sync state from Firestore changes
+  useEffect(() => {
+    if (!currentChatState) {
+      return;
+    }
+    
+    const call = currentChatState.activeCall;
+    if (!call) {
+      // If database call is cleared, clear local call frame
+      if (activeCallConvoId === currentChatState.id) {
+        setActiveCallConvoId(null);
+        setActiveCallType(null);
+      }
+    } else {
+      // If there is an active call in the DB
+      if (call.callerId === currentUser?.uid) {
+        // If we are the caller, ensure local state matches
+        if (activeCallConvoId !== currentChatState.id) {
+          setActiveCallConvoId(currentChatState.id);
+          setActiveCallType(call.type);
+        }
+      } else {
+        // We are the receiver
+        // If the call was cleared while we had Jitsi active, hang up
+        if (activeCallConvoId === currentChatState.id && activeCallType !== call.type) {
+          setActiveCallType(call.type);
+        }
+      }
+    }
+  }, [currentChatState?.activeCall, currentUser?.uid, activeCallConvoId, activeCallType]);
 
   // 6b. Auto-responder when sending message to any dummy scholar
   useEffect(() => {
@@ -3867,13 +3936,19 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-[10px] font-black uppercase tracking-tight truncate flex items-center gap-1.5">
-                            {otherName}
+                            <span className="truncate">{otherName}</span>
                             {online && (
                               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                             )}
+                            {convo.activeCall && convo.activeCall.callerId !== currentUser?.uid && (
+                              <span className="ml-auto shrink-0 inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[6.5px] font-black uppercase tracking-wider bg-emerald-500 text-black animate-bounce shadow-md">
+                                {convo.activeCall.type === 'video' ? <Video className="w-1.5 h-1.5" /> : <Phone className="w-1.5 h-1.5" />}
+                                CALL
+                              </span>
+                            )}
                           </p>
                           <p className={cn("text-[9px] truncate mt-0.5", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
-                            {convo.lastMessage || 'Open private exchange loop.'}
+                            {convo.activeCall ? `Active ${convo.activeCall.type} call...` : (convo.lastMessage || 'Open private exchange loop.')}
                           </p>
                         </div>
                       </button>
@@ -3996,25 +4071,57 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               </button>
                             )}
 
+                            {/* Audio Call Button */}
                             <button
                               type="button"
                               onClick={() => {
-                                setActiveCallConvoId(activeCallConvoId === activeChat.id ? null : activeChat.id);
+                                if (activeCallConvoId === activeChat.id) {
+                                  endCall();
+                                } else {
+                                  initiateCall('audio');
+                                }
                               }}
                               className={cn(
                                 "inline-flex items-center gap-1 text-[8.5px] font-black uppercase px-2 py-1.5 sm:px-2.5 sm:py-1 rounded-xl transition-all cursor-pointer shadow shrink-0 select-none border",
-                                activeCallConvoId === activeChat.id
+                                activeCallConvoId === activeChat.id && activeCallType === 'audio'
                                   ? "bg-rose-500/20 border-rose-500/30 text-rose-400 hover:text-rose-350"
                                   : "bg-emerald-500/5 border-emerald-500/15 text-emerald-450 hover:text-emerald-350 hover:border-emerald-500/25"
                               )}
-                              title={activeCallConvoId === activeChat.id ? "Disconnect Video Call" : "Initiate Secure Video Call"}
+                              title={activeCallConvoId === activeChat.id && activeCallType === 'audio' ? "Disconnect Voice Call" : "Initiate Secure Voice Call"}
+                            >
+                              <Phone className="w-3.5 h-3.5" />
+                              <span className="hidden min-[400px]:inline">
+                                {activeCallConvoId === activeChat.id && activeCallType === 'audio' ? "Disconnect" : "Voice Call"}
+                              </span>
+                              <span className="min-[400px]:hidden">
+                                {activeCallConvoId === activeChat.id && activeCallType === 'audio' ? "End" : "Voice"}
+                              </span>
+                            </button>
+
+                            {/* Video Call Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (activeCallConvoId === activeChat.id) {
+                                  endCall();
+                                } else {
+                                  initiateCall('video');
+                                }
+                              }}
+                              className={cn(
+                                "inline-flex items-center gap-1 text-[8.5px] font-black uppercase px-2 py-1.5 sm:px-2.5 sm:py-1 rounded-xl transition-all cursor-pointer shadow shrink-0 select-none border",
+                                activeCallConvoId === activeChat.id && activeCallType === 'video'
+                                  ? "bg-rose-500/20 border-rose-500/30 text-rose-400 hover:text-rose-350"
+                                  : "bg-emerald-500/5 border-emerald-500/15 text-emerald-450 hover:text-emerald-350 hover:border-emerald-500/25"
+                              )}
+                              title={activeCallConvoId === activeChat.id && activeCallType === 'video' ? "Disconnect Video Call" : "Initiate Secure Video Call"}
                             >
                               <Video className="w-3.5 h-3.5" />
                               <span className="hidden min-[400px]:inline">
-                                {activeCallConvoId === activeChat.id ? "Disconnect" : "Video Call"}
+                                {activeCallConvoId === activeChat.id && activeCallType === 'video' ? "Disconnect" : "Video Call"}
                               </span>
                               <span className="min-[400px]:hidden">
-                                {activeCallConvoId === activeChat.id ? "End" : "Call"}
+                                {activeCallConvoId === activeChat.id && activeCallType === 'video' ? "End" : "Video"}
                               </span>
                             </button>
                           </>
@@ -4037,17 +4144,81 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         roomName={`wisefit_call_${activeChat.id}`}
                         displayName={thisPublicProfile?.name || userProfile?.name || 'Seeker'}
                         email={currentUser?.email || undefined}
-                        subject={`Dialectical Inquiry with ${
+                        subject={`${activeCallType === 'audio' ? 'Socratic Dialogue (Audio)' : 'Dialectical Inquiry'} with ${
                           activeChat.participants[0] === currentUser?.uid 
                             ? activeChat.participantNames[1] 
                             : activeChat.participantNames[0]
                         }`}
-                        onReadyToClose={() => setActiveCallConvoId(null)}
-                        onVideoConferenceLeft={() => setActiveCallConvoId(null)}
+                        configOverwrite={
+                          activeCallType === 'audio'
+                            ? {
+                                startAudioOnly: true,
+                                startWithVideoMuted: true,
+                                toolbarButtons: [
+                                  'microphone',
+                                  'fullscreen',
+                                  'hangup',
+                                  'chat',
+                                ],
+                              }
+                            : {}
+                        }
+                        onReadyToClose={() => endCall()}
+                        onVideoConferenceLeft={() => endCall()}
                       />
                     </div>
                   ) : (
                     <>
+                      {/* Incoming call UI overlay inside active chat */}
+                      {(() => {
+                        const call = currentChatState?.activeCall;
+                        const isIncoming = call && call.callerId !== currentUser?.uid;
+                        if (!isIncoming) return null;
+                        
+                        return (
+                          <div className="p-4 mb-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 backdrop-blur flex flex-col sm:flex-row items-center justify-between gap-3 animate-pulse">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2.5 rounded-full bg-emerald-500/10 text-emerald-400">
+                                {call.type === 'video' ? <Video className="w-5 h-5 animate-bounce" /> : <Phone className="w-5 h-5 animate-bounce" />}
+                              </div>
+                              <div className="text-left">
+                                <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Incoming Dialectical Inquiry</p>
+                                <p className="text-[10px] text-zinc-350 mt-0.5">
+                                  {activeChat.participants[0] === currentUser.uid ? activeChat.participantNames[1] : activeChat.participantNames[0]} is inviting you to an {call.type === 'video' ? 'video' : 'audio'} call.
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
+                              <button
+                                onClick={() => {
+                                  setActiveCallConvoId(activeChat.id);
+                                  setActiveCallType(call.type);
+                                }}
+                                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-black text-[9px] font-black uppercase tracking-wider hover:bg-emerald-400 transition-all cursor-pointer shadow"
+                              >
+                                {call.type === 'video' ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}
+                                Join Call
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const convoRef = doc(db, 'conversations', activeChat.id);
+                                    await updateDoc(convoRef, {
+                                      activeCall: null
+                                    });
+                                  } catch (err) {
+                                    console.error("Error declining call:", err);
+                                  }
+                                }}
+                                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-400 text-[9px] font-black uppercase tracking-wider hover:bg-rose-500/30 transition-all cursor-pointer shadow"
+                              >
+                                <X className="w-3 h-3" />
+                                Decline
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {/* Messages container list */}
                       <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1 mb-4 chat-scrollbar">
                         {chatMessages.length === 0 ? (

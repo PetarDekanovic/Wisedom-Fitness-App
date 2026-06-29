@@ -330,6 +330,11 @@ export interface Conversation {
   participantAvatars?: string[];
   lastMessage?: string;
   lastMessageAt?: any;
+  activeCall?: {
+    callerId: string;
+    type: 'video' | 'audio';
+    startedAt: any;
+  } | null;
 }
 
 export interface DMMessage {
