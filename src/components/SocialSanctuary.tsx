@@ -750,6 +750,12 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   // Direct messages states
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const totalUnreadMessages = conversations.reduce((acc, convo) => {
+    // If the conversation is currently active AND the user is viewing the messages tab,
+    // we are already actively reading any incoming messages.
+    // Excluding it from the global tab count prevents the unread badge from flickering.
+    if (activeTab === 'messages' && activeChat && convo.id === activeChat.id) {
+      return acc;
+    }
     return acc + (convo.unreadCounts?.[currentUser?.uid || ''] || 0);
   }, 0);
   const [activeChat, setActiveChat] = useState<Conversation | null>(null);
@@ -1744,7 +1750,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
   // Reset unread count when active chat conversation is opened/viewed
   useEffect(() => {
-    if (!currentUser || !activeChat) return;
+    if (!currentUser || !activeChat || activeTab !== 'messages') return;
 
     const currentChatDoc = conversations.find(c => c.id === activeChat.id);
     const myUnread = currentChatDoc?.unreadCounts?.[currentUser.uid] || 0;
@@ -1762,7 +1768,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       };
       resetMyUnreads();
     }
-  }, [activeChat?.id, conversations, currentUser?.uid]);
+  }, [activeChat?.id, conversations, currentUser?.uid, activeTab]);
 
   // 6c. Database Calling Signaling & Sync Engine
   const currentChatState = conversations.find(c => c.id === activeChat?.id) || activeChat;
@@ -3961,7 +3967,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         </div>
                         <div className="min-w-0 flex-1">
                           {(() => {
-                            const unreadCount = convo.unreadCounts?.[currentUser?.uid || ''] || 0;
+                            const unreadCount = (activeChat && convo.id === activeChat.id)
+                              ? 0 
+                              : (convo.unreadCounts?.[currentUser?.uid || ''] || 0);
                             return (
                               <>
                                 <p className="text-[10px] font-black uppercase tracking-tight truncate flex items-center gap-1.5 w-full">
