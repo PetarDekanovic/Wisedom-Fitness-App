@@ -111,42 +111,26 @@ interface FirestoreErrorInfo {
 
 
 const uploadBase64ToStorage = async (base64Data: string, filename: string, folder: string): Promise<string> => {
-  // Clean base64 prefix if present
-  const cleanBase64 = base64Data.replace(/^data:.*?;base64,/, "");
-  const mimeMatch = base64Data.match(/^data:(.*?);base64,/);
-  const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-  
-  // Convert base64 to binary data (Uint8Array)
-  const bstr = atob(cleanBase64);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  const blob = new Blob([u8arr], { type: mimeType });
-  
-  // Clean special characters from filename
-  const cleanFilename = filename.replace(/[^a-zA-Z0-9.]/g, '_');
-  const uniqueName = `${Date.now()}_${cleanFilename}`;
-  
-  const storageRef = ref(storage, `${folder}/${uniqueName}`);
-  const uploadTask = uploadBytesResumable(storageRef, blob);
-  
-  return new Promise<string>((resolve, reject) => {
-    uploadTask.on(
-      'state_changed',
-      null,
-      (error) => reject(error),
-      async () => {
-        try {
-          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(downloadUrl);
-        } catch (err) {
-          reject(err);
-        }
-      }
-    );
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      filename,
+      fileType: base64Data.match(/^data:(.*?);base64,/) ? base64Data.match(/^data:(.*?);base64,/)?.[1] : 'image/jpeg',
+      base64Data,
+      folder
+    })
   });
+
+  if (!response.ok) {
+    const errJson = await response.json().catch(() => ({}));
+    throw new Error(errJson.error || 'Server rejected file upload.');
+  }
+
+  const result = await response.json();
+  return result.url;
 };
 
 
@@ -3060,7 +3044,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         <div 
           ref={tabContainerRef}
           onScroll={handleTabScroll}
-          className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1.5 border-b border-zinc-800/10 scroll-smooth pr-14"
+          className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 pb-2.5 border-b border-zinc-800/10 scroll-smooth pr-14"
         >
           {[
             { id: 'feed', label: 'Scholarly Feed', mobileLabel: 'Feed', icon: <Globe className="w-3.5 h-3.5" /> },
@@ -3098,10 +3082,11 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                 <span className="hidden sm:inline">{tab.label}</span>
                 <span className="inline sm:hidden">{tab.mobileLabel}</span>
                 
-                {/* Visual red/emerald indicator dot on Direct Dialogs */}
+                {/* Visual red indicator dot on Direct Dialogs */}
                 {isMessagesTab && totalUnreadMessages > 0 && (
-                  <span className="ml-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[8px] font-black text-white shadow-md shadow-rose-500/20 z-10 border border-zinc-950 animate-[pulse_1.5s_infinite] shrink-0">
-                    {totalUnreadMessages}
+                  <span className="absolute -top-1 -right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[8px] font-black text-white shadow-lg shadow-rose-500/40 z-30 border border-zinc-950 animate-[bounce_1.2s_infinite]">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-60"></span>
+                    <span className="relative">{totalUnreadMessages}</span>
                   </span>
                 )}
               </button>

@@ -7,8 +7,34 @@ import dotenv from "dotenv";
 import * as cheerio from "cheerio";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Anthropic from "@anthropic-ai/sdk";
+import { initializeApp } from "firebase-admin/app";
+import { getStorage } from "firebase-admin/storage";
 
 dotenv.config();
+
+// Read Firebase applet config for Admin SDK
+const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
+let firebaseConfig: any = {};
+try {
+  firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+} catch (e) {
+  console.warn("[WiseFit Server] Could not read firebase-applet-config.json:", e);
+}
+
+// Initialize Firebase Admin
+let isFirebaseAdminInitialized = false;
+if (firebaseConfig.projectId) {
+  try {
+    initializeApp({
+      projectId: firebaseConfig.projectId,
+      storageBucket: firebaseConfig.storageBucket || `${firebaseConfig.projectId}.firebasestorage.app`
+    });
+    isFirebaseAdminInitialized = true;
+    console.log("[WiseFit Server] Firebase Admin initialized successfully.");
+  } catch (err) {
+    console.error("[WiseFit Server] Failed to initialize Firebase Admin:", err);
+  }
+}
 
 // Helper to get key from multiple possible names
 const getGeminiKey = () => {
@@ -94,9 +120,9 @@ async function startServer() {
   });
 
   // Safe High-Capacity File Upload API
-  app.post("/api/upload", (req, res) => {
+  app.post("/api/upload", async (req, res) => {
     try {
-      const { filename, fileType, base64Data } = req.body;
+      const { filename, fileType, base64Data, folder } = req.body;
       if (!filename || !base64Data) {
         return res.status(400).json({ error: "Missing filename or base64Data." });
       }
@@ -111,13 +137,46 @@ async function startServer() {
         return res.status(400).json({ error: "File size exceeds the 55MB sanctuary limit." });
       }
 
-      // Create secure, sanitized unique file name
       const ext = path.extname(filename);
       const base = path.basename(filename, ext).replace(/[^a-zA-Z0-9]/g, '_');
       const uniqueFilename = `${base}_${Date.now()}${ext}`;
-      const destinationPath = path.join(UPLOADS_DIR, uniqueFilename);
 
-      console.log(`[WiseFit] Writing uploaded attachment: ${uniqueFilename} (${buffer.length} bytes)`);
+      // Try uploading to Firebase Storage via Admin SDK first
+      if (isFirebaseAdminInitialized && firebaseConfig.projectId) {
+        try {
+          const bucketName = firebaseConfig.storageBucket || `${firebaseConfig.projectId}.firebasestorage.app`;
+          const bucket = getStorage().bucket(bucketName);
+          const finalFolder = folder || 'general';
+          const fullPath = `${finalFolder}/${uniqueFilename}`;
+          const file = bucket.file(fullPath);
+
+          // Generate UUID-like token
+          const token = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+
+          await file.save(buffer, {
+            metadata: {
+              contentType: fileType || 'image/jpeg',
+              metadata: {
+                firebaseStorageDownloadTokens: token
+              }
+            }
+          });
+
+          const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(fullPath)}?alt=media&token=${token}`;
+          console.log(`[WiseFit Server] Uploaded ${uniqueFilename} to Firebase Storage: ${publicUrl}`);
+          return res.json({ url: publicUrl, filename: uniqueFilename, fileType });
+        } catch (firebaseErr) {
+          console.error("[WiseFit Server] Firebase Storage upload failed, falling back to local storage:", firebaseErr);
+        }
+      }
+
+      // Fallback: Local Storage
+      const destinationPath = path.join(UPLOADS_DIR, uniqueFilename);
+      console.log(`[WiseFit Server] Falling back to local disk write: ${uniqueFilename} (${buffer.length} bytes)`);
       fs.writeFileSync(destinationPath, buffer);
 
       const relativeUrl = `/uploads/${uniqueFilename}`;

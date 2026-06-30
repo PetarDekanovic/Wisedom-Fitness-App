@@ -148,42 +148,26 @@ import { DigestQuoteCard } from './components/DigestQuoteCard';
 import WiseFitPlusPaywall from './components/WiseFitPlusPaywall';
 
 const uploadBase64ToStorage = async (base64Data: string, filename: string, folder: string): Promise<string> => {
-  // Clean base64 prefix if present
-  const cleanBase64 = base64Data.replace(/^data:.*?;base64,/, "");
-  const mimeMatch = base64Data.match(/^data:(.*?);base64,/);
-  const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-  
-  // Convert base64 to binary data (Uint8Array)
-  const bstr = atob(cleanBase64);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  const blob = new Blob([u8arr], { type: mimeType });
-  
-  // Clean special characters from filename
-  const cleanFilename = filename.replace(/[^a-zA-Z0-9.]/g, '_');
-  const uniqueName = `${Date.now()}_${cleanFilename}`;
-  
-  const storageRef = ref(storage, `${folder}/${uniqueName}`);
-  const uploadTask = uploadBytesResumable(storageRef, blob);
-  
-  return new Promise<string>((resolve, reject) => {
-    uploadTask.on(
-      'state_changed',
-      null,
-      (error) => reject(error),
-      async () => {
-        try {
-          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(downloadUrl);
-        } catch (err) {
-          reject(err);
-        }
-      }
-    );
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      filename,
+      fileType: base64Data.match(/^data:(.*?);base64,/) ? base64Data.match(/^data:(.*?);base64,/)?.[1] : 'image/jpeg',
+      base64Data,
+      folder
+    })
   });
+
+  if (!response.ok) {
+    const errJson = await response.json().catch(() => ({}));
+    throw new Error(errJson.error || 'Server rejected file upload.');
+  }
+
+  const result = await response.json();
+  return result.url;
 };
 
 
