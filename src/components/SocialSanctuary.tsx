@@ -110,6 +110,46 @@ interface FirestoreErrorInfo {
 }
 
 
+const uploadBase64ToStorage = async (base64Data: string, filename: string, folder: string): Promise<string> => {
+  // Clean base64 prefix if present
+  const cleanBase64 = base64Data.replace(/^data:.*?;base64,/, "");
+  const mimeMatch = base64Data.match(/^data:(.*?);base64,/);
+  const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  
+  // Convert base64 to binary data (Uint8Array)
+  const bstr = atob(cleanBase64);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  const blob = new Blob([u8arr], { type: mimeType });
+  
+  // Clean special characters from filename
+  const cleanFilename = filename.replace(/[^a-zA-Z0-9.]/g, '_');
+  const uniqueName = `${Date.now()}_${cleanFilename}`;
+  
+  const storageRef = ref(storage, `${folder}/${uniqueName}`);
+  const uploadTask = uploadBytesResumable(storageRef, blob);
+  
+  return new Promise<string>((resolve, reject) => {
+    uploadTask.on(
+      'state_changed',
+      null,
+      (error) => reject(error),
+      async () => {
+        try {
+          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadUrl);
+        } catch (err) {
+          reject(err);
+        }
+      }
+    );
+  });
+};
+
+
 const getPeerAvatarUrl = (peer: PublicProfile | null | undefined): string => {
   if (!peer) return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
   
@@ -832,26 +872,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       reader.readAsDataURL(file);
       const base64Data = await fileLoadedPromise;
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          filename: file.name,
-          fileType: file.type,
-          base64Data
-        })
-      });
-
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Server rejected attachment upload.');
-      }
-
-      const uploadResult = await response.json();
+      const downloadUrl = await uploadBase64ToStorage(base64Data, file.name, 'chat_attachments');
       
-      const attachmentLabel = `[Attachment: ${file.name}](${uploadResult.url})`;
+      const attachmentLabel = `[Attachment: ${file.name}](${downloadUrl})`;
       if (isEngageModal) {
         setEngageMessage(prev => prev ? `${prev}\n${attachmentLabel}` : attachmentLabel);
       } else {
@@ -1298,26 +1321,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       const optimized = await optimizeImage(file);
       setUploadProgressSlots(prev => ({ ...prev, [index]: 50 }));
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          filename: optimized.name,
-          fileType: optimized.type,
-          base64Data: optimized.base64
-        })
-      });
-
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Server rejected photo upload.');
-      }
-
+      const downloadUrl = await uploadBase64ToStorage(optimized.base64, optimized.name, 'scholarly_images');
       setUploadProgressSlots(prev => ({ ...prev, [index]: 80 }));
-      const uploadResult = await response.json();
-      const downloadUrl = uploadResult.url;
 
       const updated = [...editUserPhotos];
       updated[index] = downloadUrl;
@@ -3061,8 +3066,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             { id: 'feed', label: 'Scholarly Feed', mobileLabel: 'Feed', icon: <Globe className="w-3.5 h-3.5" /> },
             { 
               id: 'messages', 
-              label: totalUnreadMessages > 0 ? `Direct Dialogs (${totalUnreadMessages})` : 'Direct Dialogs', 
-              mobileLabel: totalUnreadMessages > 0 ? `Dialogs (${totalUnreadMessages})` : 'Dialogs', 
+              label: 'Direct Dialogs', 
+              mobileLabel: 'Dialogs', 
               icon: <MessageSquare className={cn("w-3.5 h-3.5 transition-transform duration-500", totalUnreadMessages > 0 && "text-rose-400 animate-[bounce_1.5s_infinite] scale-110")} /> 
             },
             { id: 'peers', label: 'Seekers Swarm', mobileLabel: 'Swarm', icon: <Users className="w-3.5 h-3.5" /> },
@@ -3095,9 +3100,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                 
                 {/* Visual red/emerald indicator dot on Direct Dialogs */}
                 {isMessagesTab && totalUnreadMessages > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[8px] font-black text-white shadow-lg shadow-rose-500/30 z-30 border border-zinc-950 animate-[bounce_1.2s_infinite]">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-40"></span>
-                    <span className="relative">{totalUnreadMessages}</span>
+                  <span className="ml-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[8px] font-black text-white shadow-md shadow-rose-500/20 z-10 border border-zinc-950 animate-[pulse_1.5s_infinite] shrink-0">
+                    {totalUnreadMessages}
                   </span>
                 )}
               </button>
@@ -3271,25 +3275,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                     const optimized = await optimizeImage(file);
                                     setPostImageProgress(70);
 
-                                    const response = await fetch('/api/upload', {
-                                      method: 'POST',
-                                      headers: {
-                                        'Content-Type': 'application/json'
-                                      },
-                                      body: JSON.stringify({
-                                        filename: optimized.name,
-                                        fileType: optimized.type,
-                                        base64Data: optimized.base64
-                                      })
-                                    });
-
-                                    if (!response.ok) {
-                                      const errJson = await response.json();
-                                      throw new Error(errJson.error || 'Server rejected image upload.');
-                                    }
-
-                                    const uploadResult = await response.json();
-                                    setNewPostMediaUrl(uploadResult.url);
+                                    const downloadUrl = await uploadBase64ToStorage(optimized.base64, optimized.name, 'scholarly_images');
+                                    setNewPostMediaUrl(downloadUrl);
                                     setPostImageProgress(100);
                                   } catch (err: any) {
                                     console.error('Feed image upload failed:', err);
@@ -7969,7 +7956,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                         };
 
                                         const optimized = await optimizeImage(file);
-                                        const response = await fetch('/api/upload', {
+                                        const finalUrl = await uploadBase64ToStorage(optimized.base64, optimized.name, 'scholarly_images');
+                                        const response = { ok: true, json: async () => ({ url: finalUrl }) } as any;
+                                        if (false) await fetch('/api/upload', {
                                           method: 'POST',
                                           headers: {
                                             'Content-Type': 'application/json'
@@ -7987,7 +7976,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                         }
 
                                         const uploadResult = await response.json();
-                                        const downloadUrl = uploadResult.url;
+                                        const downloadUrl = finalUrl;
 
                                         // Update Firestore under selectedPeerWall's UID
                                         const targetUid = selectedPeerWall.uid;

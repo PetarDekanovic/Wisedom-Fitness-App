@@ -147,6 +147,46 @@ import { SocialSanctuary } from './components/SocialSanctuary';
 import { DigestQuoteCard } from './components/DigestQuoteCard';
 import WiseFitPlusPaywall from './components/WiseFitPlusPaywall';
 
+const uploadBase64ToStorage = async (base64Data: string, filename: string, folder: string): Promise<string> => {
+  // Clean base64 prefix if present
+  const cleanBase64 = base64Data.replace(/^data:.*?;base64,/, "");
+  const mimeMatch = base64Data.match(/^data:(.*?);base64,/);
+  const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  
+  // Convert base64 to binary data (Uint8Array)
+  const bstr = atob(cleanBase64);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  const blob = new Blob([u8arr], { type: mimeType });
+  
+  // Clean special characters from filename
+  const cleanFilename = filename.replace(/[^a-zA-Z0-9.]/g, '_');
+  const uniqueName = `${Date.now()}_${cleanFilename}`;
+  
+  const storageRef = ref(storage, `${folder}/${uniqueName}`);
+  const uploadTask = uploadBytesResumable(storageRef, blob);
+  
+  return new Promise<string>((resolve, reject) => {
+    uploadTask.on(
+      'state_changed',
+      null,
+      (error) => reject(error),
+      async () => {
+        try {
+          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadUrl);
+        } catch (err) {
+          reject(err);
+        }
+      }
+    );
+  });
+};
+
+
 // Error Boundary Component
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   constructor(props: { children: React.ReactNode }) {
@@ -2307,22 +2347,10 @@ function AppContent() {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const base64 = canvas.toDataURL('image/jpeg', 0.85);
 
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filename: `extracted_thumbnail_${Date.now()}.jpg`,
-            fileType: 'image/jpeg',
-            base64Data: base64
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.url) {
-            setArticleThumbnailUrl(data.url);
-          }
-        } else {
+        try {
+          const downloadUrl = await uploadBase64ToStorage(base64, `extracted_thumbnail_${Date.now()}.jpg`, 'thumbnails');
+          setArticleThumbnailUrl(downloadUrl);
+        } catch (uploadErr) {
           setArticleThumbnailUrl(base64);
         }
       }
@@ -9702,25 +9730,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
 
                                 const optimized = await optimizeImage(file);
 
-                                const response = await fetch('/api/upload', {
-                                  method: 'POST',
-                                  headers: {
-                                    'Content-Type': 'application/json'
-                                  },
-                                  body: JSON.stringify({
-                                    filename: optimized.name,
-                                    fileType: optimized.type,
-                                    base64Data: optimized.base64
-                                  })
-                                });
-
-                                if (!response.ok) {
-                                  const errJson = await response.json().catch(() => ({}));
-                                  throw new Error(errJson.error || 'Server rejected avatar upload.');
-                                }
-
-                                const uploadResult = await response.json();
-                                const downloadUrl = uploadResult.url;
+                                const downloadUrl = await uploadBase64ToStorage(optimized.base64, optimized.name, 'avatars');
                                 
                                 // Add to uploadedAvatars array
                                 const currentUploaded = userProfile.uploadedAvatars || [];
@@ -10259,22 +10269,14 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                               const reader = new FileReader();
                               reader.onloadend = async () => {
                                 const base64 = reader.result as string;
-                                const response = await fetch('/api/upload', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    filename: `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`,
-                                    fileType: file.type,
-                                    base64Data: base64
-                                  })
-                                });
-
-                                if (response.ok) {
-                                  const data = await response.json();
-                                  if (data.url) {
-                                    setArticleThumbnailUrl(data.url);
-                                  }
-                                } else {
+                                try {
+                                  const downloadUrl = await uploadBase64ToStorage(
+                                    base64, 
+                                    file.name, 
+                                    'thumbnails'
+                                  );
+                                  setArticleThumbnailUrl(downloadUrl);
+                                } catch (uploadErr) {
                                   setArticleThumbnailUrl(base64); // Safe local fallback
                                 }
                                 setIsUploadingThumbnail(false);
