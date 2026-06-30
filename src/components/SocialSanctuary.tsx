@@ -749,6 +749,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
   // Direct messages states
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeChat, setActiveChat] = useState<Conversation | null>(null);
   const totalUnreadMessages = conversations.reduce((acc, convo) => {
     // If the conversation is currently active AND the user is viewing the messages tab,
     // we are already actively reading any incoming messages.
@@ -758,7 +759,6 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
     return acc + (convo.unreadCounts?.[currentUser?.uid || ''] || 0);
   }, 0);
-  const [activeChat, setActiveChat] = useState<Conversation | null>(null);
   const [activeCallConvoId, setActiveCallConvoId] = useState<string | null>(null);
   const [activeCallType, setActiveCallType] = useState<'video' | 'audio' | null>(null);
   const [chatMessages, setChatMessages] = useState<DMMessage[]>([]);
