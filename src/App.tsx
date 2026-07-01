@@ -2413,6 +2413,7 @@ function AppContent() {
   const [isAILoopActive, setIsAILoopActive] = useState(false);
   const [autoFlowTimer, setAutoFlowTimer] = useState(30);
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
+  const [focusTrack, setFocusTrack] = useState('https://www.youtube.com/embed/TBPE_2Z3-Y8?list=RDTBPE_2Z3-Y8');
   const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0?loop=1&playlist=MQKg_O5X1e0');
   const [chineseTrack, setChineseTrack] = useState('https://www.youtube.com/embed/6hv-iZQQ25Q?loop=1&playlist=6hv-iZQQ25Q');
   const [ecuadorTrack, setEcuadorTrack] = useState('https://www.youtube.com/embed/cNfwUnOIihA?list=PL0uIx_Noeipc9A_fJYo5OqxA8_RcE3uQk');
@@ -6063,6 +6064,18 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                   </button>
                                 </div>
                               )}
+                              {activeSoundscape === 'focus' && (
+                                <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                                  <button 
+                                    onClick={() => setFocusTrack('https://www.youtube.com/embed/TBPE_2Z3-Y8?list=RDTBPE_2Z3-Y8')}
+                                    className={cn(
+                                      "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                                    )}
+                                  >
+                                    🧠 Focus Binaural Flow
+                                  </button>
+                                </div>
+                              )}
                               {activeSoundscape === 'learn-chinese' && (
                                 <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
                                   <button 
@@ -6104,6 +6117,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                               )}
                               <iframe
                                 key={
+                                  activeSoundscape === 'focus' ? focusTrack :
                                   activeSoundscape === 'techno' ? technoTrack : 
                                   activeSoundscape === 'learn-chinese' ? chineseTrack : 
                                   activeSoundscape === 'ecuador' ? ecuadorTrack :
@@ -6113,7 +6127,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                 width="100%"
                                 height="120"
                                 src={
-                                  activeSoundscape === 'focus' ? "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0&controls=1" :
+                                  activeSoundscape === 'focus' ? `${focusTrack}${focusTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
                                   activeSoundscape === 'learn-chinese' ? `${chineseTrack}${chineseTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
                                   activeSoundscape === 'ecuador' ? `${ecuadorTrack}${ecuadorTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
                                   activeSoundscape === 'gta4' ? `${gta4Track}${gta4Track.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
