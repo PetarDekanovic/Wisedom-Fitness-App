@@ -2414,6 +2414,7 @@ function AppContent() {
   const [autoFlowTimer, setAutoFlowTimer] = useState(30);
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
   const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0?loop=1&playlist=MQKg_O5X1e0');
+  const [chineseTrack, setChineseTrack] = useState('https://www.youtube.com/embed/6hv-iZQQ25Q?loop=1&playlist=6hv-iZQQ25Q');
   const [quotesPool, setQuotesPool] = useState<Quote[]>([]);
   const quotesPoolRef = useRef<Quote[]>([]);
   const isRefillingPoolRef = useRef(false);
@@ -5935,6 +5936,21 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     <Scroll className="w-3 h-3" />
                     Classical
                   </button>
+                  <button
+                    onClick={() => {
+                      setActiveSoundscape('learn-chinese');
+                      setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q');
+                    }}
+                    className={cn(
+                      "flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border col-span-2",
+                      activeSoundscape === 'learn-chinese'
+                        ? (isDarkMode ? "bg-rose-500/20 border-rose-500/40 text-rose-400" : "bg-rose-50 border-rose-200 text-rose-600")
+                        : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
+                    )}
+                  >
+                    <BookOpen className="w-3 h-3 text-rose-500" />
+                    Learn Chinese & Tiësto
+                  </button>
                 </div>
 
                 {activeSoundscape && (
@@ -6025,12 +6041,43 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                             </button>
                           </div>
                         )}
+                        {activeSoundscape === 'learn-chinese' && (
+                          <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                            <button 
+                              onClick={() => setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q')}
+                              className={cn(
+                                "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
+                                chineseTrack.includes('6hv-iZQQ25Q')
+                                  ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
+                                  : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+                              )}
+                            >
+                              🇨🇳 Learn Chinese Lesson
+                            </button>
+                            <button 
+                              onClick={() => setChineseTrack('https://www.youtube.com/embed/38WQgr9uegk?list=RD38WQgr9uegk&autoplay=1&loop=1&playlist=38WQgr9uegk')}
+                              className={cn(
+                                "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
+                                chineseTrack.includes('38WQgr9uegk')
+                                  ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
+                                  : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+                              )}
+                            >
+                              🎧 DJ Tiësto Channel / Mix
+                            </button>
+                          </div>
+                        )}
                         <iframe
-                          key={activeSoundscape === 'techno' ? technoTrack : activeSoundscape}
+                          key={
+                            activeSoundscape === 'techno' ? technoTrack : 
+                            activeSoundscape === 'learn-chinese' ? chineseTrack : 
+                            activeSoundscape
+                          }
                           width="100%"
                           height="120"
                           src={
                             activeSoundscape === 'focus' ? "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0&controls=1" :
+                            activeSoundscape === 'learn-chinese' ? `${chineseTrack}${chineseTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
                             `${technoTrack}${technoTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1`
                           }
                           title="Ritual Soundscape"
