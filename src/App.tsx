@@ -2415,6 +2415,7 @@ function AppContent() {
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
   const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0?loop=1&playlist=MQKg_O5X1e0');
   const [chineseTrack, setChineseTrack] = useState('https://www.youtube.com/embed/6hv-iZQQ25Q?loop=1&playlist=6hv-iZQQ25Q');
+  const [tiestoActive, setTiestoActive] = useState(false);
   const [quotesPool, setQuotesPool] = useState<Quote[]>([]);
   const quotesPoolRef = useRef<Quote[]>([]);
   const isRefillingPoolRef = useRef(false);
@@ -5853,9 +5854,12 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     <Music className="w-4 h-4 text-emerald-500" />
                     <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Ritual Soundscapes</h3>
                   </div>
-                  {activeSoundscape && (
+                  {(activeSoundscape || tiestoActive) && (
                     <button 
-                      onClick={() => setActiveSoundscape(null)}
+                      onClick={() => {
+                        setActiveSoundscape(null);
+                        setTiestoActive(false);
+                      }}
                       className="text-[9px] font-bold uppercase text-red-500 hover:text-red-400 transition-colors"
                     >
                       Stop Music
@@ -5938,22 +5942,38 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   </button>
                   <button
                     onClick={() => {
-                      setActiveSoundscape('learn-chinese');
-                      setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q');
+                      if (activeSoundscape === 'learn-chinese') {
+                        setActiveSoundscape(null);
+                      } else {
+                        setActiveSoundscape('learn-chinese');
+                        setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q');
+                      }
                     }}
                     className={cn(
-                      "flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border col-span-2",
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
                       activeSoundscape === 'learn-chinese'
                         ? (isDarkMode ? "bg-rose-500/20 border-rose-500/40 text-rose-400" : "bg-rose-50 border-rose-200 text-rose-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
                     )}
                   >
                     <BookOpen className="w-3 h-3 text-rose-500" />
-                    Learn Chinese & Tiësto
+                    Learn Chinese
+                  </button>
+                  <button
+                    onClick={() => setTiestoActive(!tiestoActive)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
+                      tiestoActive
+                        ? (isDarkMode ? "bg-purple-500/20 border-purple-500/40 text-purple-400" : "bg-purple-50 border-purple-200 text-purple-600")
+                        : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
+                    )}
+                  >
+                    <Music className="w-3 h-3 text-purple-500" />
+                    DJ Tiësto Mix
                   </button>
                 </div>
 
-                {activeSoundscape && (
+                {(activeSoundscape || tiestoActive) && (
                   <motion.div 
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -5963,131 +5983,159 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       <span>Live Stream Active</span>
                       <span className="text-emerald-500 animate-pulse">● Volume tip: Adjust in player</span>
                     </div>
-                    {activeSoundscape === 'jazz' || activeSoundscape === 'classical' ? (
-                      <div className="relative h-20 bg-zinc-950 flex items-center px-4 gap-4">
-                        <img 
-                          src={activeSoundscape === 'jazz' ? "https://picsum.photos/seed/jazz-sax/200/200" : "https://picsum.photos/seed/classical-violin/200/200"} 
-                          alt={activeSoundscape === 'jazz' ? "Jazz" : "Classical"} 
-                          className="w-12 h-12 rounded-lg object-cover border border-zinc-800"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="flex-1">
-                          <p className="text-[10px] font-bold text-zinc-100 uppercase tracking-wider">
-                            {activeSoundscape === 'jazz' ? "WRTI Jazz Radio" : "Classic FM"}
-                          </p>
-                          <p className="text-[8px] text-zinc-500 uppercase tracking-tighter">Live Stream</p>
-                        </div>
-                        <audio
-                          autoPlay
-                          controls
-                          className="h-8 w-32 opacity-80"
-                          src={activeSoundscape === 'jazz' ? "https://wrti-live.streamguys1.com/jazz-mp3" : "https://media-ice.musicradio.com/ClassicFMMP3"}
-                        />
-                      </div>
-                    ) : (activeSoundscape === 'house' || activeSoundscape === 'spotify-techno') ? (
-                      <iframe
-                        style={{ borderRadius: '12px' }}
-                        src={activeSoundscape === 'house' 
-                          ? "https://open.spotify.com/embed/playlist/37i9dQZF1DXdLEN7Sps42p?utm_source=generator"
-                          : "https://open.spotify.com/embed/playlist/37i9dQZF1DX6J5vU4h497S?utm_source=generator"
-                        }
-                        width="100%"
-                        height="152"
-                        frameBorder="0"
-                        allowFullScreen
-                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                        loading="lazy"
-                        className="grayscale hover:grayscale-0 transition-all duration-500 opacity-95"
-                      />
-                    ) : (
-                      <div className="space-y-0 relative">
-                        {activeSoundscape === 'techno' && (
-                          <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
-                            <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase tracking-widest border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
-                            >
-                              SLAY!
-                            </button>
-                            <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
-                            >
-                              ETERNXLKZ RADIO
-                            </button>
-                            <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10?autoplay=1&loop=1&playlist=fW_0N37-J10')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
-                            >
-                              BROKEN
-                            </button>
-                            <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/GZonvFvV5Wc?autoplay=1&loop=1&playlist=GZonvFvV5Wc')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
-                            >
-                              ENEMIES
-                            </button>
-                            <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-teal-500/20 text-teal-400 text-[10px] font-black uppercase tracking-widest border border-teal-500/30 hover:bg-teal-500/30 transition-colors"
-                            >
-                              TRAP MIX
-                            </button>
-                            <button 
-                              onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                              className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
-                            >
-                              ETERNXLKZ MIX
-                            </button>
-                          </div>
-                        )}
-                        {activeSoundscape === 'learn-chinese' && (
-                          <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
-                            <button 
-                              onClick={() => setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q')}
-                              className={cn(
-                                "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
-                                chineseTrack.includes('6hv-iZQQ25Q')
-                                  ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
-                                  : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+
+                    <div className={cn(
+                      "p-2 bg-zinc-950/40 space-y-2",
+                      (activeSoundscape && tiestoActive && !['jazz', 'classical', 'house', 'spotify-techno'].includes(activeSoundscape))
+                        ? "grid grid-cols-1 md:grid-cols-2 gap-2 space-y-0"
+                        : ""
+                    )}>
+                      {activeSoundscape && (
+                        <>
+                          {activeSoundscape === 'jazz' || activeSoundscape === 'classical' ? (
+                            <div className="relative h-20 bg-zinc-950 flex items-center px-4 gap-4 rounded-xl border border-zinc-800/50">
+                              <img 
+                                src={activeSoundscape === 'jazz' ? "https://picsum.photos/seed/jazz-sax/200/200" : "https://picsum.photos/seed/classical-violin/200/200"} 
+                                alt={activeSoundscape === 'jazz' ? "Jazz" : "Classical"} 
+                                className="w-12 h-12 rounded-lg object-cover border border-zinc-800"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="flex-1">
+                                <p className="text-[10px] font-bold text-zinc-100 uppercase tracking-wider">
+                                  {activeSoundscape === 'jazz' ? "WRTI Jazz Radio" : "Classic FM"}
+                                </p>
+                                <p className="text-[8px] text-zinc-500 uppercase tracking-tighter">Live Stream</p>
+                              </div>
+                              <audio
+                                autoPlay
+                                controls
+                                className="h-8 w-32 opacity-80"
+                                src={activeSoundscape === 'jazz' ? "https://wrti-live.streamguys1.com/jazz-mp3" : "https://media-ice.musicradio.com/ClassicFMMP3"}
+                              />
+                            </div>
+                          ) : (activeSoundscape === 'house' || activeSoundscape === 'spotify-techno') ? (
+                            <iframe
+                              style={{ borderRadius: '12px' }}
+                              src={activeSoundscape === 'house' 
+                                ? "https://open.spotify.com/embed/playlist/37i9dQZF1DXdLEN7Sps42p?utm_source=generator"
+                                : "https://open.spotify.com/embed/playlist/37i9dQZF1DX6J5vU4h497S?utm_source=generator"
+                              }
+                              width="100%"
+                              height="152"
+                              frameBorder="0"
+                              allowFullScreen
+                              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                              loading="lazy"
+                              className="grayscale hover:grayscale-0 transition-all duration-500 opacity-95"
+                            />
+                          ) : (
+                            <div className="space-y-0 relative rounded-xl overflow-hidden border border-zinc-800/50 bg-zinc-950">
+                              {activeSoundscape === 'techno' && (
+                                <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                                  <button 
+                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
+                                    className="whitespace-nowrap px-2 py-1 rounded bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase tracking-widest border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
+                                  >
+                                    SLAY!
+                                  </button>
+                                  <button 
+                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
+                                    className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
+                                  >
+                                    ETERNXLKZ RADIO
+                                  </button>
+                                  <button 
+                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10?autoplay=1&loop=1&playlist=fW_0N37-J10')}
+                                    className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                                  >
+                                    BROKEN
+                                  </button>
+                                  <button 
+                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/GZonvFvV5Wc?autoplay=1&loop=1&playlist=GZonvFvV5Wc')}
+                                    className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                                  >
+                                    ENEMIES
+                                  </button>
+                                  <button 
+                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
+                                    className="whitespace-nowrap px-2 py-1 rounded bg-teal-500/20 text-teal-400 text-[10px] font-black uppercase tracking-widest border border-teal-500/30 hover:bg-teal-500/30 transition-colors"
+                                  >
+                                    TRAP MIX
+                                  </button>
+                                  <button 
+                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
+                                    className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                                  >
+                                    ETERNXLKZ MIX
+                                  </button>
+                                </div>
                               )}
-                            >
-                              🇨🇳 Learn Chinese Lesson
-                            </button>
-                            <button 
-                              onClick={() => setChineseTrack('https://www.youtube.com/embed/38WQgr9uegk?list=RD38WQgr9uegk&autoplay=1&loop=1&playlist=38WQgr9uegk')}
-                              className={cn(
-                                "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
-                                chineseTrack.includes('38WQgr9uegk')
-                                  ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
-                                  : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+                              {activeSoundscape === 'learn-chinese' && (
+                                <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                                  <button 
+                                    onClick={() => setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q')}
+                                    className={cn(
+                                      "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
+                                      chineseTrack.includes('6hv-iZQQ25Q')
+                                        ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
+                                        : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+                                    )}
+                                  >
+                                    🇨🇳 Learn Chinese Lesson
+                                  </button>
+                                </div>
                               )}
-                            >
+                              <iframe
+                                key={
+                                  activeSoundscape === 'techno' ? technoTrack : 
+                                  activeSoundscape === 'learn-chinese' ? chineseTrack : 
+                                  activeSoundscape
+                                }
+                                width="100%"
+                                height="120"
+                                src={
+                                  activeSoundscape === 'focus' ? "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0&controls=1" :
+                                  activeSoundscape === 'learn-chinese' ? `${chineseTrack}${chineseTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
+                                  `${technoTrack}${technoTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1`
+                                }
+                                title="Ritual Soundscape"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                className="opacity-80 grayscale hover:grayscale-0 transition-all duration-500"
+                              />
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {tiestoActive && (
+                        <div className="space-y-0 relative rounded-xl overflow-hidden border border-zinc-800/50 bg-zinc-950">
+                          <div className="bg-zinc-900/90 p-2 border-b border-zinc-800/50 flex justify-between items-center">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-ping" />
                               🎧 DJ Tiësto Channel / Mix
+                            </span>
+                            <button 
+                              onClick={() => setTiestoActive(false)}
+                              className="text-[8px] font-black uppercase text-zinc-500 hover:text-zinc-300 transition-colors"
+                            >
+                              Mute/Stop Tiësto
                             </button>
                           </div>
-                        )}
-                        <iframe
-                          key={
-                            activeSoundscape === 'techno' ? technoTrack : 
-                            activeSoundscape === 'learn-chinese' ? chineseTrack : 
-                            activeSoundscape
-                          }
-                          width="100%"
-                          height="120"
-                          src={
-                            activeSoundscape === 'focus' ? "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0&controls=1" :
-                            activeSoundscape === 'learn-chinese' ? `${chineseTrack}${chineseTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
-                            `${technoTrack}${technoTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1`
-                          }
-                          title="Ritual Soundscape"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          className="opacity-80 grayscale hover:grayscale-0 transition-all duration-500"
-                        />
-                      </div>
-                    )}
+                          <iframe
+                            width="100%"
+                            height="120"
+                            src="https://www.youtube.com/embed/38WQgr9uegk?list=RD38WQgr9uegk&autoplay=1&loop=1&playlist=38WQgr9uegk&mute=0&controls=1"
+                            title="DJ Tiësto Mix"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="opacity-85 grayscale hover:grayscale-0 transition-all duration-500"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </motion.div>
