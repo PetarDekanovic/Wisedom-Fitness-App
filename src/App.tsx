@@ -2415,6 +2415,8 @@ function AppContent() {
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
   const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0?loop=1&playlist=MQKg_O5X1e0');
   const [chineseTrack, setChineseTrack] = useState('https://www.youtube.com/embed/6hv-iZQQ25Q?loop=1&playlist=6hv-iZQQ25Q');
+  const [ecuadorTrack, setEcuadorTrack] = useState('https://www.youtube.com/embed/cNfwUnOIihA?list=PL0uIx_Noeipc9A_fJYo5OqxA8_RcE3uQk');
+  const [gta4Track, setGta4Track] = useState('https://www.youtube.com/embed/CKOWaWpUVT0?list=RDCKOWaWpUVT0');
   const [tiestoActive, setTiestoActive] = useState(false);
   const [quotesPool, setQuotesPool] = useState<Quote[]>([]);
   const quotesPoolRef = useRef<Quote[]>([]);
@@ -5893,28 +5895,34 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     Techno & Phonk
                   </button>
                   <button
-                    onClick={() => setActiveSoundscape('house')}
+                    onClick={() => {
+                      setActiveSoundscape('ecuador');
+                      setEcuadorTrack('https://www.youtube.com/embed/cNfwUnOIihA?list=PL0uIx_Noeipc9A_fJYo5OqxA8_RcE3uQk');
+                    }}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
-                      activeSoundscape === 'house'
+                      activeSoundscape === 'ecuador'
                         ? (isDarkMode ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-400" : "bg-indigo-50 border-indigo-200 text-indigo-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
                     )}
                   >
                     <Music className="w-3 h-3" />
-                    House (Spotify)
+                    Ecuador (Reloaded)
                   </button>
                   <button
-                    onClick={() => setActiveSoundscape('spotify-techno')}
+                    onClick={() => {
+                      setActiveSoundscape('gta4');
+                      setGta4Track('https://www.youtube.com/embed/CKOWaWpUVT0?list=RDCKOWaWpUVT0');
+                    }}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
-                      activeSoundscape === 'spotify-techno'
+                      activeSoundscape === 'gta4'
                         ? (isDarkMode ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
                     )}
                   >
-                    <Activity className="w-3 h-3" />
-                    Techno (Spotify)
+                    <Activity className="w-3 h-3 text-emerald-500" />
+                    GTA4 Radio
                   </button>
                   <button
                     onClick={() => setActiveSoundscape('jazz')}
@@ -5986,7 +5994,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
 
                     <div className={cn(
                       "p-2 bg-zinc-950/40 space-y-2",
-                      (activeSoundscape && tiestoActive && !['jazz', 'classical', 'house', 'spotify-techno'].includes(activeSoundscape))
+                      (activeSoundscape && tiestoActive && !['jazz', 'classical'].includes(activeSoundscape))
                         ? "grid grid-cols-1 md:grid-cols-2 gap-2 space-y-0"
                         : ""
                     )}>
@@ -6013,21 +6021,6 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                 src={activeSoundscape === 'jazz' ? "https://wrti-live.streamguys1.com/jazz-mp3" : "https://media-ice.musicradio.com/ClassicFMMP3"}
                               />
                             </div>
-                          ) : (activeSoundscape === 'house' || activeSoundscape === 'spotify-techno') ? (
-                            <iframe
-                              style={{ borderRadius: '12px' }}
-                              src={activeSoundscape === 'house' 
-                                ? "https://open.spotify.com/embed/playlist/37i9dQZF1DXdLEN7Sps42p?utm_source=generator"
-                                : "https://open.spotify.com/embed/playlist/37i9dQZF1DX6J5vU4h497S?utm_source=generator"
-                              }
-                              width="100%"
-                              height="152"
-                              frameBorder="0"
-                              allowFullScreen
-                              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                              loading="lazy"
-                              className="grayscale hover:grayscale-0 transition-all duration-500 opacity-95"
-                            />
                           ) : (
                             <div className="space-y-0 relative rounded-xl overflow-hidden border border-zinc-800/50 bg-zinc-950">
                               {activeSoundscape === 'techno' && (
@@ -6085,10 +6078,36 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                   </button>
                                 </div>
                               )}
+                              {activeSoundscape === 'ecuador' && (
+                                <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                                  <button 
+                                    onClick={() => setEcuadorTrack('https://www.youtube.com/embed/cNfwUnOIihA?list=PL0uIx_Noeipc9A_fJYo5OqxA8_RcE3uQk')}
+                                    className={cn(
+                                      "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors bg-indigo-500/20 text-indigo-400 border-indigo-500/40"
+                                    )}
+                                  >
+                                    🇪🇨 Ecuador (Reloaded Radio)
+                                  </button>
+                                </div>
+                              )}
+                              {activeSoundscape === 'gta4' && (
+                                <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                                  <button 
+                                    onClick={() => setGta4Track('https://www.youtube.com/embed/CKOWaWpUVT0?list=RDCKOWaWpUVT0')}
+                                    className={cn(
+                                      "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                                    )}
+                                  >
+                                    🎮 GTA4 Soundscape Mix
+                                  </button>
+                                </div>
+                              )}
                               <iframe
                                 key={
                                   activeSoundscape === 'techno' ? technoTrack : 
                                   activeSoundscape === 'learn-chinese' ? chineseTrack : 
+                                  activeSoundscape === 'ecuador' ? ecuadorTrack :
+                                  activeSoundscape === 'gta4' ? gta4Track :
                                   activeSoundscape
                                 }
                                 width="100%"
@@ -6096,6 +6115,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                 src={
                                   activeSoundscape === 'focus' ? "https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0&controls=1" :
                                   activeSoundscape === 'learn-chinese' ? `${chineseTrack}${chineseTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
+                                  activeSoundscape === 'ecuador' ? `${ecuadorTrack}${ecuadorTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
+                                  activeSoundscape === 'gta4' ? `${gta4Track}${gta4Track.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
                                   `${technoTrack}${technoTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1`
                                 }
                                 title="Ritual Soundscape"
