@@ -115,7 +115,8 @@ import {
   ref, 
   uploadBytes, 
   getDownloadURL,
-  uploadBytesResumable
+  uploadBytesResumable,
+  uploadString
 } from 'firebase/storage';
 import { 
   doc, 
@@ -148,26 +149,39 @@ import { DigestQuoteCard } from './components/DigestQuoteCard';
 import WiseFitPlusPaywall from './components/WiseFitPlusPaywall';
 
 const uploadBase64ToStorage = async (base64Data: string, filename: string, folder: string): Promise<string> => {
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      filename,
-      fileType: base64Data.match(/^data:(.*?);base64,/) ? base64Data.match(/^data:(.*?);base64,/)?.[1] : 'image/jpeg',
-      base64Data,
-      folder
-    })
-  });
+  try {
+    const ext = filename.split('.').pop() || 'jpg';
+    const cleanFilename = filename.replace(/[^a-zA-Z0-9.]/g, '_');
+    const uniqueFilename = `${cleanFilename.replace(/\.[^/.]+$/, "")}_${Date.now()}.${ext}`;
+    const storageRef = ref(storage, `${folder}/${uniqueFilename}`);
+    
+    // We can use 'data_url' format since base64Data is a standard Data URL: "data:image/jpeg;base64,..."
+    await uploadString(storageRef, base64Data, 'data_url');
+    const downloadUrl = await getDownloadURL(storageRef);
+    return downloadUrl;
+  } catch (err) {
+    console.warn("Client-side direct storage upload failed, falling back to server API:", err);
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        filename,
+        fileType: base64Data.match(/^data:(.*?);base64,/) ? base64Data.match(/^data:(.*?);base64,/)?.[1] : 'image/jpeg',
+        base64Data,
+        folder
+      })
+    });
 
-  if (!response.ok) {
-    const errJson = await response.json().catch(() => ({}));
-    throw new Error(errJson.error || 'Server rejected file upload.');
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error || 'Server rejected file upload.');
+    }
+
+    const result = await response.json();
+    return result.url;
   }
-
-  const result = await response.json();
-  return result.url;
 };
 
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { db, auth, storage } from '../firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL, uploadString } from 'firebase/storage';
 import { 
   collection, 
   doc, 
@@ -111,26 +111,39 @@ interface FirestoreErrorInfo {
 
 
 const uploadBase64ToStorage = async (base64Data: string, filename: string, folder: string): Promise<string> => {
-  const response = await fetch('/api/upload', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      filename,
-      fileType: base64Data.match(/^data:(.*?);base64,/) ? base64Data.match(/^data:(.*?);base64,/)?.[1] : 'image/jpeg',
-      base64Data,
-      folder
-    })
-  });
+  try {
+    const ext = filename.split('.').pop() || 'jpg';
+    const cleanFilename = filename.replace(/[^a-zA-Z0-9.]/g, '_');
+    const uniqueFilename = `${cleanFilename.replace(/\.[^/.]+$/, "")}_${Date.now()}.${ext}`;
+    const storageRef = ref(storage, `${folder}/${uniqueFilename}`);
+    
+    // We can use 'data_url' format since base64Data is a standard Data URL: "data:image/jpeg;base64,..."
+    await uploadString(storageRef, base64Data, 'data_url');
+    const downloadUrl = await getDownloadURL(storageRef);
+    return downloadUrl;
+  } catch (err) {
+    console.warn("Client-side direct storage upload failed, falling back to server API:", err);
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        filename,
+        fileType: base64Data.match(/^data:(.*?);base64,/) ? base64Data.match(/^data:(.*?);base64,/)?.[1] : 'image/jpeg',
+        base64Data,
+        folder
+      })
+    });
 
-  if (!response.ok) {
-    const errJson = await response.json().catch(() => ({}));
-    throw new Error(errJson.error || 'Server rejected file upload.');
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error || 'Server rejected file upload.');
+    }
+
+    const result = await response.json();
+    return result.url;
   }
-
-  const result = await response.json();
-  return result.url;
 };
 
 
@@ -761,6 +774,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   }, 0);
   const [activeCallConvoId, setActiveCallConvoId] = useState<string | null>(null);
   const [activeCallType, setActiveCallType] = useState<'video' | 'audio' | null>(null);
+  const lastInitiatedCallRef = useRef<{ id: string; time: number } | null>(null);
   const [chatMessages, setChatMessages] = useState<DMMessage[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
   const chatInputRef = useRef<HTMLInputElement>(null);
@@ -1776,6 +1790,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const initiateCall = async (type: 'audio' | 'video') => {
     if (!activeChat || !currentUser) return;
     try {
+      // Track that we are initiating this call now to prevent the sync hook from clearing it immediately
+      lastInitiatedCallRef.current = { id: activeChat.id, time: Date.now() };
+
       const convoRef = doc(db, 'conversations', activeChat.id);
       await updateDoc(convoRef, {
         activeCall: {
@@ -1801,6 +1818,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     } catch (err) {
       console.error("Error ending call:", err);
     } finally {
+      lastInitiatedCallRef.current = null;
       setActiveCallConvoId(null);
       setActiveCallType(null);
     }
@@ -1816,8 +1834,15 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     if (!call) {
       // If database call is cleared, clear local call frame
       if (activeCallConvoId === currentChatState.id) {
-        setActiveCallConvoId(null);
-        setActiveCallType(null);
+        // Guard: check if we initiated it very recently (within 5 seconds) to avoid immediate race condition clearing
+        const isRecentInitiation = lastInitiatedCallRef.current && 
+          lastInitiatedCallRef.current.id === currentChatState.id && 
+          (Date.now() - lastInitiatedCallRef.current.time) < 5000;
+
+        if (!isRecentInitiation) {
+          setActiveCallConvoId(null);
+          setActiveCallType(null);
+        }
       }
     } else {
       // If there is an active call in the DB
