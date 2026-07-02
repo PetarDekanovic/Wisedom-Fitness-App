@@ -2413,6 +2413,7 @@ function AppContent() {
   const [isAILoopActive, setIsAILoopActive] = useState(false);
   const [autoFlowTimer, setAutoFlowTimer] = useState(30);
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
+  const [chineseBGM, setChineseBGM] = useState<string | null>(null);
   const [focusTrack, setFocusTrack] = useState('https://www.youtube.com/embed/TBPE_2Z3-Y8?list=RDTBPE_2Z3-Y8');
   const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0?loop=1&playlist=MQKg_O5X1e0');
   const [chineseTrack, setChineseTrack] = useState('https://www.youtube.com/embed/6hv-iZQQ25Q?loop=1&playlist=6hv-iZQQ25Q');
@@ -5862,6 +5863,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       onClick={() => {
                         setActiveSoundscape(null);
                         setTiestoActive(false);
+                        setChineseBGM(null);
                       }}
                       className="text-[9px] font-bold uppercase text-red-500 hover:text-red-400 transition-colors"
                     >
@@ -5872,10 +5874,16 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => setActiveSoundscape('focus')}
+                    onClick={() => {
+                      if (activeSoundscape === 'learn-chinese') {
+                        setChineseBGM(chineseBGM === 'focus' ? null : 'focus');
+                      } else {
+                        setActiveSoundscape('focus');
+                      }
+                    }}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
-                      activeSoundscape === 'focus'
+                      (activeSoundscape === 'focus' || (activeSoundscape === 'learn-chinese' && chineseBGM === 'focus'))
                         ? (isDarkMode ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
                     )}
@@ -5884,25 +5892,35 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     Focus Mode
                   </button>
                   <button
-                    onClick={() => setActiveSoundscape('techno')}
+                    onClick={() => {
+                      if (activeSoundscape === 'learn-chinese') {
+                        setChineseBGM(chineseBGM === 'techno' ? null : 'techno');
+                      } else {
+                        setActiveSoundscape('techno');
+                      }
+                    }}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
-                      activeSoundscape === 'techno'
+                      (activeSoundscape === 'techno' || (activeSoundscape === 'learn-chinese' && chineseBGM === 'techno'))
                         ? (isDarkMode ? "bg-purple-500/20 border-purple-500/40 text-purple-400" : "bg-purple-50 border-purple-200 text-purple-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
                     )}
                   >
                     <Activity className="w-3 h-3" />
-                    Techno & Phonk
+                    Digital Jazz / Techno
                   </button>
                   <button
                     onClick={() => {
-                      setActiveSoundscape('ecuador');
-                      setEcuadorTrack('https://www.youtube.com/embed/cNfwUnOIihA?list=PL0uIx_Noeipc9A_fJYo5OqxA8_RcE3uQk');
+                      if (activeSoundscape === 'learn-chinese') {
+                        setChineseBGM(chineseBGM === 'ecuador' ? null : 'ecuador');
+                      } else {
+                        setActiveSoundscape('ecuador');
+                        setEcuadorTrack('https://www.youtube.com/embed/cNfwUnOIihA?list=PL0uIx_Noeipc9A_fJYo5OqxA8_RcE3uQk');
+                      }
                     }}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
-                      activeSoundscape === 'ecuador'
+                      (activeSoundscape === 'ecuador' || (activeSoundscape === 'learn-chinese' && chineseBGM === 'ecuador'))
                         ? (isDarkMode ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-400" : "bg-indigo-50 border-indigo-200 text-indigo-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
                     )}
@@ -5912,12 +5930,16 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   </button>
                   <button
                     onClick={() => {
-                      setActiveSoundscape('gta4');
-                      setGta4Track('https://www.youtube.com/embed/CKOWaWpUVT0?list=RDCKOWaWpUVT0');
+                      if (activeSoundscape === 'learn-chinese') {
+                        setChineseBGM(chineseBGM === 'gta4' ? null : 'gta4');
+                      } else {
+                        setActiveSoundscape('gta4');
+                        setGta4Track('https://www.youtube.com/embed/CKOWaWpUVT0?list=RDCKOWaWpUVT0');
+                      }
                     }}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
-                      activeSoundscape === 'gta4'
+                      (activeSoundscape === 'gta4' || (activeSoundscape === 'learn-chinese' && chineseBGM === 'gta4'))
                         ? (isDarkMode ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "bg-emerald-50 border-emerald-200 text-emerald-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
                     )}
@@ -5926,10 +5948,16 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     GTA4 Radio
                   </button>
                   <button
-                    onClick={() => setActiveSoundscape('jazz')}
+                    onClick={() => {
+                      if (activeSoundscape === 'learn-chinese') {
+                        setChineseBGM(chineseBGM === 'jazz' ? null : 'jazz');
+                      } else {
+                        setActiveSoundscape('jazz');
+                      }
+                    }}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
-                      activeSoundscape === 'jazz'
+                      (activeSoundscape === 'jazz' || (activeSoundscape === 'learn-chinese' && chineseBGM === 'jazz'))
                         ? (isDarkMode ? "bg-orange-500/20 border-orange-500/40 text-orange-400" : "bg-orange-50 border-orange-200 text-orange-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
                     )}
@@ -5938,10 +5966,16 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     Smooth Jazz
                   </button>
                   <button
-                    onClick={() => setActiveSoundscape('classical')}
+                    onClick={() => {
+                      if (activeSoundscape === 'learn-chinese') {
+                        setChineseBGM(chineseBGM === 'classical' ? null : 'classical');
+                      } else {
+                        setActiveSoundscape('classical');
+                      }
+                    }}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 border",
-                      activeSoundscape === 'classical'
+                      (activeSoundscape === 'classical' || (activeSoundscape === 'learn-chinese' && chineseBGM === 'classical'))
                         ? (isDarkMode ? "bg-blue-500/20 border-blue-500/40 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600")
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
                     )}
@@ -5953,6 +5987,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     onClick={() => {
                       if (activeSoundscape === 'learn-chinese') {
                         setActiveSoundscape(null);
+                        setChineseBGM(null);
                       } else {
                         setActiveSoundscape('learn-chinese');
                         setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q');
@@ -6023,123 +6058,225 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                               />
                             </div>
                           ) : (
-                            <div className="space-y-0 relative rounded-xl overflow-hidden border border-zinc-800/50 bg-zinc-950">
-                              {activeSoundscape === 'techno' && (
-                                <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
-                                  <button 
-                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                                    className="whitespace-nowrap px-2 py-1 rounded bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase tracking-widest border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
-                                  >
-                                    SLAY!
-                                  </button>
-                                  <button 
-                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                                    className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
-                                  >
-                                    ETERNXLKZ RADIO
-                                  </button>
-                                  <button 
-                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10?autoplay=1&loop=1&playlist=fW_0N37-J10')}
-                                    className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
-                                  >
-                                    BROKEN
-                                  </button>
-                                  <button 
-                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/GZonvFvV5Wc?autoplay=1&loop=1&playlist=GZonvFvV5Wc')}
-                                    className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
-                                  >
-                                    ENEMIES
-                                  </button>
-                                  <button 
-                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                                    className="whitespace-nowrap px-2 py-1 rounded bg-teal-500/20 text-teal-400 text-[10px] font-black uppercase tracking-widest border border-teal-500/30 hover:bg-teal-500/30 transition-colors"
-                                  >
-                                    TRAP MIX
-                                  </button>
-                                  <button 
-                                    onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                                    className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
-                                  >
-                                    ETERNXLKZ MIX
-                                  </button>
+                            <>
+                              {activeSoundscape === 'learn-chinese' ? (
+                                <div className="p-2 space-y-3 w-full">
+                                  {/* Learn Chinese Lesson Player */}
+                                  <div className="bg-zinc-950 rounded-xl overflow-hidden border border-zinc-800/50">
+                                    <div className="bg-zinc-900/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                                      <button 
+                                        onClick={() => setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q')}
+                                        className={cn(
+                                          "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
+                                          chineseTrack.includes('6hv-iZQQ25Q')
+                                            ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
+                                            : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+                                        )}
+                                      >
+                                        🇨🇳 Learn Chinese Lesson
+                                      </button>
+                                    </div>
+                                    <iframe
+                                      key={chineseTrack}
+                                      width="100%"
+                                      height="160"
+                                      src={`${chineseTrack}${chineseTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1`}
+                                      title="Chinese Lesson"
+                                      frameBorder="0"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                      className="opacity-95 grayscale hover:grayscale-0 transition-all duration-500"
+                                    />
+                                  </div>
+
+                                  {/* BGM Mixer Panel */}
+                                  <div className="p-3 bg-zinc-900/60 rounded-xl border border-zinc-800/50 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                                        <Volume2 className="w-3.5 h-3.5 animate-pulse text-rose-500" />
+                                        Blend Background Music
+                                      </span>
+                                      {chineseBGM && (
+                                        <button 
+                                          onClick={() => setChineseBGM(null)}
+                                          className="text-[9px] font-bold uppercase text-red-400 hover:text-red-350 transition-colors"
+                                        >
+                                          Mute BGM
+                                        </button>
+                                      )}
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1.5 pt-1">
+                                      {[
+                                        { id: 'focus', label: 'Focus Mode', icon: Volume2, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+                                        { id: 'ecuador', label: 'Ecuador', icon: Music, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+                                        { id: 'jazz', label: 'Smooth Jazz', icon: Music, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+                                        { id: 'techno', label: 'Digital Jazz', icon: Activity, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+                                        { id: 'classical', label: 'Classical', icon: Scroll, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+                                        { id: 'gta4', label: 'GTA 4', icon: Activity, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' }
+                                      ].map((bgm) => (
+                                        <button
+                                          key={bgm.id}
+                                          onClick={() => setChineseBGM(chineseBGM === bgm.id ? null : bgm.id)}
+                                          className={cn(
+                                            "px-2 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all active:scale-95 flex items-center justify-center gap-1",
+                                            chineseBGM === bgm.id
+                                              ? `${bgm.color} border-current`
+                                              : "bg-zinc-950/60 border-zinc-850 text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"
+                                          )}
+                                        >
+                                          <bgm.icon className="w-2.5 h-2.5" />
+                                          {bgm.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Secondary Background Music Player */}
+                                  {chineseBGM && (
+                                    <div className="border border-zinc-800/40 rounded-xl overflow-hidden bg-zinc-950/80 p-2">
+                                      <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5 px-1">
+                                        <span className="flex items-center gap-1 text-emerald-500">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                                          Background Music: {chineseBGM.toUpperCase()}
+                                        </span>
+                                        <span>Adjust BGM volume in player</span>
+                                      </div>
+                                      {chineseBGM === 'jazz' || chineseBGM === 'classical' ? (
+                                        <div className="flex items-center justify-between bg-zinc-950 p-2 rounded-lg border border-zinc-800/30 gap-2">
+                                          <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-wide">
+                                            {chineseBGM === 'jazz' ? "🎷 WRTI Jazz Radio" : "🎻 Classic FM"}
+                                          </span>
+                                          <audio
+                                            autoPlay
+                                            controls
+                                            className="h-6 w-32 opacity-80"
+                                            src={chineseBGM === 'jazz' ? "https://wrti-live.streamguys1.com/jazz-mp3" : "https://media-ice.musicradio.com/ClassicFMMP3"}
+                                          />
+                                        </div>
+                                      ) : (
+                                        <iframe
+                                          key={chineseBGM}
+                                          width="100%"
+                                          height="80"
+                                          src={
+                                            chineseBGM === 'focus' ? `${focusTrack}${focusTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
+                                            chineseBGM === 'ecuador' ? `${ecuadorTrack}${ecuadorTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
+                                            chineseBGM === 'gta4' ? `${gta4Track}${gta4Track.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
+                                            `${technoTrack}${technoTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1`
+                                          }
+                                          title="BGM Player"
+                                          frameBorder="0"
+                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                          allowFullScreen
+                                          className="opacity-70 grayscale hover:grayscale-0 transition-all duration-500 rounded"
+                                        />
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="space-y-0 relative rounded-xl overflow-hidden border border-zinc-800/50 bg-zinc-950 w-full">
+                                  {activeSoundscape === 'techno' && (
+                                    <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                                      <button 
+                                        onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
+                                        className="whitespace-nowrap px-2 py-1 rounded bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase tracking-widest border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
+                                      >
+                                        SLAY!
+                                      </button>
+                                      <button 
+                                        onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
+                                        className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
+                                      >
+                                        ETERNXLKZ RADIO
+                                      </button>
+                                      <button 
+                                        onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10?autoplay=1&loop=1&playlist=fW_0N37-J10')}
+                                        className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                                      >
+                                        BROKEN
+                                      </button>
+                                      <button 
+                                        onClick={() => setTechnoTrack('https://www.youtube.com/embed/GZonvFvV5Wc?autoplay=1&loop=1&playlist=GZonvFvV5Wc')}
+                                        className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                                      >
+                                        ENEMIES
+                                      </button>
+                                      <button 
+                                        onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
+                                        className="whitespace-nowrap px-2 py-1 rounded bg-teal-500/20 text-teal-400 text-[10px] font-black uppercase tracking-widest border border-teal-500/30 hover:bg-teal-500/30 transition-colors"
+                                      >
+                                        TRAP MIX
+                                      </button>
+                                      <button 
+                                        onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
+                                        className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                                      >
+                                        ETERNXLKZ MIX
+                                      </button>
+                                    </div>
+                                  )}
+                                  {activeSoundscape === 'focus' && (
+                                    <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                                      <button 
+                                        onClick={() => setFocusTrack('https://www.youtube.com/embed/TBPE_2Z3-Y8?list=RDTBPE_2Z3-Y8')}
+                                        className={cn(
+                                          "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                                        )}
+                                      >
+                                        🧠 Focus Binaural Flow
+                                      </button>
+                                    </div>
+                                  )}
+                                  {activeSoundscape === 'ecuador' && (
+                                    <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                                      <button 
+                                        onClick={() => setEcuadorTrack('https://www.youtube.com/embed/cNfwUnOIihA?list=PL0uIx_Noeipc9A_fJYo5OqxA8_RcE3uQk')}
+                                        className={cn(
+                                          "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors bg-indigo-500/20 text-indigo-400 border-indigo-500/40"
+                                        )}
+                                      >
+                                        🇪🇨 Ecuador (Reloaded Radio)
+                                      </button>
+                                    </div>
+                                  )}
+                                  {activeSoundscape === 'gta4' && (
+                                    <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
+                                      <button 
+                                        onClick={() => setGta4Track('https://www.youtube.com/embed/CKOWaWpUVT0?list=RDCKOWaWpUVT0')}
+                                        className={cn(
+                                          "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                                        )}
+                                      >
+                                        🎮 GTA4 Soundscape Mix
+                                      </button>
+                                    </div>
+                                  )}
+                                  <iframe
+                                    key={
+                                      activeSoundscape === 'focus' ? focusTrack :
+                                      activeSoundscape === 'techno' ? technoTrack : 
+                                      activeSoundscape === 'ecuador' ? ecuadorTrack :
+                                      activeSoundscape === 'gta4' ? gta4Track :
+                                      activeSoundscape
+                                    }
+                                    width="100%"
+                                    height="120"
+                                    src={
+                                      activeSoundscape === 'focus' ? `${focusTrack}${focusTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
+                                      activeSoundscape === 'ecuador' ? `${ecuadorTrack}${ecuadorTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
+                                      activeSoundscape === 'gta4' ? `${gta4Track}${gta4Track.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
+                                      `${technoTrack}${technoTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1`
+                                    }
+                                    title="Ritual Soundscape"
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    className="opacity-80 grayscale hover:grayscale-0 transition-all duration-500"
+                                  />
                                 </div>
                               )}
-                              {activeSoundscape === 'focus' && (
-                                <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
-                                  <button 
-                                    onClick={() => setFocusTrack('https://www.youtube.com/embed/TBPE_2Z3-Y8?list=RDTBPE_2Z3-Y8')}
-                                    className={cn(
-                                      "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
-                                    )}
-                                  >
-                                    🧠 Focus Binaural Flow
-                                  </button>
-                                </div>
-                              )}
-                              {activeSoundscape === 'learn-chinese' && (
-                                <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
-                                  <button 
-                                    onClick={() => setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q')}
-                                    className={cn(
-                                      "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
-                                      chineseTrack.includes('6hv-iZQQ25Q')
-                                        ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
-                                        : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
-                                    )}
-                                  >
-                                    🇨🇳 Learn Chinese Lesson
-                                  </button>
-                                </div>
-                              )}
-                              {activeSoundscape === 'ecuador' && (
-                                <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
-                                  <button 
-                                    onClick={() => setEcuadorTrack('https://www.youtube.com/embed/cNfwUnOIihA?list=PL0uIx_Noeipc9A_fJYo5OqxA8_RcE3uQk')}
-                                    className={cn(
-                                      "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors bg-indigo-500/20 text-indigo-400 border-indigo-500/40"
-                                    )}
-                                  >
-                                    🇪🇨 Ecuador (Reloaded Radio)
-                                  </button>
-                                </div>
-                              )}
-                              {activeSoundscape === 'gta4' && (
-                                <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
-                                  <button 
-                                    onClick={() => setGta4Track('https://www.youtube.com/embed/CKOWaWpUVT0?list=RDCKOWaWpUVT0')}
-                                    className={cn(
-                                      "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
-                                    )}
-                                  >
-                                    🎮 GTA4 Soundscape Mix
-                                  </button>
-                                </div>
-                              )}
-                              <iframe
-                                key={
-                                  activeSoundscape === 'focus' ? focusTrack :
-                                  activeSoundscape === 'techno' ? technoTrack : 
-                                  activeSoundscape === 'learn-chinese' ? chineseTrack : 
-                                  activeSoundscape === 'ecuador' ? ecuadorTrack :
-                                  activeSoundscape === 'gta4' ? gta4Track :
-                                  activeSoundscape
-                                }
-                                width="100%"
-                                height="120"
-                                src={
-                                  activeSoundscape === 'focus' ? `${focusTrack}${focusTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
-                                  activeSoundscape === 'learn-chinese' ? `${chineseTrack}${chineseTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
-                                  activeSoundscape === 'ecuador' ? `${ecuadorTrack}${ecuadorTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
-                                  activeSoundscape === 'gta4' ? `${gta4Track}${gta4Track.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1` :
-                                  `${technoTrack}${technoTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1`
-                                }
-                                title="Ritual Soundscape"
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                className="opacity-80 grayscale hover:grayscale-0 transition-all duration-500"
-                              />
-                            </div>
+                            </>
                           )}
                         </>
                       )}
