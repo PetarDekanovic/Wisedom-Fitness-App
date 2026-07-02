@@ -50,6 +50,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
+  CheckCheck,
   Paperclip,
   Smile,
   Brain,
@@ -1784,6 +1785,30 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
   }, [activeChat?.id, conversations, currentUser?.uid, activeTab]);
 
+  // Mark incoming messages as seen when actively viewing this chat conversation
+  useEffect(() => {
+    if (!currentUser || !activeChat || activeTab !== 'messages' || chatMessages.length === 0) return;
+
+    const unseenMessages = chatMessages.filter(
+      m => m.senderId !== currentUser.uid && !m.seen
+    );
+
+    if (unseenMessages.length > 0) {
+      const markMessagesAsSeen = async () => {
+        try {
+          const batchPromises = unseenMessages.map(async (m) => {
+            const msgRef = doc(db, 'conversations', activeChat.id, 'messages', m.id);
+            await updateDoc(msgRef, { seen: true });
+          });
+          await Promise.all(batchPromises);
+        } catch (err) {
+          console.error("Error marking messages as seen:", err);
+        }
+      };
+      markMessagesAsSeen();
+    }
+  }, [chatMessages, activeChat?.id, currentUser?.uid, activeTab]);
+
   // 6c. Database Calling Signaling & Sync Engine
   const currentChatState = conversations.find(c => c.id === activeChat?.id) || activeChat;
 
@@ -1922,7 +1947,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
             senderId: dummyId,
             senderName: scholarName,
             text: replyText,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            seen: false
           };
 
           await setDoc(msgRef, msgPayload);
@@ -2322,7 +2348,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         senderId: currentUser.uid,
         senderName: thisPublicProfile?.name || userProfile?.name || 'Seeker',
         text: engageMessage,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        seen: false
       };
 
       await setDoc(msgRef, msgPayload);
@@ -2381,7 +2408,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         senderId: currentUser.uid,
         senderName: thisPublicProfile?.name || userProfile?.name || 'Seeker',
         text: newMessageText,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        seen: false
       };
 
       // 1. Submit message payload
@@ -4402,7 +4430,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                       {renderMessageTextWithAttachments(msg.text, isMine, isScholar)}
                                       <div className="flex items-center justify-between gap-3 mt-1.5 leading-none shrink-0">
                                         <span className={cn(
-                                          "text-[8px] select-none opacity-60 font-mono flex items-center gap-1",
+                                          "text-[8px] select-none opacity-60 font-mono flex items-center gap-1.5",
                                           isMine ? "text-zinc-950" : isDarkMode ? "text-zinc-500" : "text-zinc-500"
                                         )}>
                                           <span>
@@ -4410,6 +4438,21 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                           </span>
                                           {msg.updatedAt && (
                                             <span className="text-[7px] italic font-sans opacity-75">(edited)</span>
+                                          )}
+                                          {isMine && (
+                                            <span className="inline-flex items-center gap-0.5 ml-1 select-none font-sans font-black text-[7.5px] uppercase tracking-wider">
+                                              {msg.seen ? (
+                                                <>
+                                                  <CheckCheck className="w-3 h-3 text-emerald-950 stroke-[3]" />
+                                                  <span className="text-emerald-950">Seen</span>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Check className="w-3 h-3 text-zinc-950/60 stroke-[3]" />
+                                                  <span className="text-zinc-950/60">Sent</span>
+                                                </>
+                                              )}
+                                            </span>
                                           )}
                                         </span>
 

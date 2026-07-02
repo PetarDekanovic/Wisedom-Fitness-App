@@ -228,12 +228,20 @@ service cloud.firestore {
                     (request.auth.uid == request.resource.data.senderId || request.resource.data.senderId in ['dummy_marcus_aurelius', 'dummy_seneca_younger', 'dummy_epictetus', 'dummy_hypatia_alex']) &&
                     (exists(/databases/$(database)/documents/conversations/$(conversationId)) && 
                      request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants);
-      allow update: if isAuthenticated() && 
-                    (resource.data.senderId == request.auth.uid || isAdmin()) &&
-                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'updatedAt']) &&
-                    request.resource.data.text is string && 
-                    request.resource.data.text.size() > 0 && 
-                    request.resource.data.text.size() < 5000;
+      allow update: if isAuthenticated() && (
+                    isAdmin() ||
+                    // Option A: Sender editing message text
+                    (resource.data.senderId == request.auth.uid &&
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'updatedAt']) &&
+                     request.resource.data.text is string && 
+                     request.resource.data.text.size() > 0 && 
+                     request.resource.data.text.size() < 5000) ||
+                    // Option B: Participant marking message as seen
+                    (exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+                     request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seen']) &&
+                     request.resource.data.seen == true)
+                  );
       allow delete: if isAuthenticated() && (resource.data.senderId == request.auth.uid || isAdmin());
     }
 

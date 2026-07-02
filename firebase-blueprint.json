@@ -231,7 +231,9 @@
         "senderId": { "type": "string" },
         "senderName": { "type": "string" },
         "text": { "type": "string" },
-        "createdAt": { "type": "string" }
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "seen": { "type": "boolean" }
       },
       "required": ["id", "conversationId", "senderId", "senderName", "text", "createdAt"]
     },

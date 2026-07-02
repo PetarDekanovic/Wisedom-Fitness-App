@@ -348,5 +348,6 @@ export interface DMMessage {
   text: string;
   createdAt: any;
   updatedAt?: any;
+  seen?: boolean;
 }
 
