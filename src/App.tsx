@@ -2832,6 +2832,7 @@ function AppContent() {
       if ('speechSynthesis' in window) {
         try {
           window.speechSynthesis.cancel();
+          activeUtterances.current = [];
         } catch (e) {}
       }
       setIsSpeaking(null);
@@ -2893,6 +2894,9 @@ function AppContent() {
           const cleanText = text.replace(/[*_#`\[\]()]/g, ''); // strip markdown chars for clean voice reading
           const utterance = new SpeechSynthesisUtterance(cleanText);
           
+          // Store in activeUtterances ref to prevent Chrome garbage-collecting the utterance mid-speech
+          activeUtterances.current = [utterance];
+          
           const voices = window.speechSynthesis.getVoices();
           // Find Croatian or Slavic if possible, otherwise default high-quality English
           const regionalVoice = voices.find(v => v.lang.startsWith('hr') || v.lang.startsWith('sr') || v.lang.startsWith('bs') || v.lang.startsWith('sh'));
@@ -2908,9 +2912,11 @@ function AppContent() {
           
           utterance.onend = () => {
             setIsSpeaking(null);
+            activeUtterances.current = [];
           };
           utterance.onerror = () => {
             setIsSpeaking(null);
+            activeUtterances.current = [];
           };
           
           window.speechSynthesis.speak(utterance);
