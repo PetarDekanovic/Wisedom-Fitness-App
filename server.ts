@@ -9,6 +9,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import Anthropic from "@anthropic-ai/sdk";
 import { initializeApp } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
+import { getFirestore } from "firebase-admin/firestore";
 
 dotenv.config();
 
@@ -117,6 +118,52 @@ async function startServer() {
       console.log(`[REQ] ${req.method} ${req.path} | IP: ${req.ip}`);
     }
     next();
+  });
+
+  // Serve persistent images directly from Firestore (durable/non-ephemeral backup storage)
+  app.get("/api/persistent-image/:id", async (req, res) => {
+    try {
+      const docId = req.params.id;
+      if (!docId) {
+        return res.status(400).send("Missing document ID.");
+      }
+      
+      const firestoreDb = getFirestore();
+      const docRef = firestoreDb.collection("persistent_uploads").doc(docId);
+      const docSnap = await docRef.get();
+      
+      if (!docSnap.exists) {
+        console.warn(`[WiseFit Server] Persistent image not found: ${docId}`);
+        return res.status(404).send("Persistent image not found.");
+      }
+      
+      const docData = docSnap.data();
+      if (!docData || !docData.base64Data) {
+        console.warn(`[WiseFit Server] Persistent image has no base64Data: ${docId}`);
+        return res.status(404).send("No image data stored.");
+      }
+      
+      const base64Data = docData.base64Data;
+      const matches = base64Data.match(/^data:(.*?);base64,(.*)$/);
+      
+      if (matches) {
+        const contentType = matches[1];
+        const rawBase64 = matches[2];
+        const buffer = Buffer.from(rawBase64, 'base64');
+        
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return res.send(buffer);
+      } else {
+        const buffer = Buffer.from(base64Data, 'base64');
+        res.setHeader("Content-Type", docData.contentType || "image/jpeg");
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return res.send(buffer);
+      }
+    } catch (err: any) {
+      console.error("[WiseFit Server] Error serving persistent image:", err);
+      return res.status(500).send("Failed to serve persistent image.");
+    }
   });
 
   // Safe High-Capacity File Upload API
