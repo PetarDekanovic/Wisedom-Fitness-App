@@ -160,33 +160,8 @@ const uploadBase64ToStorage = async (base64Data: string, filename: string, folde
     const downloadUrl = await getDownloadURL(storageRef);
     return downloadUrl;
   } catch (err) {
-    console.warn("Client-side direct storage upload failed, attempting persistent Firestore storage fallback:", err);
+    console.warn("Client-side direct storage upload failed, falling back to server API /api/upload:", err);
     
-    const base64Length = base64Data.length;
-    // Firestore max document size is 1MB. Max safe base64 size is ~1.3MB
-    if (base64Length < 1300000) {
-      try {
-        const docRef = doc(collection(db, 'persistent_uploads'));
-        const fileType = base64Data.match(/^data:(.*?);base64,/) ? base64Data.match(/^data:(.*?);base64,/)?.[1] : 'image/jpeg';
-        
-        await setDoc(docRef, {
-          id: docRef.id,
-          filename,
-          base64Data,
-          contentType: fileType || 'image/jpeg',
-          createdAt: new Date().toISOString(),
-          ownerId: auth.currentUser?.uid || 'anonymous'
-        });
-        
-        console.log(`[WiseFit] Successfully persisted image to Firestore: /api/persistent-image/${docRef.id}`);
-        return `/api/persistent-image/${docRef.id}`;
-      } catch (firestoreErr) {
-        console.error("Firestore persistent upload failed, falling back to server API:", firestoreErr);
-      }
-    } else {
-      console.log(`[WiseFit] File too large for direct Firestore backup (${(base64Length / 1024 / 1024).toFixed(2)}MB). Calling server /api/upload...`);
-    }
-
     const response = await fetch('/api/upload', {
       method: 'POST',
       headers: {

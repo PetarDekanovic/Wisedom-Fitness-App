@@ -120,8 +120,8 @@ async function startServer() {
     next();
   });
 
-  // Serve persistent images directly from Firestore (durable/non-ephemeral backup storage)
-  app.get("/api/persistent-image/:id", async (req, res) => {
+  // Serve persistent files directly from Firestore (durable/non-ephemeral backup storage)
+  app.get("/api/persistent-file/:id", async (req, res) => {
     try {
       const docId = req.params.id;
       if (!docId) {
@@ -133,37 +133,75 @@ async function startServer() {
       const docSnap = await docRef.get();
       
       if (!docSnap.exists) {
-        console.warn(`[WiseFit Server] Persistent image not found: ${docId}`);
-        return res.status(404).send("Persistent image not found.");
+        console.warn(`[WiseFit Server] Persistent file not found: ${docId}`);
+        return res.status(404).send("Persistent file not found.");
       }
       
       const docData = docSnap.data();
-      if (!docData || !docData.base64Data) {
-        console.warn(`[WiseFit Server] Persistent image has no base64Data: ${docId}`);
-        return res.status(404).send("No image data stored.");
+      if (!docData) {
+        return res.status(404).send("No file data stored.");
+      }
+
+      let base64Data = "";
+      if (docData.isChunked && docData.totalChunks) {
+        console.log(`[WiseFit Server] Reassembling ${docData.totalChunks} chunks for persistent file ${docId}`);
+        const chunksSnap = await docRef.collection("chunks").orderBy("chunkIndex", "asc").get();
+        const chunks: string[] = [];
+        chunksSnap.forEach((chunkDoc) => {
+          const chunkData = chunkDoc.data();
+          if (chunkData && chunkData.data) {
+            chunks.push(chunkData.data);
+          }
+        });
+        base64Data = chunks.join("");
+      } else if (docData.base64Data) {
+        base64Data = docData.base64Data;
+      } else {
+        console.warn(`[WiseFit Server] Persistent file has no data or chunked state: ${docId}`);
+        return res.status(404).send("No file data stored.");
       }
       
-      const base64Data = docData.base64Data;
-      const matches = base64Data.match(/^data:(.*?);base64,(.*)$/);
-      
-      if (matches) {
-        const contentType = matches[1];
-        const rawBase64 = matches[2];
-        const buffer = Buffer.from(rawBase64, 'base64');
-        
-        res.setHeader("Content-Type", contentType);
+      // Clean base64 prefix if present (e.g., data:image/png;base64,...)
+      const cleanBase64 = base64Data.replace(/^data:.*?;base64,/, "");
+      const buffer = Buffer.from(cleanBase64, 'base64');
+      const totalSize = buffer.length;
+
+      res.setHeader("Content-Type", docData.contentType || docData.fileType || "image/jpeg");
+      res.setHeader("Accept-Ranges", "bytes");
+
+      const range = req.headers.range;
+      if (range) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : totalSize - 1;
+
+        if (start >= totalSize || end >= totalSize || start > end) {
+          res.setHeader("Content-Range", `bytes */${totalSize}`);
+          return res.status(416).send("Requested Range Not Satisfiable");
+        }
+
+        const chunksize = (end - start) + 1;
+        const chunkBuffer = buffer.subarray(start, end + 1);
+
+        res.status(206);
+        res.setHeader("Content-Range", `bytes ${start}-${end}/${totalSize}`);
+        res.setHeader("Content-Length", chunksize);
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-        return res.send(buffer);
+        return res.send(chunkBuffer);
       } else {
-        const buffer = Buffer.from(base64Data, 'base64');
-        res.setHeader("Content-Type", docData.contentType || "image/jpeg");
+        res.setHeader("Content-Length", totalSize);
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         return res.send(buffer);
       }
     } catch (err: any) {
-      console.error("[WiseFit Server] Error serving persistent image:", err);
-      return res.status(500).send("Failed to serve persistent image.");
+      console.error("[WiseFit Server] Error serving persistent file:", err);
+      return res.status(500).send("Failed to serve persistent file.");
     }
+  });
+
+  // Alias for backward compatibility
+  app.get("/api/persistent-image/:id", (req, res) => {
+    res.redirect(`/api/persistent-file/${req.params.id}`);
   });
 
   // Safe High-Capacity File Upload API
@@ -217,11 +255,57 @@ async function startServer() {
           console.log(`[WiseFit Server] Uploaded ${uniqueFilename} to Firebase Storage: ${publicUrl}`);
           return res.json({ url: publicUrl, filename: uniqueFilename, fileType });
         } catch (firebaseErr) {
-          console.error("[WiseFit Server] Firebase Storage upload failed, falling back to local storage:", firebaseErr);
+          console.error("[WiseFit Server] Firebase Storage upload failed, falling back to database persistent storage:", firebaseErr);
         }
       }
 
-      // Fallback: Local Storage
+      // Fallback 1: Firestore chunked persistent storage (Highly Durable)
+      if (isFirebaseAdminInitialized) {
+        try {
+          const firestoreDb = getFirestore();
+          const docRef = firestoreDb.collection("persistent_uploads").doc();
+          const docId = docRef.id;
+
+          const chunkSize = 700000;
+          const chunks: string[] = [];
+          for (let i = 0; i < cleanBase64.length; i += chunkSize) {
+            chunks.push(cleanBase64.substring(i, i + chunkSize));
+          }
+
+          console.log(`[WiseFit Server] Persisting ${chunks.length} chunks to Firestore for file ${uniqueFilename}`);
+          
+          await docRef.set({
+            id: docId,
+            filename: filename,
+            contentType: fileType || 'image/jpeg',
+            createdAt: new Date().toISOString(),
+            isChunked: true,
+            totalChunks: chunks.length,
+            folder: folder || 'general'
+          });
+
+          const batchPromises = chunks.map(async (chunkStr, idx) => {
+            const chunkRef = docRef.collection("chunks").doc(String(idx));
+            await chunkRef.set({
+              chunkIndex: idx,
+              data: chunkStr
+            });
+          });
+          
+          await Promise.all(batchPromises);
+
+          console.log(`[WiseFit Server] Successfully saved chunked file in Firestore: ${docId}`);
+          return res.json({
+            url: `/api/persistent-file/${docId}`,
+            filename: uniqueFilename,
+            fileType
+          });
+        } catch (dbErr) {
+          console.error("[WiseFit Server] Firestore chunked persistent upload failed, falling back to local disk storage:", dbErr);
+        }
+      }
+
+      // Fallback 2: Local Storage (Ephemeral)
       const destinationPath = path.join(UPLOADS_DIR, uniqueFilename);
       console.log(`[WiseFit Server] Falling back to local disk write: ${uniqueFilename} (${buffer.length} bytes)`);
       fs.writeFileSync(destinationPath, buffer);
