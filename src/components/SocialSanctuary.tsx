@@ -615,6 +615,69 @@ const THERAPEUTIC_PHRASES = [
   "One step at a time."
 ];
 
+const QUICK_MESSAGE_CATEGORIES = {
+  DAILY_HR: {
+    label: "Dnevne (HR)",
+    phrases: [
+      "Kasnit ću 5 minuta.",
+      "Kasnit ću 10 minuta.",
+      "Kasnit ću 15 minuta.",
+      "To je dobra ideja.",
+      "To je sjajno.",
+      "Nikad se ne bih sjetio toga.",
+      "Stižem ubrzo!",
+      "Može, dogovoreno.",
+      "Čujemo se kasnije.",
+      "Slažem se u potpunosti."
+    ]
+  },
+  DAILY_EN: {
+    label: "Daily (EN)",
+    phrases: [
+      "I'll be 5 minutes late.",
+      "I'll be 10 minutes late.",
+      "I'll be 15 minutes late.",
+      "That's a good idea.",
+      "That's awesome.",
+      "I never thought about that.",
+      "On my way!",
+      "Sounds good to me.",
+      "Let's catch up later.",
+      "I completely agree."
+    ]
+  },
+  PSY_HR: {
+    label: "Psihološki (HR)",
+    phrases: [
+      "Ne boj se.",
+      "Sve će biti u redu.",
+      "Prizemlji se u sadašnjost.",
+      "Promatraj, ne upijaj.",
+      "I ovo će proći.",
+      "Budi blag prema svom umu.",
+      "Korak po korak.",
+      "Ovdje si na sigurnom.",
+      "Fokusiraj se na ono što možeš kontrolirati.",
+      "Duboko udahni i otpusti napetost."
+    ]
+  },
+  PSY_EN: {
+    label: "Clinical (EN)",
+    phrases: [
+      "Don't be afraid.",
+      "It's going to be ok.",
+      "Ground yourself in the present.",
+      "Observe, don't absorb.",
+      "This too shall pass.",
+      "Be kind to your mind.",
+      "One step at a time.",
+      "You are safe here.",
+      "Focus on what you can control.",
+      "Take a deep breath and let go."
+    ]
+  }
+};
+
 export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProfile, isPremiumUser }: SocialSanctuaryProps) {
   const [activeTab, setActiveTab] = useState<'feed' | 'messages' | 'peers' | 'moderation' | 'personality'>('feed');
 
@@ -730,6 +793,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   // Instant Engage Direct Message dialogue box
   const [engagePeer, setEngagePeer] = useState<PublicProfile | null>(null);
   const [engageMessage, setEngageMessage] = useState('');
+  const [activeEngageCategory, setActiveEngageCategory] = useState<keyof typeof QUICK_MESSAGE_CATEGORIES>('DAILY_HR');
   const [isSendingEngage, setIsSendingEngage] = useState(false);
   const [engageSuccess, setEngageSuccess] = useState(false);
   const [engageError, setEngageError] = useState<string | null>(null);
@@ -781,6 +845,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [newMessageText, setNewMessageText] = useState('');
   const chatInputRef = useRef<HTMLInputElement>(null);
   const [showTherapyPhrases, setShowTherapyPhrases] = useState(false);
+  const [activeTherapyCategory, setActiveTherapyCategory] = useState<keyof typeof QUICK_MESSAGE_CATEGORIES>('DAILY_HR');
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const [dummyTypingState, setDummyTypingState] = useState<string | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -2910,28 +2975,56 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
                      <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Dialogue Transmission</label>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">Dialogue Transmission / Brzi Predlošci</label>
                         <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono flex items-center gap-1">
-                          <Brain className="w-2.5 h-2.5 text-emerald-500" /> Click to insert clinical shortcut
+                          <Brain className="w-2.5 h-2.5 text-emerald-500" /> Choose a category and click to insert phrase
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-1 overflow-x-auto py-1 no-scrollbar mb-2 select-none">
-                        {THERAPEUTIC_PHRASES.map((phrase) => (
-                          <button
-                            key={phrase}
-                            type="button"
-                            onClick={() => setEngageMessage(phrase)}
-                            className={cn(
-                              "px-2 py-0.5 text-[9px] font-bold rounded-md border transition-all active:scale-95 duration-150 shrink-0",
-                              isDarkMode 
-                                ? "bg-zinc-850 hover:bg-emerald-500/10 border-zinc-800 hover:border-emerald-500/40 text-zinc-400 hover:text-emerald-400" 
-                                : "bg-white hover:bg-emerald-50 border-zinc-200 hover:border-emerald-500/40 text-zinc-500 hover:text-emerald-600"
-                            )}
-                          >
-                            {phrase}
-                          </button>
-                        ))}
+                      <div className="space-y-2 mb-2 select-none">
+                        {/* Category Selector Chips */}
+                        <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar border-b border-zinc-500/10 pb-1.5">
+                          {(Object.keys(QUICK_MESSAGE_CATEGORIES) as Array<keyof typeof QUICK_MESSAGE_CATEGORIES>).map((catKey) => {
+                            const cat = QUICK_MESSAGE_CATEGORIES[catKey];
+                            const isActive = activeEngageCategory === catKey;
+                            return (
+                              <button
+                                key={catKey}
+                                type="button"
+                                onClick={() => setActiveEngageCategory(catKey)}
+                                className={cn(
+                                  "px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md border transition-all cursor-pointer whitespace-nowrap",
+                                  isActive
+                                    ? "bg-emerald-500 border-emerald-400 text-zinc-950 shadow-sm"
+                                    : isDarkMode
+                                      ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                                      : "bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900"
+                                )}
+                              >
+                                {cat.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Phrases list scrollable container */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar max-w-full">
+                          {QUICK_MESSAGE_CATEGORIES[activeEngageCategory].phrases.map((phrase) => (
+                            <button
+                              key={phrase}
+                              type="button"
+                              onClick={() => setEngageMessage(phrase)}
+                              className={cn(
+                                "px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all active:scale-95 duration-150 shrink-0",
+                                isDarkMode 
+                                  ? "bg-zinc-850 hover:bg-emerald-500/10 border-zinc-800 hover:border-emerald-500/40 text-zinc-300 hover:text-emerald-400" 
+                                  : "bg-white hover:bg-emerald-50 border-zinc-200 hover:border-emerald-500/40 text-zinc-600 hover:text-emerald-600"
+                              )}
+                            >
+                              {phrase}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       <textarea 
@@ -4613,7 +4706,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             )}>
                               <div className="flex items-center justify-between px-1">
                                 <span className="text-[10px] font-mono font-black tracking-widest text-emerald-500 uppercase flex items-center gap-1 select-none">
-                                  <Brain className="w-3 h-3 text-emerald-400" /> Clinical Response Aids
+                                  <Brain className="w-3 h-3 text-emerald-400" /> Dialogue Aids / Brzi Predlošci
                                 </span>
                                 <button 
                                   type="button" 
@@ -4623,8 +4716,34 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                   <X className="w-3 h-3" />
                                 </button>
                               </div>
+
+                              {/* Category Tabs */}
+                              <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar border-b border-zinc-500/10 pb-1.5 select-none">
+                                {(Object.keys(QUICK_MESSAGE_CATEGORIES) as Array<keyof typeof QUICK_MESSAGE_CATEGORIES>).map((catKey) => {
+                                  const cat = QUICK_MESSAGE_CATEGORIES[catKey];
+                                  const isActive = activeTherapyCategory === catKey;
+                                  return (
+                                    <button
+                                      key={catKey}
+                                      type="button"
+                                      onClick={() => setActiveTherapyCategory(catKey)}
+                                      className={cn(
+                                        "px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md border transition-all cursor-pointer whitespace-nowrap",
+                                        isActive
+                                          ? "bg-emerald-500 border-emerald-400 text-zinc-950 shadow-sm"
+                                          : isDarkMode
+                                            ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                                            : "bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900"
+                                      )}
+                                    >
+                                      {cat.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
                               <div className="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto pr-1 no-scrollbar">
-                                {THERAPEUTIC_PHRASES.map((phrase) => (
+                                {QUICK_MESSAGE_CATEGORIES[activeTherapyCategory].phrases.map((phrase) => (
                                   <button
                                     key={phrase}
                                     type="button"
