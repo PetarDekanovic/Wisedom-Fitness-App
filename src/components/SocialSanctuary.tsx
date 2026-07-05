@@ -118,9 +118,42 @@ const uploadBase64ToStorage = async (base64Data: string, filename: string, folde
     const uniqueFilename = `${cleanFilename.replace(/\.[^/.]+$/, "")}_${Date.now()}.${ext}`;
     const storageRef = ref(storage, `${folder}/${uniqueFilename}`);
     
-    // We can use 'data_url' format since base64Data is a standard Data URL: "data:image/jpeg;base64,..."
-    await uploadString(storageRef, base64Data, 'data_url');
-    const downloadUrl = await getDownloadURL(storageRef);
+    // Convert base64 Data URL to a raw binary Blob for reliable cloud storage
+    let blob: Blob;
+    if (base64Data.startsWith('data:')) {
+      const arr = base64Data.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      blob = new Blob([u8arr], { type: mime });
+    } else {
+      const bstr = atob(base64Data);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      blob = new Blob([u8arr], { type: 'image/jpeg' });
+    }
+
+    // Direct binary upload to Firebase Storage (exact same superior code path as MP4)
+    const uploadTask = uploadBytesResumable(storageRef, blob, {
+      contentType: blob.type
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      uploadTask.on('state_changed', 
+        null,
+        (error) => reject(error),
+        () => resolve()
+      );
+    });
+
+    const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
     return downloadUrl;
   } catch (err) {
     console.warn("Client-side direct storage upload failed, falling back to server API /api/upload:", err);
@@ -943,7 +976,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       reader.readAsDataURL(file);
       const base64Data = await fileLoadedPromise;
 
-      const downloadUrl = await uploadBase64ToStorage(base64Data, file.name, 'chat_attachments');
+      const downloadUrl = await uploadBase64ToStorage(base64Data, file.name, 'user_generated_content');
       
       const attachmentLabel = `[Attachment: ${file.name}](${downloadUrl})`;
       if (isEngageModal) {
