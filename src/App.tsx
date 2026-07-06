@@ -2473,6 +2473,7 @@ function AppContent() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [psychMessages, setPsychMessages] = useState<ChatMessage[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [copiedChatKey, setCopiedChatKey] = useState<string | null>(null);
 
   const [currentQuote, setCurrentQuote] = useState<Quote>({
     text: "The happiness of your life depends upon the quality of your thoughts.",
@@ -3844,6 +3845,12 @@ function AppContent() {
     navigator.clipboard.writeText(text);
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const handleCopyChat = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedChatKey(key);
+    setTimeout(() => setCopiedChatKey(null), 2000);
   };
 
   const [copiedQuote, setCopiedQuote] = useState(false);
@@ -8288,66 +8295,71 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                         </div>
                       </div>
                     )}
-                    {chatMessages.map((msg, idx) => (
-                      <div key={idx} className={cn(
-                        "flex items-end gap-2",
-                        msg.role === 'user' ? "flex-row-reverse" : "flex-row"
-                      )}>
-                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-zinc-700/30">
-                          <img 
-                            src={msg.role === 'user' ? userProfile.avatarUrl : AVATARS[0].url} 
-                            alt={msg.role === 'user' ? "User" : "AI Stoic"} 
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        </div>
-                        <div className={cn(
-                          "max-w-[80%] p-4 rounded-2xl relative group",
-                          msg.role === 'user' 
-                            ? "bg-emerald-500 text-zinc-950 text-sm font-semibold rounded-br-none shadow-sm shadow-emerald-500/10" 
-                            : (isDarkMode ? "bg-zinc-800 text-zinc-100 rounded-bl-none shadow-sm" : "bg-zinc-100 text-zinc-900 rounded-bl-none shadow-sm")
-                        )}>
-                          {msg.role === 'user' ? (
-                            <span className="text-sm font-semibold leading-relaxed whitespace-pre-wrap select-text">{msg.parts[0].text}</span>
-                          ) : (
-                            <div className={cn(
-                              "markdown-body font-handwritten tracking-wide leading-relaxed text-[17px] sm:text-[19px] select-text font-medium text-left",
-                              isDarkMode ? "text-emerald-50" : "text-emerald-950"
-                            )}>
-                              <ReactMarkdown>{msg.parts[0].text}</ReactMarkdown>
-                            </div>
-                          )}
-                          {msg.role === 'model' && (
-                            <div className="absolute top-2 right-2 flex items-center gap-2">
-                              <button
-                                onClick={() => handleSpeak(msg.parts[0].text, `chat-${idx}`)}
-                                className={cn(
-                                  "p-2 rounded-xl transition-all shadow-sm",
-                                  isSpeaking === `chat-${idx}` 
-                                    ? "bg-emerald-500 text-zinc-950" 
-                                    : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300")
-                                )}
-                                title="Listen"
-                              >
-                                {isSpeaking === `chat-${idx}` ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                              </button>
-                              <button
-                                onClick={() => handleCopy(msg.parts[0].text, idx)}
-                                className={cn(
-                                  "p-2 rounded-xl transition-all shadow-sm",
-                                  copiedIndex === idx 
-                                    ? "bg-emerald-500 text-zinc-950" 
-                                    : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300")
-                                )}
-                                title="Copy"
-                              >
-                                {copiedIndex === idx ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                     {chatMessages.map((msg, idx) => {
+                       const messageKey = `chat-${msg.role}-${idx}`;
+                       return (
+                         <div key={idx} className={cn(
+                           "flex items-end gap-2",
+                           msg.role === 'user' ? "flex-row-reverse" : "flex-row"
+                         )}>
+                           <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-zinc-700/30">
+                             <img 
+                               src={msg.role === 'user' ? userProfile.avatarUrl : AVATARS[0].url} 
+                               alt={msg.role === 'user' ? "User" : "AI Stoic"} 
+                               className="w-full h-full object-cover"
+                               referrerPolicy="no-referrer"
+                             />
+                           </div>
+                           <div className={cn(
+                             "max-w-[80%] p-4 pr-20 rounded-2xl relative group",
+                             msg.role === 'user' 
+                               ? "bg-emerald-500 text-zinc-950 text-sm font-semibold rounded-br-none shadow-sm shadow-emerald-500/10" 
+                               : (isDarkMode ? "bg-zinc-800 text-zinc-100 rounded-bl-none shadow-sm" : "bg-zinc-100 text-zinc-900 rounded-bl-none shadow-sm")
+                           )}>
+                             {msg.role === 'user' ? (
+                               <span className="text-sm font-semibold leading-relaxed whitespace-pre-wrap select-text">{msg.parts[0].text}</span>
+                             ) : (
+                               <div className={cn(
+                                 "markdown-body font-handwritten tracking-wide leading-relaxed text-[17px] sm:text-[19px] select-text font-medium text-left",
+                                 isDarkMode ? "text-emerald-50" : "text-emerald-950"
+                               )}>
+                                 <ReactMarkdown>{msg.parts[0].text}</ReactMarkdown>
+                               </div>
+                             )}
+                             <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                               <button
+                                 onClick={() => handleSpeak(msg.parts[0].text, messageKey)}
+                                 className={cn(
+                                   "p-2 rounded-xl transition-all shadow-sm",
+                                   isSpeaking === messageKey 
+                                     ? "bg-zinc-950 text-emerald-400" 
+                                     : (msg.role === 'user'
+                                         ? "bg-emerald-600/30 text-zinc-950 hover:bg-emerald-600/55"
+                                         : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300"))
+                                 )}
+                                 title="Listen"
+                               >
+                                 {isSpeaking === messageKey ? <VolumeX className="w-4 h-4 animate-pulse" /> : <Volume2 className="w-4 h-4" />}
+                               </button>
+                               <button
+                                 onClick={() => handleCopyChat(msg.parts[0].text, messageKey)}
+                                 className={cn(
+                                   "p-2 rounded-xl transition-all shadow-sm",
+                                   copiedChatKey === messageKey 
+                                     ? "bg-zinc-950 text-emerald-400" 
+                                     : (msg.role === 'user'
+                                         ? "bg-emerald-600/30 text-zinc-950 hover:bg-emerald-600/55"
+                                         : (isDarkMode ? "bg-zinc-700/80 text-zinc-100 hover:bg-zinc-600" : "bg-zinc-200/80 text-zinc-900 hover:bg-zinc-300"))
+                                 )}
+                                 title="Copy"
+                               >
+                                 {copiedChatKey === messageKey ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                               </button>
+                             </div>
+                           </div>
+                         </div>
+                       );
+                     })}
                     {isChatLoading && (
                       <div className="flex justify-start">
                         <div className={cn(
