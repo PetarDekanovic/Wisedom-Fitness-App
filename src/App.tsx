@@ -1495,7 +1495,7 @@ function ArticleCard({
           )}>
             {article.title}
           </h4>
-          <p className={cn("text-[10px] uppercase font-bold tracking-widest mt-1.5", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
+          <p className={cn("text-[10px] uppercase font-bold tracking-widest mt-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
             {format(new Date(article.date), 'MMM d, yyyy • HH:mm')}
           </p>
         </div>
@@ -1742,14 +1742,17 @@ function ArticleCard({
               );
             },
             p: ({ children }) => (
-              <p className="mb-5 leading-relaxed sm:leading-loose font-medium text-zinc-800 dark:text-zinc-100">
+              <p className={cn(
+                "mb-5 leading-relaxed sm:leading-loose font-medium",
+                isDarkMode ? "text-zinc-100" : "text-zinc-850"
+              )}>
                 {children}
               </p>
             ),
             h1: ({ children }) => (
               <h1 className={cn(
                 "text-2xl sm:text-3xl font-black tracking-tight mt-8 mb-4 border-b pb-2",
-                isDarkMode ? "text-white border-zinc-850" : "text-zinc-950 border-zinc-150"
+                isDarkMode ? "text-white border-zinc-800" : "text-zinc-950 border-zinc-150"
               )}>
                 {children}
               </h1>
@@ -1770,11 +1773,35 @@ function ArticleCard({
                 {children}
               </h3>
             ),
+            h4: ({ children }) => (
+              <h4 className={cn(
+                "text-base sm:text-lg font-bold tracking-tight mt-4 mb-2",
+                isDarkMode ? "text-zinc-200" : "text-zinc-800"
+              )}>
+                {children}
+              </h4>
+            ),
+            h5: ({ children }) => (
+              <h5 className={cn(
+                "text-sm sm:text-base font-bold tracking-tight mt-4 mb-2",
+                isDarkMode ? "text-zinc-300" : "text-zinc-700"
+              )}>
+                {children}
+              </h5>
+            ),
+            h6: ({ children }) => (
+              <h6 className={cn(
+                "text-xs sm:text-sm font-bold tracking-tight mt-4 mb-2 uppercase",
+                isDarkMode ? "text-zinc-400" : "text-zinc-600"
+              )}>
+                {children}
+              </h6>
+            ),
             blockquote: ({ children }) => (
               <blockquote className={cn(
                 "pl-4 border-l-4 my-6 italic font-serif text-[1.05em]",
                 isDarkMode 
-                  ? "border-emerald-500/50 bg-emerald-950/20 text-emerald-100 py-3 pr-3 rounded-r-2xl" 
+                  ? "border-emerald-500/50 bg-emerald-950/25 text-emerald-100 py-3 pr-3 rounded-r-2xl" 
                   : "border-emerald-500 bg-emerald-50/50 text-emerald-900 py-3 pr-3 rounded-r-2xl"
               )}>
                 {children}
@@ -1787,7 +1814,10 @@ function ArticleCard({
               <ol className="list-decimal pl-6 mb-5 space-y-2">{children}</ol>
             ),
             li: ({ children }) => (
-              <li className="leading-relaxed font-medium text-zinc-700 dark:text-zinc-350">
+              <li className={cn(
+                "leading-relaxed font-medium",
+                isDarkMode ? "text-zinc-200" : "text-zinc-700"
+              )}>
                 {children}
               </li>
             )
