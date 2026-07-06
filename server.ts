@@ -128,7 +128,9 @@ async function startServer() {
         return res.status(400).send("Missing document ID.");
       }
       
-      const firestoreDb = getFirestore();
+      const firestoreDb = firebaseConfig.firestoreDatabaseId 
+        ? getFirestore(undefined, firebaseConfig.firestoreDatabaseId) 
+        : getFirestore();
       const docRef = firestoreDb.collection("persistent_uploads").doc(docId);
       const docSnap = await docRef.get();
       
@@ -262,7 +264,9 @@ async function startServer() {
       // Fallback 1: Firestore chunked persistent storage (Highly Durable)
       if (isFirebaseAdminInitialized) {
         try {
-          const firestoreDb = getFirestore();
+          const firestoreDb = firebaseConfig.firestoreDatabaseId 
+            ? getFirestore(undefined, firebaseConfig.firestoreDatabaseId) 
+            : getFirestore();
           const docRef = firestoreDb.collection("persistent_uploads").doc();
           const docId = docRef.id;
 
