@@ -1699,10 +1699,102 @@ function ArticleCard({
       )}
 
       <div className={cn(
-        "markdown-body text-sm leading-relaxed prose prose-sm max-w-none",
-        isDarkMode ? "text-zinc-300 prose-invert" : "text-zinc-700"
+        "markdown-body text-[16px] sm:text-[17px] md:text-[18px] leading-relaxed sm:leading-loose tracking-wide max-w-none font-medium",
+        isDarkMode ? "text-zinc-100" : "text-zinc-850"
       )}>
-        <ReactMarkdown>{article.content}</ReactMarkdown>
+        <ReactMarkdown
+          components={{
+            strong: ({ children }) => {
+              const text = typeof children === 'string' ? children : String(children || '');
+              let hash = 0;
+              for (let i = 0; i < text.length; i++) {
+                hash = text.charCodeAt(i) + ((hash << 5) - hash);
+              }
+              const darkColors = [
+                "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+                "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                "text-cyan-400 bg-cyan-500/10 border-cyan-500/20",
+                "text-rose-400 bg-rose-500/10 border-rose-500/20",
+                "text-violet-400 bg-violet-500/10 border-violet-500/20",
+                "text-sky-400 bg-sky-500/10 border-sky-500/20",
+                "text-orange-400 bg-orange-500/10 border-orange-500/20"
+              ];
+              const lightColors = [
+                "text-emerald-700 bg-emerald-50 border-emerald-200/60",
+                "text-amber-700 bg-amber-50 border-amber-200/60",
+                "text-cyan-700 bg-cyan-50 border-cyan-200/60",
+                "text-rose-700 bg-rose-50 border-rose-200/60",
+                "text-violet-700 bg-violet-50 border-violet-200/60",
+                "text-sky-700 bg-sky-50 border-sky-200/60",
+                "text-orange-700 bg-orange-50 border-orange-200/60"
+              ];
+              const colorClass = isDarkMode 
+                ? darkColors[Math.abs(hash) % darkColors.length]
+                : lightColors[Math.abs(hash) % lightColors.length];
+
+              return (
+                <strong className={cn(
+                  "font-black tracking-wide px-1.5 py-0.5 rounded-lg border text-[103%] inline-block md:inline transform hover:scale-[1.02] transition-all shadow-sm",
+                  colorClass
+                )}>
+                  {children}
+                </strong>
+              );
+            },
+            p: ({ children }) => (
+              <p className="mb-5 leading-relaxed sm:leading-loose font-medium text-zinc-800 dark:text-zinc-100">
+                {children}
+              </p>
+            ),
+            h1: ({ children }) => (
+              <h1 className={cn(
+                "text-2xl sm:text-3xl font-black tracking-tight mt-8 mb-4 border-b pb-2",
+                isDarkMode ? "text-white border-zinc-850" : "text-zinc-950 border-zinc-150"
+              )}>
+                {children}
+              </h1>
+            ),
+            h2: ({ children }) => (
+              <h2 className={cn(
+                "text-xl sm:text-2xl font-black tracking-tight mt-6 mb-3",
+                isDarkMode ? "text-zinc-100" : "text-zinc-900"
+              )}>
+                {children}
+              </h2>
+            ),
+            h3: ({ children }) => (
+              <h3 className={cn(
+                "text-lg sm:text-xl font-bold tracking-tight mt-5 mb-2",
+                isDarkMode ? "text-zinc-200" : "text-zinc-800"
+              )}>
+                {children}
+              </h3>
+            ),
+            blockquote: ({ children }) => (
+              <blockquote className={cn(
+                "pl-4 border-l-4 my-6 italic font-serif text-[1.05em]",
+                isDarkMode 
+                  ? "border-emerald-500/50 bg-emerald-950/20 text-emerald-100 py-3 pr-3 rounded-r-2xl" 
+                  : "border-emerald-500 bg-emerald-50/50 text-emerald-900 py-3 pr-3 rounded-r-2xl"
+              )}>
+                {children}
+              </blockquote>
+            ),
+            ul: ({ children }) => (
+              <ul className="list-disc pl-6 mb-5 space-y-2">{children}</ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="list-decimal pl-6 mb-5 space-y-2">{children}</ol>
+            ),
+            li: ({ children }) => (
+              <li className="leading-relaxed font-medium text-zinc-700 dark:text-zinc-350">
+                {children}
+              </li>
+            )
+          }}
+        >
+          {article.content}
+        </ReactMarkdown>
       </div>
 
       {/* --- COMMENTS SECTION --- */}
