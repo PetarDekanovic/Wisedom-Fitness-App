@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 import * as cheerio from "cheerio";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Anthropic from "@anthropic-ai/sdk";
-import { initializeApp } from "firebase-admin/app";
+import { initializeApp, getApp } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
 import { getFirestore } from "firebase-admin/firestore";
 
@@ -129,7 +129,7 @@ async function startServer() {
       }
       
       const firestoreDb = firebaseConfig.firestoreDatabaseId 
-        ? getFirestore(undefined, firebaseConfig.firestoreDatabaseId) 
+        ? getFirestore(getApp(), firebaseConfig.firestoreDatabaseId) 
         : getFirestore();
       const docRef = firestoreDb.collection("persistent_uploads").doc(docId);
       const docSnap = await docRef.get();
@@ -265,7 +265,7 @@ async function startServer() {
       if (isFirebaseAdminInitialized) {
         try {
           const firestoreDb = firebaseConfig.firestoreDatabaseId 
-            ? getFirestore(undefined, firebaseConfig.firestoreDatabaseId) 
+            ? getFirestore(getApp(), firebaseConfig.firestoreDatabaseId) 
             : getFirestore();
           const docRef = firestoreDb.collection("persistent_uploads").doc();
           const docId = docRef.id;
