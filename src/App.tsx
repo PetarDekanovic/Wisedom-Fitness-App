@@ -1244,6 +1244,22 @@ function ArticleCard({
     };
   }, []);
 
+  // Periodic resume interval to bypass Chrome/Safari Web Speech engine freeze bugs
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }
+      }, 5000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isPlaying]);
+
   useEffect(() => {
     return () => {
       if ('speechSynthesis' in window) {
@@ -1258,6 +1274,9 @@ function ArticleCard({
     if (isPlaying || isProcessing) {
       synth.cancel();
       activeUtteranceRef.current = null;
+      if ((window as any)._activeUtterances) {
+        (window as any)._activeUtterances = [];
+      }
       setIsPlaying(false);
       setIsProcessing(false);
       setCurrentChunkIndex(0);
@@ -1267,24 +1286,93 @@ function ArticleCard({
     setIsProcessing(true);
 
     try {
-      // 1. Clean and Chunk the text
+      // 1. Clean markdown and format text
       const cleanText = article.content
-        .replace(/[#*`~]/g, '')
+        .replace(/[#*`~_]/g, '')
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        .replace(/- /g, '');
+        .replace(/[-+•*]\s+/g, '') // list markers
+        .replace(/\s+/g, ' ')
+        .trim();
 
-      // Split into chunks of roughly 200 characters at sentence boundaries
-      const chunks = cleanText.match(/[^.!?]+[.!?]+(?=\s|$)/g) || [cleanText];
-      
-      const finalChunks = [article.title, ...chunks.map(c => c.trim()).filter(c => c.length > 0)];
+      // Robustly split by sentence / phrase boundaries but preserve them.
+      // We also enforce a maximum chunk size of 180 characters so the TTS engine never stalls.
+      const maxLen = 180;
+      const chunks: string[] = [];
+      let currentChunk = '';
+
+      // Split on punctuation or newlines
+      const sentences = cleanText.split(/(?<=[.!?：；。！？])|(?=\n)/);
+
+      for (let sentence of sentences) {
+        sentence = sentence.trim();
+        if (!sentence) continue;
+
+        if (sentence.length <= maxLen) {
+          if ((currentChunk + ' ' + sentence).trim().length <= maxLen) {
+            currentChunk = (currentChunk + ' ' + sentence).trim();
+          } else {
+            if (currentChunk) chunks.push(currentChunk);
+            currentChunk = sentence;
+          }
+        } else {
+          if (currentChunk) {
+            chunks.push(currentChunk);
+            currentChunk = '';
+          }
+          // Split longer sentences by commas or semicolons
+          const clauses = sentence.split(/(?<=[,;，；])\s*/);
+          for (let clause of clauses) {
+            clause = clause.trim();
+            if (!clause) continue;
+
+            if (clause.length <= maxLen) {
+              if ((currentChunk + ' ' + clause).trim().length <= maxLen) {
+                currentChunk = (currentChunk + ' ' + clause).trim();
+              } else {
+                if (currentChunk) chunks.push(currentChunk);
+                currentChunk = clause;
+              }
+            } else {
+              // Word split fallback
+              if (currentChunk) {
+                chunks.push(currentChunk);
+                currentChunk = '';
+              }
+              const words = clause.split(/\s+/);
+              for (const word of words) {
+                if ((currentChunk + ' ' + word).trim().length <= maxLen) {
+                  currentChunk = (currentChunk + ' ' + word).trim();
+                } else {
+                  if (currentChunk) chunks.push(currentChunk);
+                  currentChunk = word;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (currentChunk) {
+        chunks.push(currentChunk);
+      }
+
+      const filteredChunks = chunks.filter(c => c.length > 0);
+      const finalChunks = [article.title, ...filteredChunks];
       
       speechQueue.current = finalChunks;
       setTotalChunks(finalChunks.length);
       setCurrentChunkIndex(0);
 
+      // Initialize global list of active utterances to bypass browser Garbage Collection bugs
+      if (!(window as any)._activeUtterances) {
+        (window as any)._activeUtterances = [];
+      }
+      (window as any)._activeUtterances = [];
+
       const speakChunk = (index: number) => {
         if (index >= speechQueue.current.length) {
           activeUtteranceRef.current = null;
+          (window as any)._activeUtterances = [];
           setIsPlaying(false);
           setIsProcessing(false);
           setCurrentChunkIndex(0);
@@ -1292,7 +1380,9 @@ function ArticleCard({
         }
 
         const utterance = new SpeechSynthesisUtterance(speechQueue.current[index]);
-        activeUtteranceRef.current = utterance; // Retain active utterance to bypass browser GC garbage collection bugs
+        activeUtteranceRef.current = utterance;
+        (window as any)._activeUtterances.push(utterance); // Retain active utterance in global scope
+
         utterance.rate = 0.95;
         utterance.pitch = 1.0;
         utterance.lang = 'en-US';
@@ -1310,11 +1400,14 @@ function ArticleCard({
         };
         
         utterance.onend = () => {
+          // Clean up reference
+          (window as any)._activeUtterances = ((window as any)._activeUtterances || []).filter((u: any) => u !== utterance);
           speakChunk(index + 1);
         };
         
         utterance.onerror = (e) => {
           console.error("Speech Chunk Error:", e);
+          (window as any)._activeUtterances = ((window as any)._activeUtterances || []).filter((u: any) => u !== utterance);
           activeUtteranceRef.current = null;
           setIsPlaying(false);
           setIsProcessing(false);
