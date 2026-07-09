@@ -40,6 +40,8 @@ import {
   CheckCircle2, 
   AlertCircle, 
   FileText, 
+  FileSpreadsheet,
+  Download,
   User, 
   Search,
   BookOpen,
@@ -850,12 +852,15 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [newPostContent, setNewPostContent] = useState('');
   const newPostWordCount = newPostContent.trim() ? newPostContent.trim().split(/\s+/).length : 0;
   const isNewPostOverWordLimit = newPostWordCount > 7000;
-  const [newPostMediaType, setNewPostMediaType] = useState<'none' | 'image' | 'video' | 'youtube' | 'tiktok'>('none');
+  const [newPostMediaType, setNewPostMediaType] = useState<'none' | 'image' | 'video' | 'youtube' | 'tiktok' | 'pdf' | 'word' | 'sheet'>('none');
   const [isUploadingPostVideo, setIsUploadingPostVideo] = useState(false);
   const [postVideoProgress, setPostVideoProgress] = useState(0);
   const [isUploadingPostImage, setIsUploadingPostImage] = useState(false);
   const [postImageProgress, setPostImageProgress] = useState(0);
+  const [isUploadingPostDoc, setIsUploadingPostDoc] = useState(false);
+  const [postDocProgress, setPostDocProgress] = useState(0);
   const [newPostMediaUrl, setNewPostMediaUrl] = useState('');
+  const [newPostMediaName, setNewPostMediaName] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
 
@@ -2134,6 +2139,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
 
       if (newPostMediaType !== 'none' && newPostMediaUrl.trim()) {
         draftPost.mediaUrl = newPostMediaUrl.trim();
+        if (newPostMediaName.trim()) {
+          draftPost.mediaName = newPostMediaName.trim();
+        }
       }
 
       await setDoc(postDocRef, draftPost);
@@ -2142,6 +2150,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
       setNewPostContent('');
       setNewPostMediaType('none');
       setNewPostMediaUrl('');
+      setNewPostMediaName('');
       
       // Notify user check
       if (!isAdmin) {
@@ -3346,6 +3355,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       onChange={(e) => {
                         setNewPostMediaType(e.target.value as any);
                         setNewPostMediaUrl('');
+                        setNewPostMediaName('');
                       }}
                       className={cn(
                         "px-3 py-1.5 text-[10px] font-black uppercase rounded-lg border outline-none font-sans cursor-pointer transition-all",
@@ -3357,6 +3367,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       <option value="video">Direct Video Upload</option>
                       <option value="youtube">YouTube Embed</option>
                       <option value="tiktok">TikTok Video</option>
+                      <option value="pdf">PDF File (Upload or Link)</option>
+                      <option value="word">Word Document (Upload or Link)</option>
+                      <option value="sheet">Google Sheets / Excel (Upload or Link)</option>
                     </select>
 
                     {newPostMediaType !== 'none' && newPostMediaType !== 'video' && (
@@ -3367,14 +3380,31 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           onChange={(e) => setNewPostMediaUrl(e.target.value)}
                           placeholder={
                             newPostMediaType === 'youtube' ? 'YouTube watch/share URL' :
-                            newPostMediaType === 'tiktok' ? 'TikTok URL' : 'Image URL (or upload below)'
+                            newPostMediaType === 'tiktok' ? 'TikTok URL' :
+                            newPostMediaType === 'pdf' ? 'PDF URL (or upload below)' :
+                            newPostMediaType === 'word' ? 'Word Document URL (or upload below)' :
+                            newPostMediaType === 'sheet' ? 'Google Sheets or Spreadsheet URL' :
+                            'Image URL (or upload below)'
                           }
                           className={cn(
                             "flex-1 px-3 py-1.5 text-[10px] rounded-lg border outline-none max-w-[150px] sm:max-w-xs font-semibold",
                             isDarkMode ? "bg-zinc-800 border-zinc-650 text-white placeholder-zinc-500" : "bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 shadow-sm"
                           )}
-                          required={newPostMediaType !== 'image'}
+                          required={newPostMediaType !== 'image' && newPostMediaType !== 'pdf' && newPostMediaType !== 'word' && newPostMediaType !== 'sheet'}
                         />
+
+                        {(newPostMediaType === 'pdf' || newPostMediaType === 'word' || newPostMediaType === 'sheet') && (
+                          <input 
+                            type="text"
+                            value={newPostMediaName}
+                            onChange={(e) => setNewPostMediaName(e.target.value)}
+                            placeholder="Document Label/Title (Optional)"
+                            className={cn(
+                              "px-3 py-1.5 text-[10px] rounded-lg border outline-none max-w-[120px] font-semibold",
+                              isDarkMode ? "bg-zinc-800 border-zinc-650 text-white placeholder-zinc-500" : "bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400 shadow-sm"
+                            )}
+                          />
+                        )}
 
                         {newPostMediaType === 'image' && (
                           <div className="flex items-center gap-1.5">
@@ -3462,6 +3492,79 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                   } finally {
                                     setIsUploadingPostImage(false);
                                     // Reset file input target value
+                                    e.target.value = '';
+                                  }
+                                }}
+                              />
+                            </label>
+                            {newPostMediaUrl && (
+                              <span className="text-[8.5px] font-bold text-emerald-500 whitespace-nowrap">Loaded!</span>
+                            )}
+                          </div>
+                        )}
+
+                        {(newPostMediaType === 'pdf' || newPostMediaType === 'word' || newPostMediaType === 'sheet') && (
+                          <div className="flex items-center gap-1.5">
+                            <label className={cn(
+                              "flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-dashed cursor-pointer hover:bg-emerald-500/10 hover:border-emerald-500/40 text-[9px] font-black transition-all uppercase tracking-wider",
+                              isDarkMode ? "bg-zinc-800 border-zinc-650 text-emerald-450 hover:text-emerald-400" : "bg-white border-zinc-300 text-emerald-700 hover:text-emerald-600 shadow-sm"
+                            )}>
+                              {isUploadingPostDoc ? (
+                                <span className="animate-pulse text-emerald-500 flex items-center gap-1">
+                                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                  Uploading {postDocProgress}%
+                                </span>
+                              ) : (
+                                <>
+                                  <Upload className="w-2.5 h-2.5 text-emerald-500" />
+                                  <span>{newPostMediaUrl ? 'Change File' : 'Upload File'}</span>
+                                </>
+                              )}
+                              <input 
+                                type="file" 
+                                accept={
+                                  newPostMediaType === 'pdf' ? '.pdf,application/pdf' :
+                                  newPostMediaType === 'word' ? '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+                                  '.xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                                }
+                                className="hidden" 
+                                disabled={isUploadingPostDoc}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+
+                                  setIsUploadingPostDoc(true);
+                                  setPostDocProgress(10);
+
+                                  try {
+                                    const reader = new FileReader();
+                                    reader.onload = async (ev) => {
+                                      try {
+                                        setPostDocProgress(40);
+                                        const base64Data = ev.target?.result as string;
+                                        setPostDocProgress(60);
+                                        const downloadUrl = await uploadBase64ToStorage(base64Data, file.name, 'scholarly_documents');
+                                        setNewPostMediaUrl(downloadUrl);
+                                        setNewPostMediaName(file.name);
+                                        setPostDocProgress(100);
+                                      } catch (err: any) {
+                                        console.error('Document upload failed:', err);
+                                        alert('Upload failed: ' + err.message);
+                                      } finally {
+                                        setIsUploadingPostDoc(false);
+                                      }
+                                    };
+                                    reader.onerror = (err) => {
+                                      console.error('File reading failed:', err);
+                                      alert('File reading failed');
+                                      setIsUploadingPostDoc(false);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  } catch (err: any) {
+                                    console.error('Feed document upload failed:', err);
+                                    alert('Upload failed: ' + err.message);
+                                    setIsUploadingPostDoc(false);
+                                  } finally {
                                     e.target.value = '';
                                   }
                                 }}
@@ -3954,6 +4057,87 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               className="px-3.5 py-1.5 bg-emerald-500 text-zinc-950 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 select-none"
                             >
                               Open Clip <ExternalLinkIcon className="w-2.5 h-2.5" />
+                            </a>
+                          </div>
+                        )}
+
+                        {post.mediaType === 'pdf' && post.mediaUrl && (
+                          <div className={cn(
+                            "p-4 rounded-2xl border flex items-center justify-between gap-3 bg-zinc-950/20 border-zinc-800",
+                            isDarkMode ? "bg-zinc-900/60" : "bg-zinc-50 border-zinc-200"
+                          )}>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center border border-red-500/20 shrink-0">
+                                <FileText className="w-5 h-5 text-red-400" />
+                              </div>
+                              <div className="space-y-0.5 min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-wider text-rose-450">PDF Scholar File</p>
+                                <p className={cn("text-xs font-bold truncate pr-2", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                                  {post.mediaName || "Academic Document.pdf"}
+                                </p>
+                              </div>
+                            </div>
+                            <a 
+                              href={post.mediaUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="px-3.5 py-1.5 bg-red-600 text-white hover:bg-red-500 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 select-none shrink-0"
+                            >
+                              Open PDF <ExternalLinkIcon className="w-2.5 h-2.5" />
+                            </a>
+                          </div>
+                        )}
+
+                        {post.mediaType === 'word' && post.mediaUrl && (
+                          <div className={cn(
+                            "p-4 rounded-2xl border flex items-center justify-between gap-3 bg-zinc-950/20 border-zinc-800",
+                            isDarkMode ? "bg-zinc-900/60" : "bg-zinc-50 border-zinc-200"
+                          )}>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center border border-blue-500/20 shrink-0">
+                                <FileText className="w-5 h-5 text-blue-400" />
+                              </div>
+                              <div className="space-y-0.5 min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-wider text-blue-400">Word Document</p>
+                                <p className={cn("text-xs font-bold truncate pr-2", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                                  {post.mediaName || "Scholarly Reflection.docx"}
+                                </p>
+                              </div>
+                            </div>
+                            <a 
+                              href={post.mediaUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="px-3.5 py-1.5 bg-blue-600 text-white hover:bg-blue-500 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 select-none shrink-0"
+                            >
+                              Open Word <ExternalLinkIcon className="w-2.5 h-2.5" />
+                            </a>
+                          </div>
+                        )}
+
+                        {post.mediaType === 'sheet' && post.mediaUrl && (
+                          <div className={cn(
+                            "p-4 rounded-2xl border flex items-center justify-between gap-3 bg-zinc-950/20 border-zinc-800",
+                            isDarkMode ? "bg-zinc-900/60" : "bg-zinc-50 border-zinc-200"
+                          )}>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20 shrink-0">
+                                <FileSpreadsheet className="w-5 h-5 text-emerald-450" />
+                              </div>
+                              <div className="space-y-0.5 min-w-0">
+                                <p className="text-[10px] font-black uppercase tracking-wider text-emerald-455">Google Sheets / Excel</p>
+                                <p className={cn("text-xs font-bold truncate pr-2", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                                  {post.mediaName || "Research Spreadsheet"}
+                                </p>
+                              </div>
+                            </div>
+                            <a 
+                              href={post.mediaUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="px-3.5 py-1.5 bg-emerald-600 text-white hover:bg-emerald-500 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 select-none shrink-0"
+                            >
+                              Open Sheet <ExternalLinkIcon className="w-2.5 h-2.5" />
                             </a>
                           </div>
                         )}
@@ -7946,8 +8130,18 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                       </p>
 
                       {post.mediaUrl && (
-                        <div className="p-2 border rounded-xl border-zinc-800 text-[10px] truncate max-w-sm font-mono text-zinc-400">
-                          Media link: {post.mediaUrl}
+                        <div className="space-y-1">
+                          <div className={cn(
+                            "p-2 border rounded-xl text-[10px] truncate max-w-sm font-mono",
+                            isDarkMode ? "border-zinc-800 text-zinc-400" : "border-zinc-200 text-zinc-600 bg-zinc-50"
+                          )}>
+                            Media link: {post.mediaUrl}
+                          </div>
+                          {post.mediaName && (
+                            <div className="text-[9px] font-black uppercase tracking-wider text-emerald-500 pl-1">
+                              Attachment Name: {post.mediaName} ({post.mediaType})
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

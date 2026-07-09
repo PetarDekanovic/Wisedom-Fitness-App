@@ -316,8 +316,9 @@ export interface CommunityPost {
   userName: string;
   userAvatar?: string;
   content: string;
-  mediaType: 'none' | 'image' | 'video' | 'youtube' | 'tiktok';
+  mediaType: 'none' | 'image' | 'video' | 'youtube' | 'tiktok' | 'pdf' | 'word' | 'sheet';
   mediaUrl?: string;
+  mediaName?: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: any; // Server timestamp or string
   likes?: string[]; // array of UIDs

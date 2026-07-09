@@ -199,8 +199,9 @@
         "userName": { "type": "string" },
         "userAvatar": { "type": "string" },
         "content": { "type": "string" },
-        "mediaType": { "type": "string", "enum": ["none", "image", "youtube", "tiktok"] },
+        "mediaType": { "type": "string", "enum": ["none", "image", "video", "youtube", "tiktok", "pdf", "word", "sheet"] },
         "mediaUrl": { "type": "string" },
+        "mediaName": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "createdAt": { "type": "string" },
         "likes": { "type": "array", "items": { "type": "string" }, "description": "UIDs of users who liked this post" }

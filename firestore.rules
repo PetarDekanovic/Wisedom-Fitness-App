@@ -143,8 +143,9 @@ service cloud.firestore {
              data.userId == request.auth.uid &&
              data.content is string && data.content.size() > 0 && data.content.size() < 60000 &&
              data.status in ['pending', 'approved', 'rejected'] &&
-             (data.get('mediaType', null) == null || (data.mediaType in ['none', 'image', 'video', 'youtube', 'tiktok'])) &&
+             (data.get('mediaType', null) == null || (data.mediaType in ['none', 'image', 'video', 'youtube', 'tiktok', 'pdf', 'word', 'sheet'])) &&
              (data.get('mediaUrl', null) == null || (data.mediaUrl is string && data.mediaUrl.size() < 1000)) &&
+             (data.get('mediaName', null) == null || (data.mediaName is string && data.mediaName.size() < 500)) &&
              (data.get('likes', null) == null || (data.likes is list && data.likes.size() <= 1000));
     }
 
