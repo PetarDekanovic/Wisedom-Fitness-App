@@ -3985,19 +3985,19 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               </span>
                             </div>
 
-                            {/* Comments Button Toggle */}
+                            {/* Comments Button Toggle (Always visible now, click to focus input) */}
                             <div className="flex items-center gap-1">
                               <button
-                                onClick={() => toggleCommentsForPost(post.id)}
+                                onClick={() => {
+                                  document.getElementById(`comment-textarea-${post.id}`)?.focus();
+                                }}
                                 className={cn(
                                   "p-2 rounded-lg transition-colors",
-                                  expandedPostComments[post.id]
-                                    ? "text-emerald-500 bg-emerald-500/10" 
-                                    : isDarkMode 
-                                      ? "text-zinc-500 hover:text-white hover:bg-zinc-800" 
-                                      : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+                                  isDarkMode 
+                                    ? "text-emerald-500/80 hover:text-emerald-400 hover:bg-zinc-850" 
+                                    : "text-emerald-600/80 hover:text-emerald-700 hover:bg-zinc-100"
                                 )}
-                                title="Comments"
+                                title="Focus Dialogue Sanctum"
                               >
                                 <MessageSquare className="w-4 h-4" />
                               </button>
@@ -4374,8 +4374,8 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           );
                         })()}
 
-                        {/* Expanded Comments Section */}
-                        {expandedPostComments[post.id] && (
+                        {/* Comments Section (Always Visible) */}
+                        {true && (
                           <div className={cn("border-t mt-4 pt-4 space-y-4", isDarkMode ? "border-zinc-800/80" : "border-zinc-100")}>
                             <h5 className="text-[10px] font-black uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
                               <MessageSquare className="w-3.5 h-3.5" />
@@ -4558,6 +4558,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                       />
                                       <div className="flex-1 space-y-1.5">
                                         <textarea
+                                          id={`comment-textarea-${post.id}`}
                                           rows={2}
                                           placeholder={isGoogleLoggedIn ? "Record your scholarly remark..." : "Share guest reflection (will require review)..."}
                                           value={newCommentText[post.id] || ''}
