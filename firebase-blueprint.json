@@ -110,6 +110,20 @@
       },
       "required": ["text", "author", "fetchDate"]
     },
+    "DailyDigestQuote": {
+      "title": "DailyDigestQuote",
+      "description": "Scraped daily digest quote stored in Firestore",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "author": { "type": "string" },
+        "source": { "type": "string" },
+        "fetchDate": { "type": "string", "description": "The date the quote was fetched (YYYY-MM-DD)" },
+        "order": { "type": "number", "description": "Display order of the quote in the digest" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["text", "author", "fetchDate", "order"]
+    },
     "QuizQuestion": {
       "title": "QuizQuestion",
       "description": "A wisdom training question",
@@ -327,6 +341,10 @@
     "/daily_quotes_cache/{quoteId}": {
       "schema": "DailyQuote",
       "description": "Cache of daily quotes scraped from wisefitorg.com"
+    },
+    "/daily_digest_quotes/{quoteId}": {
+      "schema": "DailyDigestQuote",
+      "description": "Durable daily digest quotes for the sanctuary digest feed"
     }
   }
 }

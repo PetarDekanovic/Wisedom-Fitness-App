@@ -1017,6 +1017,46 @@ app.get("/api/ai/diagnostics", async (req, res) => {
   // --- NEW UNIFIED SANCTUARY DIGEST API ---
   app.get("/api/sanctuary-digest", async (req, res) => {
     try {
+      // 1. Calculate the todayStr in the balkan timezone (Europe/Zagreb) for Croatian regional edge consistency
+      const balkanDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zagreb' }).format(new Date());
+      const todayStr = balkanDate;
+
+      let quotes: any[] = [];
+      let firestoreDb: any = null;
+
+      if (isFirebaseAdminInitialized) {
+        try {
+          firestoreDb = firebaseConfig.firestoreDatabaseId 
+            ? getFirestore(getApp(), firebaseConfig.firestoreDatabaseId) 
+            : getFirestore();
+        } catch (dbErr) {
+          console.error("[WiseFit Server] Firestore initialization error in sanctuary-digest:", dbErr);
+        }
+      }
+
+      // Check if we already have today's quotes in the database
+      if (firestoreDb) {
+        try {
+          const snapshot = await firestoreDb.collection("daily_digest_quotes")
+            .where("fetchDate", "==", todayStr)
+            .get();
+          
+          if (!snapshot.empty) {
+            snapshot.forEach((doc: any) => {
+              quotes.push({
+                id: doc.id,
+                ...doc.data()
+              });
+            });
+            quotes.sort((a: any, b: any) => (a.order !== undefined && b.order !== undefined) ? a.order - b.order : 0);
+            console.log(`[WiseFit Server] Loaded ${quotes.length} daily digest quotes from Firestore for date ${todayStr}`);
+          }
+        } catch (dbReadErr) {
+          console.error("[WiseFit Server] Failed to read daily_digest_quotes from Firestore:", dbReadErr);
+        }
+      }
+
+      // 2. Fetch the HTML (always fetch for live news and fallback quotes if needed)
       let html = "";
       try {
         const response = await axios.get("https://wisefitorg.com/digest/", {
@@ -1035,114 +1075,164 @@ app.get("/api/ai/diagnostics", async (req, res) => {
         }
       }
 
-      if (!html) throw new Error("Could not fetch page content from wisefitorg");
-
-      const $ = cheerio.load(html);
-      
-      // 1. Parse update timestamp
-      let lastUpdated = "";
-      $("p").each((i, el) => {
-        const text = $(el).text().trim();
-        if (text.startsWith("Updated:")) {
-          lastUpdated = text.replace("Updated:", "").trim();
-        }
-      });
-
-      // 2. Parse News under <header/h2> Commerce & Live News
-      let news: any[] = [];
-      const newsHeader = $("h2").filter((i, el) => $(el).text().includes("Commerce & Live News"));
-      if (newsHeader.length > 0) {
-        const nextElements = newsHeader.nextAll();
-        for (let i = 0; i < nextElements.length; i++) {
-          const el = nextElements[i];
-          const textVal = $(el).text().trim();
-          if (textVal.includes("100 Daily Wise Quotes")) {
-            break; // Stop parsing news when we hit the quotes header
-          }
-          
-          const aTag = $(el).find("a");
-          if (aTag.length > 0) {
-            const url = aTag.attr("href") || "";
-            // Clean up whitespaces inside the link text
-            const linkText = aTag.text().replace(/\s+/g, ' ').trim();
-            // Demarcate date and the rest
-            const dateRegex = /^([A-Z][a-z]+ \d{1,2}, \d{4})/;
-            const dateMatch = linkText.match(dateRegex);
-            let dateStr = "";
-            let remainingText = linkText;
-            if (dateMatch) {
-              dateStr = dateMatch[1];
-              remainingText = linkText.replace(dateRegex, "").trim();
-            }
-            
-            // Try to extract potential catalog keywords
-            const categories = ["Announcements", "eBay Impact", "eBay for Charity", "Press Release", "News Team"];
-            let category = "Research";
-            let cleanTitle = remainingText;
-            for (const cat of categories) {
-              if (remainingText.startsWith(cat)) {
-                category = cat;
-                cleanTitle = remainingText.substring(cat.length).trim();
-                break;
-              }
-            }
-            
-            news.push({
-              id: `news-${i}-${Math.random().toString(36).substring(2, 6)}`,
-              date: dateStr || "Recent",
-              category,
-              title: cleanTitle,
-              url
-            });
-          }
-        }
+      if (!html && quotes.length === 0) {
+        throw new Error("Could not fetch page content from wisefitorg and no database cache exists");
       }
 
-      // 3. Parse Quotes under <header/h2> 100 Daily Wise Quotes
-      let quotes: any[] = [];
-      const quotesHeader = $("h2").filter((i, el) => $(el).text().includes("100 Daily Wise Quotes"));
-      if (quotesHeader.length > 0) {
-        const nextElements = quotesHeader.nextAll();
-        nextElements.each((i, el) => {
-          let text = $(el).text().replace(/\s+/g, ' ').trim();
-          if (text.length > 10) {
-            // Strip leading bullet or number like "• 1. ", "1.", "<b>1.</b>" is already text-flattened to "1."
-            const numMatch = text.match(/^•?\s*\d+\.\s*/);
-            if (numMatch) {
-              text = text.substring(numMatch[0].length).trim();
-            }
+      let lastUpdated = "";
+      let news: any[] = [];
 
-            // Split into text and author
-            const separators = [" — ", " – ", " - ", "—", "–"];
-            let qText = text;
-            let qAuthor = "Ancient Wisdom";
+      if (html) {
+        const $ = cheerio.load(html);
+        
+        // Parse update timestamp
+        $("p").each((i, el) => {
+          const text = $(el).text().trim();
+          if (text.startsWith("Updated:")) {
+            lastUpdated = text.replace("Updated:", "").trim();
+          }
+        });
+
+        // Parse News under <header/h2> Commerce & Live News
+        const newsHeader = $("h2").filter((i, el) => $(el).text().includes("Commerce & Live News"));
+        if (newsHeader.length > 0) {
+          const nextElements = newsHeader.nextAll();
+          for (let i = 0; i < nextElements.length; i++) {
+            const el = nextElements[i];
+            const textVal = $(el).text().trim();
+            if (textVal.includes("100 Daily Wise Quotes")) {
+              break; // Stop parsing news when we hit the quotes header
+            }
             
-            for (const sep of separators) {
-              if (text.includes(sep)) {
-                const parts = text.split(sep);
-                const lastPart = parts[parts.length - 1].trim();
-                // If the last part is reasonable for a name (shorter, capitalized)
-                if (lastPart.length > 1 && lastPart.length < 55) {
-                  qAuthor = lastPart;
-                  qText = parts.slice(0, -1).join(sep).trim();
+            const aTag = $(el).find("a");
+            if (aTag.length > 0) {
+              const url = aTag.attr("href") || "";
+              const linkText = aTag.text().replace(/\s+/g, ' ').trim();
+              const dateRegex = /^([A-Z][a-z]+ \d{1,2}, \d{4})/;
+              const dateMatch = linkText.match(dateRegex);
+              let dateStr = "";
+              let remainingText = linkText;
+              if (dateMatch) {
+                dateStr = dateMatch[1];
+                remainingText = linkText.replace(dateRegex, "").trim();
+              }
+              
+              const categories = ["Announcements", "eBay Impact", "eBay for Charity", "Press Release", "News Team"];
+              let category = "Research";
+              let cleanTitle = remainingText;
+              for (const cat of categories) {
+                if (remainingText.startsWith(cat)) {
+                  category = cat;
+                  cleanTitle = remainingText.substring(cat.length).trim();
                   break;
                 }
               }
+              
+              news.push({
+                id: `news-${i}-${Math.random().toString(36).substring(2, 6)}`,
+                date: dateStr || "Recent",
+                category,
+                title: cleanTitle,
+                url
+              });
             }
-            
-            quotes.push({
-              id: `digest-q-${i}`,
-              text: qText,
-              author: qAuthor,
-              source: "Daily Digest"
+          }
+        }
+
+        // If we don't have quotes cached in database, parse from HTML
+        if (quotes.length === 0) {
+          let quotesFromHtml: any[] = [];
+          const quotesHeader = $("h2").filter((i, el) => $(el).text().includes("100 Daily Wise Quotes"));
+          if (quotesHeader.length > 0) {
+            const nextElements = quotesHeader.nextAll();
+            nextElements.each((i, el) => {
+              let text = $(el).text().replace(/\s+/g, ' ').trim();
+              if (text.length > 10) {
+                const numMatch = text.match(/^•?\s*\d+\.\s*/);
+                if (numMatch) {
+                  text = text.substring(numMatch[0].length).trim();
+                }
+
+                const separators = [" — ", " – ", " - ", "—", "–"];
+                let qText = text;
+                let qAuthor = "Ancient Wisdom";
+                
+                for (const sep of separators) {
+                  if (text.includes(sep)) {
+                    const parts = text.split(sep);
+                    const lastPart = parts[parts.length - 1].trim();
+                    if (lastPart.length > 1 && lastPart.length < 55) {
+                      qAuthor = lastPart;
+                      qText = parts.slice(0, -1).join(sep).trim();
+                      break;
+                    }
+                  }
+                }
+                
+                quotesFromHtml.push({
+                  text: qText,
+                  author: qAuthor,
+                  source: "Daily Digest"
+                });
+              }
             });
           }
-        });
+
+          // Slice to exactly 55 new quotes
+          const chosenQuotes = quotesFromHtml.slice(0, 55);
+
+          // Store them in Firestore daily_digest_quotes collection
+          if (firestoreDb && chosenQuotes.length > 0) {
+            try {
+              const batch = firestoreDb.batch();
+              const quotesRef = firestoreDb.collection("daily_digest_quotes");
+              const savedQuotes: any[] = [];
+
+              chosenQuotes.forEach((q, idx) => {
+                const docRef = quotesRef.doc();
+                const qData = {
+                  text: q.text,
+                  author: q.author,
+                  source: q.source || "Daily Digest",
+                  fetchDate: todayStr,
+                  order: idx,
+                  createdAt: new Date().toISOString()
+                };
+                batch.set(docRef, qData);
+                savedQuotes.push({
+                  id: docRef.id,
+                  ...qData
+                });
+              });
+
+              await batch.commit();
+              quotes = savedQuotes;
+              console.log(`[WiseFit Server] Auto-generated and stored ${quotes.length} new quotes for date ${todayStr} in Firestore.`);
+            } catch (dbWriteErr) {
+              console.error("[WiseFit Server] Failed to write daily_digest_quotes to Firestore:", dbWriteErr);
+              quotes = chosenQuotes.map((q, idx) => ({
+                id: `digest-q-${idx}`,
+                ...q,
+                fetchDate: todayStr,
+                order: idx,
+                createdAt: new Date().toISOString()
+              }));
+            }
+          } else {
+            quotes = chosenQuotes.map((q, idx) => ({
+              id: `digest-q-${idx}`,
+              ...q,
+              fetchDate: todayStr,
+              order: idx,
+              createdAt: new Date().toISOString()
+            }));
+          }
+        }
       }
 
       res.json({
         success: true,
-        lastUpdated: lastUpdated || new Date().toISOString().split('T')[0],
+        lastUpdated: lastUpdated || todayStr,
         news,
         quotes
       });

@@ -1048,7 +1048,7 @@ function ArticleCard({
   const [comments, setComments] = useState<ArticleComment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [guestName, setGuestName] = useState('');
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentSuccessMsg, setCommentSuccessMsg] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -2258,6 +2258,7 @@ function ArticleCard({
 }
 
 function AppContent() {
+  const speakQuoteRef = useRef<(quote: Quote) => void>(() => {});
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const [isQuotaDismissed, setIsQuotaDismissed] = useState(false);
   const [activeView, setActiveView] = useState<View>('dashboard');
@@ -2321,6 +2322,83 @@ function AppContent() {
       fetchSanctuaryDigest();
     }
   }, [historySubView, fetchSanctuaryDigest]);
+
+  const [digestActiveIndex, setDigestActiveIndex] = useState(0);
+  const [isDigestAutoFlowActive, setIsDigestAutoFlowActive] = useState(false);
+  const [digestAutoFlowTimer, setDigestAutoFlowTimer] = useState(30);
+
+  // Daily digest auto-flow timer logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isDigestAutoFlowActive && historySubView === 'digest' && digestTab === 'quotes' && digestData && digestData.quotes.length > 0) {
+      interval = setInterval(() => {
+        setDigestAutoFlowTimer(prev => {
+          if (prev <= 1) {
+            setDigestActiveIndex(current => {
+              const nextIndex = (current + 1) % digestData.quotes.length;
+              const nextQuote = digestData.quotes[nextIndex];
+              if (nextQuote) {
+                speakQuoteRef.current({
+                  id: nextQuote.id || `digest-${nextIndex}`,
+                  text: nextQuote.text,
+                  author: nextQuote.author,
+                  source: nextQuote.source || 'Daily Digest',
+                  category: 'daily',
+                  randomId: 0
+                });
+              }
+              return nextIndex;
+            });
+            return 30;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setDigestAutoFlowTimer(30);
+    }
+    return () => clearInterval(interval);
+  }, [isDigestAutoFlowActive, historySubView, digestTab, digestData]);
+
+  const handleNextDigestQuote = () => {
+    if (!digestData || digestData.quotes.length === 0) return;
+    setDigestAutoFlowTimer(30);
+    setDigestActiveIndex(prev => {
+      const nextIndex = (prev + 1) % digestData.quotes.length;
+      const q = digestData.quotes[nextIndex];
+      if (q) {
+        speakQuoteRef.current({
+          id: q.id || `digest-${nextIndex}`,
+          text: q.text,
+          author: q.author,
+          source: q.source || 'Daily Digest',
+          category: 'daily',
+          randomId: 0
+        });
+      }
+      return nextIndex;
+    });
+  };
+
+  const handlePrevDigestQuote = () => {
+    if (!digestData || digestData.quotes.length === 0) return;
+    setDigestAutoFlowTimer(30);
+    setDigestActiveIndex(prev => {
+      const prevIndex = prev > 0 ? prev - 1 : digestData.quotes.length - 1;
+      const q = digestData.quotes[prevIndex];
+      if (q) {
+        speakQuoteRef.current({
+          id: q.id || `digest-${prevIndex}`,
+          text: q.text,
+          author: q.author,
+          source: q.source || 'Daily Digest',
+          category: 'daily',
+          randomId: 0
+        });
+      }
+      return prevIndex;
+    });
+  };
 
   const [articles, setArticles] = useState<Article[]>([]);
 
@@ -3650,6 +3728,8 @@ function AppContent() {
       synth.speak(utterance);
     });
   }, []);
+
+  speakQuoteRef.current = speakQuote;
 
   const toggleSpeakQuote = useCallback(() => {
     if (!('speechSynthesis' in window)) return;
@@ -7301,7 +7381,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     )}>
                       <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-4" />
                       <p className="font-bold text-sm">Harvesting Sanctuary Commons...</p>
-                      <p className="text-xs text-zinc-500 mt-1">Retrieving 100 wise quotes and live research updates...</p>
+                      <p className="text-xs text-zinc-500 mt-1">Retrieving 55 wise quotes and live research updates...</p>
                     </div>
                   )}
 
@@ -7333,19 +7413,188 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                     </div>
                   )}
 
-                  {/* Quotes Feed */}
+                  {/* Quotes Feed with Auto-Flow Player */}
                   {digestData && digestTab === 'quotes' && digestData.quotes.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {digestData.quotes.map((quote: any, idx: number) => (
-                        <DigestQuoteCard
-                          key={quote.id || idx}
-                          quote={quote}
-                          idx={idx}
-                          isDarkMode={isDarkMode}
-                          onExpand={expandQuoteWithStoicAI}
-                          cn={cn}
-                        />
-                      ))}
+                    <div className="space-y-6">
+                      {/* Interactive Sanctuary Auto-Flow Card */}
+                      <div className={cn(
+                        "p-6 md:p-8 rounded-3xl border text-center relative overflow-hidden transition-all duration-500",
+                        isDarkMode 
+                          ? "bg-zinc-950/80 border-emerald-500/20 shadow-2xl shadow-emerald-950/10" 
+                          : "bg-white border-zinc-200 shadow-xl shadow-zinc-200/50"
+                      )}>
+                        {/* Progress Bar background */}
+                        {isDigestAutoFlowActive && (
+                          <div 
+                            className="absolute bottom-0 left-0 h-1 bg-emerald-500/35 transition-all duration-1000 ease-linear" 
+                            style={{ width: `${(digestAutoFlowTimer / 30) * 100}%` }} 
+                          />
+                        )}
+
+                        <div className="flex flex-col items-center space-y-4">
+                          {/* Badge */}
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                              isDarkMode ? "bg-zinc-900 text-zinc-400 border border-zinc-800" : "bg-zinc-100 text-zinc-600 border border-zinc-200"
+                            )}>
+                              Active Sanctuary Quote {digestActiveIndex + 1} of {digestData.quotes.length}
+                            </span>
+                          </div>
+
+                          {/* Quote text with custom transition */}
+                          <div className="h-32 md:h-28 flex items-center justify-center overflow-hidden w-full px-4">
+                            <AnimatePresence mode="wait">
+                              <motion.p
+                                key={digestActiveIndex}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.3 }}
+                                className={cn(
+                                  "text-base md:text-xl font-serif tracking-tight leading-relaxed max-w-2xl italic",
+                                  isDarkMode ? "text-zinc-100" : "text-zinc-800"
+                                )}
+                              >
+                                "{digestData.quotes[digestActiveIndex]?.text}"
+                              </motion.p>
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Author */}
+                          <AnimatePresence mode="wait">
+                            <motion.p
+                              key={`author-${digestActiveIndex}`}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className={cn(
+                                "text-xs md:text-sm font-bold",
+                                isDarkMode ? "text-emerald-400" : "text-emerald-600"
+                              )}
+                            >
+                              — {digestData.quotes[digestActiveIndex]?.author}
+                            </motion.p>
+                          </AnimatePresence>
+
+                          {/* Interactive Controls */}
+                          <div className="flex flex-wrap items-center justify-center gap-3 w-full max-w-md pt-2">
+                            <button
+                              type="button"
+                              onClick={handlePrevDigestQuote}
+                              className={cn(
+                                "flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm border",
+                                isDarkMode 
+                                  ? "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80" 
+                                  : "bg-zinc-50 text-zinc-600 hover:bg-zinc-100 border-zinc-200"
+                              )}
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                              Prev
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newActive = !isDigestAutoFlowActive;
+                                setIsDigestAutoFlowActive(newActive);
+                                if (newActive) {
+                                  const q = digestData.quotes[digestActiveIndex];
+                                  if (q) {
+                                    speakQuoteRef.current({
+                                      id: q.id || `digest-${digestActiveIndex}`,
+                                      text: q.text,
+                                      author: q.author,
+                                      source: q.source || 'Daily Digest',
+                                      category: 'daily',
+                                      randomId: 0
+                                    });
+                                  }
+                                }
+                              }}
+                              className={cn(
+                                "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm border",
+                                isDigestAutoFlowActive
+                                  ? (isDarkMode ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-emerald-50 text-emerald-600 border-emerald-100")
+                                  : (isDarkMode ? "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-850" : "bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200")
+                              )}
+                            >
+                              {isDigestAutoFlowActive ? (
+                                <>
+                                  <Volume2 className="w-4 h-4 animate-pulse text-emerald-400" />
+                                  Active ({digestAutoFlowTimer}s)
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-4 h-4" />
+                                  Auto-Flow
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={handleNextDigestQuote}
+                              className={cn(
+                                "flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm border",
+                                isDarkMode 
+                                  ? "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80" 
+                                  : "bg-zinc-50 text-zinc-600 hover:bg-zinc-100 border-zinc-200"
+                              )}
+                            >
+                              Next
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Header for list */}
+                      <div className={cn(
+                        "flex items-center justify-between pt-6 border-t",
+                        isDarkMode ? "border-zinc-800/80" : "border-zinc-200"
+                      )}>
+                        <h4 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
+                          Complete Log Library ({digestData.quotes.length} Daily Selections)
+                        </h4>
+                        <span className="text-[10px] font-mono text-zinc-500">Click any card to focus & listen</span>
+                      </div>
+
+                      {/* Complete List of Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {digestData.quotes.map((quote: any, idx: number) => (
+                          <div 
+                            key={quote.id || idx}
+                            onClick={() => {
+                              setDigestActiveIndex(idx);
+                              setDigestAutoFlowTimer(30);
+                              speakQuoteRef.current({
+                                id: quote.id || `digest-${idx}`,
+                                text: quote.text,
+                                author: quote.author,
+                                source: quote.source || 'Daily Digest',
+                                category: 'daily',
+                                randomId: 0
+                              });
+                            }}
+                            className={cn(
+                              "cursor-pointer transition-all duration-300",
+                              idx === digestActiveIndex 
+                                ? (isDarkMode ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-zinc-950 scale-[1.02]" : "ring-2 ring-emerald-500 ring-offset-2 ring-offset-white scale-[1.02]")
+                                : ""
+                            )}
+                          >
+                            <DigestQuoteCard
+                              quote={quote}
+                              idx={idx}
+                              isDarkMode={isDarkMode}
+                              onExpand={expandQuoteWithStoicAI}
+                              cn={cn}
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -11222,7 +11471,7 @@ interface WorkoutCardProps {
 
 function WorkoutCard({ workout, full = false, isDarkMode, isGirlyMode, onDelete, onEdit, onAddComment, onUpdateWorkout, currentUserId }: WorkoutCardProps & { isGirlyMode?: boolean }) {
   const [commentText, setCommentText] = useState('');
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(true);
   const [failedThumbnails, setFailedThumbnails] = useState<Record<string, boolean>>({});
   const [tiktokThumbnails, setTiktokThumbnails] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);

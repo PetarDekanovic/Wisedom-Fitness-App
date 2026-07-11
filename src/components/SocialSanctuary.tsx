@@ -1371,9 +1371,9 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
         {mediaMatches.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-zinc-500/10 mt-2">
             {mediaMatches.map((m, i) => {
-              const isImage = /\.(jpe?g|png|gif|webp|svg)/i.test(m.url);
-              const isVideo = /\.(mp4|webm|mov|ogg)/i.test(m.url);
-              const isPdf = /\.pdf/i.test(m.url);
+              const isImage = /\.(jpe?g|png|gif|webp|svg)/i.test(m.filename) || /\.(jpe?g|png|gif|webp|svg)/i.test(m.url);
+              const isVideo = /\.(mp4|webm|mov|ogg)/i.test(m.filename) || /\.(mp4|webm|mov|ogg)/i.test(m.url);
+              const isPdf = /\.pdf/i.test(m.filename) || /\.pdf/i.test(m.url);
 
               return (
                 <div key={i} className="rounded-xl overflow-hidden bg-black/10 border border-zinc-550/15 p-2 text-left">
@@ -3893,7 +3893,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         </AnimatePresence>
 
                         {/* Header author alignment */}
-                        <div className="flex items-center justify-between gap-2 min-w-0">
+                        <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2.5 w-full pb-2 border-b border-zinc-800/10 dark:border-zinc-800/20">
                           <button 
                             type="button"
                             onClick={() => {
@@ -3923,7 +3923,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               referrerPolicy="no-referrer"
                             />
                             <div className="min-w-0">
-                              <p className="text-xs font-black uppercase tracking-tight group-hover:text-emerald-500 transition-colors truncate max-w-[100px] xs:max-w-[140px] sm:max-w-none">
+                              <p className="text-xs font-black uppercase tracking-tight group-hover:text-emerald-500 transition-colors truncate max-w-[160px] xs:max-w-[200px] sm:max-w-none">
                                 {post.userName}
                               </p>
                               <p className={cn("text-[9px] font-mono truncate", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
@@ -3933,7 +3933,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                           </button>
 
                           {/* Like, share, edit, delete actions */}
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="flex items-center gap-1.5 flex-shrink-0 self-end xs:self-center">
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => handleToggleLike(post)}
