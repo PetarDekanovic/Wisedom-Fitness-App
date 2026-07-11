@@ -2297,7 +2297,7 @@ function AppContent() {
     setIsFetchingDigest(true);
     setDigestError(null);
     try {
-      const res = await fetch("/api/sanctuary-digest");
+      const res = await fetch(`/api/sanctuary-digest${force ? "?force=true" : ""}`);
       if (!res.ok) throw new Error("Could not retrieve daily digest.");
       const data = await res.json();
       if (data.success) {

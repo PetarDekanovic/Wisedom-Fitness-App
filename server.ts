@@ -1034,8 +1034,10 @@ app.get("/api/ai/diagnostics", async (req, res) => {
         }
       }
 
+      const force = req.query.force === "true";
+
       // Check if we already have today's quotes in the database
-      if (firestoreDb) {
+      if (firestoreDb && !force) {
         try {
           const snapshot = await firestoreDb.collection("daily_digest_quotes")
             .where("fetchDate", "==", todayStr)
@@ -1076,7 +1078,54 @@ app.get("/api/ai/diagnostics", async (req, res) => {
       }
 
       if (!html && quotes.length === 0) {
-        throw new Error("Could not fetch page content from wisefitorg and no database cache exists");
+        // Fallback: try to query any historical cached daily_digest_quotes
+        if (firestoreDb) {
+          try {
+            console.warn("[WiseFit Server] Scraper failed and no quotes found for today. Fetching most recent historical quotes as fallback...");
+            const snapshot = await firestoreDb.collection("daily_digest_quotes")
+              .orderBy("createdAt", "desc")
+              .limit(55)
+              .get();
+            if (!snapshot.empty) {
+              snapshot.forEach((doc: any) => {
+                quotes.push({
+                  id: doc.id,
+                  ...doc.data()
+                });
+              });
+              // Sort by order
+              quotes.sort((a: any, b: any) => (a.order !== undefined && b.order !== undefined) ? a.order - b.order : 0);
+              console.log(`[WiseFit Server] Loaded ${quotes.length} historical fallback quotes from Firestore.`);
+            }
+          } catch (dbFallbackErr) {
+            console.error("[WiseFit Server] Historical fallback database read failed:", dbFallbackErr);
+          }
+        }
+      }
+
+      // Final fallback if STILL empty (no internet and no db entries)
+      if (quotes.length === 0) {
+        console.warn("[WiseFit Server] All fetching/scraping failed and no database cache. Using static high-signal fallbacks.");
+        const fallbackQuotesList = [
+          { text: "Instead of being intimidated by the limitations, be inspired to find new ways around them.", author: "Ralph Marston" },
+          { text: "Talk sense to a fool and he calls you foolish.", author: "Euripides" },
+          { text: "The truth is rarely pure and never simple.", author: "Oscar Wilde" },
+          { text: "It's not the love you make. It's the love you give.", author: "Nikola Tesla" },
+          { text: "Quality means doing it right when no one is looking.", author: "Henry Ford" },
+          { text: "If you correct your mind, the rest of your life will fall into place.", author: "Lao Tzu" },
+          { text: "Go as far as you can see and you will see further.", author: "Zig Ziglar" },
+          { text: "Peace is not the absence of conflict, but the ability to cope with it.", author: "Unknown" },
+          { text: "Nothing in the world is ever completely wrong. Even a stopped clock is right twice a day.", author: "Paulo Coelho" }
+        ];
+        quotes = fallbackQuotesList.map((q, idx) => ({
+          id: `fallback-q-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+          text: q.text,
+          author: q.author,
+          source: "Daily Fallback",
+          fetchDate: todayStr,
+          order: idx,
+          createdAt: new Date().toISOString()
+        }));
       }
 
       let lastUpdated = "";
