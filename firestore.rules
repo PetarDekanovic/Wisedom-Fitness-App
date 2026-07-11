@@ -152,6 +152,17 @@ service cloud.firestore {
              (data.get('likes', null) == null || (data.likes is list && data.likes.size() <= 1000));
     }
 
+    function isValidPostComment(data) {
+      return data.keys().hasAll(['id', 'postId', 'userName', 'content', 'createdAt', 'status']) &&
+             data.id is string && data.id.size() < 100 &&
+             data.postId is string && data.postId.size() < 100 &&
+             data.userName is string && data.userName.size() > 0 && data.userName.size() < 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 5000 &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             (data.get('userId', null) == null || (data.userId is string && data.userId.size() < 100)) &&
+             (data.get('userAvatar', null) == null || (data.userAvatar is string && data.userAvatar.size() < 1000));
+    }
+
     match /daily_quotes_cache/{quoteId} {
       allow read: if true;
       allow create: if isAuthenticated();
@@ -199,7 +210,7 @@ service cloud.firestore {
     }
 
     match /social_posts/{postId} {
-      allow read: if isAuthenticated() && (resource.data.status == 'approved' || resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if resource.data.status == 'approved' || (isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()));
       allow create: if isAuthenticated() && isValidCommunityPost(request.resource.data) && (request.resource.data.status == 'pending' || isAdmin());
       allow update: if isAuthenticated() && (
         // Admin full moderate
@@ -210,6 +221,42 @@ service cloud.firestore {
         (resource.data.userId == request.auth.uid && isValidCommunityPost(request.resource.data) && request.resource.data.status == 'pending')
       );
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      match /comments/{commentId} {
+        allow read: if resource.data.status == 'approved' || 
+                     (isAuthenticated() && (
+                       resource.data.userId == request.auth.uid || 
+                       isAdmin() || 
+                       get(/databases/$(database)/documents/social_posts/$(postId)).data.userId == request.auth.uid
+                     ));
+        allow create: if isValidPostComment(request.resource.data) && 
+                      request.resource.data.postId == postId &&
+                      (
+                        request.resource.data.status == 'pending' || 
+                        isAdmin() || 
+                        (isAuthenticated() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'approved')
+                      ) &&
+                      (request.resource.data.get('userId', null) == null || (isAuthenticated() && request.resource.data.userId == request.auth.uid));
+        allow update: if isAdmin() || (
+                        isAuthenticated() && 
+                        resource.data.userId == request.auth.uid &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['content', 'updatedAt']) &&
+                        isValidPostComment(request.resource.data) &&
+                        request.resource.data.userId == resource.data.userId &&
+                        request.resource.data.status == resource.data.status
+                      ) || (
+                        isAuthenticated() && 
+                        get(/databases/$(database)/documents/social_posts/$(postId)).data.userId == request.auth.uid &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+                        request.resource.data.status in ['approved', 'rejected', 'pending']
+                      );
+        allow delete: if isAdmin() || (
+                        isAuthenticated() && (
+                          resource.data.userId == request.auth.uid || 
+                          get(/databases/$(database)/documents/social_posts/$(postId)).data.userId == request.auth.uid
+                        )
+                      );
+      }
     }
 
     match /conversations/{conversationId} {

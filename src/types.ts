@@ -104,6 +104,18 @@ export interface ArticleComment {
   updatedAt?: string;
 }
 
+export interface PostComment {
+  id: string;
+  postId: string;
+  userId: string | null;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  createdAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+  updatedAt?: string;
+}
+
 export interface UserProfile {
   uid?: string;
   name: string;

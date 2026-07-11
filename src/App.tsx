@@ -9457,24 +9457,13 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              {user ? (
-                <SocialSanctuary 
-                  isDarkMode={isDarkMode} 
-                  isGirlyMode={isGirlyMode} 
-                  currentUser={user} 
-                  userProfile={userProfile} 
-                  isPremiumUser={isPremiumUser}
-                />
-              ) : (
-                <div className="max-w-md mx-auto">
-                  <WiseFitPlusPaywall 
-                    isDarkMode={isDarkMode} 
-                    isGirlyMode={isGirlyMode} 
-                    userEmail={user?.email} 
-                    onSuccess={handleUpgradeSuccess} 
-                  />
-                </div>
-              )}
+              <SocialSanctuary 
+                isDarkMode={isDarkMode} 
+                isGirlyMode={isGirlyMode} 
+                currentUser={user} 
+                userProfile={(userProfile || { name: 'Guest Seeker', role: 'guest', avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200', markedQuotes: [] }) as any} 
+                isPremiumUser={isPremiumUser}
+              />
             </motion.div>
           )}
         </AnimatePresence>

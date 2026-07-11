@@ -74,7 +74,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { JitsiMeet } from './JitsiMeet';
-import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile } from '../types';
+import { PublicProfile, CommunityPost, Conversation, DMMessage, UserProfile, PostComment } from '../types';
 import { 
   Briefcase, 
   GraduationCap, 
@@ -1001,8 +1001,146 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
     }
   }, [pendingPosts.length]);
 
+  // Comments state
+  const [expandedPostComments, setExpandedPostComments] = useState<{[postId: string]: boolean}>({});
+  const [postComments, setPostComments] = useState<{[postId: string]: PostComment[]}>({});
+  const [postCommentsCount, setPostCommentsCount] = useState<{[postId: string]: number}>({});
+  const [newCommentText, setNewCommentText] = useState<{[postId: string]: string}>({});
+  const [newCommentGuestName, setNewCommentGuestName] = useState<{[postId: string]: string}>({});
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState<string>('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState<{[postId: string]: boolean}>({});
+
   // Check if current logged in is admin
   const isAdmin = currentUser?.email === 'petar.dekanovic@gmail.com' || userProfile?.role === 'admin';
+
+  // Real-time listener for comments of loaded posts
+  useEffect(() => {
+    const allPosts = [...posts, ...peerWallPosts];
+    if (allPosts.length === 0) return;
+    
+    const unsubs = allPosts.map(post => {
+      const commentsRef = collection(db, 'social_posts', post.id, 'comments');
+      return onSnapshot(commentsRef, (snapshot) => {
+        const list: PostComment[] = [];
+        snapshot.forEach(docSnap => {
+          list.push({ id: docSnap.id, ...docSnap.data() } as PostComment);
+        });
+        
+        // Sort by createdAt ascending (classical chronological dialogue)
+        list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        
+        setPostComments(prev => ({ ...prev, [post.id]: list }));
+        
+        // Count comments visible to the current perspective
+        const isAuthor = post.userId === currentUser?.uid;
+        const approvedCount = list.filter(c => c.status === 'approved').length;
+        const pendingCount = list.filter(c => c.status === 'pending').length;
+        setPostCommentsCount(prev => ({ 
+          ...prev, 
+          [post.id]: approvedCount + (isAdmin || isAuthor ? pendingCount : 0)
+        }));
+      }, (err) => {
+        console.warn(`Error loading comments for post ${post.id}:`, err);
+      });
+    });
+
+    return () => {
+      unsubs.forEach(unsub => unsub());
+    };
+  }, [posts, peerWallPosts, isAdmin, currentUser]);
+
+  // Action: Toggle comments section visibility for a post
+  const toggleCommentsForPost = (postId: string) => {
+    setExpandedPostComments(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
+  };
+
+  // Action: Add comment
+  const handleAddComment = async (postId: string) => {
+    const text = newCommentText[postId]?.trim();
+    if (!text) return;
+
+    setIsSubmittingComment(prev => ({ ...prev, [postId]: true }));
+
+    try {
+      const commentId = 'comment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      const isGoogleLoggedIn = currentUser && !currentUser.isAnonymous && currentUser.providerData?.length > 0;
+      
+      const newComment: PostComment = {
+        id: commentId,
+        postId: postId,
+        userId: isGoogleLoggedIn ? currentUser.uid : null,
+        userName: isGoogleLoggedIn 
+          ? (userProfile?.name || currentUser.displayName || 'Google Seeker') 
+          : (newCommentGuestName[postId]?.trim() || 'Guest Seeker'),
+        userAvatar: isGoogleLoggedIn 
+          ? (userProfile?.avatarUrl || currentUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200')
+          : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+        content: text,
+        createdAt: new Date().toISOString(),
+        status: isGoogleLoggedIn ? 'approved' : 'pending' // Guest comments require admin approval
+      };
+
+      const commentDocRef = doc(db, 'social_posts', postId, 'comments', commentId);
+      await setDoc(commentDocRef, newComment);
+
+      // Clear input fields
+      setNewCommentText(prev => ({ ...prev, [postId]: '' }));
+      setNewCommentGuestName(prev => ({ ...prev, [postId]: '' }));
+    } catch (err) {
+      console.error('Error adding comment:', err);
+    } finally {
+      setIsSubmittingComment(prev => ({ ...prev, [postId]: false }));
+    }
+  };
+
+  // Action: Approve comment (Admin / Post Author)
+  const handleApproveComment = async (postId: string, commentId: string) => {
+    try {
+      const commentDocRef = doc(db, 'social_posts', postId, 'comments', commentId);
+      await updateDoc(commentDocRef, {
+        status: 'approved'
+      });
+    } catch (err) {
+      console.error('Error approving comment:', err);
+    }
+  };
+
+  // Action: Delete/Reject comment (Admin / Post Author / Commenter)
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    try {
+      const commentDocRef = doc(db, 'social_posts', postId, 'comments', commentId);
+      await deleteDoc(commentDocRef);
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+    }
+  };
+
+  // Action: Start editing comment
+  const handleEditCommentStart = (commentId: string, currentContent: string) => {
+    setEditingCommentId(commentId);
+    setEditingCommentText(currentContent);
+  };
+
+  // Action: Save edited comment
+  const handleSaveEditedComment = async (postId: string, commentId: string) => {
+    if (!editingCommentText.trim()) return;
+    try {
+      const commentDocRef = doc(db, 'social_posts', postId, 'comments', commentId);
+      await updateDoc(commentDocRef, {
+        content: editingCommentText.trim(),
+        updatedAt: new Date().toISOString()
+      });
+      setEditingCommentId(null);
+      setEditingCommentText('');
+    } catch (err) {
+      console.error('Error editing comment:', err);
+    }
+  };
 
   // Dummy provisioning states for message system validation
   const [isProvisioningDummy, setIsProvisioningDummy] = useState(false);
@@ -3847,6 +3985,27 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               </span>
                             </div>
 
+                            {/* Comments Button Toggle */}
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => toggleCommentsForPost(post.id)}
+                                className={cn(
+                                  "p-2 rounded-lg transition-colors",
+                                  expandedPostComments[post.id]
+                                    ? "text-emerald-500 bg-emerald-500/10" 
+                                    : isDarkMode 
+                                      ? "text-zinc-500 hover:text-white hover:bg-zinc-800" 
+                                      : "text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+                                )}
+                                title="Comments"
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                              </button>
+                              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                {postCommentsCount[post.id] || 0}
+                              </span>
+                            </div>
+
                             {/* Share Options dropdown */}
                             <div className="relative">
                               <button
@@ -4214,6 +4373,227 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             </div>
                           );
                         })()}
+
+                        {/* Expanded Comments Section */}
+                        {expandedPostComments[post.id] && (
+                          <div className={cn("border-t mt-4 pt-4 space-y-4", isDarkMode ? "border-zinc-800/80" : "border-zinc-100")}>
+                            <h5 className="text-[10px] font-black uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                              <MessageSquare className="w-3.5 h-3.5" />
+                              Dialogue Sanctum ({postComments[post.id]?.filter(c => c.status === 'approved' || c.userId === currentUser?.uid || isAdmin || post.userId === currentUser?.uid).length || 0})
+                            </h5>
+
+                            {/* Comments List */}
+                            <div className="space-y-3 max-h-72 overflow-y-auto pr-1 no-scrollbar">
+                              {(() => {
+                                const list = postComments[post.id] || [];
+                                const visibleList = list.filter(c => {
+                                  if (c.status === 'approved') return true;
+                                  if (currentUser && c.userId === currentUser.uid) return true;
+                                  if (isAdmin) return true;
+                                  if (currentUser && post.userId === currentUser.uid) return true;
+                                  return false;
+                                });
+
+                                if (visibleList.length === 0) {
+                                  return (
+                                    <p className="text-[10px] text-zinc-500 italic py-2">
+                                      No scholarly remarks recorded yet. Share your perspectives below.
+                                    </p>
+                                  );
+                                }
+
+                                return visibleList.map(comment => {
+                                  const isCommentAuthor = currentUser && comment.userId === currentUser.uid;
+                                  const isPostAuthor = currentUser && post.userId === currentUser.uid;
+                                  const isPending = comment.status === 'pending';
+
+                                  return (
+                                    <div 
+                                      key={comment.id} 
+                                      className={cn(
+                                        "p-3 rounded-2xl border transition-all space-y-1.5 relative",
+                                        isPending 
+                                          ? isDarkMode ? "bg-amber-500/5 border-amber-500/20" : "bg-amber-50/50 border-amber-200"
+                                          : isDarkMode ? "bg-zinc-950/40 border-zinc-900" : "bg-zinc-50 border-zinc-150"
+                                      )}
+                                    >
+                                      {/* Comment Header */}
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <img 
+                                            src={comment.userAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'} 
+                                            alt="comment-avatar" 
+                                            className="w-5.5 h-5.5 rounded-full object-cover border border-zinc-500/10"
+                                            referrerPolicy="no-referrer"
+                                          />
+                                          <div>
+                                            <span className="text-[10px] font-black uppercase tracking-tight text-emerald-500">
+                                              {comment.userName}
+                                            </span>
+                                            {isPending && (
+                                              <span className="ml-1.5 text-[8px] bg-amber-500/10 text-amber-500 font-bold uppercase tracking-wider px-1.5 py-0.5 rounded">
+                                                Pending Review
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[8px] font-mono text-zinc-500">
+                                            {new Date(comment.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                          </span>
+
+                                          {/* Approve button for admin / post author if pending */}
+                                          {isPending && (isAdmin || isPostAuthor) && (
+                                            <button
+                                              onClick={() => handleApproveComment(post.id, comment.id)}
+                                              className="p-1 text-emerald-500 hover:bg-emerald-500/10 rounded transition-colors"
+                                              title="Approve Comment"
+                                            >
+                                              <Check className="w-3 h-3" />
+                                            </button>
+                                          )}
+
+                                          {/* Edit / Delete actions */}
+                                          {editingCommentId === comment.id ? null : (
+                                            <>
+                                              {isCommentAuthor && (
+                                                <button
+                                                  onClick={() => handleEditCommentStart(comment.id, comment.content)}
+                                                  className="p-1 text-zinc-500 hover:text-white rounded transition-colors"
+                                                  title="Edit Comment"
+                                                >
+                                                  <Edit className="w-3 h-3" />
+                                                </button>
+                                              )}
+                                              {(isCommentAuthor || isAdmin || isPostAuthor) && (
+                                                <button
+                                                  onClick={() => handleDeleteComment(post.id, comment.id)}
+                                                  className="p-1 text-zinc-500 hover:text-red-400 rounded transition-colors"
+                                                  title="Delete Comment"
+                                                >
+                                                  <Trash2 className="w-3 h-3" />
+                                                </button>
+                                              )}
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Comment Content */}
+                                      {editingCommentId === comment.id ? (
+                                        <div className="space-y-1.5 mt-1">
+                                          <textarea
+                                            value={editingCommentText}
+                                            onChange={(e) => setEditingCommentText(e.target.value)}
+                                            rows={2}
+                                            className={cn(
+                                              "w-full text-[11px] p-2 rounded-xl border outline-none font-sans resize-none",
+                                              isDarkMode 
+                                                ? "bg-zinc-950 border-zinc-850 text-zinc-200 focus:border-emerald-500/50" 
+                                                : "bg-white border-zinc-200 text-zinc-800 focus:border-emerald-500/50"
+                                            )}
+                                          />
+                                          <div className="flex justify-end gap-1.5">
+                                            <button
+                                              onClick={() => setEditingCommentId(null)}
+                                              className="px-2 py-1 rounded text-[9px] uppercase font-black tracking-wider border border-zinc-800 text-zinc-400 hover:text-white"
+                                            >
+                                              Cancel
+                                            </button>
+                                            <button
+                                              onClick={() => handleSaveEditedComment(post.id, comment.id)}
+                                              className="px-2 py-1 rounded bg-emerald-500 text-zinc-950 text-[9px] uppercase font-black tracking-wider hover:bg-emerald-400"
+                                            >
+                                              Save
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <p className={cn("text-[11px] leading-relaxed", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>
+                                          {comment.content}
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+
+                            {/* Comment Entry Input */}
+                            <div className="space-y-2 mt-2 pt-2 border-t border-zinc-500/10">
+                              {(() => {
+                                const isGoogleLoggedIn = currentUser && !currentUser.isAnonymous && currentUser.providerData?.length > 0;
+                                return (
+                                  <div className="space-y-2">
+                                    {!isGoogleLoggedIn && (
+                                      <div className="flex gap-2">
+                                        <input 
+                                          type="text"
+                                          placeholder="Your Seeker Alias (Optional)..."
+                                          value={newCommentGuestName[post.id] || ''}
+                                          onChange={(e) => setNewCommentGuestName(prev => ({ ...prev, [post.id]: e.target.value }))}
+                                          className={cn(
+                                            "w-full text-[10px] p-2 rounded-xl border outline-none font-mono",
+                                            isDarkMode 
+                                              ? "bg-zinc-950 border-zinc-850 text-zinc-300 focus:border-amber-500/50" 
+                                              : "bg-white border-zinc-200 text-zinc-800 focus:border-amber-500/50"
+                                          )}
+                                        />
+                                        <div className="text-[8px] bg-amber-500/10 text-amber-500 font-bold uppercase tracking-widest px-2.5 py-2 rounded-xl flex items-center shrink-0">
+                                          Guest mode
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    <div className="flex items-start gap-2">
+                                      <img 
+                                        src={isGoogleLoggedIn 
+                                          ? (userProfile?.avatarUrl || currentUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200')
+                                          : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'
+                                        } 
+                                        alt="my-avatar" 
+                                        className="w-7 h-7 rounded-full object-cover border border-zinc-500/10 mt-1 shrink-0"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                      <div className="flex-1 space-y-1.5">
+                                        <textarea
+                                          rows={2}
+                                          placeholder={isGoogleLoggedIn ? "Record your scholarly remark..." : "Share guest reflection (will require review)..."}
+                                          value={newCommentText[post.id] || ''}
+                                          onChange={(e) => setNewCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                                          className={cn(
+                                            "w-full text-[11px] p-2.5 rounded-2xl border outline-none font-sans resize-none transition-all duration-300",
+                                            isDarkMode 
+                                              ? "bg-zinc-950 border-zinc-850 text-zinc-200 focus:border-emerald-500/50" 
+                                              : "bg-white border-zinc-200 text-zinc-800 focus:border-emerald-500/50"
+                                          )}
+                                        />
+                                        <div className="flex justify-between items-center text-[8px] text-zinc-500 font-medium">
+                                          <span>
+                                            {!isGoogleLoggedIn && "⚠️ Requires approval by Petar before displaying"}
+                                          </span>
+                                          <button
+                                            onClick={() => handleAddComment(post.id)}
+                                            disabled={isSubmittingComment[post.id] || !newCommentText[post.id]?.trim()}
+                                            className={cn(
+                                              "px-3 py-1.5 rounded-xl font-black uppercase tracking-wider text-[9px] flex items-center gap-1 active:scale-95 disabled:opacity-50 transition-all",
+                                              isGoogleLoggedIn
+                                                ? "bg-emerald-500 text-zinc-950 shadow-sm"
+                                                : "bg-amber-500 text-zinc-950 shadow-sm"
+                                            )}
+                                          >
+                                            {isSubmittingComment[post.id] ? "Submitting..." : isGoogleLoggedIn ? "Reflect" : "Queue Reflection"}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        )}
                       </motion.div>
                     );
                   })

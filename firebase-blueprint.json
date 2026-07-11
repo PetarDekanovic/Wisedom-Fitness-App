@@ -253,6 +253,22 @@
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] }
       },
       "required": ["id", "articleId", "userName", "content", "createdAt", "status"]
+    },
+    "PostComment": {
+      "title": "PostComment",
+      "description": "A user or guest comment on a community post in the Scholar feed",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "postId": { "type": "string" },
+        "userId": { "type": ["string", "null"] },
+        "userName": { "type": "string" },
+        "userAvatar": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] }
+      },
+      "required": ["id", "postId", "userName", "content", "createdAt", "status"]
     }
   },
   "firestore": {
@@ -267,6 +283,10 @@
     "/social_posts/{postId}": {
       "schema": "CommunityPost",
       "description": "Community posts with approval lifecycle"
+    },
+    "/social_posts/{postId}/comments/{commentId}": {
+      "schema": "PostComment",
+      "description": "Comments left on community feed posts"
     },
     "/conversations/{conversationId}": {
       "schema": "Conversation",
