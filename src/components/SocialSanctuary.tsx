@@ -122,42 +122,16 @@ const uploadBase64ToStorage = async (base64Data: string, filename: string, folde
     const uniqueFilename = `${cleanFilename.replace(/\.[^/.]+$/, "")}_${Date.now()}.${ext}`;
     const storageRef = ref(storage, `${targetFolder}/${uniqueFilename}`);
     
-    // Convert base64 Data URL to a raw binary Blob for reliable cloud storage
-    let blob: Blob;
-    if (base64Data.startsWith('data:')) {
-      const arr = base64Data.split(',');
-      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-      const bstr = atob(arr[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-      }
-      blob = new Blob([u8arr], { type: mime });
-    } else {
-      const bstr = atob(base64Data);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-      }
-      blob = new Blob([u8arr], { type: 'image/jpeg' });
-    }
-
-    // Direct binary upload to Firebase Storage (exact same superior code path as MP4)
-    const uploadTask = uploadBytesResumable(storageRef, blob, {
-      contentType: blob.type
+    const format = base64Data.startsWith('data:') ? 'data_url' : 'base64';
+    const mime = base64Data.startsWith('data:') 
+      ? (base64Data.split(',')[0].match(/:(.*?);/)?.[1] || 'image/jpeg')
+      : 'image/jpeg';
+      
+    const uploadResult = await uploadString(storageRef, base64Data, format, {
+      contentType: mime
     });
-
-    await new Promise<void>((resolve, reject) => {
-      uploadTask.on('state_changed', 
-        null,
-        (error) => reject(error),
-        () => resolve()
-      );
-    });
-
-    const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+    
+    const downloadUrl = await getDownloadURL(uploadResult.ref);
     return downloadUrl;
   } catch (err) {
     console.warn("Client-side direct storage upload failed, falling back to server API /api/upload:", err);
@@ -198,13 +172,7 @@ const uploadFileToStorage = async (file: File, folder: string): Promise<string> 
       contentType: file.type
     });
 
-    await new Promise<void>((resolve, reject) => {
-      uploadTask.on('state_changed', 
-        null,
-        (error) => reject(error),
-        () => resolve()
-      );
-    });
+    await uploadTask;
 
     const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
     return downloadUrl;
@@ -3925,7 +3893,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         </AnimatePresence>
 
                         {/* Header author alignment */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2 min-w-0">
                           <button 
                             type="button"
                             onClick={() => {
@@ -3946,26 +3914,26 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 }
                               }
                             }}
-                            className="flex items-center gap-2.5 text-left group"
+                            className="flex items-center gap-2 min-w-0 text-left group flex-shrink"
                           >
                             <img 
                               src={post.userAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
                               alt="avatar"
-                              className="w-8 h-8 rounded-full object-cover border border-zinc-500/10 group-hover:scale-105 transition-transform"
+                              className="w-8 h-8 rounded-full object-cover border border-zinc-500/10 group-hover:scale-105 transition-transform flex-shrink-0"
                               referrerPolicy="no-referrer"
                             />
-                            <div>
-                              <p className="text-xs font-black uppercase tracking-tight group-hover:text-emerald-500 transition-colors">
+                            <div className="min-w-0">
+                              <p className="text-xs font-black uppercase tracking-tight group-hover:text-emerald-500 transition-colors truncate max-w-[100px] xs:max-w-[140px] sm:max-w-none">
                                 {post.userName}
                               </p>
-                              <p className={cn("text-[9px] font-mono", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
+                              <p className={cn("text-[9px] font-mono truncate", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
                                 {new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
                           </button>
 
                           {/* Like, share, edit, delete actions */}
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => handleToggleLike(post)}
