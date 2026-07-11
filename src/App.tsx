@@ -2327,6 +2327,220 @@ function AppContent() {
   const [isDigestAutoFlowActive, setIsDigestAutoFlowActive] = useState(false);
   const [digestAutoFlowTimer, setDigestAutoFlowTimer] = useState(30);
 
+  const [digestComment, setDigestComment] = useState('This quote changed my life');
+  const [digestWisdomGrade, setDigestWisdomGrade] = useState('A daily reminder');
+  const [isDigestLoopActive, setIsDigestLoopActive] = useState(false);
+  const [isGeneratingDigestAIQuote, setIsGeneratingDigestAIQuote] = useState(false);
+  const [digestAICountdown, setDigestAICountdown] = useState(0);
+  const [copiedDigestQuote, setCopiedDigestQuote] = useState<boolean | null>(null);
+  const [isDigestSpeechPlaying, setIsDigestSpeechPlaying] = useState(false);
+
+  // Auto-fill comment when digest active quote changes
+  useEffect(() => {
+    if (digestData && digestData.quotes && digestData.quotes[digestActiveIndex]) {
+      const activeQuote = digestData.quotes[digestActiveIndex];
+      if (activeQuote.comment) {
+        setDigestComment(activeQuote.comment);
+      } else {
+        setDigestComment('This quote changed my life');
+      }
+    } else {
+      setDigestComment('This quote changed my life');
+    }
+  }, [digestActiveIndex, digestData]);
+
+  // Handle loop logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isDigestLoopActive && !isDigestAutoFlowActive && digestData && digestData.quotes && digestData.quotes.length > 0) {
+      interval = setInterval(() => {
+        handleNextDigestQuote();
+      }, 30000); // 30 seconds
+    }
+    return () => clearInterval(interval);
+  }, [isDigestLoopActive, isDigestAutoFlowActive, digestActiveIndex, digestData]);
+
+  const markDigestQuoteAsSeen = async () => {
+    if (checkGuestAction() || isQuotaExceeded) {
+      if (isQuotaExceeded) {
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 2000);
+      }
+      return;
+    }
+    
+    if (userProfile.uid !== user?.uid) {
+      console.warn('User profile not yet loaded or UID mismatch');
+      return;
+    }
+
+    if (!digestData || !digestData.quotes || digestData.quotes.length === 0) return;
+    const activeQuote = digestData.quotes[digestActiveIndex];
+    if (!activeQuote) return;
+    
+    // Generate a stable ID
+    const quoteId = `digest_${activeQuote.text.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}_${activeQuote.author.substring(0, 10).replace(/[^a-zA-Z0-9]/g, '_')}`;
+    
+    const existingMarked = userProfile.markedQuotes || [];
+    const isAlreadyMarked = existingMarked.some(m => m.id === quoteId);
+    
+    if (isAlreadyMarked) {
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+      return;
+    }
+
+    const newSeenIds = Array.from(new Set([...(userProfile.seenQuoteIds || []), quoteId]));
+    
+    const newMarkedQuotes = [...existingMarked, { 
+      id: quoteId, 
+      date: new Date().toISOString(),
+      wisdomGrade: digestWisdomGrade || 'A daily reminder',
+      comment: digestComment || '',
+      text: activeQuote.text,
+      author: activeQuote.author,
+      source: activeQuote.source || 'Daily Digest',
+      category: 'daily',
+      isAI: activeQuote.isAI || false
+    }];
+    
+    try {
+      console.log('Attempting to save digest quote to library:', quoteId);
+      
+      setUserProfile(prev => ({
+        ...prev,
+        seenQuoteIds: newSeenIds,
+        markedQuotes: newMarkedQuotes
+      }));
+
+      await setDoc(doc(db, 'users', user.uid), { 
+        seenQuoteIds: newSeenIds,
+        markedQuotes: newMarkedQuotes
+      }, { merge: true });
+
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+    } catch (err: any) {
+      console.error("Failed to mark digest quote as seen:", err);
+    }
+  };
+
+  const toggleSpeakDigestQuote = () => {
+    if (!('speechSynthesis' in window)) return;
+    if (isDigestSpeechPlaying) {
+      window.speechSynthesis.cancel();
+      setIsDigestSpeechPlaying(false);
+    } else {
+      if (!digestData || !digestData.quotes || digestData.quotes.length === 0) return;
+      const q = digestData.quotes[digestActiveIndex];
+      if (q) {
+        setIsDigestSpeechPlaying(true);
+        speakQuoteRef.current({
+          id: q.id || `digest-${digestActiveIndex}`,
+          text: q.text,
+          author: q.author,
+          source: q.source || 'Daily Digest',
+          category: 'daily',
+          randomId: 0
+        });
+        
+        const checkSpeech = setInterval(() => {
+          if (!window.speechSynthesis.speaking) {
+            setIsDigestSpeechPlaying(false);
+            clearInterval(checkSpeech);
+          }
+        }, 1000);
+      }
+    }
+  };
+
+  const handleCopyDigestQuote = () => {
+    if (!digestData || !digestData.quotes || digestData.quotes.length === 0) return;
+    const activeQuote = digestData.quotes[digestActiveIndex];
+    if (!activeQuote) return;
+    const shareText = `"${activeQuote.text}" — ${activeQuote.author}`;
+    navigator.clipboard.writeText(shareText);
+    setCopiedDigestQuote(true);
+    setTimeout(() => setCopiedDigestQuote(null), 2000);
+  };
+
+  const handleShareDigestQuote = () => {
+    if (!digestData || !digestData.quotes || digestData.quotes.length === 0) return;
+    const activeQuote = digestData.quotes[digestActiveIndex];
+    if (!activeQuote) return;
+    const shareText = `"${activeQuote.text}" — ${activeQuote.author} (via WiseFit)`;
+    if (navigator.share) {
+      navigator.share({
+        title: 'WiseFit Wisdom',
+        text: shareText,
+        url: window.location.href,
+      }).catch(err => console.error(err));
+    } else {
+      navigator.clipboard.writeText(shareText);
+      alert("Quote copied to clipboard for sharing!");
+    }
+  };
+
+  const generateDigestAIQuote = async () => {
+    if (checkGuestAction()) return;
+    setIsGeneratingDigestAIQuote(true);
+    setDigestAICountdown(5);
+
+    const countdownInterval = setInterval(() => {
+      setDigestAICountdown(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    try {
+      const recent = (digestData?.quotes || []).slice(-10).map((q: any) => q.text).join(" | ");
+      const response = await fetch("/api/ai/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          traditionPrompt: "Generate a deep, philosophical quote about focus, wisdom, self-mastery, or discipline, suitable for a digital wellness sanctuary. It should match the tone of thinkers like Marcus Aurelius, Tesla, Krleža, or other high-signal scholars.",
+          recentTexts: recent
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to generate AI digest quote");
+      const data = await response.json();
+      
+      if (data && data.text) {
+        const newQuote = {
+          id: `digest-ai-${Date.now()}`,
+          text: data.text,
+          author: data.author || "Sanctuary Sage",
+          source: "Daily Digest AI",
+          isAI: true,
+          fetchDate: new Date().toISOString().split('T')[0]
+        };
+
+        setDigestData(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            quotes: [newQuote, ...prev.quotes]
+          };
+        });
+        setDigestActiveIndex(0);
+        
+        speakQuoteRef.current({
+          id: newQuote.id,
+          text: newQuote.text,
+          author: newQuote.author,
+          source: newQuote.source,
+          category: 'daily',
+          randomId: 0
+        });
+      }
+    } catch (err) {
+      console.error("Error generating AI digest quote:", err);
+    } finally {
+      clearInterval(countdownInterval);
+      setIsGeneratingDigestAIQuote(false);
+      setDigestAICountdown(0);
+    }
+  };
+
   // Daily digest auto-flow timer logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -7417,138 +7631,251 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   {digestData && digestTab === 'quotes' && digestData.quotes.length > 0 && (
                     <div className="space-y-6">
                       {/* Interactive Sanctuary Auto-Flow Card */}
-                      <div className={cn(
-                        "p-6 md:p-8 rounded-3xl border text-center relative overflow-hidden transition-all duration-500",
-                        isDarkMode 
-                          ? "bg-zinc-950/80 border-emerald-500/20 shadow-2xl shadow-emerald-950/10" 
-                          : "bg-white border-zinc-200 shadow-xl shadow-zinc-200/50"
-                      )}>
-                        {/* Progress Bar background */}
-                        {isDigestAutoFlowActive && (
-                          <div 
-                            className="absolute bottom-0 left-0 h-1 bg-emerald-500/35 transition-all duration-1000 ease-linear" 
-                            style={{ width: `${(digestAutoFlowTimer / 30) * 100}%` }} 
-                          />
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className={cn(
+                          "backdrop-blur-md border rounded-3xl p-6 relative overflow-hidden transition-all duration-500",
+                          isDarkMode ? "bg-zinc-900/60 border-zinc-800/50" : "bg-white/80 border-zinc-200 shadow-sm"
                         )}
-
-                        <div className="flex flex-col items-center space-y-4">
-                          {/* Badge */}
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                              isDarkMode ? "bg-zinc-900 text-zinc-400 border border-zinc-800" : "bg-zinc-100 text-zinc-600 border border-zinc-200"
-                            )}>
-                              Active Sanctuary Quote {digestActiveIndex + 1} of {digestData.quotes.length}
-                            </span>
-                          </div>
-
-                          {/* Quote text with custom transition */}
-                          <div className="h-32 md:h-28 flex items-center justify-center overflow-hidden w-full px-4">
-                            <AnimatePresence mode="wait">
-                              <motion.p
-                                key={digestActiveIndex}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.3 }}
-                                className={cn(
-                                  "text-base md:text-xl font-serif tracking-tight leading-relaxed max-w-2xl italic",
-                                  isDarkMode ? "text-zinc-100" : "text-zinc-800"
-                                )}
-                              >
-                                "{digestData.quotes[digestActiveIndex]?.text}"
-                              </motion.p>
-                            </AnimatePresence>
-                          </div>
-
-                          {/* Author */}
-                          <AnimatePresence mode="wait">
-                            <motion.p
-                              key={`author-${digestActiveIndex}`}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className={cn(
-                                "text-xs md:text-sm font-bold",
-                                isDarkMode ? "text-emerald-400" : "text-emerald-600"
-                              )}
-                            >
-                              — {digestData.quotes[digestActiveIndex]?.author}
-                            </motion.p>
-                          </AnimatePresence>
-
-                          {/* Interactive Controls */}
-                          <div className="flex flex-wrap items-center justify-center gap-3 w-full max-w-md pt-2">
-                            <button
-                              type="button"
-                              onClick={handlePrevDigestQuote}
-                              className={cn(
-                                "flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm border",
-                                isDarkMode 
-                                  ? "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80" 
-                                  : "bg-zinc-50 text-zinc-600 hover:bg-zinc-100 border-zinc-200"
-                              )}
-                            >
-                              <ChevronLeft className="w-4 h-4" />
-                              Prev
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newActive = !isDigestAutoFlowActive;
-                                setIsDigestAutoFlowActive(newActive);
-                                if (newActive) {
-                                  const q = digestData.quotes[digestActiveIndex];
-                                  if (q) {
-                                    speakQuoteRef.current({
-                                      id: q.id || `digest-${digestActiveIndex}`,
-                                      text: q.text,
-                                      author: q.author,
-                                      source: q.source || 'Daily Digest',
-                                      category: 'daily',
-                                      randomId: 0
-                                    });
-                                  }
-                                }
-                              }}
-                              className={cn(
-                                "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm border",
-                                isDigestAutoFlowActive
-                                  ? (isDarkMode ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-emerald-50 text-emerald-600 border-emerald-100")
-                                  : (isDarkMode ? "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-850" : "bg-zinc-100 text-zinc-600 border-zinc-200 hover:bg-zinc-200")
-                              )}
-                            >
-                              {isDigestAutoFlowActive ? (
-                                <>
-                                  <Volume2 className="w-4 h-4 animate-pulse text-emerald-400" />
-                                  Active ({digestAutoFlowTimer}s)
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="w-4 h-4" />
-                                  Auto-Flow
-                                </>
-                              )}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={handleNextDigestQuote}
-                              className={cn(
-                                "flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm border",
-                                isDarkMode 
-                                  ? "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80" 
-                                  : "bg-zinc-50 text-zinc-600 hover:bg-zinc-100 border-zinc-200"
-                              )}
-                            >
-                              Next
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                          </div>
+                      >
+                        <div className="absolute top-[-20px] right-[-20px] opacity-10">
+                          <Flame className="w-24 h-24 text-emerald-500" />
                         </div>
-                      </div>
+                        
+                        <div className="relative z-10 space-y-3">
+                          <AnimatePresence mode="wait">
+                            <motion.div
+                              key={digestActiveIndex}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.5 }}
+                              className="space-y-3"
+                            >
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <p className={cn(
+                                    "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
+                                    isDarkMode ? "text-emerald-400" : "text-emerald-600"
+                                  )}>DAILY DIGEST WISDOM</p>
+                                  <div className={cn(
+                                    "flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[8px] font-bold uppercase tracking-tighter",
+                                    isDarkMode ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-emerald-50 border-emerald-100 text-emerald-600"
+                                  )}>
+                                    <Sparkles className="w-2 h-2" />
+                                    Active Quote {digestActiveIndex + 1} of {digestData.quotes.length}
+                                  </div>
+                                </div>
+                                <p className={cn(
+                                  "text-lg font-serif italic leading-relaxed transition-colors text-center",
+                                  isDarkMode ? "text-zinc-100" : "text-zinc-900"
+                                )}>
+                                  "{digestData.quotes[digestActiveIndex]?.text}"
+                                </p>
+                                <p className={cn(
+                                  "text-[11px] font-bold text-center transition-colors",
+                                  isDarkMode ? "text-emerald-400" : "text-emerald-600"
+                                )}>— {digestData.quotes[digestActiveIndex]?.author}</p>
+                              </div>
+
+                              <div className="space-y-4 pt-2">
+                                <div className="space-y-2">
+                                  <label className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block text-center">Comment:</label>
+                                  <textarea
+                                    value={digestComment}
+                                    onChange={(e) => setDigestComment(e.target.value)}
+                                    placeholder="Add a personal reflection..."
+                                    className={cn(
+                                      "w-full p-2 rounded-lg border text-[10px] focus:outline-none focus:ring-1 transition-all resize-none h-10 text-center",
+                                      isDarkMode 
+                                        ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-emerald-500/50" 
+                                        : "bg-white border-zinc-200 text-zinc-900 focus:ring-emerald-500/20"
+                                    )}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={markDigestQuoteAsSeen}
+                                    className={cn(
+                                      "w-full py-1.5 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-sm mt-1",
+                                      isDarkMode 
+                                        ? "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400" 
+                                        : "bg-zinc-50 text-zinc-500 border border-zinc-200 hover:bg-zinc-100 hover:text-emerald-600"
+                                    )}
+                                  >
+                                    COMMENT
+                                  </button>
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={handlePrevDigestQuote}
+                                      className={cn(
+                                        "flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm",
+                                        isDarkMode 
+                                          ? "bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20" 
+                                          : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100"
+                                      )}
+                                    >
+                                      <ChevronLeft className="w-3 h-3" />
+                                      Previous
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleNextDigestQuote}
+                                      className={cn(
+                                        "flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm",
+                                        isDarkMode 
+                                          ? "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 border border-orange-500/20" 
+                                          : "bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-100"
+                                      )}
+                                    >
+                                      Next Quote
+                                      <ChevronRight className="w-3 h-3" />
+                                    </button>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setIsDigestAutoFlowActive(!isDigestAutoFlowActive);
+                                    }}
+                                    className={cn(
+                                      "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm",
+                                      isDigestAutoFlowActive
+                                        ? (isDarkMode ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-emerald-50 text-emerald-600 border-emerald-100")
+                                        : (isDarkMode ? "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-600 border border-zinc-200 hover:bg-zinc-200")
+                                    )}
+                                  >
+                                    {isDigestAutoFlowActive ? (
+                                      <>
+                                        <Volume2 className="w-3 h-3 animate-pulse" />
+                                        Auto-Flow Active ({digestAutoFlowTimer}s)
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Play className="w-3 h-3" />
+                                        Start Auto-Flow (30s)
+                                      </>
+                                    )}
+                                  </button>
+
+                                  <div className="space-y-1.5 mt-1">
+                                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 block text-center">Wisdom Selection:</label>
+                                    <select
+                                      value="daily"
+                                      disabled
+                                      className={cn(
+                                        "w-full p-2 rounded-lg border text-[9px] font-bold uppercase tracking-wider focus:outline-none focus:ring-1 transition-all cursor-pointer text-center appearance-none",
+                                        isDarkMode 
+                                          ? "bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-purple-500/50" 
+                                          : "bg-white border-zinc-200 text-zinc-900 focus:ring-purple-500/20"
+                                      )}
+                                    >
+                                      <option value="daily">Daily Fresh Quotes (wisefitorg.com)</option>
+                                    </select>
+                                  </div>
+
+                                  <div className="flex items-center justify-center gap-2 mt-1">
+                                    <button
+                                      type="button"
+                                      onClick={generateDigestAIQuote}
+                                      disabled={isGeneratingDigestAIQuote}
+                                      className={cn(
+                                        "flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm relative overflow-hidden",
+                                        isGeneratingDigestAIQuote ? "opacity-50 cursor-not-allowed" : "",
+                                        isDarkMode 
+                                          ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30" 
+                                          : "bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-100"
+                                      )}
+                                    >
+                                      {isGeneratingDigestAIQuote ? (
+                                        <>
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                          Generating ({digestAICountdown}s)
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Sparkles className="w-3 h-3" />
+                                          Create New (AI)
+                                        </>
+                                      )}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setIsDigestLoopActive(!isDigestLoopActive);
+                                      }}
+                                      className={cn(
+                                        "px-3 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm flex items-center gap-1",
+                                        isDigestLoopActive
+                                          ? (isDarkMode ? "bg-purple-500 text-white" : "bg-purple-600 text-white")
+                                          : (isDarkMode ? "bg-zinc-800 text-zinc-400 border border-zinc-700" : "bg-zinc-100 text-zinc-600 border border-zinc-200")
+                                      )}
+                                      title="Toggle AI Generation Loop"
+                                    >
+                                      <RefreshCw className={cn("w-3 h-3", isDigestLoopActive && "animate-spin")} />
+                                      {isDigestLoopActive ? "Looping" : "Loop"}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={handleCopyDigestQuote}
+                                    className={cn(
+                                      "p-2 rounded-lg transition-all active:scale-95",
+                                      isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                    )}
+                                    title="Copy Quote"
+                                  >
+                                    {copiedDigestQuote ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <button
+                                    onClick={toggleSpeakDigestQuote}
+                                    className={cn(
+                                      "p-2 rounded-lg transition-all active:scale-95",
+                                      isDigestSpeechPlaying 
+                                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 animate-pulse"
+                                        : (isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200")
+                                    )}
+                                    title={isDigestSpeechPlaying ? "Stop Speaking" : "Listen to Quote"}
+                                  >
+                                    <Volume2 className={cn("w-3.5 h-3.5", isDigestSpeechPlaying && "text-emerald-400")} />
+                                  </button>
+                                  <button
+                                    onClick={handleShareDigestQuote}
+                                    className={cn(
+                                      "p-2 rounded-lg transition-all active:scale-95",
+                                      isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+                                    )}
+                                    title="Share Quote"
+                                  >
+                                    <Share2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={markDigestQuoteAsSeen}
+                                    className={cn(
+                                      "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95",
+                                      isSaved 
+                                        ? "bg-emerald-500 text-white" 
+                                        : (isDarkMode ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100")
+                                    )}
+                                  >
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    Mark as Wise
+                                  </button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          </AnimatePresence>
+                        </div>
+                      </motion.div>
 
                       {/* Header for list */}
                       <div className={cn(
