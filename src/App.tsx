@@ -138,6 +138,7 @@ import {
   documentId,
   writeBatch
 } from 'firebase/firestore';
+import { FALLBACK_QUOTES, FALLBACK_NEWS } from './fallbackQuotes';
 import { generateStoicReflection } from './services/aiService';
 import YogaView from './components/YogaView';
 import { QuizView } from './components/QuizView';
@@ -2288,15 +2289,24 @@ function AppContent() {
     news: any[];
     quotes: any[];
     totalScrapedCount?: number;
-  } | null>(null);
+  }>({
+    lastUpdated: new Date().toISOString().split('T')[0],
+    news: FALLBACK_NEWS,
+    quotes: FALLBACK_QUOTES,
+    totalScrapedCount: FALLBACK_QUOTES.length
+  });
+  const [hasSyncedDigest, setHasSyncedDigest] = useState(false);
   const [isFetchingDigest, setIsFetchingDigest] = useState(false);
   const [digestError, setDigestError] = useState<string | null>(null);
   const [digestTab, setDigestTab] = useState<'quotes' | 'news'>('quotes');
 
   const fetchSanctuaryDigest = useCallback(async (force = false) => {
-    if (digestData && !force) return;
+    if (hasSyncedDigest && !force) return;
     setIsFetchingDigest(true);
-    setDigestError(null);
+    // If it's a forced refresh, we can reset errors to let the user try again
+    if (force) {
+      setDigestError(null);
+    }
     try {
       const res = await fetch(`/api/sanctuary-digest${force ? "?force=true" : ""}`);
       if (!res.ok) throw new Error("Could not retrieve daily digest.");
@@ -2304,20 +2314,27 @@ function AppContent() {
       if (data.success) {
         setDigestData({
           lastUpdated: data.lastUpdated,
-          news: data.news || [],
-          quotes: data.quotes || [],
-          totalScrapedCount: data.totalScrapedCount || 0
+          news: data.news && data.news.length > 0 ? data.news : FALLBACK_NEWS,
+          quotes: data.quotes && data.quotes.length > 0 ? data.quotes : FALLBACK_QUOTES,
+          totalScrapedCount: data.totalScrapedCount || FALLBACK_QUOTES.length
         });
+        setHasSyncedDigest(true);
+        setDigestError(null);
       } else {
         throw new Error(data.error || "Failed to load sanctuary digest.");
       }
     } catch (err: any) {
-      console.error("fetchSanctuaryDigest err:", err);
-      setDigestError(err.message || "Failed to load sanctuary digest.");
+      console.warn("[WiseFit] Sanctuary Digest background sync warning (using offline-cached wisdom):", err);
+      // To satisfy the user request: absolutely NO error messages are shown on screen
+      // unless they clicked "force refresh" and we actually had a failure.
+      // Even then, we prefer keeping it entirely error-free and seamless.
+      if (force) {
+        setDigestError(err.message || "Failed to sync updates. Offline cache active.");
+      }
     } finally {
       setIsFetchingDigest(false);
     }
-  }, [digestData]);
+  }, [hasSyncedDigest]);
 
   // Pre-fetch on App mount so that it loads instantly in the background without user waiting
   useEffect(() => {
