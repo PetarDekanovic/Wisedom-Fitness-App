@@ -1036,29 +1036,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
       const force = req.query.force === "true";
 
-      // Check if we already have today's quotes in the database
-      if (firestoreDb && !force) {
-        try {
-          const snapshot = await firestoreDb.collection("daily_digest_quotes")
-            .where("fetchDate", "==", todayStr)
-            .get();
-          
-          if (!snapshot.empty) {
-            snapshot.forEach((doc: any) => {
-              quotes.push({
-                id: doc.id,
-                ...doc.data()
-              });
-            });
-            quotes.sort((a: any, b: any) => (a.order !== undefined && b.order !== undefined) ? a.order - b.order : 0);
-            console.log(`[WiseFit Server] Loaded ${quotes.length} daily digest quotes from Firestore for date ${todayStr}`);
-          }
-        } catch (dbReadErr) {
-          console.error("[WiseFit Server] Failed to read daily_digest_quotes from Firestore:", dbReadErr);
-        }
-      }
-
-      // 2. Fetch the HTML (always fetch for live news and fallback quotes if needed)
+      // 2. Fetch the HTML page first to deduce the actual updated date of the quotes
       let html = "";
       try {
         const response = await axios.get("https://wisefitorg.com/digest/", {
@@ -1077,8 +1055,141 @@ app.get("/api/ai/diagnostics", async (req, res) => {
         }
       }
 
-      if (!html && quotes.length === 0) {
-        // Fallback: try to query any historical cached daily_digest_quotes
+      // Deduce targetDateStr (the date of the live content as published on the website)
+      let lastUpdated = "";
+      let targetDateStr = todayStr; // fallback to balkan date
+
+      if (html) {
+        const $ = cheerio.load(html);
+        $("p").each((i, el) => {
+          const text = $(el).text().trim();
+          if (text.startsWith("Updated:")) {
+            lastUpdated = text.replace("Updated:", "").trim();
+            const match = lastUpdated.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (match) {
+              targetDateStr = match[1];
+            }
+          }
+        });
+      }
+
+      console.log(`[WiseFit Server] Sanctuary Digest. Balkan date: ${todayStr}, Live page targetDateStr: ${targetDateStr}, force: ${force}`);
+
+      // 3. Check if we already have today's quotes (keyed by targetDateStr) in the database
+      if (firestoreDb && !force) {
+        try {
+          const snapshot = await firestoreDb.collection("daily_digest_quotes")
+            .where("fetchDate", "==", targetDateStr)
+            .get();
+          
+          if (!snapshot.empty) {
+            snapshot.forEach((doc: any) => {
+              quotes.push({
+                id: doc.id,
+                ...doc.data()
+              });
+            });
+            quotes.sort((a: any, b: any) => (a.order !== undefined && b.order !== undefined) ? a.order - b.order : 0);
+            console.log(`[WiseFit Server] Loaded ${quotes.length} daily digest quotes from Firestore for date ${targetDateStr}`);
+          }
+        } catch (dbReadErr) {
+          console.error("[WiseFit Server] Failed to read daily_digest_quotes from Firestore:", dbReadErr);
+        }
+      }
+
+      // 4. If quotes are not cached yet (or force is true), and we have HTML, parse quotes from HTML
+      if (quotes.length === 0 && html) {
+        let quotesFromHtml: any[] = [];
+        const $ = cheerio.load(html);
+        const quotesHeader = $("h2").filter((i, el) => $(el).text().includes("100 Daily Wise Quotes"));
+        if (quotesHeader.length > 0) {
+          const nextElements = quotesHeader.nextAll();
+          nextElements.each((i, el) => {
+            let text = $(el).text().replace(/\s+/g, ' ').trim();
+            if (text.length > 10) {
+              const numMatch = text.match(/^•?\s*\d+\.\s*/);
+              if (numMatch) {
+                text = text.substring(numMatch[0].length).trim();
+              }
+
+              const separators = [" — ", " – ", " - ", "—", "–"];
+              let qText = text;
+              let qAuthor = "Ancient Wisdom";
+              
+              for (const sep of separators) {
+                if (text.includes(sep)) {
+                  const parts = text.split(sep);
+                  const lastPart = parts[parts.length - 1].trim();
+                  if (lastPart.length > 1 && lastPart.length < 55) {
+                    qAuthor = lastPart;
+                    qText = parts.slice(0, -1).join(sep).trim();
+                    break;
+                  }
+                }
+              }
+              
+              quotesFromHtml.push({
+                text: qText,
+                author: qAuthor,
+                source: "Daily Digest"
+              });
+            }
+          });
+        }
+
+        // Slice to exactly 55 new quotes
+        const chosenQuotes = quotesFromHtml.slice(0, 55);
+
+        // Store them in Firestore daily_digest_quotes collection
+        if (firestoreDb && chosenQuotes.length > 0) {
+          try {
+            const batch = firestoreDb.batch();
+            const quotesRef = firestoreDb.collection("daily_digest_quotes");
+            const savedQuotes: any[] = [];
+
+            chosenQuotes.forEach((q, idx) => {
+              const docRef = quotesRef.doc();
+              const qData = {
+                text: q.text,
+                author: q.author,
+                source: q.source || "Daily Digest",
+                fetchDate: targetDateStr,
+                order: idx,
+                createdAt: new Date().toISOString()
+              };
+              batch.set(docRef, qData);
+              savedQuotes.push({
+                id: docRef.id,
+                ...qData
+              });
+            });
+
+            await batch.commit();
+            quotes = savedQuotes;
+            console.log(`[WiseFit Server] Stored ${quotes.length} scraped quotes for date ${targetDateStr} in Firestore.`);
+          } catch (dbWriteErr) {
+            console.error("[WiseFit Server] Failed to write daily_digest_quotes to Firestore:", dbWriteErr);
+            quotes = chosenQuotes.map((q, idx) => ({
+              id: `digest-q-${idx}`,
+              ...q,
+              fetchDate: targetDateStr,
+              order: idx,
+              createdAt: new Date().toISOString()
+            }));
+          }
+        } else {
+          quotes = chosenQuotes.map((q, idx) => ({
+            id: `digest-q-${idx}`,
+            ...q,
+            fetchDate: targetDateStr,
+            order: idx,
+            createdAt: new Date().toISOString()
+          }));
+        }
+      }
+
+      // 5. Fallback in case scraping and DB check both returned empty
+      if (quotes.length === 0) {
         if (firestoreDb) {
           try {
             console.warn("[WiseFit Server] Scraper failed and no quotes found for today. Fetching most recent historical quotes as fallback...");
@@ -1103,7 +1214,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
         }
       }
 
-      // Final fallback if STILL empty (no internet and no db entries)
+      // Final fallback if STILL empty (no internet and no db entries at all)
       if (quotes.length === 0) {
         console.warn("[WiseFit Server] All fetching/scraping failed and no database cache. Using static high-signal fallbacks.");
         const fallbackQuotesList = [
@@ -1122,25 +1233,16 @@ app.get("/api/ai/diagnostics", async (req, res) => {
           text: q.text,
           author: q.author,
           source: "Daily Fallback",
-          fetchDate: todayStr,
+          fetchDate: targetDateStr,
           order: idx,
           createdAt: new Date().toISOString()
         }));
       }
 
-      let lastUpdated = "";
       let news: any[] = [];
 
       if (html) {
         const $ = cheerio.load(html);
-        
-        // Parse update timestamp
-        $("p").each((i, el) => {
-          const text = $(el).text().trim();
-          if (text.startsWith("Updated:")) {
-            lastUpdated = text.replace("Updated:", "").trim();
-          }
-        });
 
         // Parse News under <header/h2> Commerce & Live News
         const newsHeader = $("h2").filter((i, el) => $(el).text().includes("Commerce & Live News"));
@@ -1185,96 +1287,6 @@ app.get("/api/ai/diagnostics", async (req, res) => {
                 url
               });
             }
-          }
-        }
-
-        // If we don't have quotes cached in database, parse from HTML
-        if (quotes.length === 0) {
-          let quotesFromHtml: any[] = [];
-          const quotesHeader = $("h2").filter((i, el) => $(el).text().includes("100 Daily Wise Quotes"));
-          if (quotesHeader.length > 0) {
-            const nextElements = quotesHeader.nextAll();
-            nextElements.each((i, el) => {
-              let text = $(el).text().replace(/\s+/g, ' ').trim();
-              if (text.length > 10) {
-                const numMatch = text.match(/^•?\s*\d+\.\s*/);
-                if (numMatch) {
-                  text = text.substring(numMatch[0].length).trim();
-                }
-
-                const separators = [" — ", " – ", " - ", "—", "–"];
-                let qText = text;
-                let qAuthor = "Ancient Wisdom";
-                
-                for (const sep of separators) {
-                  if (text.includes(sep)) {
-                    const parts = text.split(sep);
-                    const lastPart = parts[parts.length - 1].trim();
-                    if (lastPart.length > 1 && lastPart.length < 55) {
-                      qAuthor = lastPart;
-                      qText = parts.slice(0, -1).join(sep).trim();
-                      break;
-                    }
-                  }
-                }
-                
-                quotesFromHtml.push({
-                  text: qText,
-                  author: qAuthor,
-                  source: "Daily Digest"
-                });
-              }
-            });
-          }
-
-          // Slice to exactly 55 new quotes
-          const chosenQuotes = quotesFromHtml.slice(0, 55);
-
-          // Store them in Firestore daily_digest_quotes collection
-          if (firestoreDb && chosenQuotes.length > 0) {
-            try {
-              const batch = firestoreDb.batch();
-              const quotesRef = firestoreDb.collection("daily_digest_quotes");
-              const savedQuotes: any[] = [];
-
-              chosenQuotes.forEach((q, idx) => {
-                const docRef = quotesRef.doc();
-                const qData = {
-                  text: q.text,
-                  author: q.author,
-                  source: q.source || "Daily Digest",
-                  fetchDate: todayStr,
-                  order: idx,
-                  createdAt: new Date().toISOString()
-                };
-                batch.set(docRef, qData);
-                savedQuotes.push({
-                  id: docRef.id,
-                  ...qData
-                });
-              });
-
-              await batch.commit();
-              quotes = savedQuotes;
-              console.log(`[WiseFit Server] Auto-generated and stored ${quotes.length} new quotes for date ${todayStr} in Firestore.`);
-            } catch (dbWriteErr) {
-              console.error("[WiseFit Server] Failed to write daily_digest_quotes to Firestore:", dbWriteErr);
-              quotes = chosenQuotes.map((q, idx) => ({
-                id: `digest-q-${idx}`,
-                ...q,
-                fetchDate: todayStr,
-                order: idx,
-                createdAt: new Date().toISOString()
-              }));
-            }
-          } else {
-            quotes = chosenQuotes.map((q, idx) => ({
-              id: `digest-q-${idx}`,
-              ...q,
-              fetchDate: todayStr,
-              order: idx,
-              createdAt: new Date().toISOString()
-            }));
           }
         }
       }
