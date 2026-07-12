@@ -1291,11 +1291,28 @@ app.get("/api/ai/diagnostics", async (req, res) => {
         }
       }
 
+      let totalScrapedCount = 0;
+      if (firestoreDb) {
+        try {
+          const countSnapshot = await firestoreDb.collection("daily_digest_quotes").count().get();
+          totalScrapedCount = countSnapshot.data().count;
+        } catch (cErr) {
+          console.error("[WiseFit Server] Failed to query daily_digest_quotes count:", cErr);
+          try {
+            const listSnapshot = await firestoreDb.collection("daily_digest_quotes").select().get();
+            totalScrapedCount = listSnapshot.size;
+          } catch (listErr) {
+            console.error("[WiseFit Server] Fallback count failed:", listErr);
+          }
+        }
+      }
+
       res.json({
         success: true,
         lastUpdated: lastUpdated || todayStr,
         news,
-        quotes
+        quotes,
+        totalScrapedCount
       });
     } catch (error: any) {
       console.error("Digest Parse Error:", error);

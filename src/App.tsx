@@ -2287,6 +2287,7 @@ function AppContent() {
     lastUpdated: string;
     news: any[];
     quotes: any[];
+    totalScrapedCount?: number;
   } | null>(null);
   const [isFetchingDigest, setIsFetchingDigest] = useState(false);
   const [digestError, setDigestError] = useState<string | null>(null);
@@ -2304,7 +2305,8 @@ function AppContent() {
         setDigestData({
           lastUpdated: data.lastUpdated,
           news: data.news || [],
-          quotes: data.quotes || []
+          quotes: data.quotes || [],
+          totalScrapedCount: data.totalScrapedCount || 0
         });
       } else {
         throw new Error(data.error || "Failed to load sanctuary digest.");
@@ -7539,6 +7541,15 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       )}>
                         Updated: {digestData?.lastUpdated || "Live Feed"}
                       </p>
+                      {digestData?.totalScrapedCount !== undefined && digestData.totalScrapedCount > 0 && (
+                        <p className={cn(
+                          "text-[10px] font-mono uppercase tracking-wide mt-1 flex items-center gap-1.5 font-semibold",
+                          isDarkMode ? "text-emerald-400" : "text-emerald-600"
+                        )}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-50 inline-block bg-emerald-500 animate-pulse"></span>
+                          Database Synced: {digestData.totalScrapedCount} Total Quotes Scraped
+                        </p>
+                      )}
                     </div>
                     
                     <div className="flex items-center gap-3">
