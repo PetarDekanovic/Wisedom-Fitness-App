@@ -10,6 +10,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { initializeApp, getApp } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
 import { getFirestore } from "firebase-admin/firestore";
+import { FALLBACK_QUOTES, FALLBACK_NEWS } from "./src/fallbackQuotes";
 
 dotenv.config();
 
@@ -1104,9 +1105,19 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     if ((quotes.length === 0 || force) && html) {
       let quotesFromHtml: any[] = [];
       const $ = cheerio.load(html);
-      const quotesHeader = $("h2").filter((i, el) => $(el).text().includes("100 Daily Wise Quotes"));
+      
+      // Look for any standard daily/wisdom quotes heading variant
+      const quotesHeader = $("h1, h2, h3").filter((i, el) => {
+        const txt = $(el).text().toLowerCase();
+        return txt.includes("daily wise quotes") || 
+               txt.includes("100 daily quotes") || 
+               txt.includes("daily digest") || 
+               txt.includes("wise quotes") ||
+               txt.includes("daily quotes");
+      });
+
       if (quotesHeader.length > 0) {
-        const nextElements = quotesHeader.nextAll();
+        const nextElements = quotesHeader.first().nextAll();
         nextElements.each((i, el) => {
           let text = $(el).text().replace(/\s+/g, ' ').trim();
           if (text.length > 10) {
@@ -1136,6 +1147,47 @@ app.get("/api/ai/diagnostics", async (req, res) => {
               author: qAuthor,
               source: "Daily Digest"
             });
+          }
+        });
+      }
+
+      // Robust fallback: If no header found or no quotes parsed from after the header, scan the whole document
+      if (quotesFromHtml.length === 0) {
+        console.log("[WiseFit Server] Header-based scraping returned 0. Performing full document fallback scan...");
+        $("li, p, blockquote").each((i, el) => {
+          let text = $(el).text().replace(/\s+/g, ' ').trim();
+          if (text.length > 25 && text.length < 600) {
+            if (text.startsWith("Updated:")) return;
+            
+            const numMatch = text.match(/^•?\s*\d+\.\s*/);
+            if (numMatch) {
+              text = text.substring(numMatch[0].length).trim();
+            }
+
+            const separators = [" — ", " – ", " - ", "—", "–"];
+            let found = false;
+            for (const sep of separators) {
+              if (text.includes(sep)) {
+                const parts = text.split(sep);
+                const lastPart = parts[parts.length - 1].trim();
+                if (lastPart.length > 1 && lastPart.length < 55 && parts[0].trim().length > 10) {
+                  quotesFromHtml.push({
+                    text: parts.slice(0, -1).join(sep).trim(),
+                    author: lastPart,
+                    source: "Daily Digest"
+                  });
+                  found = true;
+                  break;
+                }
+              }
+            }
+            if (!found && text.length > 40 && text.length < 300) {
+              quotesFromHtml.push({
+                text: text,
+                author: "Daily Insight",
+                source: "Daily Digest"
+              });
+            }
           }
         });
       }
@@ -1405,25 +1457,9 @@ app.get("/api/ai/diagnostics", async (req, res) => {
       const localQuotes = loadLocalScrapedQuotes();
       let quotesToReturn = localQuotes;
       if (quotesToReturn.length === 0) {
-        const fallbackQuotesList = [
-          { text: "Instead of being intimidated by the limitations, be inspired to find new ways around them.", author: "Ralph Marston" },
-          { text: "Talk sense to a fool and he calls you foolish.", author: "Euripides" },
-          { text: "The truth is rarely pure and never simple.", author: "Oscar Wilde" },
-          { text: "It's not the love you make. It's the love you give.", author: "Nikola Tesla" },
-          { text: "Quality means doing it right when no one is looking.", author: "Henry Ford" },
-          { text: "If you correct your mind, the rest of your life will fall into place.", author: "Lao Tzu" },
-          { text: "Go as far as you can see and you will see further.", author: "Zig Ziglar" },
-          { text: "Peace is not the absence of conflict, but the ability to cope with it.", author: "Unknown" },
-          { text: "Nothing in the world is ever completely wrong. Even a stopped clock is right twice a day.", author: "Paulo Coelho" }
-        ];
-        quotesToReturn = fallbackQuotesList.map((q, idx) => ({
-          id: `fallback-q-${idx}-${Math.random().toString(36).substring(2, 6)}`,
-          text: q.text,
-          author: q.author,
-          source: "Daily Fallback",
-          fetchDate: todayStr,
-          order: idx,
-          createdAt: new Date().toISOString()
+        quotesToReturn = FALLBACK_QUOTES.map((q, idx) => ({
+          ...q,
+          fetchDate: todayStr
         }));
       }
 
@@ -1431,15 +1467,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
       const fallbackResult = {
         success: true,
         lastUpdated: todayStr,
-        news: [
-          {
-            id: "news-fallback-1",
-            date: "Recent",
-            category: "Announcements",
-            title: "WiseFit Sanctuary offline fallback cache initialized.",
-            url: "https://wisefitorg.com/digest"
-          }
-        ],
+        news: FALLBACK_NEWS,
         quotes: quotesToReturn.slice(0, 55),
         totalScrapedCount: count
       };

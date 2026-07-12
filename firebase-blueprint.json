@@ -283,9 +283,42 @@
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] }
       },
       "required": ["id", "postId", "userName", "content", "createdAt", "status"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Stores manual paywall activation support tickets",
+      "type": "object",
+      "properties": {
+        "appEmail": { "type": "string", "format": "email" },
+        "paypalEmail": { "type": "string", "format": "email" },
+        "message": { "type": "string" },
+        "tier": { "type": "string", "enum": ["monthly", "lifetime"] },
+        "status": { "type": "string", "enum": ["pending", "resolved", "rejected"] },
+        "createdAt": { "type": "string" },
+        "source": { "type": "string" }
+      },
+      "required": ["appEmail", "paypalEmail", "status", "createdAt"]
+    },
+    "PreAuthorizedEmail": {
+      "title": "PreAuthorizedEmail",
+      "description": "Pre-authorized subscription emails",
+      "type": "object",
+      "properties": {
+        "active": { "type": "boolean" },
+        "tier": { "type": "string", "enum": ["monthly", "lifetime"] }
+      },
+      "required": ["active", "tier"]
     }
   },
   "firestore": {
+    "/support_tickets/{ticketId}": {
+      "schema": "SupportTicket",
+      "description": "Manual activation support tickets"
+    },
+    "/pre_authorized_emails/{email}": {
+      "schema": "PreAuthorizedEmail",
+      "description": "Pre-authorized emails database"
+    },
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User profile collection"
