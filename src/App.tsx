@@ -2319,6 +2319,12 @@ function AppContent() {
     }
   }, [digestData]);
 
+  // Pre-fetch on App mount so that it loads instantly in the background without user waiting
+  useEffect(() => {
+    fetchSanctuaryDigest();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (historySubView === 'digest') {
       fetchSanctuaryDigest();
