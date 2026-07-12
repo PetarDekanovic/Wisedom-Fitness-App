@@ -1042,7 +1042,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     }
   }
 
-  async function performDigestHarvest(firestoreDb: any, todayStr: string) {
+  async function performDigestHarvest(firestoreDb: any, todayStr: string, force = false) {
     let html = "";
     try {
       const response = await axios.get("https://wisefitorg.com/digest/", {
@@ -1080,7 +1080,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
     let quotes: any[] = [];
 
-    if (firestoreDb) {
+    if (firestoreDb && !force) {
       try {
         const snapshot = await firestoreDb.collection("daily_digest_quotes")
           .where("fetchDate", "==", targetDateStr)
@@ -1101,7 +1101,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
       }
     }
 
-    if (quotes.length === 0 && html) {
+    if ((quotes.length === 0 || force) && html) {
       let quotesFromHtml: any[] = [];
       const $ = cheerio.load(html);
       const quotesHeader = $("h2").filter((i, el) => $(el).text().includes("100 Daily Wise Quotes"));
@@ -1144,6 +1144,19 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
       if (firestoreDb && chosenQuotes.length > 0) {
         try {
+          if (force) {
+            const existingSnap = await firestoreDb.collection("daily_digest_quotes")
+              .where("fetchDate", "==", targetDateStr)
+              .get();
+            if (!existingSnap.empty) {
+              const deleteBatch = firestoreDb.batch();
+              existingSnap.forEach((doc: any) => {
+                deleteBatch.delete(doc.ref);
+              });
+              await deleteBatch.commit();
+              console.log(`[WiseFit Server] Force: Cleared ${existingSnap.size} outdated quotes for ${targetDateStr} from Firestore.`);
+            }
+          }
           const batch = firestoreDb.batch();
           const quotesRef = firestoreDb.collection("daily_digest_quotes");
           const savedQuotes: any[] = [];
@@ -1370,7 +1383,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
       (async () => {
         try {
-          const updated = await performDigestHarvest(firestoreDb, todayStr);
+          const updated = await performDigestHarvest(firestoreDb, todayStr, false);
           cachedDigest = updated;
           lastDigestFetchTime = Date.now();
           console.log("[WiseFit Server] Background harvest successful. Cache refreshed.");
@@ -1383,7 +1396,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
     console.log("[WiseFit Server] Cache miss. Performing synchronous Sanctuary Digest harvest...");
     try {
-      const data = await performDigestHarvest(firestoreDb, todayStr);
+      const data = await performDigestHarvest(firestoreDb, todayStr, force);
       cachedDigest = data;
       lastDigestFetchTime = Date.now();
       return res.json(data);
