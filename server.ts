@@ -11,7 +11,7 @@ import { initializeApp, getApp } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp as initializeClientApp } from "firebase/app";
-import { getFirestore as getClientFirestore, collection, getDocs, doc, setDoc, query, where, writeBatch } from "firebase/firestore";
+import { getFirestore as getClientFirestore, collection, getDocs, doc, setDoc, query, where, writeBatch, orderBy, limit } from "firebase/firestore";
 import { FALLBACK_QUOTES, FALLBACK_NEWS } from "./src/fallbackQuotes";
 
 dotenv.config();
@@ -1064,6 +1064,58 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     }
   }
 
+  async function syncLocalQuotesToFirestore(firestoreDb: any) {
+    if (!firestoreDb) return;
+    try {
+      const localQuotes = loadLocalScrapedQuotes();
+      if (localQuotes.length === 0) {
+        console.log("[WiseFit Sync] No local backup quotes found to sync.");
+        return;
+      }
+      
+      console.log(`[WiseFit Sync] Checking if ${localQuotes.length} local quotes are saved in Firestore...`);
+      const quotesCollection = collection(firestoreDb, "daily_digest_quotes");
+      const snapshot = await getDocs(quotesCollection);
+      
+      const existingTexts = new Set();
+      snapshot.forEach((docSnap: any) => {
+        const data = docSnap.data();
+        if (data && data.text) {
+          existingTexts.add(data.text.trim().toLowerCase());
+        }
+      });
+      
+      const missingQuotes = localQuotes.filter(q => !existingTexts.has(q.text.trim().toLowerCase()));
+      
+      if (missingQuotes.length > 0) {
+        console.log(`[WiseFit Sync] Found ${missingQuotes.length} missing quotes in Firestore. Uploading...`);
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < missingQuotes.length; i += BATCH_SIZE) {
+          const batch = writeBatch(firestoreDb);
+          const chunk = missingQuotes.slice(i, i + BATCH_SIZE);
+          
+          chunk.forEach((q, idx) => {
+            const docRef = doc(quotesCollection);
+            batch.set(docRef, {
+              text: q.text,
+              author: q.author,
+              source: q.source || "Daily Digest",
+              fetchDate: q.fetchDate || "2026-07-12",
+              order: idx,
+              createdAt: q.createdAt || new Date().toISOString()
+            });
+          });
+          await batch.commit();
+        }
+        console.log(`[WiseFit Sync] Successfully uploaded ${missingQuotes.length} quotes to Firestore.`);
+      } else {
+        console.log("[WiseFit Sync] All local quotes are already present in Firestore.");
+      }
+    } catch (err: any) {
+      console.error("[WiseFit Sync] Failed to sync local quotes to Firestore:", err.message || err);
+    }
+  }
+
   async function performDigestHarvest(firestoreDb: any, todayStr: string, force = false) {
     let html = "";
     try {
@@ -1307,21 +1359,20 @@ app.get("/api/ai/diagnostics", async (req, res) => {
       } else {
         if (firestoreDb) {
           try {
-            const snapshot = await firestoreDb.collection("daily_digest_quotes")
-              .orderBy("createdAt", "desc")
-              .limit(55)
-              .get();
+            const quotesCollection = collection(firestoreDb, "daily_digest_quotes");
+            const q = query(quotesCollection, orderBy("createdAt", "desc"), limit(55));
+            const snapshot = await getDocs(q);
             if (!snapshot.empty) {
-              snapshot.forEach((doc: any) => {
+              snapshot.forEach((docSnap: any) => {
                 quotes.push({
-                  id: doc.id,
-                  ...doc.data()
+                  id: docSnap.id,
+                  ...docSnap.data()
                 });
               });
               quotes.sort((a: any, b: any) => (a.order !== undefined && b.order !== undefined) ? a.order - b.order : 0);
             }
-          } catch (dbFallbackErr) {
-            console.error("[WiseFit Server] Database fallback query failed:", dbFallbackErr);
+          } catch (dbFallbackErr: any) {
+            console.error("[WiseFit Server] Database fallback query failed:", dbFallbackErr.message || dbFallbackErr);
           }
         }
       }
@@ -1380,15 +1431,11 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     let dbCount = 0;
     if (firestoreDb) {
       try {
-        const countSnap = await firestoreDb.collection("daily_digest_quotes").count().get();
-        dbCount = countSnap.data().count;
-      } catch (err) {
-        try {
-          const listSnap = await firestoreDb.collection("daily_digest_quotes").select().get();
-          dbCount = listSnap.size;
-        } catch (listErr) {
-          // ignore
-        }
+        const quotesCollection = collection(firestoreDb, "daily_digest_quotes");
+        const listSnap = await getDocs(quotesCollection);
+        dbCount = listSnap.size;
+      } catch (err: any) {
+        console.error("[WiseFit Server] Error getting total count from Firestore:", err.message || err);
       }
     }
     const totalScrapedCount = Math.max(localCount, dbCount);
@@ -1742,6 +1789,11 @@ Author: ${author || "Unknown"}`;
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`[WiseFit] Active on port ${PORT}`);
+    if (clientFirestoreDb) {
+      syncLocalQuotesToFirestore(clientFirestoreDb).catch((err: any) => {
+        console.error("[WiseFit Sync] Error during startup sync:", err.message || err);
+      });
+    }
   });
 }
 
