@@ -1070,7 +1070,7 @@ function ArticleCard({
     return () => unsubscribe();
   }, [article.id]);
 
-  const isAdmin = user && user.email && ADMIN_EMAILS.includes(user.email);
+  const isAdmin = user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
   const isArticleOwner = currentUserId === article.userId;
 
   const visibleComments = comments.filter(c => {
@@ -3091,7 +3091,7 @@ function AppContent() {
 
   // Auto-fetch support tickets for Admin Sanctuary
   useEffect(() => {
-    if (user && ADMIN_EMAILS.includes(user.email || '')) {
+    if (user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
       fetchSupportTickets();
     }
   }, [user]);
@@ -3109,7 +3109,7 @@ function AppContent() {
   }, [userProfile.integrations?.googleFit?.connected]);
 
   const seedPsychologyInsights = async () => {
-    if (!user || !ADMIN_EMAILS.includes(user.email || '') || isQuotaExceeded) return;
+    if (!user || !user.email || !ADMIN_EMAILS.includes(user.email.toLowerCase()) || isQuotaExceeded) return;
     setIsSeedingInsights(true);
     try {
       const insightsRef = collection(db, 'psychology_insights');
@@ -3143,7 +3143,7 @@ function AppContent() {
   };
 
   const fetchSupportTickets = async () => {
-    if (!user || !ADMIN_EMAILS.includes(user.email || '')) return;
+    if (!user || !user.email || !ADMIN_EMAILS.includes(user.email.toLowerCase())) return;
     setIsFetchingTickets(true);
     try {
       const ticketsRef = collection(db, 'support_tickets');
@@ -3168,7 +3168,7 @@ function AppContent() {
   };
 
   const handleActivateTicket = async (ticket: any) => {
-    if (!user || !ADMIN_EMAILS.includes(user.email || '')) return;
+    if (!user || !user.email || !ADMIN_EMAILS.includes(user.email.toLowerCase())) return;
     setIsActivatingTicket(ticket.id);
     try {
       // 1. Mark ticket as resolved
@@ -3512,7 +3512,7 @@ function AppContent() {
     isRefillingPoolRef.current = true;
     setIsRefillingPool(true);
 
-    const isAdmin = user && user.email && ADMIN_EMAILS.includes(user.email);
+    const isAdmin = user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
     try {
       // 1. ATTEMPT SERVER-SIDE MEMORY CACHE (Zero Quota Cost)
@@ -3637,7 +3637,7 @@ function AppContent() {
     if (isFetchingQuoteRef.current) return;
     isFetchingQuoteRef.current = true;
 
-    const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
+    const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
     const useLocalFallback = () => {
       let sourceQuotes = INITIAL_QUOTES;
@@ -4146,7 +4146,7 @@ function AppContent() {
 
     const seedQuotes = async () => {
       // ONLY ADMIN can run seeding logic to prevent thousands of redundant writes/reads
-      if (!user || !ADMIN_EMAILS.includes(user.email || '')) return;
+      if (!user || !user.email || !ADMIN_EMAILS.includes(user.email.toLowerCase())) return;
       
       try {
         // Use a metadata document to track seeding version and save massive reads
@@ -4294,7 +4294,7 @@ function AppContent() {
 
   const generateMoreQuotes = async () => {
     if (isGeneratingQuotes) return;
-    if (!user?.email || !ADMIN_EMAILS.includes(user.email)) {
+    if (!user?.email || !ADMIN_EMAILS.includes(user.email.toLowerCase())) {
       alert("AI Generation is restricted to Admin only during development.");
       return;
     }
@@ -4332,7 +4332,7 @@ function AppContent() {
 
   const generateLatinQuotes = async () => {
     if (isGeneratingQuotes) return;
-    if (!user?.email || !ADMIN_EMAILS.includes(user.email)) {
+    if (!user?.email || !ADMIN_EMAILS.includes(user.email.toLowerCase())) {
       alert("AI Generation is restricted to Admin only during development.");
       return;
     }
@@ -8900,7 +8900,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
               </div>
 
               {/* Admin Management Section */}
-              {user?.email && ADMIN_EMAILS.includes(user.email) && (
+              {user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase()) && (
                 <div className={cn(
                   "backdrop-blur-md border rounded-3xl p-6 space-y-4 transition-colors duration-500",
                   "bg-purple-900/10 border-purple-500/20 shadow-xl shadow-purple-500/5 ring-1 ring-purple-500/30"

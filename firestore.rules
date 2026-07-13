@@ -71,8 +71,8 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
         ((request.auth.token != null && (
-          request.auth.token.get('email', '') in ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com", "stjepan.dekanovic@gmail.com"] ||
-          (request.auth.token.email != null && request.auth.token.email in ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com", "stjepan.dekanovic@gmail.com"])
+          (request.auth.token.email != null && request.auth.token.email.lower() in ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com", "stjepan.dekanovic@gmail.com"]) ||
+          (request.auth.token.get('email', '').lower() in ["petar.dekanovic@gmail.com", "esmeraldadarkomanila@gmail.com", "stjepan.dekanovic@gmail.com"])
          )) ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin'));

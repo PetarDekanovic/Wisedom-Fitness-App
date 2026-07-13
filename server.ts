@@ -10,11 +10,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import { initializeApp, getApp } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
 import { getFirestore } from "firebase-admin/firestore";
+import { initializeApp as initializeClientApp } from "firebase/app";
+import { getFirestore as getClientFirestore, collection, getDocs, doc, setDoc, query, where, writeBatch } from "firebase/firestore";
 import { FALLBACK_QUOTES, FALLBACK_NEWS } from "./src/fallbackQuotes";
 
 dotenv.config();
 
-// Read Firebase applet config for Admin SDK
+// Read Firebase applet config for Admin/Client SDK
 const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
 let firebaseConfig: any = {};
 try {
@@ -35,6 +37,25 @@ if (firebaseConfig.projectId) {
     console.log("[WiseFit Server] Firebase Admin initialized successfully.");
   } catch (err) {
     console.error("[WiseFit Server] Failed to initialize Firebase Admin:", err);
+  }
+}
+
+// Initialize Firebase Client SDK on server for bypassing service account IAM permissions on daily digest
+let clientFirestoreDb: any = null;
+if (firebaseConfig.projectId && firebaseConfig.apiKey) {
+  try {
+    const clientApp = initializeClientApp({
+      apiKey: firebaseConfig.apiKey,
+      authDomain: firebaseConfig.authDomain,
+      projectId: firebaseConfig.projectId,
+      storageBucket: firebaseConfig.storageBucket,
+      messagingSenderId: firebaseConfig.messagingSenderId,
+      appId: firebaseConfig.appId
+    }, "ServerClientApp");
+    clientFirestoreDb = getClientFirestore(clientApp, firebaseConfig.firestoreDatabaseId);
+    console.log("[WiseFit Server] Firebase Client SDK initialized successfully on Server.");
+  } catch (err) {
+    console.error("[WiseFit Server] Failed to initialize Firebase Client SDK on Server:", err);
   }
 }
 
@@ -1083,9 +1104,9 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
     if (firestoreDb && !force) {
       try {
-        const snapshot = await firestoreDb.collection("daily_digest_quotes")
-          .where("fetchDate", "==", targetDateStr)
-          .get();
+        const quotesCollection = collection(firestoreDb, "daily_digest_quotes");
+        const q = query(quotesCollection, where("fetchDate", "==", targetDateStr));
+        const snapshot = await getDocs(q);
         
         if (!snapshot.empty) {
           snapshot.forEach((doc: any) => {
@@ -1095,10 +1116,10 @@ app.get("/api/ai/diagnostics", async (req, res) => {
             });
           });
           quotes.sort((a: any, b: any) => (a.order !== undefined && b.order !== undefined) ? a.order - b.order : 0);
-          console.log(`[WiseFit Server] Loaded ${quotes.length} daily digest quotes from Firestore for date ${targetDateStr}`);
+          console.log(`[WiseFit Server] Loaded ${quotes.length} daily digest quotes from Firestore (Client SDK) for date ${targetDateStr}`);
         }
-      } catch (dbReadErr) {
-        console.error("[WiseFit Server] Failed to read daily_digest_quotes from Firestore:", dbReadErr);
+      } catch (dbReadErr: any) {
+        console.error("[WiseFit Server] Failed to read daily_digest_quotes from Firestore:", dbReadErr.message || dbReadErr);
       }
     }
 
@@ -1197,24 +1218,24 @@ app.get("/api/ai/diagnostics", async (req, res) => {
       if (firestoreDb && chosenQuotes.length > 0) {
         try {
           if (force) {
-            const existingSnap = await firestoreDb.collection("daily_digest_quotes")
-              .where("fetchDate", "==", targetDateStr)
-              .get();
+            const quotesCollection = collection(firestoreDb, "daily_digest_quotes");
+            const q = query(quotesCollection, where("fetchDate", "==", targetDateStr));
+            const existingSnap = await getDocs(q);
             if (!existingSnap.empty) {
-              const deleteBatch = firestoreDb.batch();
-              existingSnap.forEach((doc: any) => {
-                deleteBatch.delete(doc.ref);
+              const deleteBatch = writeBatch(firestoreDb);
+              existingSnap.forEach((docSnap: any) => {
+                deleteBatch.delete(docSnap.ref);
               });
               await deleteBatch.commit();
               console.log(`[WiseFit Server] Force: Cleared ${existingSnap.size} outdated quotes for ${targetDateStr} from Firestore.`);
             }
           }
-          const batch = firestoreDb.batch();
-          const quotesRef = firestoreDb.collection("daily_digest_quotes");
+          const batch = writeBatch(firestoreDb);
+          const quotesCollection = collection(firestoreDb, "daily_digest_quotes");
           const savedQuotes: any[] = [];
 
           chosenQuotes.forEach((q, idx) => {
-            const docRef = quotesRef.doc();
+            const docRef = doc(quotesCollection);
             const qData = {
               text: q.text,
               author: q.author,
@@ -1232,9 +1253,9 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
           await batch.commit();
           quotes = savedQuotes;
-          console.log(`[WiseFit Server] Stored ${quotes.length} scraped quotes for date ${targetDateStr} in Firestore.`);
-        } catch (dbWriteErr) {
-          console.error("[WiseFit Server] Failed to write daily_digest_quotes to Firestore:", dbWriteErr);
+          console.log(`[WiseFit Server] Stored ${quotes.length} scraped quotes for date ${targetDateStr} in Firestore (Client SDK).`);
+        } catch (dbWriteErr: any) {
+          console.error("[WiseFit Server] Failed to write daily_digest_quotes to Firestore:", dbWriteErr.message || dbWriteErr);
           quotes = chosenQuotes.map((q, idx) => ({
             id: `digest-q-${idx}-${Math.random().toString(36).substring(2, 6)}`,
             ...q,
@@ -1385,6 +1406,47 @@ app.get("/api/ai/diagnostics", async (req, res) => {
   let lastDigestFetchTime = 0;
   const DIGEST_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
+  app.get("/api/sanctuary-diagnostic", async (req, res) => {
+    const logs: string[] = [];
+    logs.push("Sanctuary Diagnostic triggered.");
+    
+    let firestoreDb: any = clientFirestoreDb;
+    if (clientFirestoreDb) {
+      logs.push("Firestore Client SDK initialized successfully on Server.");
+    } else {
+      logs.push("Firestore Client SDK NOT initialized.");
+    }
+
+    const balkanDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zagreb' }).format(new Date());
+    const todayStr = balkanDate;
+    logs.push(`todayStr: ${todayStr}`);
+
+    try {
+      logs.push("Attempting performDigestHarvest...");
+      const data = await performDigestHarvest(firestoreDb, todayStr, true);
+      logs.push(`performDigestHarvest returned successfully with ${data.quotes ? data.quotes.length : 0} quotes.`);
+      res.json({
+        success: true,
+        logs,
+        todayStr,
+        lastUpdated: data.lastUpdated,
+        quotesCount: data.quotes ? data.quotes.length : 0,
+        sampleQuotes: data.quotes ? data.quotes.slice(0, 3) : [],
+        data
+      });
+    } catch (err: any) {
+      logs.push(`performDigestHarvest failed: ${err.message}`);
+      if (err.stack) {
+        logs.push(`Stack: ${err.stack}`);
+      }
+      res.status(500).json({
+        success: false,
+        logs,
+        error: err.message
+      });
+    }
+  });
+
   app.get("/api/sanctuary-digest", async (req, res) => {
     const force = req.query.force === "true";
     const now = Date.now();
@@ -1392,31 +1454,18 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     const balkanDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zagreb' }).format(new Date());
     const todayStr = balkanDate;
 
-    let firestoreDb: any = null;
-    if (isFirebaseAdminInitialized) {
-      try {
-        firestoreDb = firebaseConfig.firestoreDatabaseId 
-          ? getFirestore(getApp(), firebaseConfig.firestoreDatabaseId) 
-          : getFirestore();
-      } catch (dbErr) {
-        console.error("[WiseFit Server] Firestore initialization error:", dbErr);
-      }
-    }
+    let firestoreDb: any = clientFirestoreDb;
 
     const fetchTotalScrapedCount = async (): Promise<number> => {
       let localCount = loadLocalScrapedQuotes().length;
       let dbCount = 0;
       if (firestoreDb) {
         try {
-          const countSnap = await firestoreDb.collection("daily_digest_quotes").count().get();
-          dbCount = countSnap.data().count;
-        } catch (err) {
-          try {
-            const listSnap = await firestoreDb.collection("daily_digest_quotes").select().get();
-            dbCount = listSnap.size;
-          } catch (listErr) {
-            // ignore
-          }
+          const quotesCollection = collection(firestoreDb, "daily_digest_quotes");
+          const listSnap = await getDocs(quotesCollection);
+          dbCount = listSnap.size;
+        } catch (listErr) {
+          // ignore
         }
       }
       return Math.max(localCount, dbCount);
