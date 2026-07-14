@@ -16,7 +16,9 @@ import {
   ChevronRight,
   RefreshCw,
   Search,
-  BookMarked
+  BookMarked,
+  Copy,
+  Check
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { db } from '../firebase';
@@ -39,6 +41,59 @@ interface VocabItem {
   category: 'strofa_1' | 'refren' | 'glagoli' | 'svakodnevno';
   categoryLabel: string;
 }
+
+const ENGLISH_TRANSLATIONS: Record<string, string> = {
+  '深处': 'Deep place / Abyss',
+  '在': 'At / In / On',
+  '我的': 'My / Mine',
+  '心': 'Heart',
+  '火': 'Fire',
+  '燃烧': 'Burn / Ignite',
+  '燃烧的': 'Burning / Fiery',
+  '你': 'You',
+  '听': 'Listen / Hear',
+  '声音': 'Voice / Sound',
+  '风': 'Wind',
+  '呼唤': 'Call / Summon',
+  '爱': 'Love',
+  '是': 'Is / To be',
+  '光': 'Light',
+  '永远': 'Forever / Always',
+  '不': 'No / Not',
+  '熄灭': 'Extinguish / Go out',
+  '灵魂': 'Soul / Spirit',
+  '飞翔': 'Fly / Soar',
+  '天空': 'Sky',
+  '星辰': 'Stars / Constellations',
+  '照亮': 'Illuminate / Light up',
+  '路': 'Road / Path',
+  '看': 'Look / See / Watch',
+  '吃': 'Eat',
+  '喝': 'Drink',
+  '走': 'Walk / Go',
+  '跑': 'Run',
+  '笑': 'Laugh / Smile',
+  '哭': 'Cry / Weep',
+  '说': 'Speak / Say / Talk',
+  '想': 'Think / Want / Miss',
+  '做': 'Do / Make',
+  '有': 'Have / Exist',
+  '去': 'Go / Leave',
+  '家': 'Home / Family',
+  '朋友': 'Friend',
+  '水': 'Water',
+  '山': 'Mountain',
+  '日月': 'Sun and Moon / Day and Month',
+  '书': 'Book',
+  '今天': 'Today',
+  '时间': 'Time',
+  '力量': 'Power / Strength',
+  '智慧': 'Wisdom',
+  '健康': 'Health',
+  '平息': 'Peace / Tranquility / Calm down',
+  '谢谢': 'Thank you',
+  '再见': 'Goodbye'
+};
 
 // 50 premium words/verbs with Emojis & Vuk Karadžić phonetic spelling
 const VOCAB_DATA: VocabItem[] = [
@@ -128,6 +183,23 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   // Persistence States
   const [masteredIds, setMasteredIds] = useState<string[]>([]);
   const [isPronouncing, setIsPronouncing] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (item: VocabItem, e: React.MouseEvent) => {
+    e.stopPropagation(); // Avoid triggering speaker pronunciation
+    const engTrans = ENGLISH_TRANSLATIONS[item.char] || '';
+    const textToCopy = `${item.emoji} ${item.char} [${item.pinyin}] (${item.vuk})\n🇭🇷 ${item.translation}\n🇬🇧 ${engTrans}\n\n✨ Shared via WiseFit Sanctuary`;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopiedId(item.id);
+      playSound('correct');
+      setTimeout(() => {
+        setCopiedId(null);
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+    });
+  };
 
   // Play synthesized tone for Duolingo feels
   const playSound = (type: 'correct' | 'wrong' | 'complete' | 'level-up') => {
@@ -582,16 +654,36 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                             : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm shadow-zinc-200/50"
                       )}
                     >
-                      {/* Top Action Indicators (Speaker & Mastery status check icon) */}
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        {/* Audio Speaker Action */}
-                        <div className={cn(
-                          "w-7 h-7 rounded-full flex items-center justify-center transition-all",
-                          isTalking 
-                            ? isGirlyMode ? "bg-pink-500 text-white scale-110" : "bg-emerald-500 text-white scale-110 animate-pulse"
-                            : "bg-zinc-500/10 text-zinc-400 group-hover:bg-zinc-500/20 group-hover:text-zinc-600 dark:group-hover:text-zinc-200"
-                        )}>
-                          <Volume2 className={cn("w-3.5 h-3.5", isTalking && "animate-bounce")} />
+                      {/* Top Action Indicators (Speaker, Copy & Mastery status check icon) */}
+                      <div className="flex items-center justify-between gap-1.5 mb-2">
+                        <div className="flex items-center gap-1.5">
+                          {/* Audio Speaker Action */}
+                          <div className={cn(
+                            "w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                            isTalking 
+                              ? isGirlyMode ? "bg-pink-500 text-white scale-110" : "bg-emerald-500 text-white scale-110 animate-pulse"
+                              : "bg-zinc-500/10 text-zinc-400 group-hover:bg-zinc-500/20 group-hover:text-zinc-600 dark:group-hover:text-zinc-200"
+                          )}>
+                            <Volume2 className={cn("w-3.5 h-3.5", isTalking && "animate-bounce")} />
+                          </div>
+
+                          {/* Copy Action */}
+                          <button
+                            onClick={(e) => handleCopy(item, e)}
+                            title="Kopiraj za društvene mreže"
+                            className={cn(
+                              "w-7 h-7 rounded-full flex items-center justify-center transition-all border border-transparent",
+                              copiedId === item.id
+                                ? isGirlyMode ? "bg-pink-500 text-white scale-110" : "bg-emerald-500 text-white scale-110"
+                                : "bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20 hover:text-zinc-600 dark:hover:text-zinc-200"
+                            )}
+                          >
+                            {copiedId === item.id ? (
+                              <Check className="w-3.5 h-3.5" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
                         </div>
 
                         {/* Duolingo Emojis Highlight */}
