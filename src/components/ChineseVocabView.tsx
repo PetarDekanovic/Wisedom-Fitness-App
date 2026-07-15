@@ -79,6 +79,20 @@ const ENGLISH_TRANSLATIONS: Record<string, string> = {
   '做': 'Do / Make',
   '有': 'Have / Exist',
   '去': 'Go / Leave',
+  '买': 'Buy',
+  '卖': 'Sell',
+  '学': 'Learn / Study',
+  '写': 'Write',
+  '读': 'Read / Study',
+  '坐': 'Sit',
+  '站': 'Stand',
+  '睡': 'Sleep',
+  '懂': 'Understand / Comprehend',
+  '问': 'Ask',
+  '答': 'Answer / Reply',
+  '开': 'Open / Start / Drive',
+  '关': 'Close / Turn off',
+  '喜欢': 'Like / Enjoy / Love',
   '家': 'Home / Family',
   '朋友': 'Friend',
   '水': 'Water',
@@ -92,10 +106,30 @@ const ENGLISH_TRANSLATIONS: Record<string, string> = {
   '健康': 'Health',
   '平息': 'Peace / Tranquility / Calm down',
   '谢谢': 'Thank you',
-  '再见': 'Goodbye'
+  '再见': 'Goodbye',
+  '日': 'Day / Sun',
+  '月': 'Month / Moon',
+  '人': 'Person / Human / People',
+  '茶': 'Tea',
+  '咖啡': 'Coffee',
+  '苹果': 'Apple',
+  '米饭': 'Cooked Rice / Meal',
+  '猫': 'Cat',
+  '狗': 'Dog',
+  '鱼': 'Fish',
+  '钱': 'Money',
+  '车': 'Car / Vehicle',
+  '手': 'Hand',
+  '头': 'Head',
+  '眼睛': 'Eyes',
+  '耳朵': 'Ears',
+  '衣服': 'Clothes / Clothing',
+  '学校': 'School',
+  '老师': 'Teacher',
+  '学生': 'Student'
 };
 
-// 50 premium words/verbs with Emojis & Vuk Karadžić phonetic spelling
+// 84 premium words/verbs with Emojis & Vuk Karadžić phonetic spelling
 const VOCAB_DATA: VocabItem[] = [
   // Strofa 1
   { id: '1', char: '深处', pinyin: 'shēn chù', vuk: 'šen ču', translation: 'Duboko u', emoji: '🌌', category: 'strofa_1', categoryLabel: 'Strofa 1' },
@@ -138,6 +172,20 @@ const VOCAB_DATA: VocabItem[] = [
   { id: '34', char: '做', pinyin: 'zuò', vuk: 'dzuo', translation: 'Raditi / Praviti', emoji: '🛠️', category: 'glagoli', categoryLabel: 'Glagoli' },
   { id: '35', char: '有', pinyin: 'yǒu', vuk: 'jou', translation: 'Imati', emoji: '🎒', category: 'glagoli', categoryLabel: 'Glagoli' },
   { id: '36', char: '去', pinyin: 'qù', vuk: 'ću', translation: 'Ići / Otići', emoji: '➡️', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '51', char: '买', pinyin: 'mǎi', vuk: 'mai', translation: 'Kupiti', emoji: '🛍️', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '52', char: '卖', pinyin: 'mài', vuk: 'mai', translation: 'Prodati', emoji: '🪙', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '53', char: '学', pinyin: 'xué', vuk: 'sjue', translation: 'Učiti / Proučavati', emoji: '🎓', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '54', char: '写', pinyin: 'xiě', vuk: 'sje', translation: 'Pisati', emoji: '✍️', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '55', char: '读', pinyin: 'dú', vuk: 'du', translation: 'Čitati', emoji: '📖', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '56', char: '坐', pinyin: 'zuò', vuk: 'dzuo', translation: 'Sedeti', emoji: '🪑', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '57', char: '站', pinyin: 'zhàn', vuk: 'džan', translation: 'Stajati / Ustati', emoji: '🧍', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '58', char: '睡', pinyin: 'shuì', vuk: 'šui', translation: 'Spavati', emoji: '😴', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '59', char: '懂', pinyin: 'dǒng', vuk: 'dong', translation: 'Razumeti / Shvatiti', emoji: '💡', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '60', char: '问', pinyin: 'wèn', vuk: 'ven', translation: 'Pitati / Pitanje', emoji: '❓', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '61', char: '答', pinyin: 'dá', vuk: 'da', translation: 'Odgovoriti', emoji: '🗣️', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '62', char: '开', pinyin: 'kāi', vuk: 'kai', translation: 'Otvoriti / Voziti', emoji: '🔑', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '63', char: '关', pinyin: 'guān', vuk: 'guan', translation: 'Zatvoriti / Ugasiti', emoji: '🔒', category: 'glagoli', categoryLabel: 'Glagoli' },
+  { id: '64', char: '喜欢', pinyin: 'xǐ huan', vuk: 'si huan', translation: 'Sviđati se / Voleti', emoji: '🥰', category: 'glagoli', categoryLabel: 'Glagoli' },
 
   // Svakodnevno
   { id: '37', char: '家', pinyin: 'jiā', vuk: 'đia', translation: 'Kuća / Dom / Porodica', emoji: '🏠', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
@@ -153,7 +201,27 @@ const VOCAB_DATA: VocabItem[] = [
   { id: '47', char: '健康', pinyin: 'jiàn kāng', vuk: 'đjen kang', translation: 'Zdravlje', emoji: '🍏', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
   { id: '48', char: '平息', pinyin: 'píng xī', vuk: 'ping si', translation: 'Mir / Spokoj', emoji: '🕊️', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
   { id: '49', char: '谢谢', pinyin: 'xiè xiè', vuk: 'sje sje', translation: 'Hvala', emoji: '🙏', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: '50', char: '再见', pinyin: 'zài jiàn', vuk: 'dzai đjen', translation: 'Doviđenja', emoji: '👋', category: 'svakodnevno', categoryLabel: 'Svakodnevno' }
+  { id: '50', char: '再见', pinyin: 'zài jiàn', vuk: 'dzai đjen', translation: 'Doviđenja', emoji: '👋', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '65', char: '日', pinyin: 'rì', vuk: 'ži', translation: 'Dan / Sunce', emoji: '☀️', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '66', char: '月', pinyin: 'yuè', vuk: 'jue', translation: 'Mesec', emoji: '🌙', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '67', char: '人', pinyin: 'rén', vuk: 'žen', translation: 'Čovek / Osoba', emoji: '👤', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '68', char: '茶', pinyin: 'chá', vuk: 'ča', translation: 'Čaj', emoji: '🍵', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '69', char: '咖啡', pinyin: 'kā fēi', vuk: 'ka fej', translation: 'Kafa', emoji: '☕', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '70', char: '苹果', pinyin: 'píng guǒ', vuk: 'ping guo', translation: 'Jabuka', emoji: '🍎', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '71', char: '米饭', pinyin: 'mǐ fàn', vuk: 'mi fan', translation: 'Kuvani pirinač / Obrok', emoji: '🍚', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '72', char: '猫', pinyin: 'māo', vuk: 'mao', translation: 'Mačka', emoji: '🐱', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '73', char: '狗', pinyin: 'gǒu', vuk: 'gou', translation: 'Pas', emoji: '🐶', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '74', char: '鱼', pinyin: 'yú', vuk: 'ju', translation: 'Riba', emoji: '🐟', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '75', char: '钱', pinyin: 'qián', vuk: 'ćien', translation: 'Novac', emoji: '💵', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '76', char: '车', pinyin: 'chē', vuk: 'če', translation: 'Auto / Vozilo', emoji: '🚗', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '77', char: '手', pinyin: 'shǒu', vuk: 'šou', translation: 'Ruka', emoji: '✋', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '78', char: '头', pinyin: 'tóu', vuk: 'tou', translation: 'Glava', emoji: '👤', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '79', char: '眼睛', pinyin: 'yǎn jing', vuk: 'jen đing', translation: 'Oči', emoji: '👀', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '80', char: '耳朵', pinyin: 'ěr duo', vuk: 'er duo', translation: 'Uši / Slušalice', emoji: '🎧', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '81', char: '衣服', pinyin: 'yī fu', vuk: 'i fu', translation: 'Odeća', emoji: '👕', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '82', char: '学校', pinyin: 'xué xiào', vuk: 'sjue sjao', translation: 'Škola', emoji: '🏫', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '83', char: '老师', pinyin: 'lǎo shī', vuk: 'lao ši', translation: 'Učitelj', emoji: '👨‍🏫', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: '84', char: '学生', pinyin: 'xué sheng', vuk: 'sjue šeng', translation: 'Učenik / Student', emoji: '🧑‍🎓', category: 'svakodnevno', categoryLabel: 'Svakodnevno' }
 ];
 
 export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
@@ -457,6 +525,14 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     }
   };
 
+  const getRankInfo = (count: number) => {
+    if (count >= 65) return { name: "Gospodar Znakova (Master) 👑", icon: "👑", desc: "Znaš preko 65 kineskih riječi! Pravi kineski mudrac.", nextMilestone: null };
+    if (count >= 45) return { name: "Kineski Mudrac (Sage) 🦉", icon: "🦉", desc: "Savladano preko 45 riječi. Tvoj um je oštar kao planinski vetar.", nextMilestone: 65 };
+    if (count >= 25) return { name: "Učeni Filozof (Scholar) 🎓", icon: "🎓", desc: "Savladano preko 25 riječi. Tvoje znanje raste svakim danom.", nextMilestone: 45 };
+    if (count >= 10) return { name: "Marljivi Učenik (Student) 📚", icon: "📚", desc: "Savladano preko 10 riječi. Na dobrom si putu discipline.", nextMilestone: 25 };
+    return { name: "Radoznali Tragač (Seeker) 🧭", icon: "🧭", desc: "Tek započinješ svoj put. Označi prve riječi kao naučene!", nextMilestone: 10 };
+  };
+
   return (
     <div className="w-full space-y-6">
       {/* Custom Sub-Header Layout mirroring screenshot */}
@@ -475,7 +551,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
               "text-lg font-black tracking-tight flex items-center gap-2",
               isGirlyMode ? "text-pink-900" : isDarkMode ? "text-zinc-100" : "text-zinc-900"
             )}>
-              Chinese Vocab <span className="text-xs px-2 py-0.5 rounded bg-zinc-500/10 text-zinc-500 font-mono">50 Riječi</span>
+              Chinese Vocab <span className="text-xs px-2 py-0.5 rounded bg-zinc-500/10 text-zinc-500 font-mono">{VOCAB_DATA.length} Riječi</span>
             </h3>
             <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
               Riječi za učenje po vukovom pravopisu
@@ -528,7 +604,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                 : "bg-amber-50 border-amber-100 text-amber-600"
           )}>
             <Trophy className="w-4 h-4 text-amber-500 fill-amber-500 animate-pulse" />
-            <span>{masteredIds.length}/50</span>
+            <span>{masteredIds.length}/{VOCAB_DATA.length}</span>
           </div>
         </div>
       </div>
@@ -543,6 +619,115 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
+            {/* Gamified Progress Sanctuary Dashboard */}
+            <div className={cn(
+              "p-6 rounded-[32px] border relative overflow-hidden transition-all duration-300 shadow-md",
+              isGirlyMode 
+                ? "bg-gradient-to-br from-pink-500/10 via-pink-500/5 to-transparent border-pink-500/20 shadow-pink-500/5" 
+                : isDarkMode 
+                  ? "bg-gradient-to-br from-emerald-500/10 via-zinc-900/50 to-zinc-950 border-emerald-500/20 shadow-emerald-500/5"
+                  : "bg-gradient-to-br from-emerald-50 to-white border-zinc-200/80 shadow-zinc-200/50"
+            )}>
+              {/* Abstract decorative graphic elements for duolingo/zen premium aesthetic */}
+              <div className="absolute right-0 bottom-0 translate-y-4 translate-x-4 opacity-5 pointer-events-none select-none text-[120px] font-black font-sans leading-none">
+                {getRankInfo(masteredIds.length).icon}
+              </div>
+
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+                <div className="space-y-1.5 max-w-md">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-2xl filter drop-shadow-sm">
+                      {getRankInfo(masteredIds.length).icon}
+                    </span>
+                    <span className={cn(
+                      "text-xs font-black uppercase tracking-widest font-mono",
+                      isGirlyMode ? "text-pink-600" : "text-emerald-500"
+                    )}>
+                      ČIN:
+                    </span>
+                    <span className={cn(
+                      "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide",
+                      isGirlyMode 
+                        ? "bg-pink-100 text-pink-700" 
+                        : isDarkMode 
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                          : "bg-emerald-100 text-emerald-800"
+                    )}>
+                      {getRankInfo(masteredIds.length).name}
+                    </span>
+                  </div>
+
+                  <h4 className={cn(
+                    "text-sm font-black tracking-tight",
+                    isGirlyMode ? "text-pink-950" : isDarkMode ? "text-zinc-50" : "text-zinc-900"
+                  )}>
+                    Kineska Akademija Napretka
+                  </h4>
+                  <p className="text-[11px] font-bold text-zinc-400 leading-relaxed">
+                    {getRankInfo(masteredIds.length).desc}
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-end gap-1 font-mono text-right w-full md:w-auto">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className={cn(
+                      "text-3xl font-black leading-none",
+                      isGirlyMode ? "text-pink-600" : "text-emerald-500"
+                    )}>
+                      {masteredIds.length}
+                    </span>
+                    <span className="text-zinc-400 font-bold text-xs">/ {VOCAB_DATA.length}</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                    Savladane Riječi
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress bar and requirements */}
+              <div className="mt-5 space-y-2 relative z-10">
+                <div className="flex items-center justify-between text-[10px] font-mono font-black text-zinc-400">
+                  <span>Progres do potpunog Gospodstva</span>
+                  <span>{Math.round((masteredIds.length / VOCAB_DATA.length) * 100)}%</span>
+                </div>
+
+                <div className="h-3 rounded-full bg-zinc-500/10 overflow-hidden border border-zinc-500/5 relative flex items-center">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(masteredIds.length / VOCAB_DATA.length) * 100}%` }}
+                    className={cn(
+                      "h-full rounded-full transition-all duration-500 relative",
+                      isGirlyMode 
+                        ? "bg-gradient-to-r from-pink-400 to-pink-500" 
+                        : "bg-gradient-to-r from-emerald-400 to-emerald-500"
+                    )}
+                  />
+                </div>
+
+                {getRankInfo(masteredIds.length).nextMilestone !== null ? (
+                  <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400">
+                    <p className="flex items-center gap-1">
+                      <span>Sledeći nivo na:</span>
+                      <strong className={isGirlyMode ? "text-pink-500" : "text-emerald-500"}>
+                        {getRankInfo(masteredIds.length).nextMilestone} reči
+                      </strong>
+                    </p>
+                    <p>
+                      Preostalo još{" "}
+                      <strong className={isGirlyMode ? "text-pink-500" : "text-emerald-500"}>
+                        {getRankInfo(masteredIds.length).nextMilestone! - masteredIds.length}
+                      </strong>{" "}
+                      reči!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-[10px] font-black text-amber-500 text-center uppercase tracking-widest mt-1">
+                    👑 Čestitamo! Otključao si apsolutni vrhunac kineske mudrosti! 👑
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Search & Category Filter Pills */}
             <div className="flex flex-col md:flex-row gap-3">
               <div className="relative flex-1">
@@ -803,7 +988,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   </div>
                   <div className="p-3 rounded-2xl bg-zinc-500/5 border border-zinc-500/10 text-center">
                     <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wider">Naučeno</span>
-                    <span className="text-xl font-black font-mono text-emerald-500">{masteredIds.length}/50</span>
+                    <span className="text-xl font-black font-mono text-emerald-500">{masteredIds.length}/{VOCAB_DATA.length}</span>
                   </div>
                 </div>
 
@@ -1030,7 +1215,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   </div>
                   <div className="p-3.5 rounded-2xl bg-zinc-500/5 border border-zinc-500/10">
                     <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wider">Naučeno</span>
-                    <span className="text-lg font-black font-mono text-blue-500">{masteredIds.length}/50</span>
+                    <span className="text-lg font-black font-mono text-blue-500">{masteredIds.length}/{VOCAB_DATA.length}</span>
                   </div>
                 </div>
 
