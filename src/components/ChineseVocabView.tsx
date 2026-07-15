@@ -879,17 +879,22 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                         {/* Mastery Checkbox Icon */}
                         <button
                           onClick={(e) => toggleMastered(item.id, e)}
-                          title={isMastered ? "Označi kao neučeno" : "Označi kao naučeno"}
+                          title={isMastered ? "Označi kao naučeno (Klikni da ukloniš)" : "Označi kao naučeno"}
                           className={cn(
-                            "w-6 h-6 rounded-full border flex items-center justify-center transition-all",
+                            "w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300",
                             isMastered 
                               ? isGirlyMode 
-                                ? "bg-pink-500 border-pink-500 text-white"
-                                : "bg-emerald-500 border-emerald-500 text-white"
-                              : "border-zinc-500/20 hover:border-zinc-500/40 text-transparent hover:text-zinc-400"
+                                ? "bg-pink-500 border-pink-500 text-white shadow-sm shadow-pink-500/20"
+                                : "bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-500/20"
+                              : isGirlyMode
+                                ? "bg-zinc-500/5 border-zinc-200 dark:border-zinc-800 text-zinc-300 hover:border-pink-300 hover:text-pink-500 dark:hover:border-pink-500/50"
+                                : "bg-zinc-500/5 border-zinc-200 dark:border-zinc-800 text-zinc-300 hover:border-emerald-300 hover:text-emerald-500 dark:hover:border-emerald-500/50"
                           )}
                         >
-                          <CheckCircle className="w-3.5 h-3.5 fill-current text-white dark:text-zinc-950" />
+                          <Check className={cn(
+                            "w-3.5 h-3.5 transition-all",
+                            isMastered ? "scale-110 stroke-[3px]" : "scale-90 stroke-[2px]"
+                          )} />
                         </button>
                       </div>
 
