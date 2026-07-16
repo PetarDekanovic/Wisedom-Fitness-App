@@ -112,7 +112,7 @@
     },
     "DailyDigestQuote": {
       "title": "DailyDigestQuote",
-      "description": "Scraped daily digest quote stored in Firestore",
+      "description": "Scraped daily digest quote stored in Firestore with optional likes tracking",
       "type": "object",
       "properties": {
         "text": { "type": "string" },
@@ -120,7 +120,9 @@
         "source": { "type": "string" },
         "fetchDate": { "type": "string", "description": "The date the quote was fetched (YYYY-MM-DD)" },
         "order": { "type": "number", "description": "Display order of the quote in the digest" },
-        "createdAt": { "type": "string", "description": "Creation timestamp" }
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "likes": { "type": "array", "items": { "type": "string" }, "description": "UIDs of users who liked this quote" },
+        "likesCount": { "type": "number", "description": "Total count of likes" }
       },
       "required": ["text", "author", "fetchDate", "order"]
     },

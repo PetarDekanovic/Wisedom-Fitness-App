@@ -2299,6 +2299,7 @@ function AppContent() {
   const [isFetchingDigest, setIsFetchingDigest] = useState(false);
   const [digestError, setDigestError] = useState<string | null>(null);
   const [digestTab, setDigestTab] = useState<'quotes' | 'news'>('quotes');
+  const [digestSortOrder, setDigestSortOrder] = useState<'default' | 'likes'>('default');
 
   const fetchSanctuaryDigest = useCallback(async (force = false) => {
     if (hasSyncedDigest && !force) return;
@@ -2563,6 +2564,73 @@ function AppContent() {
       clearInterval(countdownInterval);
       setIsGeneratingDigestAIQuote(false);
       setDigestAICountdown(0);
+    }
+  };
+
+  const toggleLikeDigestQuote = async (quote: any) => {
+    const userId = user?.uid;
+    const quoteId = quote.id;
+    if (!quoteId) return;
+
+    try {
+      const quoteInState = digestData.quotes.find((q: any) => q.id === quoteId);
+      if (!quoteInState) return;
+
+      const currentLikes = quoteInState.likes || [];
+      const currentLikesCount = quoteInState.likesCount ?? currentLikes.length;
+      let newLikes: string[] = [...currentLikes];
+      let newLikesCount = currentLikesCount;
+
+      if (userId) {
+        if (currentLikes.includes(userId)) {
+          newLikes = currentLikes.filter((id: string) => id !== userId);
+          newLikesCount = Math.max(0, newLikesCount - 1);
+        } else {
+          newLikes = [...currentLikes, userId];
+          newLikesCount = newLikesCount + 1;
+        }
+      } else {
+        const localKey = `liked_digest_q_${quoteId}`;
+        const alreadyLiked = localStorage.getItem(localKey) === 'true';
+        if (alreadyLiked) {
+          localStorage.removeItem(localKey);
+          newLikesCount = Math.max(0, newLikesCount - 1);
+        } else {
+          localStorage.setItem(localKey, 'true');
+          newLikesCount = newLikesCount + 1;
+        }
+      }
+
+      setDigestData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          quotes: prev.quotes.map((q: any) => {
+            if (q.id === quoteId) {
+              return {
+                ...q,
+                likes: newLikes,
+                likesCount: newLikesCount
+              };
+            }
+            return q;
+          })
+        };
+      });
+
+      const quoteRef = doc(db, 'daily_digest_quotes', quoteId);
+      await setDoc(quoteRef, {
+        likes: newLikes,
+        likesCount: newLikesCount,
+        text: quote.text,
+        author: quote.author,
+        source: quote.source || 'Daily Digest',
+        fetchDate: quote.fetchDate || new Date().toISOString().split('T')[0],
+        order: quote.order ?? 0
+      }, { merge: true });
+
+    } catch (err) {
+      console.error("Error toggling like status on digest quote:", err);
     }
   };
 
@@ -7859,6 +7927,34 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                 </div>
 
                                 <div className="flex items-center justify-center gap-2">
+                                  {(() => {
+                                    const activeQuote = digestData.quotes[digestActiveIndex];
+                                    if (!activeQuote) return null;
+                                    const isLiked = user?.uid 
+                                      ? (activeQuote.likes || []).includes(user.uid) 
+                                      : localStorage.getItem(`liked_digest_q_${activeQuote.id}`) === 'true';
+                                    const likesCount = activeQuote.likesCount ?? (activeQuote.likes || []).length;
+                                    
+                                    return (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleLikeDigestQuote(activeQuote);
+                                        }}
+                                        className={cn(
+                                          "p-2 rounded-lg transition-all active:scale-95 flex items-center gap-1.5",
+                                          isLiked 
+                                            ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" 
+                                            : (isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200")
+                                        )}
+                                        title={isLiked ? "Unlike Quote" : "Like Quote"}
+                                      >
+                                        <Heart className={cn("w-3.5 h-3.5", isLiked && "fill-rose-500 text-rose-500")} />
+                                        <span className="text-[10px] font-bold">{likesCount}</span>
+                                      </button>
+                                    );
+                                  })()}
+
                                   <button
                                     onClick={handleCopyDigestQuote}
                                     className={cn(
@@ -7913,49 +8009,104 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
 
                       {/* Header for list */}
                       <div className={cn(
-                        "flex items-center justify-between pt-6 border-t",
+                        "flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-6 border-t",
                         isDarkMode ? "border-zinc-800/80" : "border-zinc-200"
                       )}>
-                        <h4 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
-                          Complete Log Library ({digestData.quotes.length} Daily Selections)
-                        </h4>
-                        <span className="text-[10px] font-mono text-zinc-500">Click any card to focus & listen</span>
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
+                            Complete Log Library ({digestData.quotes.length} Daily Selections)
+                          </h4>
+                          <span className="text-[10px] font-mono text-zinc-500">Click any card to focus & listen</span>
+                        </div>
+                        
+                        {/* Sort Selector */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Sort by:</span>
+                          <div className={cn(
+                            "flex p-0.5 rounded-lg text-[10px] font-bold border",
+                            isDarkMode ? "bg-zinc-950/60 border-zinc-800" : "bg-zinc-100 border-zinc-200"
+                          )}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDigestSortOrder('default'); }}
+                              className={cn(
+                                "px-2.5 py-1 rounded-md transition-all",
+                                digestSortOrder === 'default'
+                                  ? isDarkMode ? "bg-zinc-800 text-zinc-100" : "bg-white text-zinc-800 shadow-sm"
+                                  : "text-zinc-500 hover:text-zinc-400"
+                              )}
+                            >
+                              Chronological
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDigestSortOrder('likes'); }}
+                              className={cn(
+                                "px-2.5 py-1 rounded-md transition-all flex items-center gap-1",
+                                digestSortOrder === 'likes'
+                                  ? isDarkMode ? "bg-zinc-800 text-zinc-100" : "bg-white text-zinc-800 shadow-sm"
+                                  : "text-zinc-500 hover:text-rose-400"
+                              )}
+                            >
+                              Most Liked ❤️
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Complete List of Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {digestData.quotes.map((quote: any, idx: number) => (
-                          <div 
-                            key={quote.id || idx}
-                            onClick={() => {
-                              setDigestActiveIndex(idx);
-                              setDigestAutoFlowTimer(30);
-                              speakQuoteRef.current({
-                                id: quote.id || `digest-${idx}`,
-                                text: quote.text,
-                                author: quote.author,
-                                source: quote.source || 'Daily Digest',
-                                category: 'daily',
-                                randomId: 0
-                              });
-                            }}
-                            className={cn(
-                              "cursor-pointer transition-all duration-300",
-                              idx === digestActiveIndex 
-                                ? (isDarkMode ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-zinc-950 scale-[1.02]" : "ring-2 ring-emerald-500 ring-offset-2 ring-offset-white scale-[1.02]")
-                                : ""
-                            )}
-                          >
-                            <DigestQuoteCard
-                              quote={quote}
-                              idx={idx}
-                              isDarkMode={isDarkMode}
-                              onExpand={expandQuoteWithStoicAI}
-                              cn={cn}
-                            />
+                      {(() => {
+                        const sortedQuotes = [...(digestData.quotes || [])].sort((a, b) => {
+                          if (digestSortOrder === 'likes') {
+                            const aCount = a.likesCount ?? (a.likes || []).length;
+                            const bCount = b.likesCount ?? (b.likes || []).length;
+                            return bCount - aCount;
+                          }
+                          return (a.order !== undefined && b.order !== undefined) ? a.order - b.order : 0;
+                        });
+
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {sortedQuotes.map((quote: any, sortedIdx: number) => {
+                              const originalIdx = digestData.quotes.findIndex((q: any) => q.id === quote.id);
+                              const activeIdx = originalIdx !== -1 ? originalIdx : sortedIdx;
+                              const isSelected = activeIdx === digestActiveIndex;
+                              
+                              return (
+                                <div 
+                                  key={quote.id || sortedIdx}
+                                  onClick={() => {
+                                    setDigestActiveIndex(activeIdx);
+                                    setDigestAutoFlowTimer(30);
+                                    speakQuoteRef.current({
+                                      id: quote.id || `digest-${activeIdx}`,
+                                      text: quote.text,
+                                      author: quote.author,
+                                      source: quote.source || 'Daily Digest',
+                                      category: 'daily',
+                                      randomId: 0
+                                    });
+                                  }}
+                                  className={cn(
+                                    "cursor-pointer transition-all duration-300",
+                                    isSelected 
+                                      ? (isDarkMode ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-zinc-950 scale-[1.02]" : "ring-2 ring-emerald-500 ring-offset-2 ring-offset-white scale-[1.02]")
+                                      : ""
+                                  )}
+                                >
+                                  <DigestQuoteCard
+                                    quote={quote}
+                                    idx={activeIdx}
+                                    isDarkMode={isDarkMode}
+                                    onExpand={expandQuoteWithStoicAI}
+                                    cn={cn}
+                                    currentUserId={user?.uid}
+                                    onLike={toggleLikeDigestQuote}
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })()}
                     </div>
                   )}
 
