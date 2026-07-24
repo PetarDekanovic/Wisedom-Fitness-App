@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Trophy, ExternalLink, Copy, CheckCircle2, Volume2, VolumeX, Database, BookmarkCheck, Sparkles, RefreshCw } from 'lucide-react';
+import { Trophy, ExternalLink, Copy, CheckCircle2, Volume2, VolumeX, Database, BookmarkCheck, RefreshCw } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, doc, setDoc, getDocs, query, where } from 'firebase/firestore';
+import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore';
 
 interface ExternalQuoteSourcesProps {
   isDarkMode: boolean;
@@ -10,13 +10,97 @@ interface ExternalQuoteSourcesProps {
   onQuoteSaved?: (savedQuote: any) => void;
 }
 
+interface ExtractedQuote {
+  text: string;
+  author: string;
+}
+
+const extractQuoteFromIframe = (iframeEl: HTMLIFrameElement, siteName: string): ExtractedQuote | null => {
+  try {
+    const doc = iframeEl.contentWindow?.document;
+    if (!doc || !doc.body) return null;
+
+    const html = doc.body.innerHTML || '';
+    if (!html) return null;
+
+    // Convert breaks/paragraphs to newlines for clean line parsing
+    const textWithBreaks = html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<\/div>/gi, '\n');
+
+    const tempDiv = doc.createElement('div');
+    tempDiv.innerHTML = textWithBreaks;
+    const fullText = tempDiv.innerText || tempDiv.textContent || '';
+
+    const lines = fullText
+      .split('\n')
+      .map(l => l.replace(/<[^>]+>/g, '').trim())
+      .filter(Boolean);
+
+    const headerFilter = [
+      'quote of the day',
+      "today's quote",
+      'daily quote',
+      'featured quote'
+    ];
+
+    let extractedText = '';
+    let extractedAuthor = '';
+
+    for (const line of lines) {
+      const lower = line.toLowerCase();
+      if (headerFilter.some(h => lower.includes(h))) continue;
+      if (lower.includes('more quotes') || lower.includes('http://') || lower.includes('https://')) continue;
+
+      if (!extractedText && line.length > 3) {
+        extractedText = line.replace(/^["“]|["”]$/g, '').trim();
+      } else if (extractedText && !extractedAuthor) {
+        extractedAuthor = line.replace(/^[-–—\s]+/, '').trim();
+      }
+    }
+
+    // Fallback author check from <a> elements
+    if (!extractedAuthor || extractedAuthor.toLowerCase() === siteName.toLowerCase()) {
+      const links = Array.from(doc.querySelectorAll('a'));
+      for (const link of links) {
+        const linkText = (link.textContent || '').trim();
+        const lowerLink = linkText.toLowerCase();
+        if (
+          linkText &&
+          !lowerLink.includes('more quotes') &&
+          !lowerLink.includes('azquotes') &&
+          !lowerLink.includes('brainyquote')
+        ) {
+          extractedAuthor = linkText;
+          break;
+        }
+      }
+    }
+
+    if (
+      extractedText &&
+      extractedText.toLowerCase() !== 'quote of the day' &&
+      extractedText.toLowerCase() !== "today's quote"
+    ) {
+      return {
+        text: extractedText,
+        author: extractedAuthor || siteName
+      };
+    }
+  } catch (e) {
+    console.warn(`Extraction error for ${siteName}:`, e);
+  }
+  return null;
+};
+
 interface ScriptWidgetProps {
   scriptUrl: string;
   moreUrl: string;
   siteName: string;
   isDarkMode: boolean;
-  cn: (...inputs: any[]) => string;
-  onQuoteExtracted: (quote: { text: string; author: string }) => void;
+  onQuoteExtracted: (quote: ExtractedQuote) => void;
+  iframeRef: React.RefObject<HTMLIFrameElement | null>;
 }
 
 const ScriptWidget: React.FC<ScriptWidgetProps> = ({
@@ -24,7 +108,8 @@ const ScriptWidget: React.FC<ScriptWidgetProps> = ({
   moreUrl,
   siteName,
   isDarkMode,
-  onQuoteExtracted
+  onQuoteExtracted,
+  iframeRef
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -69,11 +154,6 @@ const ScriptWidget: React.FC<ScriptWidgetProps> = ({
               font-size: 11px;
               opacity: 0.8;
             }
-            .bq_quote_body, .az_quote_body {
-              font-style: italic;
-              margin-bottom: 4px;
-              font-size: 14px;
-            }
           </style>
         </head>
         <body>
@@ -86,6 +166,11 @@ const ScriptWidget: React.FC<ScriptWidgetProps> = ({
     containerRef.current.innerHTML = '';
     containerRef.current.appendChild(iframe);
 
+    // Save iframe reference
+    if (iframeRef) {
+      (iframeRef as React.MutableRefObject<HTMLIFrameElement | null>).current = iframe;
+    }
+
     try {
       const doc = iframe.contentWindow?.document;
       if (doc) {
@@ -93,65 +178,22 @@ const ScriptWidget: React.FC<ScriptWidgetProps> = ({
         doc.write(htmlContent);
         doc.close();
 
-        // Extract quote text & author from iframe DOM after script renders
-        const extractQuote = () => {
-          try {
-            const body = iframe.contentWindow?.document.body;
-            if (!body) return;
-
-            let extractedText = '';
-            let extractedAuthor = siteName;
-
-            // Strategy 1: Look for BrainyQuote or AZQuote specific classes/anchors
-            const quoteBodyEl = body.querySelector('.bq_quote_body, .az_quote_body, a.bq_quote_link');
-            const authorEl = body.querySelector('.bq_author_name, .az_author_name, a[title*="quotes"]');
-
-            if (quoteBodyEl && quoteBodyEl.textContent) {
-              extractedText = quoteBodyEl.textContent.trim().replace(/^["“]|["”]$/g, '');
-            }
-            if (authorEl && authorEl.textContent) {
-              extractedAuthor = authorEl.textContent.trim();
-            }
-
-            // Strategy 2: Fallback text parsing from body text
-            if (!extractedText) {
-              const fullText = body.innerText || body.textContent || '';
-              const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
-              for (const line of lines) {
-                if (line.includes('More quotes on') || line.includes('http')) continue;
-                if (line.length > 15) {
-                  const parts = line.split(/[-–—]/);
-                  if (parts.length > 1) {
-                    extractedText = parts[0].trim().replace(/^["“]|["”]$/g, '');
-                    extractedAuthor = parts[parts.length - 1].trim();
-                  } else {
-                    extractedText = line.replace(/^["“]|["”]$/g, '');
-                  }
-                  break;
-                }
-              }
-            }
-
-            if (extractedText && extractedText.length > 8) {
-              onQuoteExtracted({
-                text: extractedText,
-                author: extractedAuthor || siteName
-              });
-            }
-          } catch (e) {
-            console.warn(`Extraction attempt for ${siteName} failed:`, e);
+        const doExtract = () => {
+          const res = extractQuoteFromIframe(iframe, siteName);
+          if (res) {
+            onQuoteExtracted(res);
           }
         };
 
-        // Polling checks as external scripts load asynchronously
-        setTimeout(extractQuote, 600);
-        setTimeout(extractQuote, 1500);
-        setTimeout(extractQuote, 3000);
+        // Poll multiple times as external scripts load asynchronously
+        setTimeout(doExtract, 400);
+        setTimeout(doExtract, 1000);
+        setTimeout(doExtract, 2500);
       }
     } catch (e) {
       console.error(`Error loading ${siteName} widget:`, e);
     }
-  }, [scriptUrl, moreUrl, siteName, isDarkMode, onQuoteExtracted]);
+  }, [scriptUrl, moreUrl, siteName, isDarkMode, onQuoteExtracted, iframeRef]);
 
   return <div ref={containerRef} className="w-full min-h-[130px]" />;
 };
@@ -172,6 +214,9 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
 }) => {
   const todayStr = new Date().toISOString().split('T')[0];
 
+  const azIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const bqIframeRef = useRef<HTMLIFrameElement | null>(null);
+
   const [azState, setAzState] = useState<SourceBoxState>({
     quoteText: '',
     author: 'AZQuotes',
@@ -190,7 +235,7 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
     isSaving: false
   });
 
-  // Check if quotes from AZQuotes and BrainyQuote are already in database today
+  // Check Firestore database to see if today's quote from AZQuotes / BrainyQuote was already saved
   useEffect(() => {
     const checkSavedQuotes = async () => {
       try {
@@ -205,16 +250,16 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
               setAzState(prev => ({
                 ...prev,
                 isSaved: true,
-                quoteText: prev.quoteText || data.text,
-                author: prev.author !== 'AZQuotes' ? prev.author : (data.author || 'AZQuotes')
+                quoteText: (data.text && data.text !== 'Quote of the Day') ? data.text : prev.quoteText,
+                author: (data.author && data.author !== 'AZQuotes') ? data.author : prev.author
               }));
             }
             if (data.source?.includes('BrainyQuote')) {
               setBqState(prev => ({
                 ...prev,
                 isSaved: true,
-                quoteText: prev.quoteText || data.text,
-                author: prev.author !== 'BrainyQuote' ? prev.author : (data.author || 'BrainyQuote')
+                quoteText: (data.text && data.text !== "Today's Quote") ? data.text : prev.quoteText,
+                author: (data.author && data.author !== 'BrainyQuote') ? data.author : prev.author
               }));
             }
           });
@@ -227,21 +272,48 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
     checkSavedQuotes();
   }, [todayStr]);
 
+  // Helper to ensure quote text is fresh from iframe before taking an action
+  const getLatestQuote = (
+    state: SourceBoxState,
+    iframeRef: React.RefObject<HTMLIFrameElement | null>,
+    siteName: string
+  ): ExtractedQuote => {
+    if (state.quoteText && state.quoteText !== 'Quote of the Day' && state.quoteText !== "Today's Quote") {
+      return { text: state.quoteText, author: state.author };
+    }
+    if (iframeRef.current) {
+      const fresh = extractQuoteFromIframe(iframeRef.current, siteName);
+      if (fresh) return fresh;
+    }
+    return { text: state.quoteText, author: state.author };
+  };
+
   // Handle Copy
-  const handleCopy = (state: SourceBoxState, setState: React.Dispatch<React.SetStateAction<SourceBoxState>>, siteName: string) => {
-    const textToCopy = state.quoteText 
-      ? `"${state.quoteText}" — ${state.author} (${siteName})`
+  const handleCopy = (
+    state: SourceBoxState,
+    setState: React.Dispatch<React.SetStateAction<SourceBoxState>>,
+    iframeRef: React.RefObject<HTMLIFrameElement | null>,
+    siteName: string
+  ) => {
+    const q = getLatestQuote(state, iframeRef, siteName);
+    const textToCopy = q.text
+      ? `"${q.text}" — ${q.author} (${siteName})`
       : `Check out today's Quote of the Day on ${siteName}: ${siteName === 'AZQuotes' ? 'https://www.azquotes.com/quote_of_the_day.html' : 'https://www.brainyquote.com/quote_of_the_day'}`;
-    
+
     navigator.clipboard.writeText(textToCopy);
-    setState(prev => ({ ...prev, isCopied: true }));
+    setState(prev => ({ ...prev, isCopied: true, quoteText: q.text || prev.quoteText, author: q.author || prev.author }));
     setTimeout(() => {
       setState(prev => ({ ...prev, isCopied: false }));
     }, 2000);
   };
 
   // Handle Text to Speech (TTS)
-  const handleSpeak = (state: SourceBoxState, setState: React.Dispatch<React.SetStateAction<SourceBoxState>>, siteName: string) => {
+  const handleSpeak = (
+    state: SourceBoxState,
+    setState: React.Dispatch<React.SetStateAction<SourceBoxState>>,
+    iframeRef: React.RefObject<HTMLIFrameElement | null>,
+    siteName: string
+  ) => {
     if (!('speechSynthesis' in window)) return;
 
     if (state.isSpeaking) {
@@ -251,12 +323,18 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
     }
 
     window.speechSynthesis.cancel();
-    const textToRead = state.quoteText 
-      ? `Quote from ${state.author}. ${state.quoteText}` 
+
+    const q = getLatestQuote(state, iframeRef, siteName);
+    if (q.text && q.text !== state.quoteText) {
+      setState(prev => ({ ...prev, quoteText: q.text, author: q.author }));
+    }
+
+    const textToRead = q.text
+      ? `"${q.text}". By ${q.author}.`
       : `Daily quote from ${siteName}`;
 
     const utterance = new SpeechSynthesisUtterance(textToRead);
-    utterance.rate = 0.95;
+    utterance.rate = 0.92;
     utterance.pitch = 1.0;
 
     utterance.onend = () => {
@@ -272,12 +350,14 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
 
   // Handle Save to Firestore Database
   const handleSaveToDatabase = async (
-    state: SourceBoxState, 
-    setState: React.Dispatch<React.SetStateAction<SourceBoxState>>, 
+    state: SourceBoxState,
+    setState: React.Dispatch<React.SetStateAction<SourceBoxState>>,
+    iframeRef: React.RefObject<HTMLIFrameElement | null>,
     siteName: string
   ) => {
-    const textToSave = state.quoteText || `${siteName} Quote of the Day (${todayStr})`;
-    const authorToSave = state.author || siteName;
+    const q = getLatestQuote(state, iframeRef, siteName);
+    const textToSave = q.text || `${siteName} Quote of the Day (${todayStr})`;
+    const authorToSave = q.author || siteName;
 
     setState(prev => ({ ...prev, isSaving: true }));
 
@@ -299,7 +379,13 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
 
       await setDoc(quoteRef, newQuoteObj, { merge: true });
 
-      setState(prev => ({ ...prev, isSaved: true, isSaving: false }));
+      setState(prev => ({
+        ...prev,
+        isSaved: true,
+        isSaving: false,
+        quoteText: textToSave,
+        author: authorToSave
+      }));
 
       if (onQuoteSaved) {
         onQuoteSaved(newQuoteObj);
@@ -343,7 +429,7 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
 
       {/* Widget Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        
+
         {/* 1. AZQuotes Widget Box */}
         <div className={cn(
           "p-5 rounded-3xl border relative overflow-hidden transition-all duration-300 flex flex-col justify-between group",
@@ -378,7 +464,7 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
               moreUrl="https://www.azquotes.com/quote_of_the_day.html"
               siteName="AZQuotes"
               isDarkMode={isDarkMode}
-              cn={cn}
+              iframeRef={azIframeRef}
               onQuoteExtracted={(q) => {
                 setAzState(prev => ({
                   ...prev,
@@ -392,9 +478,9 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
           {/* Micro Action Icons Toolbar */}
           <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t border-zinc-800/10 dark:border-zinc-800/50">
             <div className="flex items-center gap-1.5">
-              {/* Copy / Paste Icon Button */}
+              {/* Copy Icon Button */}
               <button
-                onClick={() => handleCopy(azState, setAzState, 'AZQuotes')}
+                onClick={() => handleCopy(azState, setAzState, azIframeRef, 'AZQuotes')}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95",
                   isDarkMode ? "bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700"
@@ -411,7 +497,7 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
 
               {/* Text to Speech (TTS) Icon Button */}
               <button
-                onClick={() => handleSpeak(azState, setAzState, 'AZQuotes')}
+                onClick={() => handleSpeak(azState, setAzState, azIframeRef, 'AZQuotes')}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95",
                   azState.isSpeaking
@@ -431,7 +517,7 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
 
             {/* Save to Database Icon Button */}
             <button
-              onClick={() => handleSaveToDatabase(azState, setAzState, 'AZQuotes')}
+              onClick={() => handleSaveToDatabase(azState, setAzState, azIframeRef, 'AZQuotes')}
               disabled={azState.isSaving}
               className={cn(
                 "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95",
@@ -487,7 +573,7 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
               moreUrl="https://www.brainyquote.com/quote_of_the_day"
               siteName="BrainyQuote"
               isDarkMode={isDarkMode}
-              cn={cn}
+              iframeRef={bqIframeRef}
               onQuoteExtracted={(q) => {
                 setBqState(prev => ({
                   ...prev,
@@ -501,9 +587,9 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
           {/* Micro Action Icons Toolbar */}
           <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t border-zinc-800/10 dark:border-zinc-800/50">
             <div className="flex items-center gap-1.5">
-              {/* Copy / Paste Icon Button */}
+              {/* Copy Icon Button */}
               <button
-                onClick={() => handleCopy(bqState, setBqState, 'BrainyQuote')}
+                onClick={() => handleCopy(bqState, setBqState, bqIframeRef, 'BrainyQuote')}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95",
                   isDarkMode ? "bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700"
@@ -520,7 +606,7 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
 
               {/* Text to Speech (TTS) Icon Button */}
               <button
-                onClick={() => handleSpeak(bqState, setBqState, 'BrainyQuote')}
+                onClick={() => handleSpeak(bqState, setBqState, bqIframeRef, 'BrainyQuote')}
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95",
                   bqState.isSpeaking
@@ -540,7 +626,7 @@ export const ExternalQuoteSources: React.FC<ExternalQuoteSourcesProps> = ({
 
             {/* Save to Database Icon Button */}
             <button
-              onClick={() => handleSaveToDatabase(bqState, setBqState, 'BrainyQuote')}
+              onClick={() => handleSaveToDatabase(bqState, setBqState, bqIframeRef, 'BrainyQuote')}
               disabled={bqState.isSaving}
               className={cn(
                 "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95",
