@@ -8160,7 +8160,22 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   )}
 
                   {/* External Quote Sources & Widgets */}
-                  <ExternalQuoteSources isDarkMode={isDarkMode} cn={cn} />
+                  <ExternalQuoteSources
+                    isDarkMode={isDarkMode}
+                    cn={cn}
+                    currentUserId={user?.uid}
+                    onQuoteSaved={(savedQuote) => {
+                      setDigestData((prev: any) => {
+                        if (!prev) return prev;
+                        const existing = (prev.quotes || []).some((q: any) => q.id === savedQuote.id);
+                        if (existing) return prev;
+                        return {
+                          ...prev,
+                          quotes: [savedQuote, ...(prev.quotes || [])]
+                        };
+                      });
+                    }}
+                  />
 
                   {/* Stoic Expansion Overlay Dialog */}
                   <AnimatePresence>
