@@ -147,6 +147,7 @@ import { INITIAL_HISTORY_VIDEOS } from './data/historyVideos';
 import { YOGA_FLOWS } from './data/yogaFlows';
 import { SocialSanctuary } from './components/SocialSanctuary';
 import { DigestQuoteCard } from './components/DigestQuoteCard';
+import { ExternalQuoteSources } from './components/ExternalQuoteSources';
 import WiseFitPlusPaywall from './components/WiseFitPlusPaywall';
 
 const uploadBase64ToStorage = async (base64Data: string, filename: string, folder: string): Promise<string> => {
@@ -8157,6 +8158,9 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                       ))}
                     </div>
                   )}
+
+                  {/* External Quote Sources & Widgets */}
+                  <ExternalQuoteSources isDarkMode={isDarkMode} cn={cn} />
 
                   {/* Stoic Expansion Overlay Dialog */}
                   <AnimatePresence>
