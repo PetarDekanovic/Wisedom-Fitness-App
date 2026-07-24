@@ -4222,7 +4222,7 @@ function AppContent() {
         const seedStatusRef = doc(db, 'system_metadata', 'seeding_status');
         const seedStatusDoc = await getDoc(seedStatusRef);
         const seededVersion = seedStatusDoc.exists() ? seedStatusDoc.data().version : 0;
-        const CURRENT_VERSION = 9;
+        const CURRENT_VERSION = 10;
 
         if (seededVersion >= CURRENT_VERSION) {
           return;
@@ -4282,6 +4282,41 @@ function AppContent() {
             }
           }
           console.log('Seeded new user-requested quotes to firestore.');
+        }
+
+        // 4. Seed Andrew Bustamante Intelligence Quotes (v10)
+        if (seededVersion < 10) {
+          console.log('Upgrading quotes to v10 (Adding Andrew Bustamante Intelligence Quotes)...');
+          const quotesRef = collection(db, 'quotes');
+          const bustamanteQuotes = INITIAL_QUOTES.slice(-7);
+          for (const q of bustamanteQuotes) {
+            const qQuery = query(quotesRef, where("text", "==", q.text));
+            const existing = await getDocs(qQuery);
+            if (existing.empty) {
+              await addDoc(quotesRef, { ...q, randomId: Math.random() });
+            }
+          }
+
+          // Also seed into daily_digest_quotes
+          const digestRef = collection(db, 'daily_digest_quotes');
+          const todayStr = new Date().toISOString().split('T')[0];
+          for (let i = 0; i < bustamanteQuotes.length; i++) {
+            const q = bustamanteQuotes[i];
+            const docId = `ab_quote_${todayStr.replace(/-/g, '')}_${i + 1}`;
+            const digestDocRef = doc(db, 'daily_digest_quotes', docId);
+            await setDoc(digestDocRef, {
+              id: docId,
+              text: q.text,
+              author: q.author,
+              source: 'Andrew Bustamante — Intelligence Wisdom',
+              fetchDate: todayStr,
+              order: Date.now() + i,
+              createdAt: new Date().toISOString(),
+              likes: [],
+              likesCount: 0
+            }, { merge: true });
+          }
+          console.log('Seeded Andrew Bustamante quotes to Firestore (quotes & daily_digest_quotes).');
         }
         
         // Update version to prevent re-running this logic

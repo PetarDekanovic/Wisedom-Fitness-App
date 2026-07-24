@@ -2493,4 +2493,13 @@ export const INITIAL_QUOTES: Omit<Quote, 'id' | 'randomId'>[] = [
   { text: "An ounce of performance is worth pounds of promises.", author: "Mae West", source: "Action", category: "wisdom" },
   { text: "Over time, loneliness gets inside you and doesn't go away.", author: "Carlos Ruiz Zafon", source: "Melancholy", category: "wisdom" },
   { text: "Today I begin a new life. I will greet this day with love in my heart.", author: "Og Mandino", source: "Affirmation", category: "wisdom" },
+
+  // Ex-CIA Officer Andrew Bustamante - Intelligence Principles
+  { text: "Good decisions aren't made by jumping to conclusions—they're made by questioning them.", author: "Andrew Bustamante", source: "Intelligence Wisdom", category: "stoic" },
+  { text: "The first report is rarely the full story. Initial information is often incomplete or emotional, so wait for evidence before reaching conclusions.", author: "Andrew Bustamante", source: "Intelligence Wisdom", category: "stoic" },
+  { text: "Everyone has blind spots and no one sees the whole picture, not even experts. Always consider what you or others might be missing.", author: "Andrew Bustamante", source: "Intelligence Wisdom", category: "stoic" },
+  { text: "Motives are rarely simple. Fear, pride, money, loyalty, and emotion can all influence the exact same decision.", author: "Andrew Bustamante", source: "Intelligence Wisdom", category: "stoic" },
+  { text: "Confidence isn't proof. Someone can sound completely certain and still be wrong—evidence matters more than confidence.", author: "Andrew Bustamante", source: "Intelligence Wisdom", category: "stoic" },
+  { text: "Every story is incomplete because everyone sees events from their own perspective. Before making a judgment, ask: what information haven't I seen yet?", author: "Andrew Bustamante", source: "Intelligence Wisdom", category: "stoic" },
+  { text: "The strongest conclusions come after the most questions. Stay curious, verify the facts, and let evidence, not assumptions, guide your decisions.", author: "Andrew Bustamante", source: "Intelligence Wisdom", category: "stoic" },
 ];

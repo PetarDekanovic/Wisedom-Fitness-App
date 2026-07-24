@@ -11,6 +11,69 @@ export interface FallbackQuote {
 
 export const FALLBACK_QUOTES: FallbackQuote[] = [
   {
+    id: "ab-1",
+    text: "Good decisions aren't made by jumping to conclusions—they're made by questioning them.",
+    author: "Andrew Bustamante",
+    source: "Ex-CIA Intelligence Principles",
+    fetchDate: "2026-07-24",
+    order: 1,
+    createdAt: "2026-07-24T00:00:00Z"
+  },
+  {
+    id: "ab-2",
+    text: "The first report is rarely the full story. Initial information is often incomplete or emotional, so wait for evidence before reaching conclusions.",
+    author: "Andrew Bustamante",
+    source: "Ex-CIA Intelligence Principles",
+    fetchDate: "2026-07-24",
+    order: 2,
+    createdAt: "2026-07-24T00:00:00Z"
+  },
+  {
+    id: "ab-3",
+    text: "Everyone has blind spots and no one sees the whole picture, not even experts. Always consider what you or others might be missing.",
+    author: "Andrew Bustamante",
+    source: "Ex-CIA Intelligence Principles",
+    fetchDate: "2026-07-24",
+    order: 3,
+    createdAt: "2026-07-24T00:00:00Z"
+  },
+  {
+    id: "ab-4",
+    text: "Motives are rarely simple. Fear, pride, money, loyalty, and emotion can all influence the exact same decision.",
+    author: "Andrew Bustamante",
+    source: "Ex-CIA Intelligence Principles",
+    fetchDate: "2026-07-24",
+    order: 4,
+    createdAt: "2026-07-24T00:00:00Z"
+  },
+  {
+    id: "ab-5",
+    text: "Confidence isn't proof. Someone can sound completely certain and still be wrong—evidence matters more than confidence.",
+    author: "Andrew Bustamante",
+    source: "Ex-CIA Intelligence Principles",
+    fetchDate: "2026-07-24",
+    order: 5,
+    createdAt: "2026-07-24T00:00:00Z"
+  },
+  {
+    id: "ab-6",
+    text: "Every story is incomplete because everyone sees events from their own perspective. Before making a judgment, ask: what information haven't I seen yet?",
+    author: "Andrew Bustamante",
+    source: "Ex-CIA Intelligence Principles",
+    fetchDate: "2026-07-24",
+    order: 6,
+    createdAt: "2026-07-24T00:00:00Z"
+  },
+  {
+    id: "ab-7",
+    text: "The strongest conclusions come after the most questions. Stay curious, verify the facts, and let evidence, not assumptions, guide your decisions.",
+    author: "Andrew Bustamante",
+    source: "Ex-CIA Intelligence Principles",
+    fetchDate: "2026-07-24",
+    order: 7,
+    createdAt: "2026-07-24T00:00:00Z"
+  },
+  {
     id: "fq-1",
     text: "It is easy to love your friend, but sometimes the hardest lesson to learn is to love your enemy.",
     author: "Sun Tzu",
