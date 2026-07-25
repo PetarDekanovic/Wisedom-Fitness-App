@@ -1411,7 +1411,7 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
           <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-zinc-550/10">
             {richPreviews.map((preview, idx) => {
               if (preview.type === 'youtube' && preview.id) {
-                const thumbUrl = `https://img.youtube.com/vi/${preview.id}/mqdefault.jpg`;
+                const thumbUrl = `https://img.youtube.com/vi/${preview.id}/hqdefault.jpg`;
                 return (
                   <a
                     key={idx}
@@ -1420,39 +1420,39 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
                     className={cn(
-                      "flex items-center gap-2.5 p-1.5 rounded-xl border transition-all hover:scale-[1.01] overflow-hidden text-left cursor-pointer z-10 relative",
+                      "flex flex-col sm:flex-row items-start sm:items-center gap-3 p-2 rounded-2xl border transition-all hover:border-red-500/50 overflow-hidden text-left cursor-pointer z-10 relative group shadow-md",
                       isMine 
-                        ? "bg-zinc-950/30 hover:bg-zinc-950/40 border-zinc-950/20 text-white" 
-                        : "bg-zinc-950/40 hover:bg-zinc-950/60 border-zinc-850 text-zinc-100"
+                        ? "bg-zinc-950/40 hover:bg-zinc-950/60 border-zinc-900/60 text-white" 
+                        : "bg-zinc-950/50 hover:bg-zinc-950/80 border-zinc-800 text-zinc-100"
                     )}
                   >
-                    <div className="relative w-20 h-12 shrink-0 rounded-lg overflow-hidden bg-black/40 border border-white/5 shadow-sm">
+                    <div className="relative w-full sm:w-44 h-28 shrink-0 rounded-xl overflow-hidden bg-black border border-white/10 shadow-sm">
                       <img 
                         src={thumbUrl} 
                         alt="YouTube Preview" 
-                        className="w-full h-full object-cover" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                         referrerPolicy="no-referrer"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&q=80&w=200";
+                          (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&q=80&w=400";
                         }}
                       />
-                      <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                        <span className="w-5 h-5 flex items-center justify-center rounded-full bg-red-650 text-white shadow-md">
-                          <span className="text-[7px] pl-0.5">▶</span>
+                      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/15 transition-colors flex items-center justify-center">
+                        <span className="w-9 h-9 flex items-center justify-center rounded-full bg-red-600 text-white shadow-xl transform group-hover:scale-110 transition-transform">
+                          <span className="text-[11px] pl-0.5">▶</span>
                         </span>
                       </div>
                     </div>
-                    <div className="min-w-0 pr-1 select-none">
-                      <p className={cn(
-                        "text-[9px] font-extrabold uppercase tracking-wide leading-none font-mono opacity-85",
-                        isMine ? "text-emerald-300" : "text-emerald-400"
-                      )}>
-                        YouTube Video
-                      </p>
-                      <p className="text-[10px] font-semibold truncate leading-tight mt-0.5">
+                    <div className="min-w-0 pr-1 py-1 select-none flex-1">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                        <p className="text-[10px] font-black uppercase tracking-wider font-mono text-red-400">
+                          YouTube Video Resource
+                        </p>
+                      </div>
+                      <p className="text-xs font-bold leading-snug line-clamp-2 text-zinc-100 group-hover:text-red-400 transition-colors">
                         Watch details & demonstrations
                       </p>
-                      <p className="text-[7.5px] font-mono truncate tracking-tight opacity-70 leading-none mt-0.5">
+                      <p className="text-[9px] font-mono truncate tracking-tight text-zinc-400 mt-1">
                         {preview.url}
                       </p>
                     </div>
@@ -4378,58 +4378,71 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               </div>
                             )}
 
-                            {/* Rich Formatted Markdown Content with Log Section Styling & Text Colors */}
-                            <div className={cn("text-xs leading-relaxed font-normal overflow-hidden", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                            {/* Rich Formatted Markdown Content with Log Section Styling & Vivid Text Colors */}
+                            <div className={cn("text-[13px] leading-relaxed font-normal overflow-hidden space-y-1", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
                               <ReactMarkdown
                                 components={{
                                   h1: ({ children }) => (
-                                    <h1 className="text-sm font-black uppercase tracking-wider text-emerald-400 mt-4 mb-2 flex items-center gap-2 border-b border-emerald-500/20 pb-1">
-                                      <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                      <span>{children}</span>
+                                    <h1 className="text-sm font-black uppercase tracking-wider text-emerald-400 mt-4 mb-2 flex items-center gap-2 border-b border-emerald-500/30 pb-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-t-lg shadow-sm">
+                                      <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                                      <span className="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent font-black">{children}</span>
                                     </h1>
                                   ),
                                   h2: ({ children }) => (
-                                    <h2 className="text-xs font-black uppercase tracking-wider text-amber-400 mt-3.5 mb-1.5 flex items-center gap-1.5 border-l-2 border-amber-400 pl-2">
-                                      <span>{children}</span>
+                                    <h2 className="text-xs font-black uppercase tracking-wider text-amber-300 mt-3.5 mb-2 flex items-center gap-2 border-l-4 border-amber-400 bg-amber-500/10 pl-2.5 py-1 rounded-r-lg shadow-sm">
+                                      <span className="text-amber-300">{children}</span>
                                     </h2>
                                   ),
                                   h3: ({ children }) => (
-                                    <h3 className="text-xs font-bold text-emerald-300 mt-3 mb-1 font-mono">
-                                      {children}
+                                    <h3 className="text-xs font-extrabold text-cyan-300 mt-3 mb-1.5 flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-md font-mono">
+                                      <span>{children}</span>
                                     </h3>
                                   ),
                                   strong: ({ children }) => (
-                                    <strong className={cn("font-black tracking-tight px-1 py-0.5 rounded inline-block my-0.5", isDarkMode ? "text-emerald-300 bg-emerald-500/10 border border-emerald-500/20" : "text-emerald-800 bg-emerald-50 border border-emerald-200")}>
+                                    <strong className={cn(
+                                      "font-black tracking-wide px-2 py-0.5 rounded-md inline-block my-0.5 shadow-sm text-[12.5px]",
+                                      isDarkMode 
+                                        ? "text-amber-300 bg-amber-500/20 border border-amber-400/40" 
+                                        : "text-amber-950 bg-amber-100 border border-amber-300"
+                                    )}>
                                       {children}
                                     </strong>
                                   ),
                                   p: ({ children }) => (
-                                    <p className={cn("text-xs leading-relaxed mb-3 whitespace-pre-wrap font-sans", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                                    <p className={cn("text-[13px] leading-relaxed mb-3 whitespace-pre-wrap font-sans font-medium", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
                                       {children}
                                     </p>
                                   ),
                                   ul: ({ children }) => (
-                                    <ul className="list-disc list-inside space-y-1.5 my-2.5 text-xs pl-1">
+                                    <ul className="list-disc list-inside space-y-2 my-3 text-xs pl-1 font-medium">
                                       {children}
                                     </ul>
                                   ),
                                   ol: ({ children }) => (
-                                    <ol className="list-decimal list-inside space-y-1.5 my-2.5 text-xs pl-1">
+                                    <ol className="list-decimal list-inside space-y-2 my-3 text-xs pl-1 font-medium">
                                       {children}
                                     </ol>
                                   ),
                                   li: ({ children }) => (
-                                    <li className={cn("leading-relaxed", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>
+                                    <li className={cn("leading-relaxed text-[12.5px] font-medium", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
                                       {children}
                                     </li>
                                   ),
                                   blockquote: ({ children }) => (
-                                    <blockquote className={cn("border-l-3 border-emerald-500 pl-3.5 py-1.5 my-3 font-serif italic text-xs rounded-r-xl shadow-sm", isDarkMode ? "bg-zinc-900/90 border-emerald-500 text-emerald-200/90" : "bg-emerald-50/80 border-emerald-600 text-emerald-950")}>
+                                    <blockquote className={cn(
+                                      "border-l-4 border-amber-400 pl-4 py-2.5 my-3 font-serif italic text-xs rounded-r-xl shadow-md", 
+                                      isDarkMode ? "bg-amber-500/10 border-amber-400 text-amber-200 border-y border-r border-amber-500/20" : "bg-amber-50 border-amber-500 text-amber-950 border-y border-r border-amber-200"
+                                    )}>
                                       {children}
                                     </blockquote>
                                   ),
                                   code: ({ children }) => (
-                                    <code className={cn("text-[11px] font-mono px-2 py-0.5 rounded-md border", isDarkMode ? "bg-zinc-950 border-zinc-800 text-amber-300" : "bg-zinc-100 border-zinc-300 text-amber-800")}>
+                                    <code className={cn(
+                                      "text-[11.5px] font-mono px-2 py-0.5 rounded-md border font-black shadow-sm inline-block my-0.5",
+                                      isDarkMode 
+                                        ? "bg-cyan-950/90 border-cyan-400/50 text-cyan-300" 
+                                        : "bg-cyan-100 border-cyan-300 text-cyan-950"
+                                    )}>
                                       {children}
                                     </code>
                                   )
@@ -4475,13 +4488,30 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                         )}
 
                         {post.mediaType === 'youtube' && embedYt && (
-                          <div className="aspect-video rounded-2xl overflow-hidden border border-zinc-800/20 bg-zinc-950">
-                            <iframe 
-                              src={embedYt}
-                              title="community_yt"
-                              className="w-full h-full"
-                              allowFullScreen
-                            />
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-red-500/10 border border-red-500/25 text-red-400 font-mono text-[10px] font-black uppercase tracking-wider">
+                              <div className="flex items-center gap-2">
+                                <Video className="w-4 h-4 text-red-500 animate-pulse shrink-0" />
+                                <span>YouTube Multimedia Resource</span>
+                              </div>
+                              <a 
+                                href={post.mediaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-[9.5px] hover:underline text-red-300 font-bold"
+                              >
+                                <span>Open Clip</span>
+                                <ExternalLinkIcon className="w-3 h-3" />
+                              </a>
+                            </div>
+                            <div className="aspect-video w-full rounded-2xl overflow-hidden border border-red-500/30 bg-black shadow-xl">
+                              <iframe 
+                                src={embedYt}
+                                title="community_yt"
+                                className="w-full h-full"
+                                allowFullScreen
+                              />
+                            </div>
                           </div>
                         )}
 
@@ -9570,7 +9600,73 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                                 </div>
                               </div>
                             ) : (
-                              <p className="leading-relaxed whitespace-pre-wrap">{p.content}</p>
+                              <div className={cn("text-[13px] leading-relaxed font-normal overflow-hidden space-y-1", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
+                                <ReactMarkdown
+                                  components={{
+                                    h1: ({ children }) => (
+                                      <h1 className="text-sm font-black uppercase tracking-wider text-emerald-400 mt-3 mb-1.5 flex items-center gap-2 border-b border-emerald-500/30 pb-1 bg-emerald-500/10 px-2.5 py-1 rounded-t-lg">
+                                        <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                        <span className="bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300 bg-clip-text text-transparent font-black">{children}</span>
+                                      </h1>
+                                    ),
+                                    h2: ({ children }) => (
+                                      <h2 className="text-xs font-black uppercase tracking-wider text-amber-300 mt-3 mb-1.5 flex items-center gap-2 border-l-4 border-amber-400 bg-amber-500/10 pl-2 py-0.5 rounded-r-lg">
+                                        <span>{children}</span>
+                                      </h2>
+                                    ),
+                                    strong: ({ children }) => (
+                                      <strong className={cn(
+                                        "font-black tracking-wide px-2 py-0.5 rounded-md inline-block my-0.5 shadow-sm text-[12.5px]",
+                                        isDarkMode 
+                                          ? "text-amber-300 bg-amber-500/20 border border-amber-400/40" 
+                                          : "text-amber-950 bg-amber-100 border border-amber-300"
+                                      )}>
+                                        {children}
+                                      </strong>
+                                    ),
+                                    p: ({ children }) => (
+                                      <p className={cn("text-[13px] leading-relaxed mb-2.5 whitespace-pre-wrap font-sans font-medium", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
+                                        {children}
+                                      </p>
+                                    ),
+                                    ul: ({ children }) => (
+                                      <ul className="list-disc list-inside space-y-1.5 my-2 text-xs pl-1 font-medium">
+                                        {children}
+                                      </ul>
+                                    ),
+                                    ol: ({ children }) => (
+                                      <ol className="list-decimal list-inside space-y-1.5 my-2 text-xs pl-1 font-medium">
+                                        {children}
+                                      </ol>
+                                    ),
+                                    li: ({ children }) => (
+                                      <li className={cn("leading-relaxed text-[12.5px] font-medium", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
+                                        {children}
+                                      </li>
+                                    ),
+                                    blockquote: ({ children }) => (
+                                      <blockquote className={cn(
+                                        "border-l-4 border-amber-400 pl-3.5 py-2 my-2 font-serif italic text-xs rounded-r-xl shadow-sm", 
+                                        isDarkMode ? "bg-amber-500/10 text-amber-200 border-amber-400" : "bg-amber-50 text-amber-950 border-amber-500"
+                                      )}>
+                                        {children}
+                                      </blockquote>
+                                    ),
+                                    code: ({ children }) => (
+                                      <code className={cn(
+                                        "text-[11.5px] font-mono px-2 py-0.5 rounded-md border font-black shadow-sm inline-block my-0.5",
+                                        isDarkMode 
+                                          ? "bg-cyan-950/90 border-cyan-400/50 text-cyan-300" 
+                                          : "bg-cyan-100 border-cyan-300 text-cyan-950"
+                                      )}>
+                                        {children}
+                                      </code>
+                                    )
+                                  }}
+                                >
+                                  {p.content}
+                                </ReactMarkdown>
+                              </div>
                             )}
 
                             {/* Optional post image rendering */}
@@ -10307,38 +10403,45 @@ function LinkPreviewCard({ url, isDarkMode }: { url: string; isDarkMode: boolean
   const displayImage = data.image || "https://images.unsplash.com/photo-1546074177-3df148018795?auto=format&fit=crop&q=80&w=600";
   const domain = getDomain(url);
 
+  const isYouTube = !!getYouTubeId(url);
+
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "group p-3 rounded-2xl border flex flex-col gap-3.5 hover:border-emerald-500/30 transition-all duration-300 pointer-events-auto text-left mt-2 shadow-sm",
-        isVerticalReel ? "items-center sm:items-stretch sm:flex-row" : "sm:flex-row",
+        "group p-3 rounded-2xl border flex flex-col gap-3.5 hover:border-emerald-500/40 transition-all duration-300 pointer-events-auto text-left mt-2 shadow-sm",
+        isVerticalReel || isYouTube ? "items-start sm:items-stretch sm:flex-row" : "sm:flex-row",
         isDarkMode 
-          ? "bg-zinc-950/40 border-zinc-800/80 hover:bg-zinc-900/40" 
+          ? "bg-zinc-950/40 border-zinc-800/80 hover:bg-zinc-900/50" 
           : "bg-zinc-50/50 border-zinc-200 hover:bg-zinc-100"
       )}
     >
       <div className={cn(
-        "overflow-hidden border border-zinc-500/10 bg-zinc-900 shrink-0 relative flex items-center justify-center rounded-xl",
+        "overflow-hidden border bg-black shrink-0 relative flex items-center justify-center rounded-xl",
         isVerticalReel
-          ? "w-[200px] aspect-[9/16] sm:w-[150px] sm:h-[266px] mx-auto sm:mx-0 shadow-md transition-all duration-300"
-          : "w-full sm:w-28 h-20"
+          ? "w-[200px] aspect-[9/16] sm:w-[150px] sm:h-[266px] mx-auto sm:mx-0 shadow-md transition-all duration-300 border-zinc-800"
+          : isYouTube
+          ? "w-full sm:w-56 aspect-video sm:h-36 shadow-lg border-red-500/30 transition-all duration-300"
+          : "w-full sm:w-36 h-24 shadow-sm border-zinc-500/10"
       )}>
         <img
           src={displayImage}
           alt={data.title || "thumbnail"}
-          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           referrerPolicy="no-referrer"
           onError={(e) => {
             (e.target as any).src = "https://images.unsplash.com/photo-1546074177-3df148018795?auto=format&fit=crop&q=80&w=600";
           }}
         />
-        {(getYouTubeId(url) || isVerticalReel) && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/35 group-hover:bg-black/20 transition-colors">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/95 flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300">
-              <Play className="w-4 h-4 text-zinc-950 fill-current ml-0.5" />
+        {(isYouTube || isVerticalReel) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/15 transition-colors">
+            <div className={cn(
+              "rounded-full flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-transform duration-300",
+              isYouTube ? "w-11 h-11 bg-red-600 text-white" : "w-10 h-10 bg-emerald-500/95 text-zinc-950"
+            )}>
+              <Play className="w-4 h-4 fill-current ml-0.5" />
             </div>
           </div>
         )}
@@ -10347,32 +10450,35 @@ function LinkPreviewCard({ url, isDarkMode }: { url: string; isDarkMode: boolean
       <div className="space-y-1.5 py-0.5 min-w-0 flex-1 flex flex-col justify-center">
         <div className="flex items-center gap-1.5">
           {data.logo ? (
-            <img src={data.logo} alt="logo" className="w-3 h-3 rounded object-contain bg-white" referrerPolicy="no-referrer" />
+            <img src={data.logo} alt="logo" className="w-3.5 h-3.5 rounded object-contain bg-white" referrerPolicy="no-referrer" />
           ) : (
             <div className={cn(
-              "w-3 h-3 rounded flex items-center justify-center text-[7px] font-black uppercase",
-              isDarkMode ? "bg-zinc-800 text-zinc-400" : "bg-zinc-200 text-zinc-600"
+              "w-3.5 h-3.5 rounded flex items-center justify-center text-[7px] font-black uppercase",
+              isYouTube ? "bg-red-600 text-white" : isDarkMode ? "bg-zinc-800 text-zinc-400" : "bg-zinc-200 text-zinc-600"
             )}>
               {domain.charAt(0)}
             </div>
           )}
-          <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500">
-            {data.publisher || domain}
+          <span className={cn(
+            "text-[8.5px] font-black uppercase tracking-widest",
+            isYouTube ? "text-red-400" : "text-emerald-500"
+          )}>
+            {data.publisher || (isYouTube ? "YouTube" : domain)}
           </span>
         </div>
         <h5 className={cn(
-          "font-bold truncate tracking-tight group-hover:text-emerald-500 transition-colors",
-          isVerticalReel ? "text-[12px] sm:text-[13px] whitespace-normal line-clamp-2" : "text-[11px]",
-          isDarkMode ? "text-zinc-200" : "text-zinc-850"
+          "font-bold truncate tracking-tight transition-colors",
+          isYouTube ? "group-hover:text-red-400 text-[12.5px] sm:text-[13px] whitespace-normal line-clamp-2" : isVerticalReel ? "text-[12px] sm:text-[13px] whitespace-normal line-clamp-2 group-hover:text-emerald-500" : "text-[11.5px] group-hover:text-emerald-500",
+          isDarkMode ? "text-zinc-100" : "text-zinc-900"
         )}>
-          {data.title || "Scholarly Resource"}
+          {data.title || (isYouTube ? "YouTube Video Resource" : "Scholarly Resource")}
         </h5>
         <p className={cn(
           "leading-snug",
-          isVerticalReel ? "text-[11px] line-clamp-4" : "text-[10px] line-clamp-2",
-          isDarkMode ? "text-zinc-450" : "text-zinc-500"
+          isYouTube || isVerticalReel ? "text-[11px] line-clamp-3" : "text-[10.5px] line-clamp-2",
+          isDarkMode ? "text-zinc-400" : "text-zinc-600"
         )}>
-          {data.description || "Stream or read external resource code, video tutorials, or public clinical spreadsheets."}
+          {data.description || "Stream or view external resource code, video tutorials, or public clinical spreadsheets."}
         </p>
       </div>
 
