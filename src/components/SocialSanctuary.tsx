@@ -70,7 +70,11 @@ import {
   Lock,
   Unlock,
   Layers,
-  Grid
+  Grid,
+  Volume2,
+  VolumeX,
+  Volume1,
+  Pause
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { JitsiMeet } from './JitsiMeet';
@@ -790,6 +794,141 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
   const [editUserPhotosVisibility, setEditUserPhotosVisibility] = useState<string[]>([]);
   const [uploadingSlots, setUploadingSlots] = useState<{ [key: number]: boolean }>({});
   const [uploadProgressSlots, setUploadProgressSlots] = useState<{ [key: number]: number }>({});
+
+  // Text-To-Speech (TTS) Engine for Swarm Feed Posts
+  const [speakingPostId, setSpeakingPostId] = useState<string | null>(null);
+  const [isTtsPaused, setIsTtsPaused] = useState<boolean>(false);
+  const activeUtterancesRef = useRef<SpeechSynthesisUtterance[]>([]);
+  const ttsCurrentChunkIndexRef = useRef<number>(0);
+  const ttsChunksRef = useRef<string[]>([]);
+
+  const stopTts = useCallback(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeakingPostId(null);
+    setIsTtsPaused(false);
+    activeUtterancesRef.current = [];
+    ttsChunksRef.current = [];
+    ttsCurrentChunkIndexRef.current = 0;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const handleToggleTtsPost = useCallback((post: CommunityPost) => {
+    if (!('speechSynthesis' in window)) {
+      alert("Text-To-Speech is not supported in this browser.");
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+
+    // Toggle Pause/Resume if currently speaking this post
+    if (speakingPostId === post.id) {
+      if (synth.speaking) {
+        if (synth.paused) {
+          synth.resume();
+          setIsTtsPaused(false);
+        } else {
+          synth.pause();
+          setIsTtsPaused(true);
+        }
+        return;
+      } else {
+        stopTts();
+        return;
+      }
+    }
+
+    // Otherwise, stop any existing speech and speak this post
+    stopTts();
+
+    // Clean post content from raw markdown formatting for smooth voice playback
+    let rawText = post.content || '';
+    // Strip URLs
+    rawText = rawText.replace(/https?:\/\/\S+/gi, '');
+    // Strip markdown formatting characters (*, #, `, _, ~, [], (), >, -)
+    rawText = rawText.replace(/[*#`_~\[\]()>-]/g, ' ');
+    // Clean whitespace
+    rawText = rawText.replace(/\s+/g, ' ').trim();
+
+    if (!rawText) return;
+
+    // Prep author header intro
+    const introText = `Scholarly reflection by ${post.userName}.`;
+    const fullText = `${introText} ${rawText}`;
+
+    // Split text into natural sentence chunks (~180 chars max per chunk) to avoid Chrome SpeechSynthesis timeouts
+    const sentences = fullText.match(/[^.!?]+[.!?]+/g) || [fullText];
+    const chunks: string[] = [];
+    let currentChunk = '';
+
+    for (const sentence of sentences) {
+      if ((currentChunk + ' ' + sentence).length < 220) {
+        currentChunk = (currentChunk + ' ' + sentence).trim();
+      } else {
+        if (currentChunk) chunks.push(currentChunk);
+        currentChunk = sentence.trim();
+      }
+    }
+    if (currentChunk) chunks.push(currentChunk);
+
+    ttsChunksRef.current = chunks;
+    ttsCurrentChunkIndexRef.current = 0;
+    setSpeakingPostId(post.id);
+    setIsTtsPaused(false);
+
+    const speakNextChunk = () => {
+      if (ttsCurrentChunkIndexRef.current >= ttsChunksRef.current.length) {
+        setSpeakingPostId(null);
+        setIsTtsPaused(false);
+        activeUtterancesRef.current = [];
+        return;
+      }
+
+      const chunkText = ttsChunksRef.current[ttsCurrentChunkIndexRef.current];
+      const utterance = new SpeechSynthesisUtterance(chunkText);
+      
+      // Retain reference in array to avoid Chrome garbage collection bug
+      activeUtterancesRef.current = [utterance];
+
+      const voices = synth.getVoices();
+      // Select best voice (Croatian / Slavic if present or crisp English voice)
+      const hrVoice = voices.find(v => v.lang.startsWith('hr') || v.lang.startsWith('sr') || v.lang.startsWith('sh'));
+      if (hrVoice) {
+        utterance.voice = hrVoice;
+      } else {
+        const engVoice = voices.find(v => (v.lang.startsWith('en') || v.lang.startsWith('en-US') || v.lang.startsWith('en-GB')) && v.localService) 
+          || voices.find(v => v.lang.startsWith('en')) 
+          || voices[0];
+        if (engVoice) utterance.voice = engVoice;
+      }
+
+      utterance.rate = 0.94; // Scholarly, clear, measured speed
+      utterance.pitch = 0.96;
+
+      utterance.onend = () => {
+        ttsCurrentChunkIndexRef.current += 1;
+        speakNextChunk();
+      };
+
+      utterance.onerror = (e) => {
+        console.warn('TTS utterance notice:', e);
+        ttsCurrentChunkIndexRef.current += 1;
+        speakNextChunk();
+      };
+
+      synth.speak(utterance);
+    };
+
+    speakNextChunk();
+  }, [speakingPostId, stopTts]);
 
   // Dating, matching and personality states
   const [personalitySubTab, setPersonalitySubTab] = useState<'bio' | 'quiz'>('bio');
@@ -3926,14 +4065,60 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                               <p className="text-xs font-black uppercase tracking-tight group-hover:text-emerald-500 transition-colors truncate max-w-[160px] xs:max-w-[200px] sm:max-w-none">
                                 {post.userName}
                               </p>
-                              <p className={cn("text-[9px] font-mono truncate", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
-                                {new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <p className={cn("text-[9px] font-mono truncate", isDarkMode ? "text-zinc-500" : "text-zinc-400")}>
+                                  {new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                                <span className="text-[9px] text-zinc-600">•</span>
+                                <span className={cn("text-[8.5px] font-mono font-bold tracking-tight px-1.5 py-0.5 rounded-md border inline-flex items-center gap-1", isDarkMode ? "bg-zinc-900/60 border-zinc-800 text-zinc-400" : "bg-zinc-100 border-zinc-200 text-zinc-600")}>
+                                  <Clock className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
+                                  {Math.max(1, Math.ceil((post.content?.trim().split(/\s+/).length || 0) / 180))} min read
+                                </span>
+                              </div>
                             </div>
                           </button>
 
                           {/* Like, share, edit, delete actions */}
                           <div className="flex items-center gap-1.5 flex-shrink-0 self-end xs:self-center">
+                            {/* Text-To-Speech (TTS) Listen Button */}
+                            <button
+                              onClick={() => handleToggleTtsPost(post)}
+                              className={cn(
+                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl font-black uppercase tracking-wider text-[9px] transition-all cursor-pointer active:scale-95 shadow-sm border",
+                                speakingPostId === post.id
+                                  ? isTtsPaused
+                                    ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
+                                    : "bg-emerald-500 text-zinc-950 border-emerald-400 font-extrabold shadow-emerald-500/20"
+                                  : isDarkMode
+                                    ? "bg-zinc-900/90 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/15 hover:border-emerald-500/60"
+                                    : "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
+                              )}
+                              title={
+                                speakingPostId === post.id
+                                  ? isTtsPaused ? "Resume text-to-speech" : "Pause text-to-speech"
+                                  : "Read post aloud (Text-To-Speech)"
+                              }
+                            >
+                              {speakingPostId === post.id ? (
+                                isTtsPaused ? (
+                                  <>
+                                    <Play className="w-3 h-3 text-amber-400" />
+                                    <span>Resume</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <VolumeX className="w-3 h-3 text-zinc-950 animate-bounce" />
+                                    <span>Speaking...</span>
+                                  </>
+                                )
+                              ) : (
+                                <>
+                                  <Volume2 className="w-3 h-3 text-emerald-400" />
+                                  <span>Listen</span>
+                                </>
+                              )}
+                            </button>
+
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => handleToggleLike(post)}
@@ -4165,9 +4350,95 @@ export function SocialSanctuary({ isDarkMode, isGirlyMode, currentUser, userProf
                             </div>
                           </div>
                         ) : (
-                          <p className={cn("text-xs leading-relaxed font-normal whitespace-pre-wrap", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>
-                            {post.content}
-                          </p>
+                          <div className="space-y-3 my-1">
+                            {/* Active TTS progress banner if reading this post */}
+                            {speakingPostId === post.id && (
+                              <div className={cn(
+                                "flex items-center justify-between px-3.5 py-2 rounded-2xl border text-[10.5px] font-bold animate-fade-in shadow-sm",
+                                isDarkMode ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" : "bg-emerald-50 border-emerald-200 text-emerald-850"
+                              )}>
+                                <div className="flex items-center gap-2">
+                                  <Volume2 className="w-4 h-4 text-emerald-400 animate-pulse" />
+                                  <span className="font-mono">Reading reflection aloud... ({ttsCurrentChunkIndexRef.current + 1}/{ttsChunksRef.current.length || 1})</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleToggleTtsPost(post)}
+                                    className="px-2.5 py-1 rounded-lg bg-emerald-500 text-zinc-950 hover:bg-emerald-400 text-[9px] uppercase font-black tracking-wider transition-all"
+                                  >
+                                    {isTtsPaused ? "Resume" : "Pause"}
+                                  </button>
+                                  <button
+                                    onClick={stopTts}
+                                    className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[9px] uppercase font-black tracking-wider transition-all"
+                                  >
+                                    Stop
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Rich Formatted Markdown Content with Log Section Styling & Text Colors */}
+                            <div className={cn("text-xs leading-relaxed font-normal overflow-hidden", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                              <ReactMarkdown
+                                components={{
+                                  h1: ({ children }) => (
+                                    <h1 className="text-sm font-black uppercase tracking-wider text-emerald-400 mt-4 mb-2 flex items-center gap-2 border-b border-emerald-500/20 pb-1">
+                                      <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                      <span>{children}</span>
+                                    </h1>
+                                  ),
+                                  h2: ({ children }) => (
+                                    <h2 className="text-xs font-black uppercase tracking-wider text-amber-400 mt-3.5 mb-1.5 flex items-center gap-1.5 border-l-2 border-amber-400 pl-2">
+                                      <span>{children}</span>
+                                    </h2>
+                                  ),
+                                  h3: ({ children }) => (
+                                    <h3 className="text-xs font-bold text-emerald-300 mt-3 mb-1 font-mono">
+                                      {children}
+                                    </h3>
+                                  ),
+                                  strong: ({ children }) => (
+                                    <strong className={cn("font-black tracking-tight px-1 py-0.5 rounded inline-block my-0.5", isDarkMode ? "text-emerald-300 bg-emerald-500/10 border border-emerald-500/20" : "text-emerald-800 bg-emerald-50 border border-emerald-200")}>
+                                      {children}
+                                    </strong>
+                                  ),
+                                  p: ({ children }) => (
+                                    <p className={cn("text-xs leading-relaxed mb-3 whitespace-pre-wrap font-sans", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                                      {children}
+                                    </p>
+                                  ),
+                                  ul: ({ children }) => (
+                                    <ul className="list-disc list-inside space-y-1.5 my-2.5 text-xs pl-1">
+                                      {children}
+                                    </ul>
+                                  ),
+                                  ol: ({ children }) => (
+                                    <ol className="list-decimal list-inside space-y-1.5 my-2.5 text-xs pl-1">
+                                      {children}
+                                    </ol>
+                                  ),
+                                  li: ({ children }) => (
+                                    <li className={cn("leading-relaxed", isDarkMode ? "text-zinc-300" : "text-zinc-700")}>
+                                      {children}
+                                    </li>
+                                  ),
+                                  blockquote: ({ children }) => (
+                                    <blockquote className={cn("border-l-3 border-emerald-500 pl-3.5 py-1.5 my-3 font-serif italic text-xs rounded-r-xl shadow-sm", isDarkMode ? "bg-zinc-900/90 border-emerald-500 text-emerald-200/90" : "bg-emerald-50/80 border-emerald-600 text-emerald-950")}>
+                                      {children}
+                                    </blockquote>
+                                  ),
+                                  code: ({ children }) => (
+                                    <code className={cn("text-[11px] font-mono px-2 py-0.5 rounded-md border", isDarkMode ? "bg-zinc-950 border-zinc-800 text-amber-300" : "bg-zinc-100 border-zinc-300 text-amber-800")}>
+                                      {children}
+                                    </code>
+                                  )
+                                }}
+                              >
+                                {post.content}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
                         )}
 
                         {/* Media rendering section */}
