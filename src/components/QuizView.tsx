@@ -22,6 +22,7 @@ import { INITIAL_QUESTIONS } from '../data/initialQuestions';
 import { db } from '../firebase';
 import { collection, getDocs, query, limit } from 'firebase/firestore';
 import { ChineseVocabView } from './ChineseVocabView';
+import { HebrewVocabView } from './HebrewVocabView';
 
 import { User } from 'firebase/auth';
 
@@ -33,7 +34,7 @@ interface QuizViewProps {
 }
 
 export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, isGirlyMode, user, onCorrectAnswer }) => {
-  const [activeMode, setActiveMode] = useState<'chinese' | 'trivia'>('chinese');
+  const [activeMode, setActiveMode] = useState<'chinese' | 'hebrew' | 'trivia'>('chinese');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -164,6 +165,19 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, isGirlyMode, use
             <Languages className="w-4 h-4" /> 🏮 Kineski Jezik
           </button>
           <button
+            onClick={() => setActiveMode('hebrew')}
+            className={cn(
+              "px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
+              activeMode === 'hebrew'
+                ? isGirlyMode 
+                  ? "bg-pink-500 text-white shadow-md"
+                  : "bg-blue-600 text-white shadow-md"
+                : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            )}
+          >
+            <BookMarked className="w-4 h-4" /> 🕎 Hebrejski Jezik
+          </button>
+          <button
             onClick={() => setActiveMode('trivia')}
             className={cn(
               "px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
@@ -189,6 +203,16 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, isGirlyMode, use
             transition={{ duration: 0.2 }}
           >
             <ChineseVocabView isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} user={user} />
+          </motion.div>
+        ) : activeMode === 'hebrew' ? (
+          <motion.div
+            key="hebrew-vocab"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+          >
+            <HebrewVocabView isDarkMode={isDarkMode} isGirlyMode={isGirlyMode} user={user} />
           </motion.div>
         ) : (
           <motion.div
