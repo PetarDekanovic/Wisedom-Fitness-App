@@ -11,7 +11,7 @@ import { initializeApp, getApp } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp as initializeClientApp } from "firebase/app";
-import { getFirestore as getClientFirestore, collection, getDocs, doc, setDoc, query, where, writeBatch, orderBy, limit } from "firebase/firestore";
+import { getFirestore as getClientFirestore, collection, getDocs, doc, setDoc, addDoc, query, where, writeBatch, orderBy, limit } from "firebase/firestore";
 import { FALLBACK_QUOTES, FALLBACK_NEWS } from "./src/fallbackQuotes";
 
 dotenv.config();
@@ -97,19 +97,22 @@ function isAuthorized(email: string | undefined) {
   return AUTHORIZED_EMAILS.includes(email.toLowerCase());
 }
 
-// Priority order for models - Claude IDs updated to May 2026 lifecycle
+// Priority order for models
 const GEMINI_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-pro-latest",
   "gemini-1.5-flash",
-  "gemini-1.5-pro",
-  "gemini-2.0-flash-exp",
-  "models/gemini-1.5-flash",
-  "models/gemini-1.5-pro"
+  "gemini-1.5-pro"
 ];
 
 const CLAUDE_MODELS = [
-  "claude-sonnet-4-6",
-  "claude-haiku-4-5-20251001",
-  "claude-opus-4-7"
+  "claude-3-5-sonnet-20241022",
+  "claude-3-5-haiku-20241022",
+  "claude-3-haiku-20240307",
+  "claude-3-sonnet-20240229",
+  "claude-3-opus-20240229"
 ];
 
 async function startServer() {
@@ -563,8 +566,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     };
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1beta' });
-      const test = await model.generateContent("ping");
+      const pingRes = await generateWithFallback("ping");
       results.gemini.status = "ok";
       results.gemini.ping = "pong";
     } catch (e: any) {
@@ -1582,23 +1584,236 @@ app.get("/api/ai/diagnostics", async (req, res) => {
         return res.status(400).json({ error: "Quote text is required" });
       }
 
-      const geminiKey = getGeminiKey();
-      if (!geminiKey) {
-        return res.status(500).json({ error: "Gemini API key is not configured" });
-      }
-
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: 'v1beta' });
       const prompt = `You are a wise Stoic mentor. Interpret the following quote in exactly three sentences, drawing on Stoic philosophy, self-discipline, or personal power. Speak directly to a "Seeker" who is pursuing excellence. Do not use conversational padding like "Sure" or "Here is an interpretation". Speak with deep intellectual depth, keep it concise, declarative, and elegant.
       
 Quote: "${text}"
 Author: ${author || "Unknown"}`;
 
-      const response = await model.generateContent(prompt);
-      const outputText = response.response.text().trim();
+      const response = await generateWithFallback(prompt);
+      const outputText = response.text().trim();
       res.json({ success: true, interpretation: outputText });
     } catch (e: any) {
       console.error("Interpret Quote Error:", e);
       res.status(500).json({ error: e.message || "Failed to generate interpretation" });
+    }
+  });
+
+  // --- FRESH QUOTE ENGINE LABS (MANUS ALTERNATIVE TESTING SUITE) ---
+
+  const runMethod1AI = async () => {
+    const start = Date.now();
+    const prompt = `Return a raw valid JSON array of 5 distinct, profound, non-repetitive wisdom quotes for a daily digest.
+Each object must have:
+- "text": string (the exact quote text)
+- "author": string (author name, e.g. Marcus Aurelius, Epictetus, Lao Tzu, Friedrich Nietzsche, Nikola Tesla, Miroslav Krleža, Seneca)
+- "category": string (e.g. "Stoicism", "Mindset", "Wisdom", "Leadership", "Slavic Thought")
+
+Respond with JSON only, no markdown formatting, no code blocks.`;
+
+    try {
+      const res = await generateWithFallback(prompt, { responseMimeType: "application/json" });
+      let text = res.text() || "[]";
+      text = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+      const quotesRaw = JSON.parse(text);
+      const executionMs = Date.now() - start;
+      const quotes = quotesRaw.map((q: any, i: number) => ({
+        id: `lab-m1-${Date.now()}-${i}`,
+        text: q.text || q.quote || "Wisdom begins in wonder.",
+        author: q.author || "Unknown",
+        category: q.category || "WiseFit AI Engine",
+        source: "Method 1: AI Engine (Claude/Gemini)",
+        createdAt: new Date().toISOString()
+      }));
+      return { success: true, method: "Method 1: AI Generation Engine (Claude/Gemini Bridge)", executionMs, quotes };
+    } catch (err: any) {
+      const executionMs = Date.now() - start;
+      return {
+        success: false,
+        method: "Method 1: AI Generation Engine (Claude/Gemini Bridge)",
+        executionMs,
+        error: err.message,
+        quotes: [
+          {
+            id: `lab-m1-fallback-${Date.now()}`,
+            text: "He who has a why to live can bear almost any how.",
+            author: "Friedrich Nietzsche",
+            category: "Philosophy",
+            source: "Method 1: AI Engine (Failsafe)",
+            createdAt: new Date().toISOString()
+          }
+        ]
+      };
+    }
+  };
+
+  const runMethod2Scrape = async () => {
+    const start = Date.now();
+    try {
+      const response = await fetch("https://zenquotes.io/api/quotes", {
+        headers: { "User-Agent": "WiseFit-Sanctuary/1.0" },
+        signal: AbortSignal.timeout(5000)
+      });
+      if (response.ok) {
+        const raw = await response.json();
+        if (Array.isArray(raw) && raw.length > 0) {
+          const quotes = raw.slice(0, 5).map((q: any, i: number) => ({
+            id: `lab-m2-${Date.now()}-${i}`,
+            text: q.q || q.text,
+            author: q.a || q.author || "Unknown",
+            category: "Live Web Scrape",
+            source: "Method 2: Live Web Scraping (ZenQuotes API)",
+            createdAt: new Date().toISOString()
+          }));
+          const executionMs = Date.now() - start;
+          return { success: true, method: "Method 2: Live Web Scraping (ZenQuotes)", executionMs, quotes };
+        }
+      }
+      throw new Error("Live web API response empty");
+    } catch (err: any) {
+      try {
+        const res2 = await fetch("https://dummyjson.com/quotes/random/5", { signal: AbortSignal.timeout(4000) });
+        if (res2.ok) {
+          const raw2 = await res2.json();
+          const items = Array.isArray(raw2) ? raw2 : (raw2.quotes || []);
+          const quotes = items.slice(0, 5).map((q: any, i: number) => ({
+            id: `lab-m2-alt-${Date.now()}-${i}`,
+            text: q.quote || q.text,
+            author: q.author || "Unknown",
+            category: "Live Scrape Vault",
+            source: "Method 2: Live Web Scraping (Quotes API)",
+            createdAt: new Date().toISOString()
+          }));
+          const executionMs = Date.now() - start;
+          return { success: true, method: "Method 2: Live Web Scraping (Quotes API)", executionMs, quotes };
+        }
+      } catch (e2) {}
+
+      const executionMs = Date.now() - start;
+      return {
+        success: false,
+        method: "Method 2: Live Web Scraping",
+        executionMs,
+        error: err.message,
+        quotes: [
+          {
+            id: `lab-m2-failsafe-${Date.now()}`,
+            text: "Waste no more time arguing about what a good man should be. Be one.",
+            author: "Marcus Aurelius",
+            category: "Stoicism",
+            source: "Method 2: Live Web Scraping (Fallback)",
+            createdAt: new Date().toISOString()
+          }
+        ]
+      };
+    }
+  };
+
+  const runMethod3Vault = async () => {
+    const start = Date.now();
+    try {
+      const localVault = loadLocalScrapedQuotes();
+      let chosen: any[] = [];
+      if (localVault && localVault.length >= 5) {
+        const shuffled = [...localVault].sort(() => 0.5 - Math.random());
+        chosen = shuffled.slice(0, 5);
+      } else {
+        chosen = FALLBACK_QUOTES.slice(0, 5);
+      }
+
+      const quotes = chosen.map((q: any, i: number) => ({
+        id: `lab-m3-${Date.now()}-${i}`,
+        text: q.text,
+        author: q.author,
+        category: q.category || "Multi-Source Vault",
+        source: "Method 3: Multi-Source Vault & Web Feed Synthesizer",
+        createdAt: new Date().toISOString()
+      }));
+
+      const executionMs = Date.now() - start;
+      return { success: true, method: "Method 3: Multi-Source Vault & Web Feed Synthesizer", executionMs, quotes };
+    } catch (err: any) {
+      const executionMs = Date.now() - start;
+      return {
+        success: false,
+        method: "Method 3: Multi-Source Vault",
+        executionMs,
+        error: err.message,
+        quotes: []
+      };
+    }
+  };
+
+  app.get("/api/digest-lab/method1-ai", async (req, res) => {
+    const result = await runMethod1AI();
+    res.json(result);
+  });
+
+  app.get("/api/digest-lab/method2-scrape", async (req, res) => {
+    const result = await runMethod2Scrape();
+    res.json(result);
+  });
+
+  app.get("/api/digest-lab/method3-vault", async (req, res) => {
+    const result = await runMethod3Vault();
+    res.json(result);
+  });
+
+  app.get("/api/digest-lab/benchmark", async (req, res) => {
+    const [m1, m2, m3] = await Promise.all([
+      runMethod1AI(),
+      runMethod2Scrape(),
+      runMethod3Vault()
+    ]);
+    res.json({
+      timestamp: new Date().toISOString(),
+      benchmark: {
+        method1: { method: m1.method, executionMs: m1.executionMs, success: m1.success, count: m1.quotes.length },
+        method2: { method: m2.method, executionMs: m2.executionMs, success: m2.success, count: m2.quotes.length },
+        method3: { method: m3.method, executionMs: m3.executionMs, success: m3.success, count: m3.quotes.length }
+      },
+      results: {
+        method1: m1,
+        method2: m2,
+        method3: m3
+      }
+    });
+  });
+
+  app.post("/api/digest-lab/save-quote", async (req, res) => {
+    try {
+      const { text, author, category, source } = req.body;
+      if (!text) return res.status(400).json({ error: "Missing quote text" });
+
+      const targetDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zagreb' }).format(new Date());
+
+      const newQuote = {
+        text,
+        author: author || "Unknown",
+        category: category || "Daily Digest Lab",
+        source: source || "Fresh Quote Engine",
+        fetchDate: targetDateStr,
+        order: 0,
+        createdAt: new Date().toISOString()
+      };
+
+      const localStore = loadLocalScrapedQuotes();
+      localStore.unshift(newQuote);
+      saveLocalScrapedQuotes(localStore);
+
+      if (clientFirestoreDb) {
+        try {
+          const quotesCol = collection(clientFirestoreDb, "daily_digest_quotes");
+          const docRef = await addDoc(quotesCol, newQuote);
+          return res.json({ success: true, id: docRef.id, quote: { id: docRef.id, ...newQuote } });
+        } catch (dbErr: any) {
+          console.warn("[Digest Lab] Firestore write fallback to local:", dbErr.message);
+        }
+      }
+
+      const localId = `lab-quote-${Date.now()}`;
+      res.json({ success: true, id: localId, quote: { id: localId, ...newQuote } });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to save quote" });
     }
   });
 

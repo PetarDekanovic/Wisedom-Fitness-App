@@ -215,19 +215,43 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     }
   };
 
+  // Pre-load voices for WebSpeech API
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      const loadVoices = () => {
+        window.speechSynthesis.getVoices();
+      };
+      loadVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+      }
+    }
+  }, []);
+
   // Speak Hebrew word using Native WebSpeech API (he-IL)
   const speakHebrew = (text: string, id?: string) => {
     if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
+    
+    try {
+      window.speechSynthesis.cancel();
+    } catch (e) {
+      console.warn("speechSynthesis cancel warning:", e);
+    }
     
     if (id) setIsPronouncing(id);
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'he-IL';
-    utterance.rate = 0.85;
+    utterance.rate = 0.85; // Slightly slower pace for optimal learning
     
     const voices = window.speechSynthesis.getVoices();
-    const heVoice = voices.find(v => v.lang.includes('he') || v.lang.includes('HE'));
+    const heVoice = voices.find(v => 
+      v.lang.toLowerCase().startsWith('he') || 
+      v.lang.toLowerCase().includes('he-il') || 
+      v.name.toLowerCase().includes('hebrew') ||
+      v.name.toLowerCase().includes('carmit')
+    );
+    
     if (heVoice) {
       utterance.voice = heVoice;
     }
@@ -235,7 +259,8 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     utterance.onend = () => {
       if (id) setIsPronouncing(null);
     };
-    utterance.onerror = () => {
+    utterance.onerror = (e) => {
+      console.warn("Speech synthesis error or interrupted:", e);
       if (id) setIsPronouncing(null);
     };
     
