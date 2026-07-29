@@ -1380,6 +1380,51 @@ app.get("/api/ai/diagnostics", async (req, res) => {
       }
     }
 
+    // Embed live ZenQuotes API stream into Daily Digest
+    try {
+      const zenRes = await fetch("https://zenquotes.io/api/quotes", {
+        headers: { "User-Agent": "WiseFit-Sanctuary/1.0" },
+        signal: AbortSignal.timeout(5000)
+      });
+      if (zenRes.ok) {
+        const zenRaw = await zenRes.json();
+        if (Array.isArray(zenRaw) && zenRaw.length > 0) {
+          const zenFormatted = zenRaw.slice(0, 10).map((zq: any, idx: number) => ({
+            id: `zen-live-${Date.now()}-${idx}`,
+            text: zq.q || zq.text,
+            author: zq.a || zq.author || "Unknown",
+            source: "ZenQuotes Live",
+            isZenQuote: true,
+            category: "ZenQuotes",
+            fetchDate: targetDateStr,
+            createdAt: new Date().toISOString()
+          }));
+
+          const existingTexts = new Set(quotes.map((q: any) => (q.text || "").trim().toLowerCase()));
+          const uniqueZen = zenFormatted.filter((zq: any) => !existingTexts.has((zq.text || "").trim().toLowerCase()));
+
+          if (uniqueZen.length > 0) {
+            const merged: any[] = [];
+            let zIdx = 0;
+            for (let i = 0; i < quotes.length; i++) {
+              merged.push(quotes[i]);
+              if ((i + 1) % 3 === 0 && zIdx < uniqueZen.length) {
+                merged.push({ ...uniqueZen[zIdx], order: i + 0.5 });
+                zIdx++;
+              }
+            }
+            while (zIdx < uniqueZen.length) {
+              merged.push({ ...uniqueZen[zIdx], order: merged.length });
+              zIdx++;
+            }
+            quotes = merged;
+          }
+        }
+      }
+    } catch (zenErr: any) {
+      console.warn("[WiseFit Server] ZenQuotes live embed warning:", zenErr.message || zenErr);
+    }
+
     let news: any[] = [];
     if (html) {
       const $ = cheerio.load(html);

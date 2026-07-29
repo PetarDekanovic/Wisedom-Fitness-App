@@ -7769,54 +7769,73 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                   {digestData && digestTab === 'quotes' && digestData.quotes.length > 0 && (
                     <div className="space-y-6">
                       {/* Interactive Sanctuary Auto-Flow Card */}
-                      <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className={cn(
-                          "backdrop-blur-md border rounded-3xl p-6 relative overflow-hidden transition-all duration-500",
-                          isDarkMode ? "bg-zinc-900/60 border-zinc-800/50" : "bg-white/80 border-zinc-200 shadow-sm"
-                        )}
-                      >
-                        <div className="absolute top-[-20px] right-[-20px] opacity-10">
-                          <Flame className="w-24 h-24 text-emerald-500" />
-                        </div>
-                        
-                        <div className="relative z-10 space-y-3">
-                          <AnimatePresence mode="wait">
-                            <motion.div
-                              key={digestActiveIndex}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.5 }}
-                              className="space-y-3"
-                            >
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <p className={cn(
-                                    "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors",
-                                    isDarkMode ? "text-emerald-400" : "text-emerald-600"
-                                  )}>DAILY DIGEST WISDOM</p>
-                                  <div className={cn(
-                                    "flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[8px] font-bold uppercase tracking-tighter",
-                                    isDarkMode ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-emerald-50 border-emerald-100 text-emerald-600"
-                                  )}>
-                                    <Sparkles className="w-2 h-2" />
-                                    Active Quote {digestActiveIndex + 1} of {digestData.quotes.length}
+                      {(() => {
+                        const activeHeroQuote = digestData.quotes[digestActiveIndex];
+                        const isActiveHeroZen = Boolean(
+                          activeHeroQuote?.isZenQuote ||
+                          (activeHeroQuote?.source && activeHeroQuote.source.toLowerCase().includes('zen')) ||
+                          activeHeroQuote?.category === 'ZenQuotes'
+                        );
+
+                        return (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className={cn(
+                              "backdrop-blur-md border rounded-3xl p-6 relative overflow-hidden transition-all duration-500",
+                              isActiveHeroZen
+                                ? (isDarkMode ? "bg-gradient-to-br from-purple-950/40 via-purple-900/20 to-zinc-900/80 border-purple-500/50 ring-1 ring-purple-500/30" : "bg-gradient-to-br from-purple-50/90 via-purple-100/30 to-white border-purple-300 ring-1 ring-purple-300/40 shadow-sm")
+                                : (isDarkMode ? "bg-zinc-900/60 border-zinc-800/50" : "bg-white/80 border-zinc-200 shadow-sm")
+                            )}
+                          >
+                            <div className="absolute top-[-20px] right-[-20px] opacity-10">
+                              <Flame className={cn("w-24 h-24", isActiveHeroZen ? "text-purple-500" : "text-emerald-500")} />
+                            </div>
+                            
+                            <div className="relative z-10 space-y-3">
+                              <AnimatePresence mode="wait">
+                                <motion.div
+                                  key={digestActiveIndex}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  transition={{ duration: 0.5 }}
+                                  className="space-y-3"
+                                >
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className={cn(
+                                        "text-[10px] font-bold uppercase tracking-[0.2em] transition-colors flex items-center gap-1.5",
+                                        isActiveHeroZen 
+                                          ? (isDarkMode ? "text-purple-400" : "text-purple-700")
+                                          : (isDarkMode ? "text-emerald-400" : "text-emerald-600")
+                                      )}>
+                                        {isActiveHeroZen ? "ZENQUOTES LIVE FEED" : "DAILY DIGEST WISDOM"}
+                                      </p>
+                                      <div className={cn(
+                                        "flex items-center gap-1 px-2 py-0.5 rounded-full border text-[8px] font-bold uppercase tracking-tighter",
+                                        isActiveHeroZen
+                                          ? (isDarkMode ? "bg-purple-500/20 border-purple-500/40 text-purple-300" : "bg-purple-100 border-purple-300 text-purple-700")
+                                          : (isDarkMode ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-emerald-50 border-emerald-100 text-emerald-600")
+                                      )}>
+                                        <Sparkles className={cn("w-2 h-2", isActiveHeroZen && "fill-purple-400 text-purple-400")} />
+                                        {isActiveHeroZen ? "ZenQuotes Stream" : `Active Quote ${digestActiveIndex + 1} of ${digestData.quotes.length}`}
+                                      </div>
+                                    </div>
+                                    <p className={cn(
+                                      "text-lg font-serif italic leading-relaxed transition-colors text-center",
+                                      isDarkMode ? "text-zinc-100" : "text-zinc-900"
+                                    )}>
+                                      "{digestData.quotes[digestActiveIndex]?.text}"
+                                    </p>
+                                    <p className={cn(
+                                      "text-[11px] font-bold text-center transition-colors",
+                                      isActiveHeroZen
+                                        ? (isDarkMode ? "text-purple-400 font-extrabold" : "text-purple-700 font-extrabold")
+                                        : (isDarkMode ? "text-emerald-400" : "text-emerald-600")
+                                    )}>— {digestData.quotes[digestActiveIndex]?.author}</p>
                                   </div>
-                                </div>
-                                <p className={cn(
-                                  "text-lg font-serif italic leading-relaxed transition-colors text-center",
-                                  isDarkMode ? "text-zinc-100" : "text-zinc-900"
-                                )}>
-                                  "{digestData.quotes[digestActiveIndex]?.text}"
-                                </p>
-                                <p className={cn(
-                                  "text-[11px] font-bold text-center transition-colors",
-                                  isDarkMode ? "text-emerald-400" : "text-emerald-600"
-                                )}>— {digestData.quotes[digestActiveIndex]?.author}</p>
-                              </div>
 
                               <div className="space-y-4 pt-2">
                                 <div className="space-y-2">
@@ -8042,6 +8061,8 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                           </AnimatePresence>
                         </div>
                       </motion.div>
+                    );
+                  })()}
 
                       {/* Header for list */}
                       <div className={cn(
