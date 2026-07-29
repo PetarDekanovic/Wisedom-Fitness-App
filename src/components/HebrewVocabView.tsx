@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Volume2, 
@@ -215,6 +215,54 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     }
   };
 
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Audio Fallback Player for Desktop when native Hebrew voice is missing from OS
+  const speakHebrewAudioFallback = (text: string, id?: string) => {
+    try {
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+
+      const encodedText = encodeURIComponent(text);
+      const primaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=he&client=tw-ob`;
+      const audio = new Audio(primaryUrl);
+      currentAudioRef.current = audio;
+
+      audio.onended = () => {
+        if (id) setIsPronouncing(null);
+        currentAudioRef.current = null;
+      };
+
+      audio.onerror = (e) => {
+        console.warn("Primary Hebrew TTS audio stream failed, trying secondary endpoint:", e);
+        const secondaryUrl = `https://dict.youdao.com/dictvoice?audio=${encodedText}&le=he`;
+        const audio2 = new Audio(secondaryUrl);
+        currentAudioRef.current = audio2;
+        audio2.onended = () => {
+          if (id) setIsPronouncing(null);
+          currentAudioRef.current = null;
+        };
+        audio2.onerror = () => {
+          if (id) setIsPronouncing(null);
+          currentAudioRef.current = null;
+        };
+        audio2.play().catch(() => {
+          if (id) setIsPronouncing(null);
+        });
+      };
+
+      audio.play().catch((err) => {
+        console.warn("Audio play error:", err);
+        if (id) setIsPronouncing(null);
+      });
+    } catch (e) {
+      console.error("Hebrew speech fallback exception:", e);
+      if (id) setIsPronouncing(null);
+    }
+  };
+
   // Pre-load voices for WebSpeech API
   useEffect(() => {
     if ('speechSynthesis' in window) {
@@ -228,22 +276,27 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     }
   }, []);
 
-  // Speak Hebrew word using Native WebSpeech API (he-IL)
+  // Speak Hebrew word using Native WebSpeech API or Desktop Web Audio Fallback
   const speakHebrew = (text: string, id?: string) => {
-    if (!('speechSynthesis' in window)) return;
-    
+    if (id) setIsPronouncing(id);
+
+    // Stop active audio element if playing
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+
+    if (!('speechSynthesis' in window)) {
+      speakHebrewAudioFallback(text, id);
+      return;
+    }
+
     try {
       window.speechSynthesis.cancel();
     } catch (e) {
       console.warn("speechSynthesis cancel warning:", e);
     }
-    
-    if (id) setIsPronouncing(id);
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'he-IL';
-    utterance.rate = 0.85; // Slightly slower pace for optimal learning
-    
+
     const voices = window.speechSynthesis.getVoices();
     const heVoice = voices.find(v => 
       v.lang.toLowerCase().startsWith('he') || 
@@ -251,20 +304,27 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       v.name.toLowerCase().includes('hebrew') ||
       v.name.toLowerCase().includes('carmit')
     );
-    
+
     if (heVoice) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'he-IL';
+      utterance.rate = 0.85;
       utterance.voice = heVoice;
+
+      utterance.onend = () => {
+        if (id) setIsPronouncing(null);
+      };
+      utterance.onerror = (e) => {
+        console.warn("Speech synthesis error on desktop, switching to web audio fallback:", e);
+        speakHebrewAudioFallback(text, id);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } else {
+      // Desktop OS (Windows/Linux/Chrome) doesn't have native Hebrew voice pack installed
+      // Fallback directly to high-quality audio stream
+      speakHebrewAudioFallback(text, id);
     }
-    
-    utterance.onend = () => {
-      if (id) setIsPronouncing(null);
-    };
-    utterance.onerror = (e) => {
-      console.warn("Speech synthesis error or interrupted:", e);
-      if (id) setIsPronouncing(null);
-    };
-    
-    window.speechSynthesis.speak(utterance);
   };
 
   // Load Saved Progress from Firestore or LocalStorage
