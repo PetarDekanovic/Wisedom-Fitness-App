@@ -107,15 +107,53 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     }
   };
 
+  // Warm up voices on desktop browsers
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      const handleVoicesChanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+      window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+      return () => {
+        window.speechSynthesis.onvoiceschanged = null;
+      };
+    }
+  }, []);
+
   const speakChineseAudioFallback = (text: string, id?: string) => {
     if (id) setIsPronouncing(id);
-    const audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=${encodeURIComponent(text)}`);
-    audio.play().then(() => {
-      if (id) setTimeout(() => setIsPronouncing(null), 1200);
-    }).catch(err => {
-      console.warn("Audio playback issue:", err);
-      if (id) setIsPronouncing(null);
+    const primaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=gtx&q=${encodeURIComponent(text)}`;
+    const secondaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=${encodeURIComponent(text)}`;
+
+    let hasEnded = false;
+    const cleanup = () => {
+      if (!hasEnded) {
+        hasEnded = true;
+        if (id) setIsPronouncing(null);
+      }
+    };
+
+    const audio = new Audio();
+    audio.crossOrigin = 'anonymous';
+    audio.src = primaryUrl;
+    audio.onended = cleanup;
+    audio.onerror = () => {
+      const backupAudio = new Audio(secondaryUrl);
+      backupAudio.onended = cleanup;
+      backupAudio.onerror = cleanup;
+      backupAudio.play().catch(() => cleanup());
+    };
+
+    audio.play().catch(err => {
+      console.warn("Primary audio play failed, trying backup:", err);
+      const backupAudio = new Audio(secondaryUrl);
+      backupAudio.onended = cleanup;
+      backupAudio.onerror = cleanup;
+      backupAudio.play().catch(() => cleanup());
     });
+
+    setTimeout(cleanup, 2500);
   };
 
   const speakChinese = (text: string, id?: string) => {
@@ -125,23 +163,54 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const voices = window.speechSynthesis.getVoices();
-    const zhVoice = voices.find(v => 
-      v.lang.toLowerCase().startsWith('zh') || 
-      v.name.toLowerCase().includes('chinese') ||
-      v.name.toLowerCase().includes('huihui')
-    );
+    try {
+      window.speechSynthesis.cancel();
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
 
-    if (zhVoice) {
+      const voices = window.speechSynthesis.getVoices();
+      const zhVoice = voices.find(v => 
+        v.lang.toLowerCase().startsWith('zh') || 
+        v.name.toLowerCase().includes('chinese') ||
+        v.name.toLowerCase().includes('huihui') ||
+        v.name.toLowerCase().includes('mandarin')
+      );
+
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'zh-CN';
       utterance.rate = 0.85;
-      utterance.voice = zhVoice;
-      utterance.onend = () => { if (id) setIsPronouncing(null); };
-      utterance.onerror = () => speakChineseAudioFallback(text, id);
+
+      if (zhVoice) {
+        utterance.voice = zhVoice;
+      }
+
+      let speakingFinished = false;
+      const finishSpeaking = () => {
+        if (!speakingFinished) {
+          speakingFinished = true;
+          if (id) setIsPronouncing(null);
+        }
+      };
+
+      utterance.onend = finishSpeaking;
+      utterance.onerror = (e) => {
+        console.warn("SpeechSynthesis error, falling back to audio:", e);
+        if (!speakingFinished) {
+          speakingFinished = true;
+          speakChineseAudioFallback(text, id);
+        }
+      };
+
       window.speechSynthesis.speak(utterance);
-    } else {
+
+      setTimeout(() => {
+        if (!speakingFinished) {
+          finishSpeaking();
+        }
+      }, 3500);
+    } catch (err) {
+      console.warn("SpeechSynthesis failed:", err);
       speakChineseAudioFallback(text, id);
     }
   };
