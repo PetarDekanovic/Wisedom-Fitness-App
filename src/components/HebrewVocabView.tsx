@@ -513,7 +513,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
             </div>
 
             {/* Grid of Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
               {filteredVocab.map(item => {
                 const isMastered = masteredIds.includes(item.id);
                 const isSpeaking = isPronouncing === item.id;
@@ -522,25 +522,25 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   <div
                     key={item.id}
                     className={cn(
-                      "p-5 rounded-3xl border transition-all duration-200 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01]",
+                      "p-5 rounded-3xl border transition-all duration-200 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01] shadow-sm",
                       isMastered 
-                        ? (isDarkMode ? "bg-emerald-950/20 border-emerald-500/30" : "bg-emerald-50/60 border-emerald-200")
-                        : (isDarkMode ? "bg-zinc-900/50 border-zinc-800/80 hover:border-blue-500/40" : "bg-white border-zinc-200 shadow-sm hover:border-blue-300")
+                        ? (isDarkMode ? "bg-emerald-950/30 border-emerald-500/40" : "bg-emerald-50/90 border-emerald-200")
+                        : (isDarkMode ? "bg-zinc-900/90 border-zinc-800/90 hover:border-blue-500/50 shadow-md" : "bg-white border-zinc-200/90 hover:border-blue-300 hover:shadow-md")
                     )}
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-3.5">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl">{item.emoji}</span>
-                          <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-3xl filter drop-shadow-sm">{item.emoji}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={cn(
-                              "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md font-mono border",
-                              isDarkMode ? "bg-zinc-800 text-zinc-400 border-zinc-700" : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                              "text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md font-mono border",
+                              isDarkMode ? "bg-zinc-800/90 text-zinc-300 border-zinc-700" : "bg-zinc-100 text-zinc-700 border-zinc-200"
                             )}>
                               {item.categoryLabel}
                             </span>
                             {item.root && (
-                              <span className="ml-1 text-[9px] font-bold text-blue-500 font-mono">
+                              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 font-mono bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
                                 Koren: {item.root}
                               </span>
                             )}
@@ -550,72 +550,73 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                         <button
                           onClick={(e) => toggleMastered(item.id, e)}
                           className={cn(
-                            "p-1.5 rounded-xl border transition-all",
+                            "p-2 rounded-xl border transition-all flex-shrink-0",
                             isMastered 
-                              ? "bg-emerald-500 text-white border-emerald-500" 
-                              : isDarkMode ? "bg-zinc-800 text-zinc-500 border-zinc-700 hover:text-zinc-300" : "bg-zinc-100 text-zinc-400 border-zinc-200 hover:text-zinc-700"
+                              ? "bg-emerald-500 text-white border-emerald-500 shadow-sm" 
+                              : isDarkMode ? "bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-200" : "bg-zinc-100 text-zinc-500 border-zinc-200 hover:text-zinc-800"
                           )}
-                          title={isMastered ? "Savladano" : "Onači kao savladano"}
+                          title={isMastered ? "Savladano" : "Označi kao savladano"}
                         >
                           <CheckCircle className="w-4 h-4" />
                         </button>
                       </div>
 
-                      <div className="space-y-1">
-                        <div className="flex items-baseline justify-between">
-                          <h3 className="text-2xl font-serif font-black text-blue-500 font-sans tracking-wide">
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                          <h3 className="text-3xl font-serif font-black text-blue-600 dark:text-blue-400 tracking-wide">
                             {item.char}
                           </h3>
-                          <span className="text-xs font-mono font-bold text-zinc-400">
+                          <span className="text-xs font-mono font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
                             {item.transliteration}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 font-mono text-xs">
-                          <span className="text-emerald-500 font-bold">Vuk:</span>
-                          <span className={cn("font-extrabold", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                        <div className="flex items-center gap-1.5 font-mono text-xs pt-0.5">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Vuk:</span>
+                          <span className={cn("font-black text-sm", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
                             "{item.vuk}"
                           </span>
                         </div>
                       </div>
 
-                      <div className="border-t pt-2 border-zinc-800/10 dark:border-zinc-800/60 space-y-1">
-                        <p className={cn("text-xs font-bold", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                      <div className="border-t pt-3 border-zinc-200 dark:border-zinc-800 space-y-1.5">
+                        <p className={cn("text-sm font-bold leading-snug", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
                           🇭🇷 {item.translation}
                         </p>
-                        <p className="text-[11px] font-medium text-zinc-400">
+                        <p className={cn("text-xs font-medium", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
                           🇬🇧 {item.english}
                         </p>
                         {item.visualTip && (
-                          <p className="text-[10px] italic text-blue-400/90 pt-0.5">
-                            💡 {item.visualTip}
-                          </p>
+                          <div className="text-xs italic text-blue-800 dark:text-blue-300 bg-blue-500/10 border border-blue-500/20 p-2.5 rounded-xl flex items-start gap-1.5 mt-2">
+                            <span>💡</span>
+                            <span>{item.visualTip}</span>
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-zinc-800/10 dark:border-zinc-800/60">
+                    <div className="flex items-center justify-between gap-2 mt-5 pt-3 border-t border-zinc-200 dark:border-zinc-800">
                       <button
                         onClick={() => speakHebrew(item.char, item.id)}
                         className={cn(
-                          "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5",
+                          "px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border",
                           isSpeaking 
-                            ? "bg-blue-600 text-white animate-pulse" 
-                            : isDarkMode ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-200" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800"
+                            ? "bg-blue-600 text-white border-blue-600 animate-pulse" 
+                            : isDarkMode ? "bg-zinc-800/90 hover:bg-zinc-700 text-zinc-100 border-zinc-700" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200"
                         )}
                       >
-                        <Volume2 className="w-3.5 h-3.5 text-blue-400" />
+                        <Volume2 className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                         <span>Izgovor</span>
                       </button>
 
                       <button
                         onClick={(e) => handleCopy(item, e)}
                         className={cn(
-                          "p-1.5 rounded-xl text-xs transition-all",
-                          copiedId === item.id ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-200"
+                          "p-2 rounded-xl text-xs transition-all border",
+                          copiedId === item.id ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-transparent border-transparent text-zinc-400 hover:text-zinc-200"
                         )}
                       >
-                        {copiedId === item.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedId === item.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>

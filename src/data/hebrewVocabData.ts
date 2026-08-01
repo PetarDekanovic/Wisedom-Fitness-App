@@ -166,10 +166,30 @@ const highUtilityBase: Array<{ char: string; transliteration: string; vuk: strin
   { char: 'תַרְבּוּת', transliteration: 'Tarbut', vuk: 'tarbut', translation: 'Kultura', english: 'Culture', emoji: '🏛️', root: 'ר-ב-ה' },
   { char: 'מְדִינָה', transliteration: 'Medina', vuk: 'medina', translation: 'Država', english: 'State / Country', emoji: '🏛️', root: 'ד-י-ן' },
   { char: 'חֹק', transliteration: 'Chok', vuk: 'hok', translation: 'Zakon', english: 'Law', emoji: '⚖️', root: 'ח-ק-ק' },
-  { char: 'חָפְשִׁי', transliteration: 'Chofshi', vuk: 'hofši', translation: 'Slobodan', english: 'Free', emoji: '🕊️', root: 'ח-פ-ש' }
+  { char: 'חָפְשִׁי', transliteration: 'Chofshi', vuk: 'hofši', translation: 'Slobodan', english: 'Free', emoji: '🕊️', root: 'ח-פ-ש' },
+  { char: 'חדשנות', transliteration: 'Khadshanut', vuk: 'hadšanut', translation: 'Inovacija', english: 'Innovation', emoji: '💡', root: 'ח-ד-ש' },
+  { char: 'שיתוף פעולה', transliteration: 'Shituf Peula', vuk: 'šituf peula', translation: 'Saradnja', english: 'Cooperation', emoji: '🤝', root: 'ש-ת-פ' },
+  { char: 'מטרה', transliteration: 'Matara', vuk: 'matara', translation: 'Cilj', english: 'Target / Goal', emoji: '🎯', root: 'נ-ט-ר' },
+  { char: 'אסטרטגיה', transliteration: 'Astrategia', vuk: 'astrategija', translation: 'Strategija', english: 'Strategy', emoji: '♟️', root: 'א-ס-ט' },
+  { char: 'הצלחה', transliteration: 'Hatzlacha', vuk: 'haclaha', translation: 'Uspeh', english: 'Success', emoji: '🏆', root: 'צ-ל-ח' },
+  { char: 'אתגר', transliteration: 'Etgar', vuk: 'etgar', translation: 'Izazov', english: 'Challenge', emoji: '⛰️', root: 'ג-ר-ר' },
+  { char: 'התמדה', transliteration: 'Hatmada', vuk: 'hatmada', translation: 'Istrajnost', english: 'Perseverance', emoji: '🧗', root: 'ת-מ-ד' },
+  { char: 'בריאות', transliteration: 'Briut', vuk: 'briut', translation: 'Zdravlje', english: 'Health', emoji: '🧘', root: 'ב-ר-א' },
+  { char: 'נשימה', transliteration: 'Neshima', vuk: 'nešima', translation: 'Disanje', english: 'Breathing', emoji: '🫁', root: 'נ-ש-ם' },
+  { char: 'מהירות', transliteration: 'Mehirut', vuk: 'mehirut', translation: 'Brzina', english: 'Speed', emoji: '⚡', root: 'מ-ה-ר' },
+  { char: 'מרחק', transliteration: 'Merchak', vuk: 'merhak', translation: 'Distanca', english: 'Distance', emoji: '📏', root: 'ר-ח-ק' },
+  { char: 'שלווה', transliteration: 'Shalva', vuk: 'šalva', translation: 'Spokoj', english: 'Serenity', emoji: '🕊️', root: 'ש-ל-ו' },
+  { char: 'משמעת', transliteration: 'Mishmaat', vuk: 'mišmaat', translation: 'Disciplina', english: 'Discipline', emoji: '🛡️', root: 'ש-מ-ע' },
+  { char: 'זמן', transliteration: 'Zman', vuk: 'zman', translation: 'Vreme', english: 'Time', emoji: '⏳', root: 'ז-מ-ן' },
+  { char: 'היום', transliteration: 'Hayom', vuk: 'hajom', translation: 'Danas', english: 'Today', emoji: '📅', root: 'י-ו-ם' },
+  { char: 'מחר', transliteration: 'Machar', vuk: 'mahar', translation: 'Sutra', english: 'Tomorrow', emoji: '🌅', root: 'מ-ח-ר' },
+  { char: 'עתיד', transliteration: 'Atid', vuk: 'atid', translation: 'Budućnost', english: 'Future', emoji: '🚀', root: 'ע-ת-ד' },
+  { char: 'חבר', transliteration: 'Chaver', vuk: 'haver', translation: 'Prijatelj', english: 'Friend', emoji: '🤝', root: 'ח-ב-ר' },
+  { char: 'משפחה', transliteration: 'Mishpacha', vuk: 'mišpaha', translation: 'Porodica', english: 'Family', emoji: '🏡', root: 'ש-פ-ח' },
+  { char: 'מיקוד', transliteration: 'Mikud', vuk: 'mikud', translation: 'Fokus', english: 'Focus', emoji: '🎯', root: 'מ-ק-ד' }
 ];
 
-for (let i = 111; i <= 600; i++) {
+for (let i = 111; i <= 1100; i++) {
   const base = highUtilityBase[(i - 111) % highUtilityBase.length];
   const cat = categoriesList[i % categoriesList.length];
   

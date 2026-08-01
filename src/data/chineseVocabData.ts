@@ -150,10 +150,36 @@ const chineseHighUtilityBase: Array<{ char: string; pinyin: string; vuk: string;
   { char: '文化', pinyin: 'wén huà', vuk: 'ven hua', translation: 'Kultura', english: 'Culture', emoji: '🏛️', radical: '亻 Person' },
   { char: '国家', pinyin: 'guó jiā', vuk: 'guo đjia', translation: 'Država', english: 'State / Country', emoji: '🏛️', radical: '囗 Enclosure' },
   { char: '法律', pinyin: 'fǎ lǜ', vuk: 'fa lu', translation: 'Zakon', english: 'Law', emoji: '⚖️', radical: '氵 Water' },
-  { char: '自由', pinyin: 'zì yóu', vuk: 'dzi jou', translation: 'Slobodan', english: 'Free', emoji: '🕊️', radical: '自 Self' }
+  { char: '自由', pinyin: 'zì yóu', vuk: 'dzi jou', translation: 'Slobodan', english: 'Free', emoji: '🕊️', radical: '自 Self' },
+  { char: '创新', pinyin: 'chuàng xīn', vuk: 'čuang sin', translation: 'Inovacija', english: 'Innovation', emoji: '💡', radical: '刂 Knife' },
+  { char: '合作', pinyin: 'hé zuò', vuk: 'he dzuo', translation: 'Saradnja', english: 'Cooperation', emoji: '🤝', radical: '口 Mouth' },
+  { char: '目标', pinyin: 'mù biāo', vuk: 'mu biao', translation: 'Cilj', english: 'Target / Goal', emoji: '🎯', radical: '目 Eye' },
+  { char: '策略', pinyin: 'cè lüè', vuk: 'ce lue', translation: 'Strategija', english: 'Strategy', emoji: '♟️', radical: '竹 Bamboo' },
+  { char: '成功', pinyin: 'chéng gōng', vuk: 'čeng gong', translation: 'Uspeh', english: 'Success', emoji: '🏆', radical: '戈 Spear' },
+  { char: '挑战', pinyin: 'tiǎo zhàn', vuk: 'tiao džan', translation: 'Izazov', english: 'Challenge', emoji: '⛰️', radical: '扌 Hand' },
+  { char: '坚持', pinyin: 'jiān chí', vuk: 'đjien čı', translation: 'Istrajnost', english: 'Perseverance', emoji: '🧗', radical: '土 Earth' },
+  { char: '健康', pinyin: 'jiàn kāng', vuk: 'đjien kang', translation: 'Zdravlje', english: 'Health', emoji: '🧘', radical: '亻 Person' },
+  { char: '呼吸', pinyin: 'hū xī', vuk: 'hu si', translation: 'Disanje', english: 'Breathing', emoji: '🫁', radical: '口 Mouth' },
+  { char: '力量', pinyin: 'lì liàng', vuk: 'li ljang', translation: 'Snaga', english: 'Strength', emoji: '💪', radical: '力 Power' },
+  { char: '速度', pinyin: 'sù dù', vuk: 'su du', translation: 'Brzina', english: 'Speed', emoji: '⚡', radical: '辶 Walk' },
+  { char: '距离', pinyin: 'jù lí', vuk: 'đju li', translation: 'Distanca', english: 'Distance', emoji: '📏', radical: '足 Foot' },
+  { char: '平静', pinyin: 'píng jìng', vuk: 'ping đjing', translation: 'Spokoj', english: 'Serenity', emoji: '🕊️', radical: '干 Shield' },
+  { char: '智慧', pinyin: 'zhì huì', vuk: 'dži hui', translation: 'Mudrost', english: 'Wisdom', emoji: '🦉', radical: '日 Sun' },
+  { char: '纪律', pinyin: 'jì lǜ', vuk: 'đji lu', translation: 'Disciplina', english: 'Discipline', emoji: '🛡️', radical: '纟 Silk' },
+  { char: '时间', pinyin: 'shí jiān', vuk: 'šı đjien', translation: 'Vreme', english: 'Time', emoji: '⏳', radical: '日 Sun' },
+  { char: '今天', pinyin: 'jīn tiān', vuk: 'đjin tjan', translation: 'Danas', english: 'Today', emoji: '📅', radical: '人 Person' },
+  { char: '明天', pinyin: 'míng tiān', vuk: 'ming tjan', translation: 'Sutra', english: 'Tomorrow', emoji: '🌅', radical: '日 Sun' },
+  { char: '未来', pinyin: 'wèi lái', vuk: 'vej lai', translation: 'Budućnost', english: 'Future', emoji: '🚀', radical: '木 Tree' },
+  { char: '朋友', pinyin: 'péng yǒu', vuk: 'peng jou', translation: 'Prijatelj', english: 'Friend', emoji: '🤝', radical: '月 Moon' },
+  { char: '家庭', pinyin: 'jiā tíng', vuk: 'đjia ting', translation: 'Porodica', english: 'Family', emoji: '🏡', radical: '宀 Roof' },
+  { char: '和平', pinyin: 'hé píng', vuk: 'he ping', translation: 'Mir', english: 'Peace', emoji: '🕊️', radical: '口 Mouth' },
+  { char: '希望', pinyin: 'xī wàng', vuk: 'si vang', translation: 'Nada', english: 'Hope', emoji: '🌟', radical: '巾 Scarf' },
+  { char: '真理', pinyin: 'zhēn lǐ', vuk: 'džen li', translation: 'Istina', english: 'Truth', emoji: '⚖️', radical: '目 Eye' },
+  { char: '命运', pinyin: 'mìng yùn', vuk: 'ming jun', translation: 'Sudbina', english: 'Destiny', emoji: '🧭', radical: '口 Mouth' },
+  { char: '专注', pinyin: 'zhuān zhù', vuk: 'džuan džu', translation: 'Fokus / Koncentracija', english: 'Focus', emoji: '🎯', radical: '寸 Inch' }
 ];
 
-for (let i = 91; i <= 600; i++) {
+for (let i = 91; i <= 1100; i++) {
   const base = chineseHighUtilityBase[(i - 91) % chineseHighUtilityBase.length];
   const cat = chineseCategoriesList[i % chineseCategoriesList.length];
 

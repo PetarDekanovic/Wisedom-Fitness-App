@@ -677,7 +677,7 @@ const MOCK_WORKOUTS: Workout[] = [
   }
 ];
 
-type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library' | 'yoga' | 'quiz' | 'psychologist' | 'social';
+type View = 'dashboard' | 'plan' | 'workouts' | 'progress' | 'profile' | 'chat' | 'library' | 'yoga' | 'quiz' | 'psychologist' | 'social' | 'chinese' | 'hebrew';
 
 // Video Utils
 const extractYoutubeId = (url: string) => {
@@ -5919,9 +5919,10 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
 
       {/* Main Content */}
       <main className={cn(
-        "relative z-10 pb-24 px-4 pt-6 mx-auto transition-all duration-300",
-        activeView === 'social' ? "max-w-4xl" : 
-        activeView === 'workouts' ? "max-w-2xl" : "max-w-md"
+        "relative z-10 pb-24 px-4 sm:px-6 md:px-8 pt-6 mx-auto transition-all duration-300",
+        activeView === 'chinese' || activeView === 'hebrew' ? "max-w-7xl" : 
+        activeView === 'social' || activeView === 'library' || activeView === 'yoga' || activeView === 'quiz' ? "max-w-5xl" : 
+        activeView === 'workouts' ? "max-w-3xl" : "max-w-xl md:max-w-2xl"
       )}>
         {isQuotaExceeded && !isQuotaDismissed && (
           <motion.div 
