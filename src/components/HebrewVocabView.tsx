@@ -15,175 +15,32 @@ import {
   Zap,
   LayoutGrid,
   Wand2,
-  RefreshCw
+  RefreshCw,
+  Layers,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
+import { HEBREW_VOCAB_EXPANDED, HebrewVocabItem } from '../data/hebrewVocabData';
 
-interface HebrewVocabViewProps {
+export type { HebrewVocabItem };
+
+const HEBREW_VOCAB_DATA: HebrewVocabItem[] = HEBREW_VOCAB_EXPANDED;
+
+export interface HebrewVocabViewProps {
   isDarkMode: boolean;
   isGirlyMode: boolean;
   user: User | null;
 }
 
-export interface HebrewVocabItem {
-  id: string;
-  char: string;
-  transliteration: string;
-  vuk: string;
-  translation: string;
-  english: string;
-  emoji: string;
-  category: 'mudrost' | 'svakodnevno' | 'priroda' | 'glagoli' | 'misaoni';
-  categoryLabel: string;
-  root?: string;
-  visualTip?: string;
-}
-
-const HEBREW_VOCAB_DATA: HebrewVocabItem[] = [
-  // Mudrost & Filozofija (30 items)
-  { id: 'h1', char: 'שָׁלוֹם', transliteration: 'Shalom', vuk: 'šalom', translation: 'Mir / Spokoj', english: 'Peace / Harmony / Hello', emoji: '🕊️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ש-ל-ם', visualTip: 'Wholeness & total harmony' },
-  { id: 'h2', char: 'אַהֲבָה', transliteration: 'Ahava', vuk: 'ahava', translation: 'Ljubav', english: 'Love', emoji: '💖', category: 'mudrost', categoryLabel: 'Mudrost', root: 'א-ה-ב', visualTip: 'Unconditional heart connection' },
-  { id: 'h3', char: 'אוֹר', transliteration: 'Or', vuk: 'or', translation: 'Svetlost', english: 'Light', emoji: '✨', category: 'mudrost', categoryLabel: 'Mudrost', root: 'א-ו-ר', visualTip: 'Illuminating spark in dark' },
-  { id: 'h4', char: 'חַיִּים', transliteration: 'Chaim', vuk: 'chajim', translation: 'Život', english: 'Life', emoji: '🌱', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ח-י-ה', visualTip: 'Plural form: two-fold vital breath' },
-  { id: 'h5', char: 'לֵב', transliteration: 'Lev', vuk: 'lev', translation: 'Srce / Um', english: 'Heart / Mind', emoji: '❤️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ל-ב-ב', visualTip: 'Seat of pure intention & courage' },
-  { id: 'h6', char: 'נְשָׁמָה', transliteration: 'Neshama', vuk: 'nešama', translation: 'Duša', english: 'Soul / Spirit', emoji: '👼', category: 'mudrost', categoryLabel: 'Mudrost', root: 'נ-ש-ם', visualTip: 'Divine breath infused into man' },
-  { id: 'h7', char: 'אֱמֶת', transliteration: 'Emet', vuk: 'emet', translation: 'Istina', english: 'Truth', emoji: '⚖️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'א-מ-ת', visualTip: 'First, middle & last Hebrew letters' },
-  { id: 'h8', char: 'חָכְמָה', transliteration: 'Chokhmah', vuk: 'hohma', translation: 'Mudrost', english: 'Wisdom', emoji: '🦉', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ח-כ-ם', visualTip: 'Flash of creative insight' },
-  { id: 'h9', char: 'בְּרָכָה', transliteration: 'Brakha', vuk: 'braha', translation: 'Blagoslov', english: 'Blessing', emoji: '🕯️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ב-ר-ך', visualTip: 'Bending knee in reverence' },
-  { id: 'h10', char: 'תִּקְוָה', transliteration: 'Tikvah', vuk: 'tikva', translation: 'Nada', english: 'Hope', emoji: '🌟', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ק-ו-ה', visualTip: 'Bound line or cord of faith' },
-  { id: 'h11', char: 'שִׂמְחָה', transliteration: 'Simcha', vuk: 'simha', translation: 'Radost / Sreća', english: 'Joy / Happiness', emoji: '😄', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ש-מ-ח', visualTip: 'Radiant inner joy' },
-  { id: 'h12', char: 'כֹּחַ', transliteration: 'Koach', vuk: 'koah', translation: 'Snaga / Moć', english: 'Strength / Power', emoji: '💪', category: 'mudrost', categoryLabel: 'Mudrost', root: 'כ-ו-ח', visualTip: 'Enduring fortitude' },
-  { id: 'h13', char: 'תּוֹרָה', transliteration: 'Torah', vuk: 'tora', translation: 'Učenje / Zakon', english: 'Torah / Teaching', emoji: '📜', category: 'mudrost', categoryLabel: 'Mudrost', root: 'י-ר-ה', visualTip: 'Arrow pointing toward truth' },
-  { id: 'h14', char: 'שַׁבָּת', transliteration: 'Shabbat', vuk: 'šabat', translation: 'Subota / Odmor', english: 'Sabbath / Rest', emoji: '🍷', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ש-ב-ת', visualTip: 'Cessation of labor & sacred pause' },
-  { id: 'h15', char: 'תְּפִלָּה', transliteration: 'Tefillah', vuk: 'tefila', translation: 'Molitva', english: 'Prayer', emoji: '🙏', category: 'mudrost', categoryLabel: 'Mudrost', root: 'פ-ל-ל', visualTip: 'Introspective alignment' },
-  { id: 'h16', char: 'אֱלֹהִים', transliteration: 'Elohim', vuk: 'elohim', translation: 'Bog / Tvorac', english: 'God / Creator', emoji: '👑', category: 'mudrost', categoryLabel: 'Mudrost', root: 'א-ל-ה', visualTip: 'Plurality of divine power' },
-  { id: 'h17', char: 'מֶלֶךְ', transliteration: 'Melekh', vuk: 'meleh', translation: 'Kralj / Vladar', english: 'King / Ruler', emoji: '🏰', category: 'mudrost', categoryLabel: 'Mudrost', root: 'מ-ל-ך', visualTip: 'Self-mastery & leadership' },
-  { id: 'h18', char: 'כָּבוֹד', transliteration: 'Kavod', vuk: 'kavod', translation: 'Čast / Slava', english: 'Honor / Glory', emoji: '🎖️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'כ-ב-ד', visualTip: 'Weight and gravity of character' },
-  { id: 'h19', char: 'קֹדֶשׁ', transliteration: 'Kodesh', vuk: 'kodeš', translation: 'Svetost', english: 'Holiness / Sacred', emoji: '⛪', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ק-ד-ש', visualTip: 'Set apart for higher purpose' },
-  { id: '20', char: 'רוּחַ', transliteration: 'Ruach', vuk: 'ruah', translation: 'Duh / Vetar', english: 'Spirit / Wind', emoji: '💨', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ר-ו-ח', visualTip: 'Invisible driving energy' },
-  { id: 'h21', char: 'חֶסֶד', transliteration: 'Chesed', vuk: 'hesed', translation: 'Dobrota / Milost', english: 'Kindness / Loving-kindness', emoji: '🤝', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ח-ס-ד', visualTip: 'Active empathy and grace' },
-  { id: 'h22', char: 'צֶדֶק', transliteration: 'Tzedek', vuk: 'cedek', translation: 'Pravda', english: 'Justice / Righteousness', emoji: '⚖️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'צ-ד-ק', visualTip: 'Moral equilibrium' },
-  { id: 'h23', char: 'תְּשׁוּבָה', transliteration: 'Teshuva', vuk: 'tešuva', translation: 'Povratak / Obnova', english: 'Return / Repentance', emoji: '🔄', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ש-ו-ב', visualTip: 'Returning to core purpose' },
-  { id: 'h24', char: 'עוֹלָם', transliteration: 'Olam', vuk: 'olam', translation: 'Svet / Večnost', english: 'World / Eternity', emoji: '🌍', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ע-ל-ם', visualTip: 'Hidden vast cosmos' },
-  { id: 'h25', char: 'בִּינָה', transliteration: 'Binah', vuk: 'bina', translation: 'Razumevanje', english: 'Understanding / Discernment', emoji: '🧠', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ב-י-ן', visualTip: 'Analytical connection between ideas' },
-  { id: 'h26', char: 'דַּעַת', transliteration: 'Daat', vuk: 'daat', translation: 'Znanje / Svest', english: 'Knowledge / Awareness', emoji: '💡', category: 'mudrost', categoryLabel: 'Mudrost', root: 'י-ד-ע', visualTip: 'Experiential realization' },
-  { id: 'h27', char: 'אֱמוּנָה', transliteration: 'Emunah', vuk: 'emuna', translation: 'Vera / Poverenje', english: 'Faith / Trust', emoji: '🛡️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'א-מ-ן', visualTip: 'Unshakable conviction' },
-  { id: 'h28', char: 'סַבְלָנוּת', transliteration: 'Savlanut', vuk: 'savlanut', translation: 'Strpljenje', english: 'Patience / Endurance', emoji: '⏳', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ס-ב-ל', visualTip: 'Bearing heavy loads gracefully' },
-  { id: 'h29', char: 'עֲנָוָה', transliteration: 'Anavah', vuk: 'anava', translation: 'Skromnost', english: 'Humility / Modesty', emoji: '🌾', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ע-נ-ה', visualTip: 'Occupying your true space' },
-  { id: 'h30', char: 'גְּבוּרָה', transliteration: 'Gvurah', vuk: 'gvura', translation: 'Hrabrost / Disciplina', english: 'Courage / Restraint', emoji: '🛡️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ג-ב-ר', visualTip: 'Inner self-conquest' },
-
-  // Svakodnevno & Imenice (30 items)
-  { id: 'h31', char: 'תּוֹדָה', transliteration: 'Todah', vuk: 'toda', translation: 'Hvala', english: 'Thank you', emoji: '🙏', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h32', char: 'בְּבַקָּשָׁה', transliteration: 'Bevakasha', vuk: 'bevakaša', translation: 'Molim / Nema na čemu', english: 'Please / You are welcome', emoji: '😊', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h33', char: 'לְהִתְרָאוֹת', transliteration: 'Lehitraot', vuk: 'lehitraot', translation: 'Doviđenja', english: 'Goodbye / See you later', emoji: '👋', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h34', char: 'בֹּקֶר טוֹב', transliteration: 'Boker Tov', vuk: 'boker tov', translation: 'Dobro jutro', english: 'Good morning', emoji: '🌅', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h35', char: 'לַיְלָה טוֹב', transliteration: 'Layla Tov', vuk: 'lajla tov', translation: 'Laku noć', english: 'Good night', emoji: '🌙', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h36', char: 'כֵּן', transliteration: 'Ken', vuk: 'ken', translation: 'Da', english: 'Yes', emoji: '✅', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h37', char: 'לֹא', transliteration: 'Lo', vuk: 'lo', translation: 'Ne', english: 'No', emoji: '❌', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h38', char: 'סְלִיחָה', transliteration: 'Slicha', vuk: 'sliha', translation: 'Izvini / Oprostite', english: 'Sorry / Excuse me', emoji: '🙇', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h39', char: 'בַּיִת', transliteration: 'Bayit', vuk: 'bajit', translation: 'Kuća / Dom', english: 'House / Home', emoji: '🏠', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h40', char: 'מַפְתֵּחַ', transliteration: 'Mafteach', vuk: 'mafteah', translation: 'Ključ', english: 'Key', emoji: '🔑', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h41', char: 'סֵפֶר', transliteration: 'Sefer', vuk: 'sefer', translation: 'Knjiga', english: 'Book', emoji: '📖', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h42', char: 'מַיִם', transliteration: 'Mayim', vuk: 'majim', translation: 'Voda', english: 'Water', emoji: '💧', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h43', char: 'לֶחֶם', transliteration: 'Lechem', vuk: 'lehem', translation: 'Hleb', english: 'Bread', emoji: '🍞', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h44', char: 'יַיִן', transliteration: 'Yayin', vuk: 'jajin', translation: 'Vino', english: 'Wine', emoji: '🍷', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h45', char: 'כֶּסֶף', transliteration: 'Kesef', vuk: 'kesef', translation: 'Novac / Srebro', english: 'Money / Silver', emoji: '💵', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h46', char: 'חָבֵר', transliteration: 'Chaver', vuk: 'haver', translation: 'Prijatelj', english: 'Friend', emoji: '🤝', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h47', char: 'מִשְׁפָּחָה', transliteration: 'Mishpacha', vuk: 'mišpaha', translation: 'Porodica', english: 'Family', emoji: '👨‍👩‍👧‍👦', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h48', char: 'אִישׁ', transliteration: 'Ish', vuk: 'iš', translation: 'Čovek / Muškarac', english: 'Man / Person', emoji: '🧔', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h49', char: 'אִשָּׁה', transliteration: 'Isha', vuk: 'iša', translation: 'Žena', english: 'Woman', emoji: '👩', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h50', char: 'יֶלֶד', transliteration: 'Yeled', vuk: 'jeled', translation: 'Dete / Dečak', english: 'Child / Boy', emoji: '👦', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h51', char: 'יוֹם', transliteration: 'Yom', vuk: 'jom', translation: 'Dan', english: 'Day', emoji: '☀️', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h52', char: 'זְמַן', transliteration: 'Zman', vuk: 'zman', translation: 'Vreme', english: 'Time', emoji: '⏳', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h53', char: 'יְרוּשָׁלַיִם', transliteration: 'Yerushalayim', vuk: 'jerusalim', translation: 'Jerusalim', english: 'Jerusalem', emoji: '🕌', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h54', char: 'תֵּה', transliteration: 'Te', vuk: 'te', translation: 'Čaj', english: 'Tea', emoji: '🍵', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h55', char: 'קָפֶה', transliteration: 'Kafe', vuk: 'kafe', translation: 'Kafa', english: 'Coffee', emoji: '☕', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h56', char: 'עִיר', transliteration: 'Ir', vuk: 'ir', translation: 'Grad', english: 'City / Town', emoji: '🏙️', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h57', char: 'מְכוֹנִית', transliteration: 'Mekhonit', vuk: 'mehonit', translation: 'Auto', english: 'Car / Vehicle', emoji: '🚗', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h58', char: 'טֶלֶפֿוֹן', transliteration: 'Telefon', vuk: 'telefon', translation: 'Telefon', english: 'Phone', emoji: '📱', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h59', char: 'מַחְשֵׁב', transliteration: 'Makhshev', vuk: 'mahšev', translation: 'Računar', english: 'Computer', emoji: '💻', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h60', char: 'שֻׁלְחָן', transliteration: 'Shulchan', vuk: 'šulhan', translation: 'Sto', english: 'Table / Desk', emoji: '🪵', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-
-  // Priroda & Stvaranje (25 items)
-  { id: 'h61', char: 'אֶרֶץ', transliteration: 'Eretz', vuk: 'erec', translation: 'Zemlja / Tlo', english: 'Land / Earth', emoji: '🌍', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h62', char: 'שָׁמַיִם', transliteration: 'Shamayim', vuk: 'šamajim', translation: 'Nebo', english: 'Sky / Heavens', emoji: '☁️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h63', char: 'שֶׁמֶשׁ', transliteration: 'Shemesh', vuk: 'šemeš', translation: 'Sunce', english: 'Sun', emoji: '☀️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h64', char: 'יָרֵחַ', transliteration: 'Yareach', vuk: 'jareah', translation: 'Mesec', english: 'Moon', emoji: '🌙', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h65', char: 'כּוֹכָבִים', transliteration: 'Kokhavim', vuk: 'kohavim', translation: 'Zvezde', english: 'Stars', emoji: '🌟', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h66', char: 'אֵשׁ', transliteration: 'Esh', vuk: 'eš', translation: 'Vatra', english: 'Fire', emoji: '🔥', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h67', char: 'יָם', transliteration: 'Yam', vuk: 'jam', translation: 'More / Okean', english: 'Sea / Ocean', emoji: '🌊', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h68', char: 'הַר', transliteration: 'Har', vuk: 'har', translation: 'Planina', english: 'Mountain', emoji: '🏔️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h69', char: 'עֵץ', transliteration: 'Etz', vuk: 'ec', translation: 'Drvo', english: 'Tree', emoji: '🌳', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h70', char: 'פֶּרַח', transliteration: 'Perach', vuk: 'perah', translation: 'Cvet', english: 'Flower', emoji: '🌸', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h71', char: 'דֶּרֶךְ', transliteration: 'Derekh', vuk: 'derek', translation: 'Put / Staza', english: 'Way / Path / Road', emoji: '🛣️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h72', char: 'גַּן', transliteration: 'Gan', vuk: 'gan', translation: 'Bašta / Vrt', english: 'Garden', emoji: '🏡', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h73', char: 'גֶּשֶׁם', transliteration: 'Geshem', vuk: 'gešem', translation: 'Kiša', english: 'Rain', emoji: '🌧️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h74', char: 'נָהָר', transliteration: 'Nahar', vuk: 'nahar', translation: 'Reka', english: 'River', emoji: '🏞️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h75', char: 'אֲגַם', transliteration: 'Agam', vuk: 'agam', translation: 'Jezero', english: 'Lake', emoji: '🌊', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h76', char: 'מִדְבָּר', transliteration: 'Midbar', vuk: 'midbar', translation: 'Pustinja', english: 'Desert', emoji: '🏜️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h77', char: 'שָׂדֶה', transliteration: 'Sadeh', vuk: 'sade', translation: 'Polje', english: 'Field / Meadow', emoji: '🌾', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h78', char: 'עָנָן', transliteration: 'Anan', vuk: 'anan', translation: 'Oblak', english: 'Cloud', emoji: '☁️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h79', char: 'אֲבָנִים', transliteration: 'Avanim', vuk: 'avanim', translation: 'Kamenje', english: 'Stones / Rocks', emoji: '🪨', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h80', char: 'חַיָּה', transliteration: 'Chayah', vuk: 'haja', translation: 'Životinja', english: 'Animal', emoji: '🦁', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h81', char: 'צִפּוֹר', transliteration: 'Tzippor', vuk: 'cipor', translation: 'Ptica', english: 'Bird', emoji: '🐦', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h82', char: 'דָּג', transliteration: 'Dag', vuk: 'dag', translation: 'Riba', english: 'Fish', emoji: '🐟', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h83', char: 'אֲדָמָה', transliteration: 'Adamah', vuk: 'adama', translation: 'Zemlja / Tlo', english: 'Soil / Earth', emoji: '🪵', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h84', char: 'קֶשֶׁת', transliteration: 'Keshet', vuk: 'kešet', translation: 'Duga / Luk', english: 'Rainbow / Bow', emoji: '🌈', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h85', char: 'יַעַר', transliteration: 'Yaar', vuk: 'jaar', translation: 'Šuma', english: 'Forest / Woods', emoji: '🌲', category: 'priroda', categoryLabel: 'Priroda' },
-
-  // Glagoli & Radnja (25 items)
-  { id: 'h86', char: 'לִלְמֹד', transliteration: 'Lilmod', vuk: 'lilmod', translation: 'Učiti', english: 'To learn / study', emoji: '🎓', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ל-מ-ד' },
-  { id: 'h87', char: 'לֶאֱכֹל', transliteration: 'Leekhol', vuk: 'lehol', translation: 'Jesti', english: 'To eat', emoji: '🍎', category: 'glagoli', categoryLabel: 'Glagoli', root: 'א-כ-ל' },
-  { id: 'h88', char: 'לִשְׁתּוֹת', transliteration: 'Lishtot', vuk: 'lištot', translation: 'Piti', english: 'To drink', emoji: '🥤', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ש-ת-ה' },
-  { id: 'h89', char: 'לָלֶכֶת', transliteration: 'Lalekhet', vuk: 'lalehet', translation: 'Ići / Hodati', english: 'To walk / go', emoji: '🚶', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ה-ל-ך' },
-  { id: 'h90', char: 'לִרְצוֹת', transliteration: 'Lirtzot', vuk: 'lircot', translation: 'Želeti', english: 'To want / desire', emoji: '💭', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ר-צ-ה' },
-  { id: 'h91', char: 'לָדַעַת', transliteration: 'Ladaat', vuk: 'ladaat', translation: 'Znati / Razumeti', english: 'To know / understand', emoji: '💡', category: 'glagoli', categoryLabel: 'Glagoli', root: 'י-ד-ע' },
-  { id: 'h92', char: 'לִרְאוֹת', transliteration: 'Lirot', vuk: 'lirot', translation: 'Videti / Gledati', english: 'To see / look', emoji: '👁️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ר-א-ה' },
-  { id: 'h93', char: 'לִשְׁמֹעַ', transliteration: 'Lishmoa', vuk: 'lišmoa', translation: 'Slušati / Čuti', english: 'To hear / listen', emoji: '👂', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ש-מ-ע' },
-  { id: 'h94', char: 'לְדַבֵּר', transliteration: 'Ledaber', vuk: 'ledaber', translation: 'Govoriti', english: 'To speak / talk', emoji: '💬', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ד-ב-ר' },
-  { id: 'h95', char: 'לִכְתֹּב', transliteration: 'Likhtov', vuk: 'lihtov', translation: 'Pisati', english: 'To write', emoji: '✍️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'כ-ת-ב' },
-  { id: 'h96', char: 'לִקְרֹא', transliteration: 'Likro', vuk: 'likro', translation: 'Čitati', english: 'To read', emoji: '📖', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ק-ר-א' },
-  { id: 'h97', char: 'לֶאֱהֹב', transliteration: 'Leehov', vuk: 'lehov', translation: 'Voleti', english: 'To love', emoji: '🥰', category: 'glagoli', categoryLabel: 'Glagoli', root: 'א-ה-ב' },
-  { id: 'h98', char: 'לַעֲשׂוֹת', transliteration: 'Laasot', vuk: 'laasot', translation: 'Raditi / Činiti', english: 'To do / make', emoji: '🛠️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ע-ש-ה' },
-  { id: 'h99', char: 'לָשִׁיר', transliteration: 'Lashir', vuk: 'lašir', translation: 'Pevati', english: 'To sing', emoji: '🎵', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ש-י-ר' },
-  { id: 'h100', char: 'לַחֲשֹׁב', transliteration: 'Lachshov', vuk: 'lahšov', translation: 'Misliti', english: 'To think', emoji: '🧠', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ח-ש-ב' },
-  { id: 'h101', char: 'לָרוּץ', transliteration: 'Larutz', vuk: 'laruc', translation: 'Trčati', english: 'To run', emoji: '🏃', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ר-ו-צ' },
-  { id: 'h102', char: 'לִישׁוֹן', transliteration: 'Lishon', vuk: 'lišon', translation: 'Spavati', english: 'To sleep', emoji: '😴', category: 'glagoli', categoryLabel: 'Glagoli', root: 'י-ש-נ' },
-  { id: 'h103', char: 'לִצְחֹק', transliteration: 'Litzchok', vuk: 'licohk', translation: 'Smejati se', english: 'To laugh', emoji: '😄', category: 'glagoli', categoryLabel: 'Glagoli', root: 'צ-ח-ק' },
-  { id: 'h104', char: 'לִבְכּוֹת', transliteration: 'Livkot', vuk: 'livkot', translation: 'Plakati', english: 'To weep / cry', emoji: '😢', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ב-כ-ה' },
-  { id: 'h105', char: 'לִקְנוֹת', transliteration: 'Liknot', vuk: 'liknot', translation: 'Kupiti', english: 'To buy', emoji: '🛍️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ק-נ-ה' },
-  { id: 'h106', char: 'לִמְכֹּר', transliteration: 'Limkor', vuk: 'limkor', translation: 'Prodati', english: 'To sell', emoji: '🪙', category: 'glagoli', categoryLabel: 'Glagoli', root: 'מ-כ-ר' },
-  { id: 'h107', char: 'לָבוֹא', transliteration: 'Lavo', vuk: 'lavo', translation: 'Doći', english: 'To come', emoji: '🚶‍♂️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ב-ו-א' },
-  { id: 'h108', char: 'לָצֵאת', transliteration: 'Latzet', vuk: 'laceat', translation: 'Izaći', english: 'To go out / exit', emoji: '🚪', category: 'glagoli', categoryLabel: 'Glagoli', root: 'י-צ-א' },
-  { id: 'h109', char: 'לִמְצֹא', transliteration: 'Limtzo', vuk: 'limco', translation: 'Naći / Pronaći', english: 'To find', emoji: '🔍', category: 'glagoli', categoryLabel: 'Glagoli', root: 'מ-צ-א' },
-  { id: 'h110', char: 'לִבְנוֹת', transliteration: 'Livnot', vuk: 'livnot', translation: 'Graditi', english: 'To build', emoji: '🏗️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ב-נ-ה' },
-
-  // Misaoni & Stoik Stanja (15 items)
-  { id: 'h111', char: 'שַׁלְוָה', transliteration: 'Shalva', vuk: 'šalva', translation: 'Duševni mir', english: 'Serenity / Peace of mind', emoji: '🧘', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h112', char: 'כַּוָּנָה', transliteration: 'Kavanah', vuk: 'kavana', translation: 'Svesna namera', english: 'Intention / Focus', emoji: '🎯', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h113', char: 'נְדִיבוּת', transliteration: 'Nedivut', vuk: 'nedivut', translation: 'Velikodušnost', english: 'Generosity / Noble heart', emoji: '🎁', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h114', char: 'הַכָּרַת טוֹב', transliteration: 'Hakarat Tov', vuk: 'hakarat tov', translation: 'Zahvalnost', english: 'Gratitude / Recognizing good', emoji: '🙏', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h115', char: 'אֹמֶץ', transliteration: 'Ometz', vuk: 'omec', translation: 'Odvažnost', english: 'Boldness / Moral courage', emoji: '🦁', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h116', char: 'נִצָּחוֹן', transliteration: 'Nitzachon', vuk: 'nicahon', translation: 'Pobeda nad sobom', english: 'Victory over self', emoji: '🏆', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h117', char: 'מַחְשָׁבָה', transliteration: 'Machshava', vuk: 'mahšava', translation: 'Misao', english: 'Thought / Mindset', emoji: '💭', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h118', char: 'רָצוֹן', transliteration: 'Ratzon', vuk: 'racon', translation: 'Volja / Želja', english: 'Will / Determination', emoji: '⚡', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h119', char: 'שְׁלֵמוּת', transliteration: 'Shlemut', vuk: 'šlemut', translation: 'Celovitost', english: 'Completeness / Integrity', emoji: '⚪', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h120', char: 'סַלְחָנוּת', transliteration: 'Salkhanut', vuk: 'salhanut', translation: 'Opraštanje', english: 'Forgiveness', emoji: '🤝', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h121', char: 'יְגִיעָה', transliteration: 'Yegiah', vuk: 'jegia', translation: 'Trud / Istrajnost', english: 'Effort / Diligent endeavor', emoji: '💦', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h122', char: 'תְּבוּנָה', transliteration: 'Tevunah', vuk: 'tevuna', translation: 'Razboritost', english: 'Prudence / Reason', emoji: '🧠', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h123', char: 'נֶאֱמָנוּת', transliteration: 'Neemanut', vuk: 'neemanut', translation: 'Vernost', english: 'Fidelity / Loyalty', emoji: '🤝', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h124', char: 'שְׁקִידָה', transliteration: 'Shkida', vuk: 'škida', translation: 'Posvećenost učenju', english: 'Devoted study', emoji: '📚', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
-  { id: 'h125', char: 'הִתְבּוֹנְנוּת', transliteration: 'Hitbonenut', vuk: 'hitbonenut', translation: 'Kontemplacija', english: 'Deep meditation', emoji: '👁️', category: 'misaoni', categoryLabel: 'Misaoni Stoik' }
-];
-
 export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
   // Navigation: Dictionary, Emoji Canvas, AI Weaver or Quiz
   const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz'>('learn');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'mudrost' | 'svakodnevno' | 'priroda' | 'glagoli' | 'misaoni'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
   
   // Weaver state
   const [selectedWeaverItems, setSelectedWeaverItems] = useState<HebrewVocabItem[]>([]);
@@ -630,13 +487,18 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   { id: 'all', label: `Sve (${HEBREW_VOCAB_DATA.length})` },
                   { id: 'mudrost', label: ' Mudrost' },
                   { id: 'svakodnevno', label: ' Svakodnevno' },
-                  { id: 'priroda', label: ' Priroda' },
                   { id: 'glagoli', label: ' Glagoli' },
+                  { id: 'priroda', label: ' Priroda' },
+                  { id: 'zdravlje', label: ' Zdravlje' },
+                  { id: 'posao_tehnologija', label: ' Posao & Tehnologija' },
+                  { id: 'hrana', label: ' Hrana' },
+                  { id: 'vreme_brojevi', label: ' Vreme & Brojevi' },
+                  { id: 'emocije', label: ' Emocije' },
                   { id: 'misaoni', label: ' Misaoni Stoik' }
                 ].map(cat => (
                   <button
                     key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id as any)}
+                    onClick={() => setSelectedCategory(cat.id)}
                     className={cn(
                       "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
                       selectedCategory === cat.id
