@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Volume2, 
@@ -6,16 +6,16 @@ import {
   BookOpen, 
   Award, 
   Gamepad2, 
-  ArrowRight, 
   Sparkles, 
   CheckCircle, 
   XCircle, 
-  Heart,
-  ChevronRight,
-  RefreshCw,
-  Search,
-  Copy,
-  Check
+  Search, 
+  Copy, 
+  Check,
+  Zap,
+  LayoutGrid,
+  Wand2,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { db } from '../firebase';
@@ -36,101 +36,159 @@ export interface HebrewVocabItem {
   translation: string;
   english: string;
   emoji: string;
-  category: 'mudrost' | 'svakodnevno' | 'priroda' | 'glagoli';
+  category: 'mudrost' | 'svakodnevno' | 'priroda' | 'glagoli' | 'misaoni';
   categoryLabel: string;
+  root?: string;
+  visualTip?: string;
 }
 
 const HEBREW_VOCAB_DATA: HebrewVocabItem[] = [
-  // Mudrost & Filozofija
-  { id: 'h1', char: 'שָׁלוֹם', transliteration: 'Shalom', vuk: 'šalom', translation: 'Mir / Spokoj', english: 'Peace / Harmony / Hello', emoji: '🕊️', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h2', char: 'אַהֲבָה', transliteration: 'Ahava', vuk: 'ahava', translation: 'Ljubav', english: 'Love', emoji: '💖', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h3', char: 'אוֹר', transliteration: 'Or', vuk: 'or', translation: 'Svetlost', english: 'Light', emoji: '✨', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h4', char: 'חַיִּים', transliteration: 'Chaim', vuk: 'chajim', translation: 'Život', english: 'Life', emoji: '🌱', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h5', char: 'לֵב', transliteration: 'Lev', vuk: 'lev', translation: 'Srce', english: 'Heart', emoji: '❤️', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h6', char: 'נְשָׁמָה', transliteration: 'Neshama', vuk: 'nešama', translation: 'Duša', english: 'Soul / Spirit', emoji: '👼', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h7', char: 'אֱמֶת', transliteration: 'Emet', vuk: 'emet', translation: 'Istina', english: 'Truth', emoji: '⚖️', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h8', char: 'חָכְמָה', transliteration: 'Chokhmah', vuk: 'hohma', translation: 'Mudrost', english: 'Wisdom', emoji: '🦉', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h9', char: 'בְּרָכָה', transliteration: 'Brakha', vuk: 'braha', translation: 'Blagoslov', english: 'Blessing', emoji: '🕯️', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h10', char: 'תִּקְוָה', transliteration: 'Tikvah', vuk: 'tikva', translation: 'Nada', english: 'Hope', emoji: '🌟', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h11', char: 'שִׂמְחָה', transliteration: 'Simcha', vuk: 'simha', translation: 'Radost / Sreća', english: 'Joy / Happiness', emoji: '😄', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h12', char: 'כֹּחַ', transliteration: 'Koach', vuk: 'koah', translation: 'Snaga / Moć', english: 'Strength / Power', emoji: '💪', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h13', char: 'תּוֹרָה', transliteration: 'Torah', vuk: 'tora', translation: 'Učenje / Zakon', english: 'Torah / Teaching', emoji: '📜', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h14', char: 'שַׁבָּת', transliteration: 'Shabbat', vuk: 'šabat', translation: 'Subota / Odmor', english: 'Sabbath / Day of Rest', emoji: '🍷', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h15', char: 'תְּפִלָּה', transliteration: 'Tefillah', vuk: 'tefila', translation: 'Molitva', english: 'Prayer', emoji: '🙏', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h16', char: 'אֱלֹהִים', transliteration: 'Elohim', vuk: 'elohim', translation: 'Bog / Tvorac', english: 'God / Creator', emoji: '👑', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h17', char: 'מֶלֶךְ', transliteration: 'Melekh', vuk: 'meleh', translation: 'Kralj / Vladar', english: 'King / Ruler', emoji: '🏰', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h18', char: 'כָּבוֹד', transliteration: 'Kavod', vuk: 'kavod', translation: 'Čast / Slava', english: 'Honor / Glory', emoji: '🎖️', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h19', char: 'קֹדֶשׁ', transliteration: 'Kodesh', vuk: 'kodeš', translation: 'Svetost', english: 'Holiness / Sacredness', emoji: '⛪', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h20', char: 'רוּחַ', transliteration: 'Ruach', vuk: 'ruah', translation: 'Duh / Vetar / Dah', english: 'Spirit / Wind / Breath', emoji: '💨', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h21', char: 'חֶסֶד', transliteration: 'Chesed', vuk: 'hesed', translation: 'Dobrota / Milost', english: 'Kindness / Loving-kindness', emoji: '🤝', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h22', char: 'צֶדֶק', transliteration: 'Tzedek', vuk: 'cedek', translation: 'Pravda', english: 'Justice / Righteousness', emoji: '⚖️', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h23', char: 'תְּשׁוּבָה', transliteration: 'Teshuva', vuk: 'tešuva', translation: 'Povratak / Obnova', english: 'Return / Repentance', emoji: '🔄', category: 'mudrost', categoryLabel: 'Mudrost' },
-  { id: 'h24', char: 'עוֹלָם', transliteration: 'Olam', vuk: 'olam', translation: 'Svet / Večnost', english: 'World / Eternity', emoji: '🌍', category: 'mudrost', categoryLabel: 'Mudrost' },
+  // Mudrost & Filozofija (30 items)
+  { id: 'h1', char: 'שָׁלוֹם', transliteration: 'Shalom', vuk: 'šalom', translation: 'Mir / Spokoj', english: 'Peace / Harmony / Hello', emoji: '🕊️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ש-ל-ם', visualTip: 'Wholeness & total harmony' },
+  { id: 'h2', char: 'אַהֲבָה', transliteration: 'Ahava', vuk: 'ahava', translation: 'Ljubav', english: 'Love', emoji: '💖', category: 'mudrost', categoryLabel: 'Mudrost', root: 'א-ה-ב', visualTip: 'Unconditional heart connection' },
+  { id: 'h3', char: 'אוֹר', transliteration: 'Or', vuk: 'or', translation: 'Svetlost', english: 'Light', emoji: '✨', category: 'mudrost', categoryLabel: 'Mudrost', root: 'א-ו-ר', visualTip: 'Illuminating spark in dark' },
+  { id: 'h4', char: 'חַיִּים', transliteration: 'Chaim', vuk: 'chajim', translation: 'Život', english: 'Life', emoji: '🌱', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ח-י-ה', visualTip: 'Plural form: two-fold vital breath' },
+  { id: 'h5', char: 'לֵב', transliteration: 'Lev', vuk: 'lev', translation: 'Srce / Um', english: 'Heart / Mind', emoji: '❤️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ל-ב-ב', visualTip: 'Seat of pure intention & courage' },
+  { id: 'h6', char: 'נְשָׁמָה', transliteration: 'Neshama', vuk: 'nešama', translation: 'Duša', english: 'Soul / Spirit', emoji: '👼', category: 'mudrost', categoryLabel: 'Mudrost', root: 'נ-ש-ם', visualTip: 'Divine breath infused into man' },
+  { id: 'h7', char: 'אֱמֶת', transliteration: 'Emet', vuk: 'emet', translation: 'Istina', english: 'Truth', emoji: '⚖️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'א-מ-ת', visualTip: 'First, middle & last Hebrew letters' },
+  { id: 'h8', char: 'חָכְמָה', transliteration: 'Chokhmah', vuk: 'hohma', translation: 'Mudrost', english: 'Wisdom', emoji: '🦉', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ח-כ-ם', visualTip: 'Flash of creative insight' },
+  { id: 'h9', char: 'בְּרָכָה', transliteration: 'Brakha', vuk: 'braha', translation: 'Blagoslov', english: 'Blessing', emoji: '🕯️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ב-ר-ך', visualTip: 'Bending knee in reverence' },
+  { id: 'h10', char: 'תִּקְוָה', transliteration: 'Tikvah', vuk: 'tikva', translation: 'Nada', english: 'Hope', emoji: '🌟', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ק-ו-ה', visualTip: 'Bound line or cord of faith' },
+  { id: 'h11', char: 'שִׂמְחָה', transliteration: 'Simcha', vuk: 'simha', translation: 'Radost / Sreća', english: 'Joy / Happiness', emoji: '😄', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ש-מ-ח', visualTip: 'Radiant inner joy' },
+  { id: 'h12', char: 'כֹּחַ', transliteration: 'Koach', vuk: 'koah', translation: 'Snaga / Moć', english: 'Strength / Power', emoji: '💪', category: 'mudrost', categoryLabel: 'Mudrost', root: 'כ-ו-ח', visualTip: 'Enduring fortitude' },
+  { id: 'h13', char: 'תּוֹרָה', transliteration: 'Torah', vuk: 'tora', translation: 'Učenje / Zakon', english: 'Torah / Teaching', emoji: '📜', category: 'mudrost', categoryLabel: 'Mudrost', root: 'י-ר-ה', visualTip: 'Arrow pointing toward truth' },
+  { id: 'h14', char: 'שַׁבָּת', transliteration: 'Shabbat', vuk: 'šabat', translation: 'Subota / Odmor', english: 'Sabbath / Rest', emoji: '🍷', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ש-ב-ת', visualTip: 'Cessation of labor & sacred pause' },
+  { id: 'h15', char: 'תְּפִלָּה', transliteration: 'Tefillah', vuk: 'tefila', translation: 'Molitva', english: 'Prayer', emoji: '🙏', category: 'mudrost', categoryLabel: 'Mudrost', root: 'פ-ל-ל', visualTip: 'Introspective alignment' },
+  { id: 'h16', char: 'אֱלֹהִים', transliteration: 'Elohim', vuk: 'elohim', translation: 'Bog / Tvorac', english: 'God / Creator', emoji: '👑', category: 'mudrost', categoryLabel: 'Mudrost', root: 'א-ל-ה', visualTip: 'Plurality of divine power' },
+  { id: 'h17', char: 'מֶלֶךְ', transliteration: 'Melekh', vuk: 'meleh', translation: 'Kralj / Vladar', english: 'King / Ruler', emoji: '🏰', category: 'mudrost', categoryLabel: 'Mudrost', root: 'מ-ל-ך', visualTip: 'Self-mastery & leadership' },
+  { id: 'h18', char: 'כָּבוֹד', transliteration: 'Kavod', vuk: 'kavod', translation: 'Čast / Slava', english: 'Honor / Glory', emoji: '🎖️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'כ-ב-ד', visualTip: 'Weight and gravity of character' },
+  { id: 'h19', char: 'קֹדֶשׁ', transliteration: 'Kodesh', vuk: 'kodeš', translation: 'Svetost', english: 'Holiness / Sacred', emoji: '⛪', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ק-ד-ש', visualTip: 'Set apart for higher purpose' },
+  { id: '20', char: 'רוּחַ', transliteration: 'Ruach', vuk: 'ruah', translation: 'Duh / Vetar', english: 'Spirit / Wind', emoji: '💨', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ר-ו-ח', visualTip: 'Invisible driving energy' },
+  { id: 'h21', char: 'חֶסֶד', transliteration: 'Chesed', vuk: 'hesed', translation: 'Dobrota / Milost', english: 'Kindness / Loving-kindness', emoji: '🤝', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ח-ס-ד', visualTip: 'Active empathy and grace' },
+  { id: 'h22', char: 'צֶדֶק', transliteration: 'Tzedek', vuk: 'cedek', translation: 'Pravda', english: 'Justice / Righteousness', emoji: '⚖️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'צ-ד-ק', visualTip: 'Moral equilibrium' },
+  { id: 'h23', char: 'תְּשׁוּבָה', transliteration: 'Teshuva', vuk: 'tešuva', translation: 'Povratak / Obnova', english: 'Return / Repentance', emoji: '🔄', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ש-ו-ב', visualTip: 'Returning to core purpose' },
+  { id: 'h24', char: 'עוֹלָם', transliteration: 'Olam', vuk: 'olam', translation: 'Svet / Večnost', english: 'World / Eternity', emoji: '🌍', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ע-ל-ם', visualTip: 'Hidden vast cosmos' },
+  { id: 'h25', char: 'בִּינָה', transliteration: 'Binah', vuk: 'bina', translation: 'Razumevanje', english: 'Understanding / Discernment', emoji: '🧠', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ב-י-ן', visualTip: 'Analytical connection between ideas' },
+  { id: 'h26', char: 'דַּעַת', transliteration: 'Daat', vuk: 'daat', translation: 'Znanje / Svest', english: 'Knowledge / Awareness', emoji: '💡', category: 'mudrost', categoryLabel: 'Mudrost', root: 'י-ד-ע', visualTip: 'Experiential realization' },
+  { id: 'h27', char: 'אֱמוּנָה', transliteration: 'Emunah', vuk: 'emuna', translation: 'Vera / Poverenje', english: 'Faith / Trust', emoji: '🛡️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'א-מ-ן', visualTip: 'Unshakable conviction' },
+  { id: 'h28', char: 'סַבְלָנוּת', transliteration: 'Savlanut', vuk: 'savlanut', translation: 'Strpljenje', english: 'Patience / Endurance', emoji: '⏳', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ס-ב-ל', visualTip: 'Bearing heavy loads gracefully' },
+  { id: 'h29', char: 'עֲנָוָה', transliteration: 'Anavah', vuk: 'anava', translation: 'Skromnost', english: 'Humility / Modesty', emoji: '🌾', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ע-נ-ה', visualTip: 'Occupying your true space' },
+  { id: 'h30', char: 'גְּבוּרָה', transliteration: 'Gvurah', vuk: 'gvura', translation: 'Hrabrost / Disciplina', english: 'Courage / Restraint', emoji: '🛡️', category: 'mudrost', categoryLabel: 'Mudrost', root: 'ג-ב-ר', visualTip: 'Inner self-conquest' },
 
-  // Svakodnevno
-  { id: 'h25', char: 'תּוֹדָה', transliteration: 'Todah', vuk: 'toda', translation: 'Hvala', english: 'Thank you', emoji: '🙏', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h26', char: 'בְּבַקָּשָׁה', transliteration: 'Bevakasha', vuk: 'bevakaša', translation: 'Molim / Nema na čemu', english: 'Please / You are welcome', emoji: '😊', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h27', char: 'לְהִתְרָאוֹת', transliteration: 'Lehitraot', vuk: 'lehitraot', translation: 'Doviđenja', english: 'Goodbye / See you later', emoji: '👋', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h28', char: 'בֹּקֶר טוֹב', transliteration: 'Boker Tov', vuk: 'boker tov', translation: 'Dobro jutro', english: 'Good morning', emoji: '🌅', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h29', char: 'לַיְלָה טוֹב', transliteration: 'Layla Tov', vuk: 'lajla tov', translation: 'Laku noć', english: 'Good night', emoji: '🌙', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h30', char: 'כֵּן', transliteration: 'Ken', vuk: 'ken', translation: 'Da', english: 'Yes', emoji: '✅', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h31', char: 'לֹא', transliteration: 'Lo', vuk: 'lo', translation: 'Ne', english: 'No', emoji: '❌', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h32', char: 'סְלִיחָה', transliteration: 'Slicha', vuk: 'sliha', translation: 'Izvini / Oprostite', english: 'Sorry / Excuse me', emoji: '🙇', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h33', char: 'בַּיִת', transliteration: 'Bayit', vuk: 'bajit', translation: 'Kuća / Dom', english: 'House / Home', emoji: '🏠', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h34', char: 'מַפְתֵּחַ', transliteration: 'Mafteach', vuk: 'nafteah', translation: 'Ključ', english: 'Key', emoji: '🔑', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h35', char: 'סֵפֶר', transliteration: 'Sefer', vuk: 'sefer', translation: 'Knjiga', english: 'Book', emoji: '📖', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h36', char: 'מַיִם', transliteration: 'Mayim', vuk: 'majim', translation: 'Voda', english: 'Water', emoji: '💧', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h37', char: 'לֶחֶם', transliteration: 'Lechem', vuk: 'lehem', translation: 'Hleb', english: 'Bread', emoji: '🍞', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h38', char: 'יַיִן', transliteration: 'Yayin', vuk: 'jajin', translation: 'Vino', english: 'Wine', emoji: '🍷', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h39', char: 'כֶּסֶף', transliteration: 'Kesef', vuk: 'kesef', translation: 'Novac / Srebro', english: 'Money / Silver', emoji: '💵', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h40', char: 'חָבֵר', transliteration: 'Chaver', vuk: 'haver', translation: 'Prijatelj', english: 'Friend', emoji: '🤝', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h41', char: 'מִשְׁפָּחָה', transliteration: 'Mishpacha', vuk: 'mišpaha', translation: 'Porodica', english: 'Family', emoji: '👨‍👩‍👧‍👦', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h42', char: 'אִישׁ', transliteration: 'Ish', vuk: 'iš', translation: 'Čovek / Muškarac', english: 'Man / Person', emoji: '🧔', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h43', char: 'אִשָּׁה', transliteration: 'Isha', vuk: 'iša', translation: 'Žena', english: 'Woman', emoji: '👩', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h44', char: 'יֶלֶד', transliteration: 'Yeled', vuk: 'jeled', translation: 'Dete / Dečak', english: 'Child / Boy', emoji: '👦', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h45', char: 'יוֹם', transliteration: 'Yom', vuk: 'jom', translation: 'Dan', english: 'Day', emoji: '☀️', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h46', char: 'זְמַן', transliteration: 'Zman', vuk: 'zman', translation: 'Vreme', english: 'Time', emoji: '⏳', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h47', char: 'יְרוּשָׁלַיִם', transliteration: 'Yerushalayim', vuk: 'jerusalim', translation: 'Jerusalim', english: 'Jerusalem', emoji: '🕌', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
-  { id: 'h48', char: 'תֵּה', transliteration: 'Te', vuk: 'te', translation: 'Čaj', english: 'Tea', emoji: '🍵', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  // Svakodnevno & Imenice (30 items)
+  { id: 'h31', char: 'תּוֹדָה', transliteration: 'Todah', vuk: 'toda', translation: 'Hvala', english: 'Thank you', emoji: '🙏', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h32', char: 'בְּבַקָּשָׁה', transliteration: 'Bevakasha', vuk: 'bevakaša', translation: 'Molim / Nema na čemu', english: 'Please / You are welcome', emoji: '😊', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h33', char: 'לְהִתְרָאוֹת', transliteration: 'Lehitraot', vuk: 'lehitraot', translation: 'Doviđenja', english: 'Goodbye / See you later', emoji: '👋', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h34', char: 'בֹּקֶר טוֹב', transliteration: 'Boker Tov', vuk: 'boker tov', translation: 'Dobro jutro', english: 'Good morning', emoji: '🌅', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h35', char: 'לַיְלָה טוֹב', transliteration: 'Layla Tov', vuk: 'lajla tov', translation: 'Laku noć', english: 'Good night', emoji: '🌙', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h36', char: 'כֵּן', transliteration: 'Ken', vuk: 'ken', translation: 'Da', english: 'Yes', emoji: '✅', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h37', char: 'לֹא', transliteration: 'Lo', vuk: 'lo', translation: 'Ne', english: 'No', emoji: '❌', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h38', char: 'סְלִיחָה', transliteration: 'Slicha', vuk: 'sliha', translation: 'Izvini / Oprostite', english: 'Sorry / Excuse me', emoji: '🙇', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h39', char: 'בַּיִת', transliteration: 'Bayit', vuk: 'bajit', translation: 'Kuća / Dom', english: 'House / Home', emoji: '🏠', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h40', char: 'מַפְתֵּחַ', transliteration: 'Mafteach', vuk: 'mafteah', translation: 'Ključ', english: 'Key', emoji: '🔑', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h41', char: 'סֵפֶר', transliteration: 'Sefer', vuk: 'sefer', translation: 'Knjiga', english: 'Book', emoji: '📖', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h42', char: 'מַיִם', transliteration: 'Mayim', vuk: 'majim', translation: 'Voda', english: 'Water', emoji: '💧', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h43', char: 'לֶחֶם', transliteration: 'Lechem', vuk: 'lehem', translation: 'Hleb', english: 'Bread', emoji: '🍞', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h44', char: 'יַיִן', transliteration: 'Yayin', vuk: 'jajin', translation: 'Vino', english: 'Wine', emoji: '🍷', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h45', char: 'כֶּסֶף', transliteration: 'Kesef', vuk: 'kesef', translation: 'Novac / Srebro', english: 'Money / Silver', emoji: '💵', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h46', char: 'חָבֵר', transliteration: 'Chaver', vuk: 'haver', translation: 'Prijatelj', english: 'Friend', emoji: '🤝', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h47', char: 'מִשְׁפָּחָה', transliteration: 'Mishpacha', vuk: 'mišpaha', translation: 'Porodica', english: 'Family', emoji: '👨‍👩‍👧‍👦', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h48', char: 'אִישׁ', transliteration: 'Ish', vuk: 'iš', translation: 'Čovek / Muškarac', english: 'Man / Person', emoji: '🧔', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h49', char: 'אִשָּׁה', transliteration: 'Isha', vuk: 'iša', translation: 'Žena', english: 'Woman', emoji: '👩', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h50', char: 'יֶלֶד', transliteration: 'Yeled', vuk: 'jeled', translation: 'Dete / Dečak', english: 'Child / Boy', emoji: '👦', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h51', char: 'יוֹם', transliteration: 'Yom', vuk: 'jom', translation: 'Dan', english: 'Day', emoji: '☀️', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h52', char: 'זְמַן', transliteration: 'Zman', vuk: 'zman', translation: 'Vreme', english: 'Time', emoji: '⏳', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h53', char: 'יְרוּשָׁלַיִם', transliteration: 'Yerushalayim', vuk: 'jerusalim', translation: 'Jerusalim', english: 'Jerusalem', emoji: '🕌', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h54', char: 'תֵּה', transliteration: 'Te', vuk: 'te', translation: 'Čaj', english: 'Tea', emoji: '🍵', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h55', char: 'קָפֶה', transliteration: 'Kafe', vuk: 'kafe', translation: 'Kafa', english: 'Coffee', emoji: '☕', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h56', char: 'עִיר', transliteration: 'Ir', vuk: 'ir', translation: 'Grad', english: 'City / Town', emoji: '🏙️', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h57', char: 'מְכוֹנִית', transliteration: 'Mekhonit', vuk: 'mehonit', translation: 'Auto', english: 'Car / Vehicle', emoji: '🚗', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h58', char: 'טֶלֶפֿוֹן', transliteration: 'Telefon', vuk: 'telefon', translation: 'Telefon', english: 'Phone', emoji: '📱', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h59', char: 'מַחְשֵׁב', transliteration: 'Makhshev', vuk: 'mahšev', translation: 'Računar', english: 'Computer', emoji: '💻', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
+  { id: 'h60', char: 'שֻׁלְחָן', transliteration: 'Shulchan', vuk: 'šulhan', translation: 'Sto', english: 'Table / Desk', emoji: '🪵', category: 'svakodnevno', categoryLabel: 'Svakodnevno' },
 
-  // Priroda & Stvaranje
-  { id: 'h49', char: 'אֶרֶץ', transliteration: 'Eretz', vuk: 'erec', translation: 'Zemlja', english: 'Land / Earth', emoji: '🌍', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h50', char: 'שָׁמַיִם', transliteration: 'Shamayim', vuk: 'šamajim', translation: 'Nebo', english: 'Sky / Heavens', emoji: '☁️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h51', char: 'שֶׁמֶשׁ', transliteration: 'Shemesh', vuk: 'šemeš', translation: 'Sunce', english: 'Sun', emoji: '☀️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h52', char: 'יָרֵחַ', transliteration: 'Yareach', vuk: 'jareah', translation: 'Mesec', english: 'Moon', emoji: '🌙', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h53', char: 'כּוֹכָבִים', transliteration: 'Kokhavim', vuk: 'kohavim', translation: 'Zvezde', english: 'Stars', emoji: '🌟', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h54', char: 'אֵשׁ', transliteration: 'Esh', vuk: 'eš', translation: 'Vatra', english: 'Fire', emoji: '🔥', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h55', char: 'יָם', transliteration: 'Yam', vuk: 'jam', translation: 'More', english: 'Sea / Ocean', emoji: '🌊', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h56', char: 'הַר', transliteration: 'Har', vuk: 'har', translation: 'Planina', english: 'Mountain', emoji: '🏔️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h57', char: 'עֵץ', transliteration: 'Etz', vuk: 'ec', translation: 'Drvo', english: 'Tree', emoji: '🌳', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h58', char: 'פֶּרַח', transliteration: 'Perach', vuk: 'perah', translation: 'Cvet', english: 'Flower', emoji: '🌸', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h59', char: 'דֶּרֶךְ', transliteration: 'Derekh', vuk: 'derek', translation: 'Put / Staza', english: 'Way / Path / Road', emoji: '🛣️', category: 'priroda', categoryLabel: 'Priroda' },
-  { id: 'h60', char: 'גַּן', transliteration: 'Gan', vuk: 'gan', translation: 'Bašta / Vrt', english: 'Garden', emoji: '🏡', category: 'priroda', categoryLabel: 'Priroda' },
+  // Priroda & Stvaranje (25 items)
+  { id: 'h61', char: 'אֶרֶץ', transliteration: 'Eretz', vuk: 'erec', translation: 'Zemlja / Tlo', english: 'Land / Earth', emoji: '🌍', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h62', char: 'שָׁמַיִם', transliteration: 'Shamayim', vuk: 'šamajim', translation: 'Nebo', english: 'Sky / Heavens', emoji: '☁️', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h63', char: 'שֶׁמֶשׁ', transliteration: 'Shemesh', vuk: 'šemeš', translation: 'Sunce', english: 'Sun', emoji: '☀️', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h64', char: 'יָרֵחַ', transliteration: 'Yareach', vuk: 'jareah', translation: 'Mesec', english: 'Moon', emoji: '🌙', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h65', char: 'כּוֹכָבִים', transliteration: 'Kokhavim', vuk: 'kohavim', translation: 'Zvezde', english: 'Stars', emoji: '🌟', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h66', char: 'אֵשׁ', transliteration: 'Esh', vuk: 'eš', translation: 'Vatra', english: 'Fire', emoji: '🔥', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h67', char: 'יָם', transliteration: 'Yam', vuk: 'jam', translation: 'More / Okean', english: 'Sea / Ocean', emoji: '🌊', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h68', char: 'הַר', transliteration: 'Har', vuk: 'har', translation: 'Planina', english: 'Mountain', emoji: '🏔️', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h69', char: 'עֵץ', transliteration: 'Etz', vuk: 'ec', translation: 'Drvo', english: 'Tree', emoji: '🌳', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h70', char: 'פֶּרַח', transliteration: 'Perach', vuk: 'perah', translation: 'Cvet', english: 'Flower', emoji: '🌸', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h71', char: 'דֶּרֶךְ', transliteration: 'Derekh', vuk: 'derek', translation: 'Put / Staza', english: 'Way / Path / Road', emoji: '🛣️', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h72', char: 'גַּן', transliteration: 'Gan', vuk: 'gan', translation: 'Bašta / Vrt', english: 'Garden', emoji: '🏡', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h73', char: 'גֶּשֶׁם', transliteration: 'Geshem', vuk: 'gešem', translation: 'Kiša', english: 'Rain', emoji: '🌧️', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h74', char: 'נָהָר', transliteration: 'Nahar', vuk: 'nahar', translation: 'Reka', english: 'River', emoji: '🏞️', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h75', char: 'אֲגַם', transliteration: 'Agam', vuk: 'agam', translation: 'Jezero', english: 'Lake', emoji: '🌊', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h76', char: 'מִדְבָּר', transliteration: 'Midbar', vuk: 'midbar', translation: 'Pustinja', english: 'Desert', emoji: '🏜️', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h77', char: 'שָׂדֶה', transliteration: 'Sadeh', vuk: 'sade', translation: 'Polje', english: 'Field / Meadow', emoji: '🌾', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h78', char: 'עָנָן', transliteration: 'Anan', vuk: 'anan', translation: 'Oblak', english: 'Cloud', emoji: '☁️', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h79', char: 'אֲבָנִים', transliteration: 'Avanim', vuk: 'avanim', translation: 'Kamenje', english: 'Stones / Rocks', emoji: '🪨', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h80', char: 'חַיָּה', transliteration: 'Chayah', vuk: 'haja', translation: 'Životinja', english: 'Animal', emoji: '🦁', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h81', char: 'צִפּוֹר', transliteration: 'Tzippor', vuk: 'cipor', translation: 'Ptica', english: 'Bird', emoji: '🐦', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h82', char: 'דָּג', transliteration: 'Dag', vuk: 'dag', translation: 'Riba', english: 'Fish', emoji: '🐟', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h83', char: 'אֲדָמָה', transliteration: 'Adamah', vuk: 'adama', translation: 'Zemlja / Tlo', english: 'Soil / Earth', emoji: '🪵', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h84', char: 'קֶשֶׁת', transliteration: 'Keshet', vuk: 'kešet', translation: 'Duga / Luk', english: 'Rainbow / Bow', emoji: '🌈', category: 'priroda', categoryLabel: 'Priroda' },
+  { id: 'h85', char: 'יַעַר', transliteration: 'Yaar', vuk: 'jaar', translation: 'Šuma', english: 'Forest / Woods', emoji: '🌲', category: 'priroda', categoryLabel: 'Priroda' },
 
-  // Glagoli & Radnja
-  { id: 'h61', char: 'לִלְמֹד', transliteration: 'Lilmod', vuk: 'lilmod', translation: 'Učiti', english: 'To learn / study', emoji: '🎓', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h62', char: 'לֶאֱכֹל', transliteration: 'Leekhol', vuk: 'lehol', translation: 'Jesti', english: 'To eat', emoji: '🍎', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h63', char: 'לִשְׁתּוֹת', transliteration: 'Lishtot', vuk: 'lištot', translation: 'Piti', english: 'To drink', emoji: '🥤', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h64', char: 'לָלֶכֶת', transliteration: 'Lalekhet', vuk: 'lalehet', translation: 'Ići / Hodati', english: 'To walk / go', emoji: '🚶', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h65', char: 'לִרְצוֹת', transliteration: 'Lirtzot', vuk: 'lircot', translation: 'Želeti', english: 'To want / desire', emoji: '💭', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h66', char: 'לָדַעַת', transliteration: 'Ladaat', vuk: 'ladaat', translation: 'Znati / Razumeti', english: 'To know / understand', emoji: '💡', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h67', char: 'לִרְאוֹת', transliteration: 'Lirot', vuk: 'lirot', translation: 'Videti / Gledati', english: 'To see / look', emoji: '👁️', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h68', char: 'לִשְׁמֹעַ', transliteration: 'Lishmoa', vuk: 'lišmoa', translation: 'Slušati / Čuti', english: 'To hear / listen', emoji: '👂', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h69', char: 'לְדַבֵּר', transliteration: 'Ledaber', vuk: 'ledaber', translation: 'Govoriti', english: 'To speak / talk', emoji: '💬', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h70', char: 'לִכְתֹּב', transliteration: 'Likhtov', vuk: 'lihtov', translation: 'Pisati', english: 'To write', emoji: '✍️', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h71', char: 'לִקְרֹא', transliteration: 'Likro', vuk: 'likro', translation: 'Čitati', english: 'To read', emoji: '📖', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h72', char: 'לֶאֱהֹב', transliteration: 'Leehov', vuk: 'lehov', translation: 'Voleti', english: 'To love', emoji: '🥰', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h73', char: 'לַעֲשׂוֹת', transliteration: 'Laasot', vuk: 'laasot', translation: 'Raditi / Činiti', english: 'To do / make', emoji: '🛠️', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h74', char: 'לָשִׁיר', transliteration: 'Lashir', vuk: 'lašir', translation: 'Pevati', english: 'To sing', emoji: '🎵', category: 'glagoli', categoryLabel: 'Glagoli' },
-  { id: 'h75', char: 'לַחֲשֹׁב', transliteration: 'Lachshov', vuk: 'lahšov', translation: 'Misliti', english: 'To think', emoji: '🧠', category: 'glagoli', categoryLabel: 'Glagoli' }
+  // Glagoli & Radnja (25 items)
+  { id: 'h86', char: 'לִלְמֹד', transliteration: 'Lilmod', vuk: 'lilmod', translation: 'Učiti', english: 'To learn / study', emoji: '🎓', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ל-מ-ד' },
+  { id: 'h87', char: 'לֶאֱכֹל', transliteration: 'Leekhol', vuk: 'lehol', translation: 'Jesti', english: 'To eat', emoji: '🍎', category: 'glagoli', categoryLabel: 'Glagoli', root: 'א-כ-ל' },
+  { id: 'h88', char: 'לִשְׁתּוֹת', transliteration: 'Lishtot', vuk: 'lištot', translation: 'Piti', english: 'To drink', emoji: '🥤', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ש-ת-ה' },
+  { id: 'h89', char: 'לָלֶכֶת', transliteration: 'Lalekhet', vuk: 'lalehet', translation: 'Ići / Hodati', english: 'To walk / go', emoji: '🚶', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ה-ל-ך' },
+  { id: 'h90', char: 'לִרְצוֹת', transliteration: 'Lirtzot', vuk: 'lircot', translation: 'Želeti', english: 'To want / desire', emoji: '💭', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ר-צ-ה' },
+  { id: 'h91', char: 'לָדַעַת', transliteration: 'Ladaat', vuk: 'ladaat', translation: 'Znati / Razumeti', english: 'To know / understand', emoji: '💡', category: 'glagoli', categoryLabel: 'Glagoli', root: 'י-ד-ע' },
+  { id: 'h92', char: 'לִרְאוֹת', transliteration: 'Lirot', vuk: 'lirot', translation: 'Videti / Gledati', english: 'To see / look', emoji: '👁️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ר-א-ה' },
+  { id: 'h93', char: 'לִשְׁמֹעַ', transliteration: 'Lishmoa', vuk: 'lišmoa', translation: 'Slušati / Čuti', english: 'To hear / listen', emoji: '👂', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ש-מ-ע' },
+  { id: 'h94', char: 'לְדַבֵּר', transliteration: 'Ledaber', vuk: 'ledaber', translation: 'Govoriti', english: 'To speak / talk', emoji: '💬', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ד-ב-ר' },
+  { id: 'h95', char: 'לִכְתֹּב', transliteration: 'Likhtov', vuk: 'lihtov', translation: 'Pisati', english: 'To write', emoji: '✍️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'כ-ת-ב' },
+  { id: 'h96', char: 'לִקְרֹא', transliteration: 'Likro', vuk: 'likro', translation: 'Čitati', english: 'To read', emoji: '📖', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ק-ר-א' },
+  { id: 'h97', char: 'לֶאֱהֹב', transliteration: 'Leehov', vuk: 'lehov', translation: 'Voleti', english: 'To love', emoji: '🥰', category: 'glagoli', categoryLabel: 'Glagoli', root: 'א-ה-ב' },
+  { id: 'h98', char: 'לַעֲשׂוֹת', transliteration: 'Laasot', vuk: 'laasot', translation: 'Raditi / Činiti', english: 'To do / make', emoji: '🛠️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ע-ש-ה' },
+  { id: 'h99', char: 'לָשִׁיר', transliteration: 'Lashir', vuk: 'lašir', translation: 'Pevati', english: 'To sing', emoji: '🎵', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ש-י-ר' },
+  { id: 'h100', char: 'לַחֲשֹׁב', transliteration: 'Lachshov', vuk: 'lahšov', translation: 'Misliti', english: 'To think', emoji: '🧠', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ח-ש-ב' },
+  { id: 'h101', char: 'לָרוּץ', transliteration: 'Larutz', vuk: 'laruc', translation: 'Trčati', english: 'To run', emoji: '🏃', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ר-ו-צ' },
+  { id: 'h102', char: 'לִישׁוֹן', transliteration: 'Lishon', vuk: 'lišon', translation: 'Spavati', english: 'To sleep', emoji: '😴', category: 'glagoli', categoryLabel: 'Glagoli', root: 'י-ש-נ' },
+  { id: 'h103', char: 'לִצְחֹק', transliteration: 'Litzchok', vuk: 'licohk', translation: 'Smejati se', english: 'To laugh', emoji: '😄', category: 'glagoli', categoryLabel: 'Glagoli', root: 'צ-ח-ק' },
+  { id: 'h104', char: 'לִבְכּוֹת', transliteration: 'Livkot', vuk: 'livkot', translation: 'Plakati', english: 'To weep / cry', emoji: '😢', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ב-כ-ה' },
+  { id: 'h105', char: 'לִקְנוֹת', transliteration: 'Liknot', vuk: 'liknot', translation: 'Kupiti', english: 'To buy', emoji: '🛍️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ק-נ-ה' },
+  { id: 'h106', char: 'לִמְכֹּר', transliteration: 'Limkor', vuk: 'limkor', translation: 'Prodati', english: 'To sell', emoji: '🪙', category: 'glagoli', categoryLabel: 'Glagoli', root: 'מ-כ-ר' },
+  { id: 'h107', char: 'לָבוֹא', transliteration: 'Lavo', vuk: 'lavo', translation: 'Doći', english: 'To come', emoji: '🚶‍♂️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ב-ו-א' },
+  { id: 'h108', char: 'לָצֵאת', transliteration: 'Latzet', vuk: 'laceat', translation: 'Izaći', english: 'To go out / exit', emoji: '🚪', category: 'glagoli', categoryLabel: 'Glagoli', root: 'י-צ-א' },
+  { id: 'h109', char: 'לִמְצֹא', transliteration: 'Limtzo', vuk: 'limco', translation: 'Naći / Pronaći', english: 'To find', emoji: '🔍', category: 'glagoli', categoryLabel: 'Glagoli', root: 'מ-צ-א' },
+  { id: 'h110', char: 'לִבְנוֹת', transliteration: 'Livnot', vuk: 'livnot', translation: 'Graditi', english: 'To build', emoji: '🏗️', category: 'glagoli', categoryLabel: 'Glagoli', root: 'ב-נ-ה' },
+
+  // Misaoni & Stoik Stanja (15 items)
+  { id: 'h111', char: 'שַׁלְוָה', transliteration: 'Shalva', vuk: 'šalva', translation: 'Duševni mir', english: 'Serenity / Peace of mind', emoji: '🧘', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h112', char: 'כַּוָּנָה', transliteration: 'Kavanah', vuk: 'kavana', translation: 'Svesna namera', english: 'Intention / Focus', emoji: '🎯', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h113', char: 'נְדִיבוּת', transliteration: 'Nedivut', vuk: 'nedivut', translation: 'Velikodušnost', english: 'Generosity / Noble heart', emoji: '🎁', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h114', char: 'הַכָּרַת טוֹב', transliteration: 'Hakarat Tov', vuk: 'hakarat tov', translation: 'Zahvalnost', english: 'Gratitude / Recognizing good', emoji: '🙏', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h115', char: 'אֹמֶץ', transliteration: 'Ometz', vuk: 'omec', translation: 'Odvažnost', english: 'Boldness / Moral courage', emoji: '🦁', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h116', char: 'נִצָּחוֹן', transliteration: 'Nitzachon', vuk: 'nicahon', translation: 'Pobeda nad sobom', english: 'Victory over self', emoji: '🏆', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h117', char: 'מַחְשָׁבָה', transliteration: 'Machshava', vuk: 'mahšava', translation: 'Misao', english: 'Thought / Mindset', emoji: '💭', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h118', char: 'רָצוֹן', transliteration: 'Ratzon', vuk: 'racon', translation: 'Volja / Želja', english: 'Will / Determination', emoji: '⚡', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h119', char: 'שְׁלֵמוּת', transliteration: 'Shlemut', vuk: 'šlemut', translation: 'Celovitost', english: 'Completeness / Integrity', emoji: '⚪', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h120', char: 'סַלְחָנוּת', transliteration: 'Salkhanut', vuk: 'salhanut', translation: 'Opraštanje', english: 'Forgiveness', emoji: '🤝', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h121', char: 'יְגִיעָה', transliteration: 'Yegiah', vuk: 'jegia', translation: 'Trud / Istrajnost', english: 'Effort / Diligent endeavor', emoji: '💦', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h122', char: 'תְּבוּנָה', transliteration: 'Tevunah', vuk: 'tevuna', translation: 'Razboritost', english: 'Prudence / Reason', emoji: '🧠', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h123', char: 'נֶאֱמָנוּת', transliteration: 'Neemanut', vuk: 'neemanut', translation: 'Vernost', english: 'Fidelity / Loyalty', emoji: '🤝', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h124', char: 'שְׁקִידָה', transliteration: 'Shkida', vuk: 'škida', translation: 'Posvećenost učenju', english: 'Devoted study', emoji: '📚', category: 'misaoni', categoryLabel: 'Misaoni Stoik' },
+  { id: 'h125', char: 'הִתְבּוֹנְנוּת', transliteration: 'Hitbonenut', vuk: 'hitbonenut', translation: 'Kontemplacija', english: 'Deep meditation', emoji: '👁️', category: 'misaoni', categoryLabel: 'Misaoni Stoik' }
 ];
 
 export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
-  // Navigation: Dictionary or Game mode
-  const [activeTab, setActiveTab] = useState<'learn' | 'quiz'>('learn');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'mudrost' | 'svakodnevno' | 'priroda' | 'glagoli'>('all');
+  // Navigation: Dictionary, Emoji Canvas, AI Weaver or Quiz
+  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz'>('learn');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'mudrost' | 'svakodnevno' | 'priroda' | 'glagoli' | 'misaoni'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Weaver state
+  const [selectedWeaverItems, setSelectedWeaverItems] = useState<HebrewVocabItem[]>([]);
+  const [wovenSentence, setWovenSentence] = useState<{ hebrew: string; vuk: string; serbian: string } | null>(null);
+
   // Game States
   const [quizStarted, setQuizStarted] = useState(false);
   const [roundQuestions, setRoundQuestions] = useState<{
@@ -154,7 +212,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
 
   const handleCopy = (item: HebrewVocabItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    const textToCopy = `${item.emoji} ${item.char} [${item.transliteration}] (${item.vuk})\n🇭🇷 ${item.translation}\n🇬🇧 ${item.english}\n\n✨ Shared via WiseFit Sanctuary`;
+    const textToCopy = `${item.emoji} ${item.char} [${item.transliteration}] (${item.vuk})\n🇭🇷 ${item.translation}\n🇬🇧 ${item.english}\n${item.root ? `🌱 Koren: ${item.root}\n` : ''}✨ WiseFit Sanctuary Hebrew`;
 
     navigator.clipboard.writeText(textToCopy).then(() => {
       setCopiedId(item.id);
@@ -162,12 +220,9 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       setTimeout(() => {
         setCopiedId(null);
       }, 2000);
-    }).catch(err => {
-      console.error('Failed to copy text: ', err);
     });
   };
 
-  // Play synthesized tone for Duolingo sound effects
   const playSound = (type: 'correct' | 'wrong' | 'complete') => {
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -211,98 +266,33 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
         });
       }
     } catch (e) {
-      console.warn("AudioContext blocked or not supported:", e);
+      console.error(e);
     }
   };
 
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Audio Fallback Player for Desktop when native Hebrew voice is missing from OS
   const speakHebrewAudioFallback = (text: string, id?: string) => {
-    try {
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current = null;
-      }
-
-      const encodedText = encodeURIComponent(text);
-      const primaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=he&client=tw-ob`;
-      const audio = new Audio(primaryUrl);
-      currentAudioRef.current = audio;
-
-      audio.onended = () => {
-        if (id) setIsPronouncing(null);
-        currentAudioRef.current = null;
-      };
-
-      audio.onerror = (e) => {
-        console.warn("Primary Hebrew TTS audio stream failed, trying secondary endpoint:", e);
-        const secondaryUrl = `https://dict.youdao.com/dictvoice?audio=${encodedText}&le=he`;
-        const audio2 = new Audio(secondaryUrl);
-        currentAudioRef.current = audio2;
-        audio2.onended = () => {
-          if (id) setIsPronouncing(null);
-          currentAudioRef.current = null;
-        };
-        audio2.onerror = () => {
-          if (id) setIsPronouncing(null);
-          currentAudioRef.current = null;
-        };
-        audio2.play().catch(() => {
-          if (id) setIsPronouncing(null);
-        });
-      };
-
-      audio.play().catch((err) => {
-        console.warn("Audio play error:", err);
-        if (id) setIsPronouncing(null);
-      });
-    } catch (e) {
-      console.error("Hebrew speech fallback exception:", e);
+    if (id) setIsPronouncing(id);
+    const audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&tl=he&client=tw-ob&q=${encodeURIComponent(text)}`);
+    audio.play().then(() => {
+      if (id) setTimeout(() => setIsPronouncing(null), 1200);
+    }).catch(err => {
+      console.warn("Audio playback issue:", err);
       if (id) setIsPronouncing(null);
-    }
+    });
   };
 
-  // Pre-load voices for WebSpeech API
-  useEffect(() => {
-    if ('speechSynthesis' in window) {
-      const loadVoices = () => {
-        window.speechSynthesis.getVoices();
-      };
-      loadVoices();
-      if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = loadVoices;
-      }
-    }
-  }, []);
-
-  // Speak Hebrew word using Native WebSpeech API or Desktop Web Audio Fallback
   const speakHebrew = (text: string, id?: string) => {
     if (id) setIsPronouncing(id);
-
-    // Stop active audio element if playing
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
-    }
-
     if (!('speechSynthesis' in window)) {
       speakHebrewAudioFallback(text, id);
       return;
     }
 
-    try {
-      window.speechSynthesis.cancel();
-    } catch (e) {
-      console.warn("speechSynthesis cancel warning:", e);
-    }
-
+    window.speechSynthesis.cancel();
     const voices = window.speechSynthesis.getVoices();
     const heVoice = voices.find(v => 
       v.lang.toLowerCase().startsWith('he') || 
-      v.lang.toLowerCase().includes('he-il') || 
-      v.name.toLowerCase().includes('hebrew') ||
-      v.name.toLowerCase().includes('carmit')
+      v.name.toLowerCase().includes('hebrew')
     );
 
     if (heVoice) {
@@ -310,24 +300,14 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       utterance.lang = 'he-IL';
       utterance.rate = 0.85;
       utterance.voice = heVoice;
-
-      utterance.onend = () => {
-        if (id) setIsPronouncing(null);
-      };
-      utterance.onerror = (e) => {
-        console.warn("Speech synthesis error on desktop, switching to web audio fallback:", e);
-        speakHebrewAudioFallback(text, id);
-      };
-
+      utterance.onend = () => { if (id) setIsPronouncing(null); };
+      utterance.onerror = () => speakHebrewAudioFallback(text, id);
       window.speechSynthesis.speak(utterance);
     } else {
-      // Desktop OS (Windows/Linux/Chrome) doesn't have native Hebrew voice pack installed
-      // Fallback directly to high-quality audio stream
       speakHebrewAudioFallback(text, id);
     }
   };
 
-  // Load Saved Progress from Firestore or LocalStorage
   useEffect(() => {
     const loadProgress = async () => {
       if (user) {
@@ -340,7 +320,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
             setHighScore(data.highScore || 0);
           }
         } catch (e) {
-          console.error("Error fetching Hebrew progress:", e);
+          console.error(e);
         }
       } else {
         const localMastered = localStorage.getItem('wf_hebrew_mastered');
@@ -352,7 +332,6 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     loadProgress();
   }, [user]);
 
-  // Save Progress
   const saveProgress = async (newMastered: string[], newHighScore: number) => {
     setMasteredIds(newMastered);
     if (newHighScore > highScore) setHighScore(newHighScore);
@@ -366,7 +345,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
           lastUpdated: new Date().toISOString()
         }, { merge: true });
       } catch (e) {
-        console.error("Error saving Hebrew progress to Firestore:", e);
+        console.error(e);
       }
     } else {
       localStorage.setItem('wf_hebrew_mastered', JSON.stringify(newMastered));
@@ -374,7 +353,6 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     }
   };
 
-  // Filtered Vocab
   const filteredVocab = useMemo(() => {
     return HEBREW_VOCAB_DATA.filter(item => {
       const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
@@ -384,12 +362,12 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
         item.transliteration.toLowerCase().includes(q) ||
         item.vuk.toLowerCase().includes(q) ||
         item.translation.toLowerCase().includes(q) ||
-        item.english.toLowerCase().includes(q);
+        item.english.toLowerCase().includes(q) ||
+        (item.root && item.root.toLowerCase().includes(q));
       return matchesCategory && matchesSearch;
     });
   }, [selectedCategory, searchQuery]);
 
-  // Toggle mastered status manually
   const toggleMastered = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     let updated: string[];
@@ -402,7 +380,6 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     saveProgress(updated, highScore);
   };
 
-  // Generate a round of 5 questions
   const generateQuizRound = () => {
     const shuffled = [...HEBREW_VOCAB_DATA].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 5);
@@ -426,20 +403,15 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       } else if (questionType === 'character') {
         correctAnswer = `${vocab.char} — ${vocab.transliteration}`;
         wrongAnswers = wrongShuffled.map(w => `${w.char} — ${w.transliteration}`);
-      } else { // listen
-        correctAnswer = `${vocab.char} — ${vocab.emoji} ${vocab.translation} (${vocab.english})`;
-        wrongAnswers = wrongShuffled.map(w => `${w.char} — ${w.emoji} ${w.translation} (${w.english})`);
+      } else {
+        correctAnswer = `${vocab.char} — ${vocab.emoji} ${vocab.translation}`;
+        wrongAnswers = wrongShuffled.map(w => `${w.char} — ${w.emoji} ${w.translation}`);
       }
 
       const allOptions = [correctAnswer, ...wrongAnswers].sort(() => Math.random() - 0.5);
       const correctIndex = allOptions.indexOf(correctAnswer);
 
-      return {
-        vocab,
-        options: allOptions,
-        correctIndex,
-        questionType
-      };
+      return { vocab, options: allOptions, correctIndex, questionType };
     });
 
     setRoundQuestions(questionsList);
@@ -458,7 +430,6 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
 
   const handleAnswerSubmit = (optionIndex: number) => {
     if (isAnswered) return;
-    
     setSelectedAnswer(optionIndex);
     setIsAnswered(true);
     
@@ -468,7 +439,6 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     if (isCorrect) {
       playSound('correct');
       setScore(prev => prev + 10);
-      
       if (!masteredIds.includes(currentQ.vocab.id)) {
         saveProgress([...masteredIds, currentQ.vocab.id], Math.max(highScore, score + 10));
       }
@@ -490,81 +460,115 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       setQuestionIdx(nextIdx);
       setSelectedAnswer(null);
       setIsAnswered(false);
-      
       if (roundQuestions[nextIdx].questionType === 'listen') {
         setTimeout(() => speakHebrew(roundQuestions[nextIdx].vocab.char), 400);
       }
     } else {
       setQuizComplete(true);
       playSound('complete');
-      if (score > highScore) {
-        saveProgress(masteredIds, score);
-      }
     }
   };
 
+  const handleToggleWeaverSelect = (item: HebrewVocabItem) => {
+    if (selectedWeaverItems.find(i => i.id === item.id)) {
+      setSelectedWeaverItems(prev => prev.filter(i => i.id !== item.id));
+    } else {
+      if (selectedWeaverItems.length >= 3) return;
+      setSelectedWeaverItems(prev => [...prev, item]);
+    }
+  };
+
+  const weaveSentence = () => {
+    if (selectedWeaverItems.length === 0) return;
+    const wordsHeb = selectedWeaverItems.map(i => i.char).join(' ');
+    const wordsVuk = selectedWeaverItems.map(i => i.vuk).join(' ');
+    const wordsSer = selectedWeaverItems.map(i => i.translation.split('/')[0].trim()).join(', ');
+
+    setWovenSentence({
+      hebrew: `בְּתוֹךְ הַלֵּב שֶׁלִּי יֵשׁ ${wordsHeb}`,
+      vuk: `betoh halev šeli ješ ${wordsVuk}`,
+      serbian: `U mom srcu nalazi se ${wordsSer} - put mudrosti.`
+    });
+    speakHebrew(`בְּתוֹךְ הַלֵּב שֶׁלִּי יֵשׁ ${wordsHeb}`);
+  };
+
   const getRankInfo = (count: number) => {
-    if (count >= 60) return { name: "Gospodar Reči (Master) 👑", icon: "👑", desc: "Znaš preko 60 hebrejskih reči! Pravi izrailski mudrac.", nextMilestone: null };
-    if (count >= 40) return { name: "Izrailski Mudrac (Sage) 🕎", icon: "🕎", desc: "Savladano preko 40 reči. Tvoj um spaja drevno i moderno.", nextMilestone: 60 };
-    if (count >= 25) return { name: "Učeni Rabin (Scholar) 🕯️", icon: "🕯️", desc: "Savladano preko 25 reči. Tvoje znanje osvetljava stazu.", nextMilestone: 40 };
-    if (count >= 10) return { name: "Učenik Tore (Student) 📜", icon: "📜", desc: "Savladano preko 10 reči. Uspešno usvajaš drevne znakove.", nextMilestone: 25 };
-    return { name: "Tragač Mudrosti (Seeker) 🧭", icon: "🧭", desc: "Započinješ hebrejsku stazu. Označi prve reči kao naučene!", nextMilestone: 10 };
+    if (count >= 100) return { name: 'Hebrejski Mudrac (Chakham)', desc: 'Potpuno vladanje rečnikom mudrosti i svakodnevnog života', icon: '👑' };
+    if (count >= 60) return { name: 'Učenik Tore (Talmid)', desc: 'Duboko razumevanje korena i rečeničnih sklopova', icon: '📜' };
+    if (count >= 30) return { name: 'Mislilac (Hoshik)', desc: 'Preko 30 savladanih reči i izraza', icon: '🕯️' };
+    return { name: 'Tragalac (Doresh)', desc: 'Započeta staza usvajanja drevnog jezika', icon: '🌱' };
   };
 
   return (
-    <div className="w-full space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4 border-zinc-500/10">
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-2xl relative select-none shadow-md",
-            isGirlyMode 
-              ? "bg-pink-100 text-pink-500 border border-pink-200" 
-              : "bg-blue-500/10 text-blue-500 border border-blue-500/20"
+    <div className="space-y-8 pb-16">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6 border-zinc-200/80 dark:border-zinc-800">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-500 border border-blue-500/20">
+              🇮🇱 125 Odabranih Reči i Korena
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+              Vuk Transliteracija
+            </span>
+          </div>
+          <h2 className={cn(
+            "text-2xl md:text-3xl font-black tracking-tight mt-2 flex items-center gap-2",
+            isGirlyMode ? "text-pink-950" : isDarkMode ? "text-zinc-50" : "text-zinc-900"
           )}>
-            עִבְרִית
-          </div>
-          <div>
-            <h3 className={cn(
-              "text-lg font-black tracking-tight flex items-center gap-2",
-              isGirlyMode ? "text-pink-900" : isDarkMode ? "text-zinc-100" : "text-zinc-900"
-            )}>
-              Hebrew Vocab <span className="text-xs px-2 py-0.5 rounded bg-zinc-500/10 text-zinc-500 font-mono">{HEBREW_VOCAB_DATA.length} Reči</span>
-            </h3>
-            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">
-              Reči za učenje sa engleskim i srpskim prevodom
-            </p>
-          </div>
+            Hebrejska Riznica & Koreni (עִבְרִית)
+          </h2>
+          <p className="text-xs md:text-sm font-medium text-zinc-400 mt-1">
+            Učite visokonaponske imenice, glagole i stoik mudrosti uz vizuelne emodžije i fonetsku Vuk Karadžić transliteraciju.
+          </p>
         </div>
 
-        {/* Mode & Progress Switcher */}
-        <div className="flex items-center gap-2">
+        {/* View Mode Nav */}
+        <div className="flex items-center gap-2 flex-wrap">
           <div className={cn(
-            "flex p-1 rounded-xl border border-zinc-500/10",
-            isDarkMode ? "bg-zinc-900/60" : "bg-zinc-100"
+            "p-1 rounded-xl border flex items-center gap-1",
+            isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-zinc-100 border-zinc-200"
           )}>
             <button
-              onClick={() => { setActiveTab('learn'); setQuizStarted(false); }}
+              onClick={() => setActiveTab('learn')}
               className={cn(
-                "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
                 activeTab === 'learn'
-                  ? isGirlyMode 
-                    ? "bg-pink-500 text-white shadow-sm"
-                    : "bg-blue-600 text-white shadow-sm"
-                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-500 hover:text-zinc-900"
+                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-blue-600 text-white"
+                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
               <BookOpen className="w-3.5 h-3.5" /> Rečnik
             </button>
             <button
+              onClick={() => setActiveTab('canvas')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                activeTab === 'canvas'
+                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-blue-600 text-white"
+                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
+              )}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" /> Visual Canvas
+            </button>
+            <button
+              onClick={() => setActiveTab('weaver')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                activeTab === 'weaver'
+                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-purple-600 text-white"
+                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
+              )}
+            >
+              <Wand2 className="w-3.5 h-3.5" /> Sklop Rečenica
+            </button>
+            <button
               onClick={() => { setActiveTab('quiz'); generateQuizRound(); }}
               className={cn(
-                "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
                 activeTab === 'quiz'
-                  ? isGirlyMode 
-                    ? "bg-pink-500 text-white shadow-sm"
-                    : "bg-blue-600 text-white shadow-sm"
-                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-500 hover:text-zinc-900"
+                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-blue-600 text-white"
+                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
               <Gamepad2 className="w-3.5 h-3.5" /> Duo Kviz
@@ -572,12 +576,8 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
           </div>
 
           <div className={cn(
-            "px-3.5 py-2 rounded-xl flex items-center gap-2 border font-mono text-xs font-black",
-            isGirlyMode 
-              ? "bg-pink-50 border-pink-100 text-pink-600" 
-              : isDarkMode 
-                ? "bg-zinc-900 border-zinc-800 text-blue-400" 
-                : "bg-blue-50 border-blue-100 text-blue-700"
+            "px-3 py-1.5 rounded-xl flex items-center gap-2 border font-mono text-xs font-black",
+            isDarkMode ? "bg-zinc-900 border-zinc-800 text-blue-400" : "bg-blue-50 border-blue-100 text-blue-700"
           )}>
             <Trophy className="w-4 h-4 text-blue-500 fill-blue-500 animate-pulse" />
             <span>{masteredIds.length}/{HEBREW_VOCAB_DATA.length}</span>
@@ -586,619 +586,385 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       </div>
 
       <AnimatePresence mode="wait">
-        {/* DICTIONARY VIEW */}
+        {/* REČNIK / DICTIONARY VIEW */}
         {activeTab === 'learn' && (
-          <motion.div
-            key="learn-view"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6"
-          >
-            {/* Rank Dashboard */}
+          <motion.div key="learn-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+            {/* Rank Banner */}
             <div className={cn(
-              "p-6 rounded-[32px] border relative overflow-hidden transition-all duration-300 shadow-md",
-              isGirlyMode 
-                ? "bg-gradient-to-br from-pink-500/10 via-pink-500/5 to-transparent border-pink-500/20 shadow-pink-500/5" 
-                : isDarkMode 
-                  ? "bg-gradient-to-br from-blue-500/10 via-zinc-900/50 to-zinc-950 border-blue-500/20 shadow-blue-500/5"
-                  : "bg-gradient-to-br from-blue-50 to-white border-zinc-200/80 shadow-zinc-200/50"
+              "p-5 rounded-3xl border flex flex-col md:flex-row items-center justify-between gap-4",
+              isDarkMode ? "bg-gradient-to-r from-blue-950/40 via-zinc-900 to-zinc-950 border-blue-500/20" : "bg-gradient-to-r from-blue-50 via-white to-blue-50/50 border-blue-100"
             )}>
-              <div className="absolute right-0 bottom-0 translate-y-4 translate-x-4 opacity-5 pointer-events-none select-none text-[120px] font-black font-sans leading-none">
-                {getRankInfo(masteredIds.length).icon}
-              </div>
-
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
-                <div className="space-y-1.5 max-w-md">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-2xl filter drop-shadow-sm">
-                      {getRankInfo(masteredIds.length).icon}
-                    </span>
-                    <span className={cn(
-                      "text-xs font-black uppercase tracking-widest font-mono",
-                      isGirlyMode ? "text-pink-600" : "text-blue-500"
-                    )}>
-                      ČIN:
-                    </span>
-                    <span className={cn(
-                      "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide",
-                      isGirlyMode 
-                        ? "bg-pink-100 text-pink-700" 
-                        : isDarkMode 
-                          ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" 
-                          : "bg-blue-100 text-blue-800"
-                    )}>
-                      {getRankInfo(masteredIds.length).name}
-                    </span>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{getRankInfo(masteredIds.length).icon}</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase text-blue-500 font-mono">Čin Akademije:</span>
+                    <span className="text-sm font-black tracking-tight">{getRankInfo(masteredIds.length).name}</span>
                   </div>
-
-                  <h4 className={cn(
-                    "text-sm font-black tracking-tight",
-                    isGirlyMode ? "text-pink-950" : isDarkMode ? "text-zinc-50" : "text-zinc-900"
-                  )}>
-                    Hebrejska Akademija Mudrosti
-                  </h4>
-                  <p className="text-[11px] font-bold text-zinc-400 leading-relaxed">
-                    {getRankInfo(masteredIds.length).desc}
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-end gap-1 font-mono text-right w-full md:w-auto">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className={cn(
-                      "text-3xl font-black leading-none",
-                      isGirlyMode ? "text-pink-600" : "text-blue-500"
-                    )}>
-                      {masteredIds.length}
-                    </span>
-                    <span className="text-zinc-400 font-bold text-xs">/ {HEBREW_VOCAB_DATA.length}</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                    Savladane Reči
-                  </span>
+                  <p className="text-xs text-zinc-400">{getRankInfo(masteredIds.length).desc}</p>
                 </div>
               </div>
-
-              {/* Progress Bar */}
-              <div className="mt-5 space-y-2 relative z-10">
-                <div className="flex items-center justify-between text-[10px] font-mono font-black text-zinc-400">
-                  <span>Progres do potpunog Gospodstva</span>
-                  <span>{Math.round((masteredIds.length / HEBREW_VOCAB_DATA.length) * 100)}%</span>
-                </div>
-
-                <div className="h-3 rounded-full bg-zinc-500/10 overflow-hidden border border-zinc-500/5 relative flex items-center">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(masteredIds.length / HEBREW_VOCAB_DATA.length) * 100}%` }}
-                    className={cn(
-                      "h-full rounded-full transition-all duration-500 relative",
-                      isGirlyMode 
-                        ? "bg-gradient-to-r from-pink-400 to-pink-500" 
-                        : "bg-gradient-to-r from-blue-400 to-cyan-500"
-                    )}
-                  />
-                </div>
-
-                {getRankInfo(masteredIds.length).nextMilestone !== null ? (
-                  <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400">
-                    <p className="flex items-center gap-1">
-                      <span>Sledeći nivo na:</span>
-                      <strong className={isGirlyMode ? "text-pink-500" : "text-blue-500"}>
-                        {getRankInfo(masteredIds.length).nextMilestone} reči
-                      </strong>
-                    </p>
-                    <p>
-                      Preostalo još{" "}
-                      <strong className={isGirlyMode ? "text-pink-500" : "text-blue-500"}>
-                        {getRankInfo(masteredIds.length).nextMilestone! - masteredIds.length}
-                      </strong>{" "}
-                      reči!
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-[10px] font-black text-amber-500 text-center uppercase tracking-widest mt-1">
-                    👑 Čestitamo! Otključao si drevnu mudrost hebrejskog jezika! 👑
-                  </div>
-                )}
+              <div className="text-right font-mono text-xs font-bold text-blue-500">
+                Savladano {Math.round((masteredIds.length / HEBREW_VOCAB_DATA.length) * 100)}% rečnika
               </div>
             </div>
 
-            {/* Search and Filters */}
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            {/* Filter controls */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="relative w-full md:w-72">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
                 <input
                   type="text"
-                  placeholder="Search Hebrew words, English, Serbian, or transliteration..."
+                  placeholder="Pretraži reči, koren ili prevod..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className={cn(
-                    "w-full pl-10 pr-4 py-3 rounded-2xl text-xs font-medium border transition-all focus:outline-none focus:ring-2",
-                    isDarkMode 
-                      ? "bg-zinc-900/40 border-zinc-800 text-zinc-200 focus:ring-blue-500/20 focus:border-blue-500" 
-                      : "bg-white border-zinc-200 text-zinc-950 focus:ring-blue-500/10 focus:border-blue-500"
+                    "w-full pl-10 pr-4 py-2 rounded-xl text-xs font-medium border outline-none transition-all",
+                    isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-100 focus:border-blue-500" : "bg-white border-zinc-200 text-zinc-900 focus:border-blue-500"
                   )}
                 />
               </div>
 
-              <div className="flex flex-wrap gap-1.5 p-1 rounded-2xl bg-zinc-500/5 border border-zinc-500/5 overflow-x-auto">
-                <button
-                  onClick={() => setSelectedCategory('all')}
-                  className={cn(
-                    "px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all whitespace-nowrap",
-                    selectedCategory === 'all'
-                      ? "bg-zinc-900 text-white shadow-sm dark:bg-white dark:text-zinc-950"
-                      : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-                  )}
-                >
-                  Sve
-                </button>
-                <button
-                  onClick={() => setSelectedCategory('mudrost')}
-                  className={cn(
-                    "px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all whitespace-nowrap",
-                    selectedCategory === 'mudrost'
-                      ? isGirlyMode ? "bg-pink-500 text-white shadow-sm" : "bg-blue-600 text-white shadow-sm"
-                      : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-                  )}
-                >
-                  Mudrost 🕎
-                </button>
-                <button
-                  onClick={() => setSelectedCategory('svakodnevno')}
-                  className={cn(
-                    "px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all whitespace-nowrap",
-                    selectedCategory === 'svakodnevno'
-                      ? isGirlyMode ? "bg-pink-500 text-white shadow-sm" : "bg-blue-600 text-white shadow-sm"
-                      : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-                  )}
-                >
-                  Svakodnevno 💬
-                </button>
-                <button
-                  onClick={() => setSelectedCategory('priroda')}
-                  className={cn(
-                    "px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all whitespace-nowrap",
-                    selectedCategory === 'priroda'
-                      ? isGirlyMode ? "bg-pink-500 text-white shadow-sm" : "bg-blue-600 text-white shadow-sm"
-                      : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-                  )}
-                >
-                  Priroda 🌿
-                </button>
-                <button
-                  onClick={() => setSelectedCategory('glagoli')}
-                  className={cn(
-                    "px-3.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wide transition-all whitespace-nowrap",
-                    selectedCategory === 'glagoli'
-                      ? isGirlyMode ? "bg-pink-500 text-white shadow-sm" : "bg-blue-600 text-white shadow-sm"
-                      : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-                  )}
-                >
-                  Glagoli ⚙️
-                </button>
+              <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1">
+                {[
+                  { id: 'all', label: `Sve (${HEBREW_VOCAB_DATA.length})` },
+                  { id: 'mudrost', label: ' Mudrost' },
+                  { id: 'svakodnevno', label: ' Svakodnevno' },
+                  { id: 'priroda', label: ' Priroda' },
+                  { id: 'glagoli', label: ' Glagoli' },
+                  { id: 'misaoni', label: ' Misaoni Stoik' }
+                ].map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id as any)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
+                      selectedCategory === cat.id
+                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                        : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200" : "bg-white border-zinc-200 text-zinc-600"
+                    )}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Vocabulary Cards Grid */}
-            {filteredVocab.length === 0 ? (
-              <div className="text-center py-12 border border-dashed border-zinc-500/10 rounded-[30px] p-6">
-                <p className="text-sm font-bold text-zinc-400">Nismo pronašli nijednu reč za tu pretragu.</p>
-                <button 
-                  onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }} 
-                  className="mt-3 px-4 py-2 rounded-xl text-xs font-bold bg-zinc-500/10 hover:bg-zinc-500/20 text-zinc-400"
-                >
-                  Resetuj Filtere
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {filteredVocab.map((item) => {
-                  const isMastered = masteredIds.includes(item.id);
-                  const isTalking = isPronouncing === item.id;
-                  
-                  return (
-                    <motion.div
-                      layout
-                      key={item.id}
-                      onClick={() => speakHebrew(item.char, item.id)}
-                      className={cn(
-                        "p-5 rounded-[32px] border relative overflow-hidden transition-all duration-300 group cursor-pointer flex flex-col justify-between min-h-[185px] hover:shadow-lg active:scale-95",
-                        isMastered
-                          ? isGirlyMode 
-                            ? "bg-pink-500/5 border-pink-500/20 shadow-md shadow-pink-500/5"
-                            : "bg-blue-500/5 border-blue-500/30 shadow-md shadow-blue-500/5"
-                          : isDarkMode 
-                            ? "bg-zinc-900/50 border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900" 
-                            : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm shadow-zinc-200/50"
-                      )}
-                    >
-                      {/* Top Header Actions */}
-                      <div className="flex items-center justify-between gap-1.5 mb-2">
-                        <div className="flex items-center gap-1.5">
-                          {/* Audio Speaker */}
-                          <div className={cn(
-                            "w-7 h-7 rounded-full flex items-center justify-center transition-all",
-                            isTalking 
-                              ? isGirlyMode ? "bg-pink-500 text-white scale-110" : "bg-blue-600 text-white scale-110 animate-pulse"
-                              : "bg-zinc-500/10 text-zinc-400 group-hover:bg-zinc-500/20 group-hover:text-zinc-600 dark:group-hover:text-zinc-200"
-                          )}>
-                            <Volume2 className={cn("w-3.5 h-3.5", isTalking && "animate-bounce")} />
-                          </div>
+            {/* Grid of Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredVocab.map(item => {
+                const isMastered = masteredIds.includes(item.id);
+                const isSpeaking = isPronouncing === item.id;
 
-                          {/* Copy Action */}
-                          <button
-                            onClick={(e) => handleCopy(item, e)}
-                            title="Kopiraj za deljenje"
-                            className={cn(
-                              "w-7 h-7 rounded-full flex items-center justify-center transition-all border border-transparent",
-                              copiedId === item.id
-                                ? isGirlyMode ? "bg-pink-500 text-white scale-110" : "bg-blue-600 text-white scale-110"
-                                : "bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20 hover:text-zinc-600 dark:hover:text-zinc-200"
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      "p-5 rounded-3xl border transition-all duration-200 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01]",
+                      isMastered 
+                        ? (isDarkMode ? "bg-emerald-950/20 border-emerald-500/30" : "bg-emerald-50/60 border-emerald-200")
+                        : (isDarkMode ? "bg-zinc-900/50 border-zinc-800/80 hover:border-blue-500/40" : "bg-white border-zinc-200 shadow-sm hover:border-blue-300")
+                    )}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl">{item.emoji}</span>
+                          <div>
+                            <span className={cn(
+                              "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md font-mono border",
+                              isDarkMode ? "bg-zinc-800 text-zinc-400 border-zinc-700" : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                            )}>
+                              {item.categoryLabel}
+                            </span>
+                            {item.root && (
+                              <span className="ml-1 text-[9px] font-bold text-blue-500 font-mono">
+                                Koren: {item.root}
+                              </span>
                             )}
-                          >
-                            {copiedId === item.id ? (
-                              <Check className="w-3.5 h-3.5" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
+                          </div>
                         </div>
 
-                        {/* Emoji */}
-                        <span className="text-xl select-none filter drop-shadow-sm transition-transform duration-300 group-hover:scale-125">
-                          {item.emoji}
-                        </span>
-
-                        {/* Mastery Checkbox */}
                         <button
                           onClick={(e) => toggleMastered(item.id, e)}
-                          title={isMastered ? "Označi kao naučeno (Klikni da ukloniš)" : "Označi kao naučeno"}
                           className={cn(
-                            "w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300",
+                            "p-1.5 rounded-xl border transition-all",
                             isMastered 
-                              ? isGirlyMode 
-                                ? "bg-pink-500 border-pink-500 text-white shadow-sm shadow-pink-500/20"
-                                : "bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20"
-                              : isGirlyMode
-                                ? "bg-zinc-500/5 border-zinc-200 dark:border-zinc-800 text-zinc-300 hover:border-pink-300 hover:text-pink-500"
-                                : "bg-zinc-500/5 border-zinc-200 dark:border-zinc-800 text-zinc-300 hover:border-blue-300 hover:text-blue-500"
+                              ? "bg-emerald-500 text-white border-emerald-500" 
+                              : isDarkMode ? "bg-zinc-800 text-zinc-500 border-zinc-700 hover:text-zinc-300" : "bg-zinc-100 text-zinc-400 border-zinc-200 hover:text-zinc-700"
                           )}
+                          title={isMastered ? "Savladano" : "Onači kao savladano"}
                         >
-                          <Check className={cn(
-                            "w-3.5 h-3.5 transition-all",
-                            isMastered ? "scale-110 stroke-[3px]" : "scale-90 stroke-[2px]"
-                          )} />
+                          <CheckCircle className="w-4 h-4" />
                         </button>
                       </div>
 
-                      {/* Display Hebrew Word */}
-                      <div className="my-1.5">
-                        <div className={cn(
-                          "text-2xl font-black tracking-wide leading-tight font-serif dir-rtl",
-                          isGirlyMode ? "text-pink-950" : isDarkMode ? "text-zinc-50" : "text-zinc-900"
-                        )}>
-                          {item.char}
-                        </div>
-                      </div>
-
-                      {/* Pronunciation & Translations */}
-                      <div className="space-y-1 border-t border-zinc-500/10 pt-2 mt-auto">
-                        <div className="flex items-center gap-1.5 text-[10.5px] font-mono tracking-wide font-bold">
-                          <span className={isGirlyMode ? "text-pink-500" : "text-blue-500"}>
+                      <div className="space-y-1">
+                        <div className="flex items-baseline justify-between">
+                          <h3 className="text-2xl font-serif font-black text-blue-500 font-sans tracking-wide">
+                            {item.char}
+                          </h3>
+                          <span className="text-xs font-mono font-bold text-zinc-400">
                             {item.transliteration}
                           </span>
-                          <span className="text-zinc-400">|</span>
-                          <span className={cn(
-                            "px-1 py-0.2 rounded text-[9.5px]",
-                            isDarkMode ? "bg-zinc-800 text-zinc-300" : "bg-zinc-100 text-zinc-700"
-                          )}>
-                            vuk: {item.vuk}
-                          </span>
                         </div>
 
-                        {/* Croatian & English Translations */}
-                        <div className="space-y-0.5">
-                          <div className={cn(
-                            "text-xs font-black tracking-tight line-clamp-1",
-                            isGirlyMode ? "text-pink-900" : isDarkMode ? "text-zinc-200" : "text-zinc-800"
-                          )}>
-                            🇭🇷 {item.translation}
-                          </div>
-                          <div className="text-[10.5px] font-bold text-cyan-500 dark:text-cyan-400 line-clamp-1">
-                            🇬🇧 {item.english}
-                          </div>
+                        <div className="flex items-center gap-1.5 font-mono text-xs">
+                          <span className="text-emerald-500 font-bold">Vuk:</span>
+                          <span className={cn("font-extrabold", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                            "{item.vuk}"
+                          </span>
                         </div>
                       </div>
-                    </motion.div>
-                  );
-                })}
+
+                      <div className="border-t pt-2 border-zinc-800/10 dark:border-zinc-800/60 space-y-1">
+                        <p className={cn("text-xs font-bold", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                          🇭🇷 {item.translation}
+                        </p>
+                        <p className="text-[11px] font-medium text-zinc-400">
+                          🇬🇧 {item.english}
+                        </p>
+                        {item.visualTip && (
+                          <p className="text-[10px] italic text-blue-400/90 pt-0.5">
+                            💡 {item.visualTip}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-zinc-800/10 dark:border-zinc-800/60">
+                      <button
+                        onClick={() => speakHebrew(item.char, item.id)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5",
+                          isSpeaking 
+                            ? "bg-blue-600 text-white animate-pulse" 
+                            : isDarkMode ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-200" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800"
+                        )}
+                      >
+                        <Volume2 className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Izgovor</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => handleCopy(item, e)}
+                        className={cn(
+                          "p-1.5 rounded-xl text-xs transition-all",
+                          copiedId === item.id ? "text-emerald-500" : "text-zinc-400 hover:text-zinc-200"
+                        )}
+                      >
+                        {copiedId === item.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* EMOJI VISUAL CANVAS VIEW */}
+        {activeTab === 'canvas' && (
+          <motion.div key="canvas-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 text-xs text-blue-400 font-medium">
+              🎨 <strong>Vizuelni Emodži Sklop:</strong> Učite asocijacijom! Velike vizuelne kartice sa uočljivim emodžijima i korenom za brzo pamćenje.
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {filteredVocab.map(item => (
+                <div
+                  key={`canvas-${item.id}`}
+                  onClick={() => speakHebrew(item.char, item.id)}
+                  className={cn(
+                    "p-4 rounded-2xl border text-center flex flex-col items-center justify-between cursor-pointer hover:scale-105 transition-all",
+                    isDarkMode ? "bg-zinc-900/60 border-zinc-800 hover:border-blue-500/50" : "bg-white border-zinc-200 shadow-sm hover:border-blue-300"
+                  )}
+                >
+                  <span className="text-4xl my-2 filter drop-shadow-sm">{item.emoji}</span>
+                  <div className="space-y-0.5 w-full">
+                    <p className="text-lg font-bold text-blue-500">{item.char}</p>
+                    <p className="text-[10px] font-mono font-bold text-emerald-500">"{item.vuk}"</p>
+                    <p className="text-[10px] font-medium text-zinc-400 truncate w-full">{item.translation}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* AI SENTENCE WEAVER */}
+        {activeTab === 'weaver' && (
+          <motion.div key="weaver-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+            <div className={cn(
+              "p-6 rounded-3xl border space-y-4",
+              isDarkMode ? "bg-zinc-900/80 border-purple-500/30" : "bg-purple-50/50 border-purple-200"
+            )}>
+              <div className="flex items-center gap-2">
+                <Wand2 className="w-5 h-5 text-purple-500 animate-spin" />
+                <h3 className="text-base font-black tracking-tight">Interaktivni Sklop Rečenica (Interaktivno Učenje)</h3>
               </div>
-            )}
+              <p className="text-xs text-zinc-400">
+                Izaberite do 3 reči iz rečnika ispod i ispletite pravu upotrebljivu hebrejsku rečenicu sa izgovorom!
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {selectedWeaverItems.map(item => (
+                  <span key={item.id} className="px-3 py-1.5 rounded-full text-xs font-bold bg-purple-600 text-white flex items-center gap-1.5">
+                    {item.emoji} {item.char} ({item.vuk})
+                    <button onClick={() => handleToggleWeaverSelect(item)} className="hover:text-red-300">×</button>
+                  </span>
+                ))}
+                {selectedWeaverItems.length === 0 && (
+                  <span className="text-xs italic text-zinc-500">Kliknite na reči ispod da ih dodate...</span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={weaveSentence}
+                  disabled={selectedWeaverItems.length === 0}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-50 transition-all flex items-center gap-1.5"
+                >
+                  <Zap className="w-4 h-4" /> Ispleti Rečenicu & Izgovori
+                </button>
+                <button
+                  onClick={() => { setSelectedWeaverItems([]); setWovenSentence(null); }}
+                  className="px-3 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:text-zinc-200"
+                >
+                  Poništi
+                </button>
+              </div>
+
+              {wovenSentence && (
+                <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-500/40 space-y-2">
+                  <p className="text-xl font-serif font-bold text-purple-300">{wovenSentence.hebrew}</p>
+                  <p className="text-xs font-mono font-bold text-emerald-400">Vuk: "{wovenSentence.vuk}"</p>
+                  <p className="text-xs font-medium text-zinc-200">Prevod: {wovenSentence.serbian}</p>
+                  <button
+                    onClick={() => speakHebrew(wovenSentence.hebrew)}
+                    className="mt-2 px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white flex items-center gap-1"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" /> Pusti Zvuk Rečenice
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Selection Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+              {HEBREW_VOCAB_DATA.slice(0, 36).map(item => {
+                const isSelected = selectedWeaverItems.some(i => i.id === item.id);
+                return (
+                  <button
+                    key={`weaver-pick-${item.id}`}
+                    onClick={() => handleToggleWeaverSelect(item)}
+                    className={cn(
+                      "p-3 rounded-2xl border text-left transition-all",
+                      isSelected 
+                        ? "bg-purple-600 border-purple-500 text-white" 
+                        : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-purple-500/40" : "bg-white border-zinc-200 text-zinc-800"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg">{item.emoji}</span>
+                      <span className="text-[10px] font-mono font-bold opacity-80">{item.vuk}</span>
+                    </div>
+                    <p className="text-sm font-bold mt-1">{item.char}</p>
+                  </button>
+                );
+              })}
+            </div>
           </motion.div>
         )}
 
         {/* DUOLINGO QUIZ VIEW */}
         {activeTab === 'quiz' && (
-          <motion.div
-            key="quiz-view"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6 max-w-xl mx-auto"
-          >
-            {/* Start Panel */}
-            {!quizStarted && !quizComplete && (
+          <motion.div key="quiz-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-2xl mx-auto space-y-6">
+            {!quizComplete && quizStarted && roundQuestions.length > 0 && (
               <div className={cn(
-                "p-8 rounded-[40px] border text-center space-y-6 relative overflow-hidden",
-                isGirlyMode ? "bg-white/60 border-pink-100 shadow-xl shadow-pink-500/5" :
-                isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-200 shadow-xl shadow-zinc-200/50"
+                "p-6 md:p-8 rounded-3xl border space-y-6",
+                isDarkMode ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-200 shadow-md"
               )}>
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-indigo-500" />
-                <div className="mx-auto w-16 h-16 rounded-3xl bg-blue-500/10 flex items-center justify-center text-3xl shadow-sm animate-bounce">
-                  🕎
+                {/* Status Bar */}
+                <div className="flex items-center justify-between font-mono text-xs font-black border-b pb-4 border-zinc-800/30">
+                  <div className="flex items-center gap-1 text-red-500">
+                    {'❤️'.repeat(lives)}
+                  </div>
+                  <div className="text-blue-500">
+                    Pitanje {questionIdx + 1} / {roundQuestions.length}
+                  </div>
+                  <div className="text-emerald-500">
+                    Poeni: {score}
+                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <h3 className={cn("text-2xl font-black leading-tight", isGirlyMode && "text-pink-950")}>
-                    Hebrejski Duolingo Trening Suđenja
+
+                {/* Question */}
+                <div className="text-center space-y-3 my-4">
+                  <span className="text-5xl">{roundQuestions[questionIdx].vocab.emoji}</span>
+                  <h3 className="text-3xl font-serif font-black text-blue-500">
+                    {roundQuestions[questionIdx].vocab.char}
                   </h3>
-                  <p className="text-xs text-zinc-400 font-medium max-w-md mx-auto leading-relaxed">
-                    Testiraj svoje znanje hebrejskog pisma, izgovora i englesko-srpskih prevoda kroz brzi kviz od 5 pitanja. Sačuvaj svoja srce!
+                  <p className="text-xs font-mono text-zinc-400">
+                    Izaberite tačan prevod ili Vuk izgovor:
                   </p>
+                  <button
+                    onClick={() => speakHebrew(roundQuestions[questionIdx].vocab.char)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 inline-flex items-center gap-1.5"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" /> Pusti Zvuk
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 max-w-xs mx-auto">
-                  <div className="p-3 rounded-2xl bg-zinc-500/5 border border-zinc-500/10 text-center">
-                    <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wider">Rekord</span>
-                    <span className="text-xl font-black font-mono text-amber-500">{highScore} XP</span>
-                  </div>
-                  <div className="p-3 rounded-2xl bg-zinc-500/5 border border-zinc-500/10 text-center">
-                    <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wider">Naučeno</span>
-                    <span className="text-xl font-black font-mono text-blue-500">{masteredIds.length}/{HEBREW_VOCAB_DATA.length}</span>
-                  </div>
-                </div>
+                {/* Options */}
+                <div className="grid grid-cols-1 gap-3">
+                  {roundQuestions[questionIdx].options.map((opt, oIdx) => {
+                    const isSelected = selectedAnswer === oIdx;
+                    const isCorrect = oIdx === roundQuestions[questionIdx].correctIndex;
 
-                <button
-                  onClick={generateQuizRound}
-                  className={cn(
-                    "w-full py-4 rounded-2xl text-white font-black uppercase tracking-tighter flex items-center justify-center gap-2 transition-transform active:scale-98 shadow-md",
-                    isGirlyMode ? "bg-pink-500 hover:bg-pink-600 shadow-pink-500/20" : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/20"
-                  )}
-                >
-                  Započni Trening <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* Active Quiz Question */}
-            {quizStarted && !quizComplete && roundQuestions[questionIdx] && (
-              <div className="space-y-6">
-                {/* Duo Style HUD */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 h-3 rounded-full bg-zinc-500/10 overflow-hidden border border-zinc-500/5">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${((questionIdx + 1) / roundQuestions.length) * 100}%` }}
-                      className={cn(
-                        "h-full transition-all duration-300",
-                        isGirlyMode ? "bg-pink-500" : "bg-blue-600"
-                      )}
-                    />
-                  </div>
-
-                  <span className="text-xs font-mono font-black text-zinc-400 whitespace-nowrap">
-                    {questionIdx + 1} / {roundQuestions.length}
-                  </span>
-
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3].map((heartNum) => (
-                      <Heart
-                        key={heartNum}
+                    return (
+                      <button
+                        key={oIdx}
+                        onClick={() => handleAnswerSubmit(oIdx)}
+                        disabled={isAnswered}
                         className={cn(
-                          "w-5 h-5 transition-transform duration-300",
-                          heartNum <= lives 
-                            ? "text-rose-500 fill-rose-500 scale-100" 
-                            : "text-zinc-500/30 dark:text-zinc-800 scale-90"
-                        )}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Card */}
-                <div className={cn(
-                  "p-8 rounded-[40px] border relative overflow-hidden space-y-6",
-                  isGirlyMode ? "bg-white/60 border-pink-100 shadow-xl shadow-pink-500/5" :
-                  isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-200 shadow-xl shadow-zinc-200/50"
-                )}>
-                  <div className="absolute top-0 left-0 w-2 h-full bg-blue-500/40" />
-
-                  {/* Question Prompt */}
-                  <div className="space-y-3">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 bg-zinc-500/5 px-2.5 py-1 rounded-md inline-block">
-                      {roundQuestions[questionIdx].questionType === 'meaning' && "Prevod Reči"}
-                      {roundQuestions[questionIdx].questionType === 'vuk' && "Izgovor & Vuk"}
-                      {roundQuestions[questionIdx].questionType === 'character' && "Hebrejsko Pismo"}
-                      {roundQuestions[questionIdx].questionType === 'listen' && "Slušni Test 🔊"}
-                    </span>
-
-                    {roundQuestions[questionIdx].questionType === 'listen' ? (
-                      <div className="flex flex-col items-center justify-center py-6 gap-3 text-center">
-                        <button
-                          onClick={() => speakHebrew(roundQuestions[questionIdx].vocab.char)}
-                          className={cn(
-                            "w-16 h-16 rounded-full flex items-center justify-center transition-all scale-105 active:scale-95 shadow-md",
-                            isGirlyMode 
-                              ? "bg-pink-100 text-pink-500 hover:bg-pink-200" 
-                              : "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
-                          )}
-                        >
-                          <Volume2 className="w-7 h-7" />
-                        </button>
-                        <span className="text-xs text-zinc-400 font-bold uppercase tracking-wider animate-pulse">
-                          Klikni da čuješ ponovo
-                        </span>
-                      </div>
-                    ) : (
-                      <h4 className={cn(
-                        "text-2xl font-black leading-tight flex items-center gap-3",
-                        isGirlyMode ? "text-pink-950" : isDarkMode ? "text-zinc-100" : "text-zinc-900"
-                      )}>
-                        <span className="text-4xl filter drop-shadow-sm select-none">
-                          {roundQuestions[questionIdx].vocab.emoji}
-                        </span>
-                        {roundQuestions[questionIdx].questionType === 'meaning' && (
-                          <span>Prevod za reč <span className="font-mono text-blue-500 bg-blue-500/5 px-2 py-0.5 rounded-lg border border-blue-500/10">{roundQuestions[questionIdx].vocab.char}</span> ?</span>
-                        )}
-                        {roundQuestions[questionIdx].questionType === 'vuk' && (
-                          <span>Izgovor za reč <span className="text-amber-500 underline underline-offset-4">{roundQuestions[questionIdx].vocab.translation} ({roundQuestions[questionIdx].vocab.english})</span> ?</span>
-                        )}
-                        {roundQuestions[questionIdx].questionType === 'character' && (
-                          <span>Hebrejski zapis za <span className="text-blue-500">"{roundQuestions[questionIdx].vocab.transliteration}"</span>?</span>
-                        )}
-                      </h4>
-                    )}
-                  </div>
-
-                  {/* Options */}
-                  <div className="grid gap-3">
-                    {roundQuestions[questionIdx].options.map((option, idx) => {
-                      const isCorrect = idx === roundQuestions[questionIdx].correctIndex;
-                      const isSelected = idx === selectedAnswer;
-                      
-                      let btnStyle = isDarkMode
-                        ? "bg-zinc-900/60 border-zinc-800 text-zinc-300 hover:bg-zinc-850 hover:border-zinc-700"
-                        : "bg-zinc-50 border-zinc-200 text-zinc-800 hover:bg-zinc-100";
-
-                      if (isAnswered) {
-                        if (isCorrect) {
-                          btnStyle = isGirlyMode 
-                            ? "bg-pink-500/10 border-pink-500 text-pink-600 shadow-md" 
-                            : "bg-blue-500/10 border-blue-500 text-blue-500 shadow-md";
-                        } else if (isSelected) {
-                          btnStyle = "bg-rose-500/10 border-rose-500 text-rose-500 shadow-md";
-                        } else {
-                          btnStyle = "opacity-40 grayscale cursor-not-allowed pointer-events-none";
-                        }
-                      }
-
-                      return (
-                        <button
-                          key={idx}
-                          disabled={isAnswered}
-                          onClick={() => handleAnswerSubmit(idx)}
-                          className={cn(
-                            "w-full p-4.5 rounded-2xl border text-left font-black transition-all duration-300 flex items-center justify-between group",
-                            btnStyle
-                          )}
-                        >
-                          <span className="text-sm">{option}</span>
-                          {isAnswered && isCorrect && <CheckCircle className={cn("w-5 h-5", isGirlyMode ? "text-pink-500" : "text-blue-500")} />}
-                          {isAnswered && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-rose-500" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Feedback Panel */}
-                  <AnimatePresence>
-                    {isAnswered && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className={cn(
-                          "pt-4 border-t border-zinc-500/10 space-y-3",
-                          selectedAnswer === roundQuestions[questionIdx].correctIndex 
-                            ? isGirlyMode ? "text-pink-600" : "text-blue-600 dark:text-blue-400" 
-                            : "text-rose-500"
+                          "p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between",
+                          !isAnswered && (isDarkMode ? "bg-zinc-800/60 border-zinc-700 hover:border-blue-500" : "bg-zinc-50 border-zinc-200 hover:border-blue-400"),
+                          isAnswered && isCorrect && "bg-emerald-500 text-white border-emerald-500",
+                          isAnswered && isSelected && !isCorrect && "bg-red-500 text-white border-red-500"
                         )}
                       >
-                        <div className="flex items-center gap-2">
-                          {selectedAnswer === roundQuestions[questionIdx].correctIndex ? (
-                            <Sparkles className="w-4 h-4 fill-current animate-spin" />
-                          ) : (
-                            <XCircle className="w-4 h-4" />
-                          )}
-                          <span className="text-xs font-black uppercase tracking-widest">
-                            {selectedAnswer === roundQuestions[questionIdx].correctIndex ? "Sjajno odrađeno!" : "Netačno!"}
-                          </span>
-                        </div>
-                        
-                        <p className="text-xs text-zinc-400 font-medium leading-relaxed italic">
-                          Reč: <strong className="text-zinc-200">{roundQuestions[questionIdx].vocab.char}</strong> [{roundQuestions[questionIdx].vocab.transliteration}] | Vuk: <strong className="text-zinc-200">"{roundQuestions[questionIdx].vocab.vuk}"</strong> | 🇭🇷 <strong className="text-zinc-200">{roundQuestions[questionIdx].vocab.translation}</strong> | 🇬🇧 <strong className="text-cyan-400">{roundQuestions[questionIdx].vocab.english}</strong>.
-                        </p>
-
-                        <button
-                          onClick={handleNextQuestion}
-                          className={cn(
-                            "w-full py-4 rounded-2xl text-white font-black uppercase tracking-tighter flex items-center justify-center gap-2 transition-transform active:scale-98 shadow-sm mt-2",
-                            isGirlyMode ? "bg-pink-500 hover:bg-pink-600" : "bg-blue-600 hover:bg-blue-700"
-                          )}
-                        >
-                          {questionIdx < roundQuestions.length - 1 ? "Sljedeće Pitanje" : "Završi Suđenje"} <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        <span>{opt}</span>
+                        {isAnswered && isCorrect && <CheckCircle className="w-4 h-4 text-white" />}
+                        {isAnswered && isSelected && !isCorrect && <XCircle className="w-4 h-4 text-white" />}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {isAnswered && (
+                  <div className="pt-4 flex justify-end">
+                    <button
+                      onClick={handleNextQuestion}
+                      className="px-6 py-2.5 rounded-xl text-xs font-black bg-blue-600 text-white hover:bg-blue-500 transition-all"
+                    >
+                      Sledeće Pitanje →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Results View */}
             {quizComplete && (
-              <div className={cn(
-                "p-8 rounded-[40px] border text-center space-y-6 relative overflow-hidden",
-                isGirlyMode ? "bg-white/60 border-pink-100 shadow-xl shadow-pink-500/5" :
-                isDarkMode ? "bg-zinc-900/50 border-zinc-800" : "bg-white border-zinc-200 shadow-xl shadow-zinc-200/50"
-              )}>
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
-                <Award className="w-16 h-16 mx-auto text-amber-500 fill-amber-500/10 animate-bounce" />
-
-                <div className="space-y-2">
-                  <h3 className={cn("text-2xl font-black leading-tight", isGirlyMode && "text-pink-950")}>
-                    {lives > 0 ? "Čestitamo Seeker!" : "Suđenje je završeno"}
-                  </h3>
-                  <p className="text-xs text-zinc-400 font-medium leading-relaxed max-w-sm mx-auto">
-                    {lives > 0 
-                      ? "Uspješno si prebrodio jezičko suđenje hebrejske reči. Tvoje znanje spaja svetove!"
-                      : "Ostao si bez života ovog puta, ali tvoje pamćenje raste sa svakom greškom!"
-                    }
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3.5 rounded-2xl bg-zinc-500/5 border border-zinc-500/10">
-                    <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wider">Osvojeno</span>
-                    <span className="text-lg font-black font-mono text-blue-500">+{score} XP</span>
-                  </div>
-                  <div className="p-3.5 rounded-2xl bg-zinc-500/5 border border-zinc-500/10">
-                    <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wider">Preživjelo</span>
-                    <span className="text-lg font-black font-mono text-rose-500">{lives} Srca</span>
-                  </div>
-                  <div className="p-3.5 rounded-2xl bg-zinc-500/5 border border-zinc-500/10">
-                    <span className="text-[10px] font-bold text-zinc-400 block uppercase tracking-wider">Naučeno</span>
-                    <span className="text-lg font-black font-mono text-cyan-500">{masteredIds.length}/{HEBREW_VOCAB_DATA.length}</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => { setQuizComplete(false); setQuizStarted(false); }}
-                    className="flex-1 py-4 rounded-2xl bg-zinc-500/10 hover:bg-zinc-500/15 font-black uppercase tracking-tighter text-zinc-400 transition-all text-xs"
-                  >
-                    Nazad u Kviz
-                  </button>
-                  <button
-                    onClick={generateQuizRound}
-                    className={cn(
-                      "flex-1 py-4 rounded-2xl text-white font-black uppercase tracking-tighter transition-all flex items-center justify-center gap-2 text-xs",
-                      isGirlyMode ? "bg-pink-500 hover:bg-pink-600" : "bg-blue-600 hover:bg-blue-700"
-                    )}
-                  >
-                    Nova Runda <RefreshCw className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+              <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 text-center space-y-4">
+                <Trophy className="w-12 h-12 text-yellow-500 mx-auto animate-bounce" />
+                <h3 className="text-xl font-black text-white">Kviz Završen!</h3>
+                <p className="text-sm font-mono text-emerald-400">Ostvaren rezultat: {score} poena</p>
+                <button
+                  onClick={generateQuizRound}
+                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-blue-600 text-white hover:bg-blue-500"
+                >
+                  Igraj Ponovo 🔄
+                </button>
               </div>
             )}
           </motion.div>
