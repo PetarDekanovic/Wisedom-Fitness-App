@@ -143,8 +143,8 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
 
   const speakHebrewAudioFallback = (text: string, id?: string) => {
     if (id) setIsPronouncing(id);
-    const primaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=he&client=gtx&q=${encodeURIComponent(text)}`;
-    const secondaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=he&client=tw-ob&q=${encodeURIComponent(text)}`;
+    const proxyUrl = `/api/tts-proxy?text=${encodeURIComponent(text)}&lang=he`;
+    const fallbackDirectUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=he&client=tw-ob&q=${encodeURIComponent(text)}`;
 
     let hasEnded = false;
     const cleanup = () => {
@@ -155,25 +155,25 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     };
 
     const audio = new Audio();
-    audio.crossOrigin = 'anonymous';
-    audio.src = primaryUrl;
+    audio.src = proxyUrl;
     audio.onended = cleanup;
     audio.onerror = () => {
-      const backupAudio = new Audio(secondaryUrl);
+      console.warn("Proxy audio error, attempting direct Google Translate stream fallback...");
+      const backupAudio = new Audio(fallbackDirectUrl);
       backupAudio.onended = cleanup;
       backupAudio.onerror = cleanup;
       backupAudio.play().catch(() => cleanup());
     };
 
     audio.play().catch(err => {
-      console.warn("Primary audio play failed, trying backup:", err);
-      const backupAudio = new Audio(secondaryUrl);
+      console.warn("Proxy audio play failed, trying direct fallback:", err);
+      const backupAudio = new Audio(fallbackDirectUrl);
       backupAudio.onended = cleanup;
       backupAudio.onerror = cleanup;
       backupAudio.play().catch(() => cleanup());
     });
 
-    setTimeout(cleanup, 2500);
+    setTimeout(cleanup, 3000);
   };
 
   const speakHebrew = (text: string, id?: string) => {

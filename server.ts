@@ -601,6 +601,53 @@ app.get("/api/ai/diagnostics", async (req, res) => {
     res.json(results);
   });
 
+  // Reliable TTS Proxy for Hebrew / Chinese / Vocab audio on desktop & mobile
+  app.get("/api/tts-proxy", async (req, res) => {
+    try {
+      const text = req.query.text as string;
+      const lang = (req.query.lang as string) || "he";
+      if (!text) {
+        return res.status(400).send("Text parameter is required");
+      }
+
+      const encodedText = encodeURIComponent(text);
+      const primaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=tw-ob&q=${encodedText}`;
+      
+      try {
+        const response = await axios.get(primaryUrl, {
+          responseType: "arraybuffer",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://translate.google.com/"
+          },
+          timeout: 7000
+        });
+
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        return res.send(Buffer.from(response.data));
+      } catch (primaryErr: any) {
+        console.warn("[TTS Proxy] Primary tw-ob client failed, trying gtx client:", primaryErr?.message || primaryErr);
+        const secondaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(lang)}&client=gtx&q=${encodedText}`;
+        const response2 = await axios.get(secondaryUrl, {
+          responseType: "arraybuffer",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://translate.google.com/"
+          },
+          timeout: 7000
+        });
+
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        return res.send(Buffer.from(response2.data));
+      }
+    } catch (err: any) {
+      console.error("[TTS Proxy] Speech synthesis proxy error:", err?.message || err);
+      return res.status(500).send("Audio stream unavailable");
+    }
+  });
+
   app.post("/api/ai/tts", async (req, res) => {
     try {
       const { text, userEmail } = req.body;
