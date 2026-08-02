@@ -410,7 +410,11 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
 
   const handleCopy = (item: VocabItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    const textToCopy = `${item.emoji} ${item.char} [${item.pinyin}] (${item.vuk})\n🇭🇷 ${item.translation}\n🇬🇧 ${item.english}\n${item.radical ? `🏮 Radikal: ${item.radical}\n` : ''}✨ WiseFit Sanctuary Chinese`;
+    const quoteInfo = getChineseQuoteForItem(item);
+    const quoteSection = quoteInfo 
+      ? `\n\n📜 Izreka / Mudrost:\n${quoteInfo.quote}\n"${quoteInfo.translation}"` 
+      : '';
+    const textToCopy = `${item.emoji} ${item.char} [Pinyin: ${item.pinyin}] (Vuk: "${item.vuk}")\n🇭🇷 Značenje: ${item.translation}\n🇬🇧 English: ${item.english}${item.radical ? `\n🏮 Radikal: ${item.radical}` : ''}${quoteSection}\n\n✨ WiseFit Sanctuary Chinese #WiseFit #Hanzi`;
 
     navigator.clipboard.writeText(textToCopy).then(() => {
       setCopiedId(item.id);
@@ -773,16 +777,29 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                         {(() => {
                           const quoteInfo = getChineseQuoteForItem(item);
                           return (
-                            <div className="text-[11px] leading-snug bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 p-2.5 rounded-xl flex items-start gap-2 mt-2">
-                              <span className="text-sm shrink-0">💡</span>
-                              <div className="space-y-0.5">
-                                <p className="font-semibold text-amber-900 dark:text-amber-200 tracking-wide font-serif">
-                                  {quoteInfo.quote}
-                                </p>
-                                <p className="text-[10px] italic text-amber-700/90 dark:text-amber-300/80 font-sans">
-                                  "{quoteInfo.translation}"
-                                </p>
+                            <div className="text-[11px] leading-snug bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 p-2.5 rounded-xl flex items-start justify-between gap-2 mt-2">
+                              <div className="flex items-start gap-2">
+                                <span className="text-sm shrink-0">💡</span>
+                                <div className="space-y-0.5">
+                                  <p className="font-semibold text-amber-900 dark:text-amber-200 tracking-wide font-serif">
+                                    {quoteInfo.quote}
+                                  </p>
+                                  <p className="text-[10px] italic text-amber-700/90 dark:text-amber-300/80 font-sans">
+                                    "{quoteInfo.translation}"
+                                  </p>
+                                </div>
                               </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const qText = `📜 Izreka: ${quoteInfo.quote}\n"${quoteInfo.translation}"\n\n✨ WiseFit Sanctuary #WiseFit #ChineseQuote`;
+                                  handleCopyConfigText(qText);
+                                }}
+                                className="p-1.5 rounded-lg text-amber-600 dark:text-amber-300 hover:bg-amber-500/20 transition-all shrink-0 flex items-center gap-1"
+                                title="Kopiraj ovu izreku/mudrost"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           );
                         })()}

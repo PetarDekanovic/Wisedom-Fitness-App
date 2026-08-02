@@ -181,7 +181,11 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
 
   const handleCopy = (item: HebrewVocabItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    const textToCopy = `${item.emoji} ${item.char} [${item.transliteration}] (${item.vuk})\n🇭🇷 ${item.translation}\n🇬🇧 ${item.english}\n${item.root ? `🌱 Koren: ${item.root}\n` : ''}✨ WiseFit Sanctuary Hebrew`;
+    const quoteInfo = getHebrewQuoteForItem(item);
+    const quoteSection = quoteInfo 
+      ? `\n\n📜 Izreka / Mudrost:\n${quoteInfo.quote}\n"${quoteInfo.translation}"` 
+      : '';
+    const textToCopy = `${item.emoji} ${item.char} [${item.transliteration}] (${item.vuk})\n🇭🇷 Značenje: ${item.translation}\n🇬🇧 English: ${item.english}${item.root ? `\n🌱 Koren: ${item.root}` : ''}${quoteSection}\n\n✨ WiseFit Sanctuary Hebrew #WiseFit #Hebrew`;
 
     navigator.clipboard.writeText(textToCopy).then(() => {
       setCopiedId(item.id);
@@ -771,16 +775,29 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                         {(() => {
                           const quoteInfo = getHebrewQuoteForItem(item);
                           return (
-                            <div className="text-[11px] leading-snug bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 p-2.5 rounded-xl flex items-start gap-2 mt-2">
-                              <span className="text-sm shrink-0">💡</span>
-                              <div className="space-y-0.5">
-                                <p className="font-semibold text-blue-900 dark:text-blue-200 tracking-wide font-serif">
-                                  {quoteInfo.quote}
-                                </p>
-                                <p className="text-[10px] italic text-blue-700/90 dark:text-blue-300/80 font-sans">
-                                  "{quoteInfo.translation}"
-                                </p>
+                            <div className="text-[11px] leading-snug bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 p-2.5 rounded-xl flex items-start justify-between gap-2 mt-2">
+                              <div className="flex items-start gap-2">
+                                <span className="text-sm shrink-0">💡</span>
+                                <div className="space-y-0.5">
+                                  <p className="font-semibold text-blue-900 dark:text-blue-200 tracking-wide font-serif" dir="rtl">
+                                    {quoteInfo.quote}
+                                  </p>
+                                  <p className="text-[10px] italic text-blue-700/90 dark:text-blue-300/80 font-sans">
+                                    "{quoteInfo.translation}"
+                                  </p>
+                                </div>
                               </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const qText = `📜 Izreka: ${quoteInfo.quote}\n"${quoteInfo.translation}"\n\n✨ WiseFit Sanctuary #WiseFit #HebrewQuote`;
+                                  handleCopyConfigText(qText);
+                                }}
+                                className="p-1.5 rounded-lg text-blue-600 dark:text-blue-300 hover:bg-blue-500/20 transition-all shrink-0 flex items-center gap-1"
+                                title="Kopiraj ovu izreku/mudrost"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           );
                         })()}

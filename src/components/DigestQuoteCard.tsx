@@ -46,7 +46,7 @@ export const DigestQuoteCard: React.FC<DigestQuoteCardProps> = ({
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(`"${quote.text}" — ${quote.author}`);
+    navigator.clipboard.writeText(`"${quote.text}" — ${quote.author}\n\n✨ WiseFit Digital Sanctuary #WiseFit`);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };
