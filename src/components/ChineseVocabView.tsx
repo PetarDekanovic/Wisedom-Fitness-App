@@ -12,7 +12,11 @@ import {
   Check,
   Zap,
   LayoutGrid,
-  Wand2
+  Wand2,
+  Pencil,
+  X,
+  Save,
+  RotateCcw
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { db } from '../firebase';
@@ -140,6 +144,113 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz'>('learn');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Admin authorization for editing wise quotes and pronunciations (Petar)
+  const isAdmin = user ? (user.email === 'petar.dekanovic@gmail.com' || user.email?.toLowerCase().includes('petar')) : true;
+
+  // Custom quote & pronunciation overrides state
+  const [customQuotes, setCustomQuotes] = useState<Record<string, { quote: string; translation: string }>>(() => {
+    try {
+      const saved = localStorage.getItem('wisefit_chinese_custom_quotes');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [customPronunciations, setCustomPronunciations] = useState<Record<string, { pinyin?: string; vuk?: string; translation?: string; english?: string }>>(() => {
+    try {
+      const saved = localStorage.getItem('wisefit_chinese_custom_pronunciations');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Edit Modal State
+  const [editingItem, setEditingItem] = useState<VocabItem | null>(null);
+  const [editQuoteText, setEditQuoteText] = useState('');
+  const [editQuoteTranslation, setEditQuoteTranslation] = useState('');
+  const [editPinyin, setEditPinyin] = useState('');
+  const [editVuk, setEditVuk] = useState('');
+  const [editTranslation, setEditTranslation] = useState('');
+  const [editEnglish, setEditEnglish] = useState('');
+
+  const getItemQuote = (item: VocabItem) => {
+    if (customQuotes[item.id]) return customQuotes[item.id];
+    if (customQuotes[item.char]) return customQuotes[item.char];
+    return getChineseQuoteForItem(item);
+  };
+
+  const getItemPinyin = (item: VocabItem) => {
+    return customPronunciations[item.id]?.pinyin || item.pinyin;
+  };
+
+  const getItemVuk = (item: VocabItem) => {
+    return customPronunciations[item.id]?.vuk || item.vuk;
+  };
+
+  const getItemTranslation = (item: VocabItem) => {
+    return customPronunciations[item.id]?.translation || item.translation;
+  };
+
+  const getItemEnglish = (item: VocabItem) => {
+    return customPronunciations[item.id]?.english || item.english;
+  };
+
+  const openEditModal = (item: VocabItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const qInfo = getItemQuote(item);
+    setEditingItem(item);
+    setEditQuoteText(qInfo.quote);
+    setEditQuoteTranslation(qInfo.translation);
+    setEditPinyin(getItemPinyin(item));
+    setEditVuk(getItemVuk(item));
+    setEditTranslation(getItemTranslation(item));
+    setEditEnglish(getItemEnglish(item));
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingItem) return;
+
+    const newQuotes = {
+      ...customQuotes,
+      [editingItem.id]: { quote: editQuoteText, translation: editQuoteTranslation },
+      [editingItem.char]: { quote: editQuoteText, translation: editQuoteTranslation },
+    };
+    setCustomQuotes(newQuotes);
+    localStorage.setItem('wisefit_chinese_custom_quotes', JSON.stringify(newQuotes));
+
+    const newPronunciations = {
+      ...customPronunciations,
+      [editingItem.id]: {
+        pinyin: editPinyin,
+        vuk: editVuk,
+        translation: editTranslation,
+        english: editEnglish,
+      }
+    };
+    setCustomPronunciations(newPronunciations);
+    localStorage.setItem('wisefit_chinese_custom_pronunciations', JSON.stringify(newPronunciations));
+
+    setEditingItem(null);
+  };
+
+  const handleResetEdit = () => {
+    if (!editingItem) return;
+    const newQuotes = { ...customQuotes };
+    delete newQuotes[editingItem.id];
+    delete newQuotes[editingItem.char];
+    setCustomQuotes(newQuotes);
+    localStorage.setItem('wisefit_chinese_custom_quotes', JSON.stringify(newQuotes));
+
+    const newPronunciations = { ...customPronunciations };
+    delete newPronunciations[editingItem.id];
+    setCustomPronunciations(newPronunciations);
+    localStorage.setItem('wisefit_chinese_custom_pronunciations', JSON.stringify(newPronunciations));
+
+    setEditingItem(null);
+  };
 
   // 3-Step Word Configurator State (I / You / They -> Verb -> Noun/Adjective OR Social Presets)
   const [cfgSubIdx, setCfgSubIdx] = useState(0); // '我'
@@ -410,11 +521,16 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
 
   const handleCopy = (item: VocabItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    const quoteInfo = getChineseQuoteForItem(item);
+    const quoteInfo = getItemQuote(item);
+    const pinyinText = getItemPinyin(item);
+    const vukText = getItemVuk(item);
+    const translationText = getItemTranslation(item);
+    const englishText = getItemEnglish(item);
+
     const quoteSection = quoteInfo 
       ? `\n\n📜 Izreka / Mudrost:\n${quoteInfo.quote}\n"${quoteInfo.translation}"` 
       : '';
-    const textToCopy = `${item.emoji} ${item.char} [Pinyin: ${item.pinyin}] (Vuk: "${item.vuk}")\n🇭🇷 Značenje: ${item.translation}\n🇬🇧 English: ${item.english}${item.radical ? `\n🏮 Radikal: ${item.radical}` : ''}${quoteSection}\n\n✨ WiseFit Sanctuary Chinese #WiseFit #Hanzi`;
+    const textToCopy = `${item.emoji} ${item.char} [Pinyin: ${pinyinText}] (Vuk: "${vukText}")\n🇭🇷 Značenje: ${translationText}\n🇬🇧 English: ${englishText}${item.radical ? `\n🏮 Radikal: ${item.radical}` : ''}${quoteSection}\n\n✨ WiseFit Sanctuary Chinese #WiseFit #Hanzi`;
 
     navigator.clipboard.writeText(textToCopy).then(() => {
       setCopiedId(item.id);
@@ -755,27 +871,38 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                             {item.char}
                           </h3>
                           <span className="text-xs font-mono font-extrabold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
-                            Pinyin: {item.pinyin}
+                            Pinyin: {getItemPinyin(item)}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 font-mono text-xs pt-0.5">
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Vuk:</span>
-                          <span className={cn("font-black text-sm", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
-                            "{item.vuk}"
-                          </span>
+                        <div className="flex items-center justify-between gap-1.5 font-mono text-xs pt-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Vuk:</span>
+                            <span className={cn("font-black text-sm", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
+                              "{getItemVuk(item)}"
+                            </span>
+                          </div>
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => openEditModal(item, e)}
+                              className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-300 hover:bg-amber-500/20 transition-all flex items-center gap-1 border border-amber-500/20"
+                              title="Uredi izgovor / izreku (Petar / Admin)"
+                            >
+                              <Pencil className="w-3 h-3" /> Uredi
+                            </button>
+                          )}
                         </div>
                       </div>
 
                       <div className="border-t pt-3 border-zinc-200 dark:border-zinc-800 space-y-1.5">
                         <p className={cn("text-sm font-bold leading-snug", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
-                          🇭🇷 {item.translation}
+                          🇭🇷 {getItemTranslation(item)}
                         </p>
                         <p className={cn("text-xs font-medium", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
-                          🇬🇧 {item.english}
+                          🇬🇧 {getItemEnglish(item)}
                         </p>
                         {(() => {
-                          const quoteInfo = getChineseQuoteForItem(item);
+                          const quoteInfo = getItemQuote(item);
                           return (
                             <div className="text-[11px] leading-snug bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 p-2.5 rounded-xl flex items-start justify-between gap-2 mt-2">
                               <div className="flex items-start gap-2">
@@ -789,17 +916,28 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                                   </p>
                                 </div>
                               </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const qText = `📜 Izreka: ${quoteInfo.quote}\n"${quoteInfo.translation}"\n\n✨ WiseFit Sanctuary #WiseFit #ChineseQuote`;
-                                  handleCopyConfigText(qText);
-                                }}
-                                className="p-1.5 rounded-lg text-amber-600 dark:text-amber-300 hover:bg-amber-500/20 transition-all shrink-0 flex items-center gap-1"
-                                title="Kopiraj ovu izreku/mudrost"
-                              >
-                                <Copy className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {isAdmin && (
+                                  <button
+                                    onClick={(e) => openEditModal(item, e)}
+                                    className="p-1.5 rounded-lg text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 transition-all shrink-0 flex items-center gap-1"
+                                    title="Uredi izreku i izgovor"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const qText = `📜 Izreka: ${quoteInfo.quote}\n"${quoteInfo.translation}"\n\n✨ WiseFit Sanctuary #WiseFit #ChineseQuote`;
+                                    handleCopyConfigText(qText);
+                                  }}
+                                  className="p-1.5 rounded-lg text-amber-600 dark:text-amber-300 hover:bg-amber-500/20 transition-all shrink-0 flex items-center gap-1"
+                                  title="Kopiraj ovu izreku/mudrost"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           );
                         })()}
@@ -1272,15 +1410,58 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   <h3 className="text-4xl font-serif font-black text-red-500">
                     {roundQuestions[questionIdx].vocab.char}
                   </h3>
-                  <p className="text-xs font-mono text-zinc-400">
-                    Izaberite tačan prevod ili izgovor:
-                  </p>
-                  <button
-                    onClick={() => speakChinese(roundQuestions[questionIdx].vocab.char)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-400 hover:bg-red-500/20 inline-flex items-center gap-1.5"
-                  >
-                    <Volume2 className="w-3.5 h-3.5" /> Pusti Zvuk
-                  </button>
+                  
+                  <div className="flex items-center justify-center gap-3 text-xs font-mono">
+                    <span className="text-amber-500 font-bold">Pinyin: {getItemPinyin(roundQuestions[questionIdx].vocab)}</span>
+                    <span className="text-emerald-500 font-bold">Vuk: "{getItemVuk(roundQuestions[questionIdx].vocab)}"</span>
+                  </div>
+
+                  {/* Wise Quote Box in Quiz */}
+                  {(() => {
+                    const qItem = roundQuestions[questionIdx].vocab;
+                    const quoteInfo = getItemQuote(qItem);
+                    return (
+                      <div className="text-[11px] leading-snug bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 p-3 rounded-2xl flex items-start justify-between gap-2 max-w-lg mx-auto text-left mt-2">
+                        <div className="flex items-start gap-2">
+                          <span className="text-sm shrink-0">📜</span>
+                          <div className="space-y-0.5">
+                            <p className="font-semibold text-amber-900 dark:text-amber-200 tracking-wide font-serif">
+                              {quoteInfo.quote}
+                            </p>
+                            <p className="text-[10px] italic text-amber-700/90 dark:text-amber-300/80 font-sans">
+                              "{quoteInfo.translation}"
+                            </p>
+                          </div>
+                        </div>
+                        {isAdmin && (
+                          <button
+                            onClick={(e) => openEditModal(qItem, e)}
+                            className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 transition-all shrink-0 flex items-center gap-1 border border-amber-500/30 shadow-xs"
+                            title="Uredi izreku i izgovor (Petar / Admin)"
+                          >
+                            <Pencil className="w-3 h-3 text-amber-500" /> Uredi
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <button
+                      onClick={() => speakChinese(roundQuestions[questionIdx].vocab.char)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-400 hover:bg-red-500/20 inline-flex items-center gap-1.5"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" /> Pusti Zvuk
+                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => openEditModal(roundQuestions[questionIdx].vocab, e)}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 inline-flex items-center gap-1.5 border border-amber-500/20"
+                      >
+                        <Pencil className="w-3.5 h-3.5" /> Uredi Kviz Izreku & Izgovor
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Options */}
@@ -1346,6 +1527,161 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
               </div>
             )}
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ADMIN EDIT MODAL FOR QUOTES & PRONUNCIATIONS */}
+      <AnimatePresence>
+        {editingItem && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={cn(
+                "w-full max-w-lg rounded-3xl border p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto",
+                isDarkMode ? "bg-zinc-900 border-amber-500/40 text-zinc-100" : "bg-white border-amber-200 text-zinc-900"
+              )}
+            >
+              <div className="flex items-center justify-between border-b pb-3 border-amber-500/20">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{editingItem.emoji}</span>
+                  <div>
+                    <h3 className="text-lg font-serif font-black text-amber-500 flex items-center gap-2">
+                      <span>Uredi Izreku & Izgovor</span>
+                      <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">Petar / Admin</span>
+                    </h3>
+                    <p className="text-xs text-zinc-400 font-serif">Karakter: {editingItem.char}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setEditingItem(null)}
+                  className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 text-xs font-sans">
+                {/* PRONUNCIATION REVISION */}
+                <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+                  <h4 className="font-mono font-bold uppercase tracking-wider text-amber-500 text-[11px] flex items-center gap-1.5">
+                    <Pencil className="w-3.5 h-3.5" /> Revision Izgovora (Pinyin & Vuk Transliteracija)
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-amber-600 dark:text-amber-300 font-mono">Pinyin Izgovor:</label>
+                      <input
+                        type="text"
+                        value={editPinyin}
+                        onChange={(e) => setEditPinyin(e.target.value)}
+                        className={cn(
+                          "w-full px-3 py-2 rounded-xl border text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-amber-500",
+                          isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-white border-zinc-300 text-zinc-900"
+                        )}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-emerald-600 dark:text-emerald-300 font-mono">Vuk Transliteracija:</label>
+                      <input
+                        type="text"
+                        value={editVuk}
+                        onChange={(e) => setEditVuk(e.target.value)}
+                        className={cn(
+                          "w-full px-3 py-2 rounded-xl border text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500",
+                          isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-white border-zinc-300 text-zinc-900"
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-zinc-400 font-mono">🇭🇷 Prevod (Srpski):</label>
+                      <input
+                        type="text"
+                        value={editTranslation}
+                        onChange={(e) => setEditTranslation(e.target.value)}
+                        className={cn(
+                          "w-full px-3 py-2 rounded-xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500",
+                          isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-white border-zinc-300 text-zinc-900"
+                        )}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-zinc-400 font-mono">🇬🇧 Prevod (Engleski):</label>
+                      <input
+                        type="text"
+                        value={editEnglish}
+                        onChange={(e) => setEditEnglish(e.target.value)}
+                        className={cn(
+                          "w-full px-3 py-2 rounded-xl border text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500",
+                          isDarkMode ? "bg-zinc-800 border-zinc-700 text-white" : "bg-white border-zinc-300 text-zinc-900"
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* WISE QUOTE REVISION */}
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3">
+                  <h4 className="font-mono font-bold uppercase tracking-wider text-amber-500 text-[11px] flex items-center gap-1.5">
+                    📜 Wise Quote / Mudra Izreka u Kvizu
+                  </h4>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-amber-600 dark:text-amber-300 font-mono">Mudra Izreka (Kineski / Citati):</label>
+                    <textarea
+                      rows={2}
+                      value={editQuoteText}
+                      onChange={(e) => setEditQuoteText(e.target.value)}
+                      className={cn(
+                        "w-full px-3 py-2 rounded-xl border text-xs font-serif font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500",
+                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-amber-200" : "bg-white border-zinc-300 text-zinc-900"
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-amber-600 dark:text-amber-300 font-mono">Prevod i Značenje Izreke:</label>
+                    <textarea
+                      rows={2}
+                      value={editQuoteTranslation}
+                      onChange={(e) => setEditQuoteTranslation(e.target.value)}
+                      className={cn(
+                        "w-full px-3 py-2 rounded-xl border text-xs italic focus:outline-none focus:ring-2 focus:ring-amber-500",
+                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-amber-100" : "bg-white border-zinc-300 text-zinc-900"
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-amber-500/20">
+                <button
+                  type="button"
+                  onClick={handleResetEdit}
+                  className="px-3 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Resetuj na Fabričko
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingItem(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:bg-zinc-800"
+                  >
+                    Odustani
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveEdit}
+                    className="px-5 py-2 rounded-xl text-xs font-black bg-amber-600 text-white hover:bg-amber-500 transition-all shadow-md flex items-center gap-1.5"
+                  >
+                    <Save className="w-4 h-4" /> Sačuvaj Izmene
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
