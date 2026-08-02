@@ -226,7 +226,27 @@ const highUtilityBase: Array<{ char: string; transliteration: string; vuk: strin
   { char: 'זְהִירות', transliteration: 'Zehirut', vuk: 'zehirut', translation: 'Opreznost / Svesna pažnja', english: 'Prudence', emoji: '🔔', root: 'ז-ה-ר' },
   { char: 'רָצוֹן טוֹב', transliteration: 'Ratzon Tov', vuk: 'racon tov', translation: 'Dobronamernost', english: 'Goodwill', emoji: '🧡', root: 'ר-צ-ה' },
   { char: 'חֹזֶק לֵב', transliteration: 'Chozek Lev', vuk: 'hozek lev', translation: 'Čvrstina srca', english: 'Fortitude of heart', emoji: '🪨', root: 'ח-ז-ק' },
-  { char: 'חָזוֹן', transliteration: 'Chazon', vuk: 'hazon', translation: 'Vizija', english: 'Vision', emoji: '🔭', root: 'ח-ז-ה' }
+  { char: 'חָזוֹן', transliteration: 'Chazon', vuk: 'hazon', translation: 'Vizija', english: 'Vision', emoji: '🔭', root: 'ח-ז-ה' },
+  { char: 'יְצִירָתִיּוּת', transliteration: 'Yetziratiyut', vuk: 'jeciratijut', translation: 'Kreativnost', english: 'Creativity', emoji: '🎨', root: 'י-צ-ר' },
+  { char: 'כֹּחַ רָצוֹן', transliteration: 'Koach Ratzon', vuk: 'koah racon', translation: 'Snaga volje', english: 'Willpower', emoji: '🛡️', root: 'ר-צ-ה' },
+  { char: 'סִינֶרְגְיָה', transliteration: 'Sinergya', vuk: 'sinergija', translation: 'Sinergija', english: 'Synergy', emoji: '🤝', root: 'ס-נ-ר' },
+  { char: 'שַׁלְוָה פְּנִימִית', transliteration: 'Shalva Pnimit', vuk: 'šalva pnimit', translation: 'Unutrašnji mir', english: 'Inner tranquility', emoji: '🌌', root: 'ש-ל-ו' },
+  { char: 'מְהוּת', transliteration: 'Mehut', vuk: 'mehut', translation: 'Suština', english: 'Essence', emoji: '💎', root: 'מ-ה-ת' },
+  { char: 'מוּדָעוּת', transliteration: 'Mudaut', vuk: 'mudaut', translation: 'Svesnost', english: 'Awareness', emoji: '👁️', root: 'י-ד-ע' },
+  { char: 'הַרְמוֹנְיָה', transliteration: 'Harmonya', vuk: 'harmonija', translation: 'Sklad / Harmonija', english: 'Harmony', emoji: '🧩', root: 'ה-ר-מ' },
+  { char: 'שְׁלִיטָה עַצְמִית', transliteration: 'Shlita Atzmit', vuk: 'šlita acmit', translation: 'Samokontrola', english: 'Self-control', emoji: '🛑', root: 'ש-ל-ט' },
+  { char: 'מַחֲשָׁבָה מְמוּקֶדֶת', transliteration: 'Machashava Memukedet', vuk: 'mahašava memukedet', translation: 'Fokusirana misao', english: 'Focused thought', emoji: '🎯', root: 'ח-ש-ב' },
+  { char: 'בִּטָּחוֹן עַצְמִי', transliteration: 'Bitachon Atzmi', vuk: 'bitahon acmi', translation: 'Samopouzdanje', english: 'Self-confidence', emoji: '🦁', root: 'ב-ט-ח' },
+  { char: 'כֹּחַ הַתְמָדָה', transliteration: 'Koach Hatmada', vuk: 'koah hatmada', translation: 'Snaga istrajnosti', english: 'Persistence force', emoji: '🏔️', root: 'ת-מ-ד' },
+  { char: 'חֶמְלָה', transliteration: 'Chemla', vuk: 'hemla', translation: 'Saosećanje', english: 'Compassion', emoji: '🕊️', root: 'ח-מ-ל' },
+  { char: 'כֹּחַ תְּבוּנָה', transliteration: 'Koach Tevunah', vuk: 'koah tevuna', translation: 'Snaga uvida', english: 'Power of insight', emoji: '🔮', root: 'ב-י-ן' },
+  { char: 'פַּשְׁטוּת הָרוּחַ', transliteration: 'Pashtut HaRuch', vuk: 'paštut haruh', translation: 'Jednostavnost duha', english: 'Simplicity of spirit', emoji: '🍃', root: 'פ-ש-ט' },
+  { char: 'חוֹף מִבְטָח', transliteration: 'Chof Mivtach', vuk: 'hof mivtah', translation: 'Sigurna luka', english: 'Safe haven', emoji: '⚓', root: 'ב-ט-ח' },
+  { char: 'חֹסֶן גּוּפָנִי', transliteration: 'Hosen Gufani', vuk: 'hosen gufani', translation: 'Fizička otpornost', english: 'Physical robustness', emoji: '🏋️', root: 'ח-ס-נ' },
+  { char: 'עֵרָנוּת מְלֵאָה', transliteration: 'Eranut Melaa', vuk: 'eranut mela', translation: 'Potpuna budnost', english: 'Full alertness', emoji: '🔔', root: 'ע-ו-ר' },
+  { char: 'יְדִידוּת', transliteration: 'Yedidut', vuk: 'jedidut', translation: 'Prijateljstvo', english: 'Friendship', emoji: '🤝', root: 'י-ד-ד' },
+  { char: 'שִׂגּוּב', transliteration: 'Siguv', vuk: 'siguv', translation: 'Uzvišenost', english: 'Sublimity', emoji: '🏔️', root: 'ש-ג-ב' },
+  { char: 'לֵב חָכָם', transliteration: 'Lev Chacham', vuk: 'lev haham', translation: 'Mudro srce', english: 'Wise heart', emoji: '🦉', root: 'ח-כ-ם' }
 ];
 
 // Add unique items from high utility base without duplicates
