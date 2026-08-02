@@ -1,0 +1,101 @@
+POS,Rank,Hebrew,Transliteration,English,Gender,Root,Binyan
+noun,1,אדם,adam,man / person,m,א-ד-ם,
+noun,2,איש,ish,man / person,m,א-י-ש,
+noun,3,אישה,isha,woman / wife,f,א-נ-ש,
+noun,4,ילד,yeled,child / boy,m,י-ל-ד,
+noun,5,ילדה,yalda,girl,f,י-ל-ד,
+noun,6,אבא,abba,father / dad,m,א-ב-ב,
+noun,7,אמא,imma,mother / mom,f,א-מ-מ,
+noun,8,בן,ben,son,m,ב-נ-ה,
+noun,9,בת,bat,daughter,f,ב-נ-ה,
+noun,10,אח,ach,brother,m,א-ח-ח,
+noun,11,אחות,achot,sister / nurse,f,א-ח-ח,
+noun,12,משפחה,mishpacha,family,f,ש-פ-ח,
+noun,13,חבר,chaver,friend / member,m,ח-ב-ר,
+noun,14,חברה,chavera,friend (f) / company,f,ח-ב-ר,
+noun,15,בית,bayit,house / home,m,ב-י-ת,
+noun,16,עיר,ir,city,f,ע-ו-ר,
+noun,17,ארץ,eretz,land / country,f,א-ר-צ,
+noun,18,עולם,olam,world,m,ע-ל-ם,
+noun,19,מקום,makom,place,m,ק-ו-ם,
+noun,20,דרך,derech,way / road,f,ד-ר-ך,
+noun,21,יום,yom,day,m,י-ו-ם,
+noun,22,לילה,layla,night,m,l-y-l,
+noun,23,בוקר,boker,morning,m,ב-ק-ר,
+noun,24,ערב,erev,evening,m,ע-ר-ב,
+noun,25,שנה,shana,year,f,ש-נ-ה,
+noun,26,חודש,chodesh,month,m,ח-ד-ש,
+noun,27,שבוע,shavua,week,m,ש-ב-ע,
+noun,28,שעה,sha'a,hour,f,ש-ע-ה,
+noun,29,זמן,zman,time,m,ז-מ-ן,
+noun,30,מילה,mila,word,f,מ-ל-ל,
+noun,31,ספר,sefer,book,m,ס-פ-ר,
+noun,32,עבודה,avoda,work / job,f,ע-ב-ד,
+noun,33,ספורט,sport,sport,m,s-p-r-t,
+noun,34,מים,mayim,water,m,m-y-m,
+noun,35,אוכל,ochel,food,m,א-כ-ל,
+noun,36,לחם,lechem,bread,m,ל-ח-ם,
+noun,37,קפה,kafe,coffee,m,k-f-h,
+noun,38,תה,te,tea,m,t-h-h,
+noun,39,כסף,kesef,money / silver,m,כ-ס-פ,
+noun,40,שולחן,shulchan,table,m,ש-ל-ח,
+noun,41,כיסא,kise,chair,m,כ-ס-א,
+noun,42,חדר,cheder,room,m,ח-ד-ר,
+noun,43,דלת,delet,door,f,ד-ל-ת,
+noun,44,חלון,chalon,window,m,ח-ל-ן,
+noun,45,מכונית,mechonit,car,f,כ-ו-ן,
+noun,46,אוטובוס,otobus,bus,m,o-t-b-s,
+noun,47,רכבת,rakevet,train,f,ר-כ-ב,
+noun,48,חנות,chanut,shop / store,f,ח-נ-ה,
+noun,49,שוק,shuk,market,m,ש-ו-ק,
+noun,50,רחוב,rechov,street,m,ר-ח-ב,
+verb,1,היה,haya,to be / exist,,ה-י-ה,Pa'al
+verb,2,אמר,amar,to say / tell,,א-מ-ר,Pa'al
+verb,3,עשה,asa,to do / make,,ע-ש-ה,Pa'al
+verb,4,בא,ba,to come / arrive,,ב-ו-א,Pa'al
+verb,5,הלך,halach,to go / walk,,ה-ל-ך,Pa'al
+verb,6,נתן,natan,to give / allow,,נ-ת-ן,Pa me
+verb,7,ראה,ra'a,to see / watch,,ר-א-ה,Pa'al
+verb,8,דע,yada,to know (a fact),,י-ד-ע,Pa'al
+verb,9,רצה,ratza,to want,,ר-צ-ה,Pa'al
+verb,10,יכל,yachol,to be able / can,,י-כ-ל,Pa'al
+verb,11,לקח,lakach,to take / get,,ל-ק-ח,Pa'al
+verb,12,ישב,yashav,to sit / reside,,י-ש-ב,Pa'al
+verb,13,עמד,amad,to stand / stop,,ע-מ-ד,Pa'al
+verb,14,שמע,shama,to hear / listen,,ש-מ-ע,Pa'al
+verb,15,דבר,diber,to speak / talk,,ד-ב-ר,Pi'el
+verb,16,חזר,chazar,to return / repeat,,ח-ז-ר,Pa'al
+verb,17,שאל,sha'al,to ask / borrow,,ש-א-ל,Pa'al
+verb,18,ענה,ana,to answer / reply,,ע-נ-ה,Pa'al
+verb,19,כתב,katav,to write,,כ-ת-ב,Pa'al
+verb,20,קרא,kara,to read / call,,ק-ר-א,Pa'al
+verb,21,אכל,achal,to eat,,א-כ-ל,Pa'al
+verb,22,שתה,shata,to drink,,ש-ת-ה,Pa'al
+verb,23,קנה,kana,to buy / acquire,,ק-נ-ה,Pa'al
+verb,24,מכר,machar,to sell,,מ-כ-ר,Pa'al
+verb,25,עבד,avad,to work / serve,,ע-ב-ד,Pa'al
+adjective,1,גדול,gadol,big / large,m,ג-ד-ל,
+adjective,2,קטן,katan,small / little,m,ק-ט-ן,
+adjective,3,טוב,tov,good / fine,m,ט-ו-ב,
+adjective,4,רע,ra,bad / evil,m,ר-ע-ע,
+adjective,5,חדש,chadash,new / fresh,m,ח-ד-ש,
+adjective,6,ישן,yashan,old (not new),m,י-ש-ן,
+adjective,7,יפה,yafe,beautiful / pretty,m,י-פ-ה,
+adjective,8,חכם,chacham,smart / wise,m,ח-כ-ם,
+adjective,9,חם,cham,hot / warm,m,ח-מ-מ,
+adjective,10,קר,kar,cold,m,ק-ר-ר,
+adjective,11,רחוק,rachok,far / distant,m,ר-ח-ק,
+adjective,12,קרוב,karov,near / close,m,ק-ר-ב,
+adjective,13,גבוה,gavoha,tall / high,m,ג-ב-ה,
+adjective,14,נמוך,namuch,short / low,m,נ-מ-ך,
+adjective,15,ארוך,aroch,long,m,א-ר-ך,
+adjective,16,קצר,katzar,short (length),m,ק-צ-ר,
+adjective,17,קשה,kashe,hard / difficult,m,ק-ש-ה,
+adjective,18,קל,kal,easy / light,m,ק-ל-ל,
+adjective,19,מעניין,me'anyen,interesting,m,ע-נ-י-ן,
+adjective,20,חשוב,chashuv,important,m,ח-ש-ב,
+adjective,21,שמח,same'ach,happy / joyful,m,ש-מ-ח,
+adjective,22,עצוב,atsuv,sad,m,ע-צ-ב,
+adjective,23,עייף,ayef,tired,m,ע-י-ף,
+adjective,24,רעב,ra'ev,hungry,m,ר-ע-ב,
+adjective,25,צמא,tzame,thirsty,m,צ-מ-א,

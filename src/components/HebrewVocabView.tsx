@@ -175,7 +175,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
 
   const getItemQuote = (item: HebrewVocabItem) => {
     if (customQuotes[item.id]) return customQuotes[item.id];
-    if (customQuotes[item.hebrew]) return customQuotes[item.hebrew];
+    if (customQuotes[item.char]) return customQuotes[item.char];
     return getHebrewQuoteForItem(item);
   };
 
@@ -213,7 +213,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     const newQuotes = {
       ...customQuotes,
       [editingItem.id]: { quote: editQuoteText, translation: editQuoteTranslation },
-      [editingItem.hebrew]: { quote: editQuoteText, translation: editQuoteTranslation },
+      [editingItem.char]: { quote: editQuoteText, translation: editQuoteTranslation },
     };
     setCustomQuotes(newQuotes);
     localStorage.setItem('wisefit_hebrew_custom_quotes', JSON.stringify(newQuotes));
@@ -237,7 +237,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     if (!editingItem) return;
     const newQuotes = { ...customQuotes };
     delete newQuotes[editingItem.id];
-    delete newQuotes[editingItem.hebrew];
+    delete newQuotes[editingItem.char];
     setCustomQuotes(newQuotes);
     localStorage.setItem('wisefit_hebrew_custom_quotes', JSON.stringify(newQuotes));
 
