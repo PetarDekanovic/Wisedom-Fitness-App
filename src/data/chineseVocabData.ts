@@ -179,21 +179,115 @@ const chineseHighUtilityBase: Array<{ char: string; pinyin: string; vuk: string;
   { char: '专注', pinyin: 'zhuān zhù', vuk: 'džuan džu', translation: 'Fokus / Koncentracija', english: 'Focus', emoji: '🎯', radical: '寸 Inch' }
 ];
 
-for (let i = 91; i <= 1100; i++) {
-  const base = chineseHighUtilityBase[(i - 91) % chineseHighUtilityBase.length];
-  const cat = chineseCategoriesList[i % chineseCategoriesList.length];
+// Add unique items from high utility base without duplicates
+const existingChars = new Set(CHINESE_VOCAB_EXPANDED.map(v => v.char.trim()));
+let nextId = CHINESE_VOCAB_EXPANDED.length + 1;
 
-  CHINESE_VOCAB_EXPANDED.push({
-    id: `c${i}`,
-    char: base.char,
-    pinyin: `${base.pinyin}`,
-    vuk: `${base.vuk}`,
-    translation: `${base.translation}`,
-    english: `${base.english}`,
-    emoji: base.emoji,
-    category: cat,
-    categoryLabel: cat.toUpperCase(),
-    radical: base.radical,
-    visualTip: `High-frequency operational Chinese term #${i}`
-  });
+for (const base of chineseHighUtilityBase) {
+  if (!existingChars.has(base.char.trim())) {
+    existingChars.add(base.char.trim());
+    CHINESE_VOCAB_EXPANDED.push({
+      id: `c${nextId++}`,
+      char: base.char,
+      pinyin: base.pinyin,
+      vuk: base.vuk,
+      translation: base.translation,
+      english: base.english,
+      emoji: base.emoji,
+      category: 'svakodnevno',
+      categoryLabel: 'SVAKODNEVNO',
+      radical: base.radical,
+      visualTip: ''
+    });
+  }
 }
+
+export const CHINESE_WISE_QUOTES: Record<string, { quote: string; translation: string }> = {
+  '深处': { quote: '水深则流静，人贵则语迟。', translation: 'Deep waters flow in silence; noble minds speak with deliberate care.' },
+  '在': { quote: '心在当前，无怨无悔。', translation: 'Keep the mind rooted in the present moment, free from regret and fear.' },
+  '我的': { quote: '反求诸己，修身立德。', translation: 'Turn inward to seek self-mastery and build noble character.' },
+  '心': { quote: '心如止水，静则生慧。', translation: 'The mind is like still water; tranquility yields true wisdom.' },
+  '火': { quote: '星星之火，可以燎原。', translation: 'A single spark of discipline ignites a grand fire of transformation.' },
+  '燃烧': { quote: '生命不息，燃烧不止。', translation: 'As long as breath remains, keep burning with purposeful passion.' },
+  '你': { quote: '己所不欲，勿施于人。', translation: 'Do not impose upon others what you yourself do not desire.' },
+  '听': { quote: '听君一席话，胜读十年书。', translation: 'Listening to a wise teacher surpasses ten years of solitary reading.' },
+  '声音': { quote: '大音希声，大象无形。', translation: 'Greatest music is quiet; greatest strength manifests without pretense.' },
+  '风': { quote: '树欲静而风不止。', translation: 'The tree desires quiet, but the wind keeps blowing; stay centered within.' },
+  '呼唤': { quote: '同声相应，同气相求。', translation: 'Noble souls respond to the same calling and seek shared virtue.' },
+  '寂静': { quote: '致虚极，守静笃。', translation: 'Attain utmost emptiness, and steadfastly maintain inner silence.' },
+  '黑夜': { quote: '长夜将尽，曙光在前。', translation: 'The longest dark night yields to the inevitable dawn.' },
+  '光明': { quote: '日月光华，旦复旦兮。', translation: 'The radiance of sun and moon renews the world day after day.' },
+  '爱': { quote: '仁者爱人，有礼者敬人。', translation: 'The benevolent soul loves humanity; the respectful holds all in honor.' },
+  '是': { quote: '实事求是，明辨是非。', translation: 'Seek truth from facts, and discern right from wrong with clarity.' },
+  '光': { quote: '微光吸引微光，微光照亮微光。', translation: 'Small lights draw near to one another, illuminating the dark together.' },
+  '永远': { quote: '天地长久，自强不息。', translation: 'Heaven and earth endure endlessly; strive unceasingly without pause.' },
+  '不': { quote: '不骄不躁，宠辱不惊。', translation: 'Neither proud nor hasty; remain unmoved by praise or blame.' },
+  '灵魂': { quote: '安顿灵魂，守住本心。', translation: 'Anchor your soul and protect your authentic core.' },
+  '飞翔': { quote: '大鹏一日同风起，扶摇直上九万里。', translation: 'When the eagle catches the wind, it soars high above storm clouds.' },
+  '天空': { quote: '海阔凭鱼跃，天高任鸟飞。', translation: 'The ocean is vast for fish to leap, the sky boundless for birds to fly.' },
+  '星辰': { quote: '日月星辰，各安其位。', translation: 'The sun, moon, and stars move in orderly harmony; find your place.' },
+  '照亮': { quote: '桃李不言，下自成蹊。', translation: 'Virtuous action illuminates without words, drawing a path for others.' },
+  '路': { quote: '千里之行，始于足下。', translation: 'A journey of a thousand miles begins with a single step.' },
+  '希望': { quote: '生生不息，希望常在。', translation: 'Life renews perpetually; hope abides in every sunrise.' },
+  '奇迹': { quote: '天道酬勤，功不唐捐。', translation: 'Heaven rewards diligence; no honest effort is ever wasted.' },
+  '信仰': { quote: '言必信，行必果。', translation: 'Keep faith in your word, and bring every noble resolve to fruition.' },
+  '看': { quote: '欲穷千里目，更上一层楼。', translation: 'To see a thousand miles further, ascend to a higher vantage point.' },
+  '吃': { quote: '食饮有节，起居有常。', translation: 'Eat with temperance and maintain steady daily rhythm.' },
+  '喝': { quote: '淡泊明志，宁静致远。', translation: 'Sip simple tea with peace of mind; quiet moderation leads far.' },
+  '走': { quote: '步步为营，稳扎稳打。', translation: 'Walk with calm, deliberate precision; steady progress wins the long race.' },
+  '跑': { quote: '奔跑不熄，追光前行。', translation: 'Run relentlessly toward the light of self-mastery.' },
+  '笑': { quote: '笑对人生，宠辱不惊。', translation: 'Smile at life’s turns; remain unperturbed by victory or setback.' },
+  '哭': { quote: '泪水洗涤心灵，坚强迎向新生。', translation: 'Tears cleanse the eyes to see truth clearly again.' },
+  '说': { quote: '敏于事而慎于言。', translation: 'Be swift in diligent action and prudent in spoken words.' },
+  '想': { quote: '三思而后行。', translation: 'Deliberate deeply three times before taking decisive action.' },
+  '做': { quote: '知行合一，止于至善。', translation: 'Unite knowledge and action, resting only in the highest virtue.' },
+  '有': { quote: '知足者常乐，有德者自安。', translation: 'Contentment brings perpetual joy; virtue grants inner tranquility.' },
+  '去': { quote: '去奢去泰，守朴归真。', translation: 'Discard luxury and excess; cling to simple authenticity.' },
+  '学': { quote: '学而不思则罔，思而不学则殆。', translation: 'Learning without thought is labor lost; thought without learning is perilous.' },
+  '写': { quote: '笔耕不辍，字里藏心。', translation: 'Write with steady purpose; let truth guide every character.' },
+  '读': { quote: '读书破万卷，下笔如有神。', translation: 'Read ten thousand volumes; wisdom flows like divine inspiration.' },
+  '坐': { quote: '独坐观心，静修己德。', translation: 'Sit quietly to observe the heart and cultivate personal virtue.' },
+  '站': { quote: '站如松，立如柏。', translation: 'Stand firm like a pine and upright like a cedar against the gale.' },
+  '睡': { quote: '卧如弓，安然入梦。', translation: 'Rest deeply with a peaceful conscious mind free of burden.' },
+  '懂': { quote: '大智若愚，大巧若拙。', translation: 'True understanding appears humble; deep skill appears effortless.' },
+  '问': { quote: '不耻下问，方成大器。', translation: 'He who asks without false pride grows into a vessel of wisdom.' },
+  '答': { quote: '答非所问，不如静默。', translation: 'Answer with truth and clarity; otherwise honor silence.' },
+  '喜欢': { quote: '知之者不如好之者，好之者不如乐之者。', translation: 'To know is good, to love is better, to find joy in practice is highest.' },
+  '创造': { quote: '温故而知新，推陈出新。', translation: 'Review the ancient wisdom to create innovative truth for today.' },
+  '坚持': { quote: '绳锯木断，水滴石穿。', translation: 'Water dripping constantly pierces solid granite; persistence conquers all.' },
+  '思考': { quote: '博学之，审问之，慎思之，明辨之，笃行之。', translation: 'Study broadly, inquire thoroughly, ponder prudently, discern clearly, act steadfastly.' },
+  '改变': { quote: '穷则变，变则通，通则久。', translation: 'When exhausted, adapt; through adaptation comes flow and longevity.' },
+  '道': { quote: '道法自然。', translation: 'The Way follows the law of nature and effortless reality.' },
+  '德': { quote: '厚德载物。', translation: 'Great virtue carries all burdens with quiet grace.' },
+  '无为': { quote: '无为而无不为。', translation: 'Through non-contriving action, nothing is left undone.' },
+  '阴阳': { quote: '阴阳相生，刚柔相济。', translation: 'Yin and Yang generate each other; strength and yield work in harmony.' },
+  '气': { quote: '养浩然之气。', translation: 'Nurture your vast, unyielding moral energy.' },
+  '禅': { quote: '禅心如水，明镜高悬。', translation: 'The Zen heart is clear water, a high mirror reflecting reality.' },
+  '静': { quote: '宁静致远。', translation: 'Tranquility leads to far-reaching vision.' },
+  '定': { quote: '知止而后有定，定而后能静。', translation: 'Knowing where to stop brings focus; focus leads to calm.' },
+  '悟': { quote: '顿悟前非，立地成真。', translation: 'Awaken from past error and ground yourself in present truth.' },
+  '毅力': { quote: '百折不挠，金石可镂。', translation: 'Undefeated by a hundred setbacks, perseverance carves gold and stone.' },
+  '节制': { quote: '胜人者有力，自胜者强。', translation: 'He who conquers others has force; he who conquers himself is truly strong.' },
+  '勇气': { quote: '知者不惑，仁者不忧，勇者不惧。', translation: 'The wise are free from doubt, the good from anxiety, the brave from fear.' },
+  '正义': { quote: '公生明，廉生威。', translation: 'Justice generates clarity; integrity commands respect.' },
+};
+
+export function getChineseQuoteForItem(item: VocabItem): { quote: string; translation: string } {
+  if (CHINESE_WISE_QUOTES[item.char]) {
+    return CHINESE_WISE_QUOTES[item.char];
+  }
+  const defaultQuotes = [
+    { quote: `${item.char} —— 天行健，君子以自强不息。`, translation: 'As Heaven maintains vigor through movement, the noble person unceasingly strengthens themselves.' },
+    { quote: `${item.char} —— 地势坤，君子以厚德载物。`, translation: 'As Earth’s condition is receptive devotion, the noble person holds all with deep virtue.' },
+    { quote: `${item.char} —— 千里之行，始于足下。`, translation: 'A journey of a thousand miles begins with a single step.' },
+    { quote: `${item.char} —— 知人者智，自知者明。`, translation: 'Knowing others is wisdom; knowing yourself is enlightenment.' },
+    { quote: `${item.char} —— 淡泊以明志，宁静以致远。`, translation: 'Keep desires simple to clarify purpose; maintain stillness to reach far.' }
+  ];
+  let hash = 0;
+  for (let i = 0; i < item.char.length; i++) {
+    hash = (hash << 5) - hash + item.char.charCodeAt(i);
+  }
+  const idx = Math.abs(hash) % defaultQuotes.length;
+  return defaultQuotes[idx];
+}
+

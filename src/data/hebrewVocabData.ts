@@ -189,21 +189,82 @@ const highUtilityBase: Array<{ char: string; transliteration: string; vuk: strin
   { char: 'מיקוד', transliteration: 'Mikud', vuk: 'mikud', translation: 'Fokus', english: 'Focus', emoji: '🎯', root: 'מ-ק-ד' }
 ];
 
-for (let i = 111; i <= 1100; i++) {
-  const base = highUtilityBase[(i - 111) % highUtilityBase.length];
-  const cat = categoriesList[i % categoriesList.length];
-  
-  HEBREW_VOCAB_EXPANDED.push({
-    id: `h${i}`,
-    char: base.char,
-    transliteration: `${base.transliteration}`,
-    vuk: `${base.vuk}`,
-    translation: `${base.translation}`,
-    english: `${base.english}`,
-    emoji: base.emoji,
-    category: cat,
-    categoryLabel: cat.toUpperCase(),
-    root: base.root,
-    visualTip: `High-frequency operational Hebrew vocabulary #${i}`
-  });
+// Add unique items from high utility base without duplicates
+const existingHebrewChars = new Set(HEBREW_VOCAB_EXPANDED.map(v => v.char.trim()));
+let nextHebrewId = HEBREW_VOCAB_EXPANDED.length + 1;
+
+for (const base of highUtilityBase) {
+  if (!existingHebrewChars.has(base.char.trim())) {
+    existingHebrewChars.add(base.char.trim());
+    HEBREW_VOCAB_EXPANDED.push({
+      id: `h${nextHebrewId++}`,
+      char: base.char,
+      transliteration: base.transliteration,
+      vuk: base.vuk,
+      translation: base.translation,
+      english: base.english,
+      emoji: base.emoji,
+      category: 'svakodnevno',
+      categoryLabel: 'SVAKODNEVNO',
+      root: base.root,
+      visualTip: ''
+    });
+  }
 }
+
+export const HEBREW_WISE_QUOTES: Record<string, { quote: string; translation: string }> = {
+  'שָׁלוֹם': { quote: 'בַּקֵּשׁ שָׁלוֹם וְרָדְפֵהוּ.', translation: 'Seek peace and pursue it eagerly. (Psalms 34:15)' },
+  'אַהֲבָה': { quote: 'עַל כָּל פְּשָׁעִים תְּכַסֶּה אַהֲבָה.', translation: 'Love covers all offenses. (Proverbs 10:12)' },
+  'אוֹר': { quote: 'מְעַט אוֹר דּוֹחֶה הַרְבֵּה מִן הַחֹשֶׁךְ.', translation: 'A little light dispels much darkness. (Chasidic Wisdom)' },
+  'חַיִּים': { quote: 'וּבָחַרְתָּ בַּחַיִּים לְמַעַן תִּחְיֶה.', translation: 'Choose life, that you and your descendants may thrive. (Deuteronomy 30:19)' },
+  'לֵב': { quote: 'מִכָּל מִשְׁמָר נְצֹר לִבְּךָ, כִּי מִמֶּנּוּ תּוֹצְאוֹת חַיִּים.', translation: 'Above all else, guard your heart, for everything you do flows from it. (Proverbs 4:23)' },
+  'נְשָׁמָה': { quote: 'נֵר ה\' נִשְׁמַת אָדָם.', translation: 'The spirit of man is the lamp of the Divine. (Proverbs 20:27)' },
+  'אֱמֶת': { quote: 'חֹתָמוֹ שֶׁל הַקָּדוֹשׁ בָּרוּךְ הוּא אֱמֶת.', translation: 'The seal of the Creator is Truth. (Talmud Shabbat 55a)' },
+  'חָכְמָה': { quote: 'אֵיזֶהוּ חָכָם? הַלּוֹמֵד מִכָּל אָדָם.', translation: 'Who is wise? He who learns from every person. (Pirkei Avot 4:1)' },
+  'בְּרָכָה': { quote: 'וֶהֱיֵה בְּרָכָה לְכָל סְבִיבָתֶךָ.', translation: 'Be a living blessing to everyone around you.' },
+  'תִּקְוָה': { quote: 'קַוֵּה אֶל ה\' חֲזַק וְיַאֲמֵץ לִבֶּךָ.', translation: 'Hope steadfastly; be strong and take heart. (Psalms 27:14)' },
+  'שִׂמְחָה': { quote: 'עִבְדוּ אֶת ה\' בְּשִׂמְחָה, בֹּאוּ לְפָנָיו בִּרְנָנָה.', translation: 'Serve with joy; enter with cheerful songs of gratitude. (Psalms 100:2)' },
+  'כֹּחַ': { quote: 'הַנֹּתֵן לַיָּעֵף כֹּחַ וּלְאֵין אוֹנִים עוֹצְמָה יַרְבֶּה.', translation: 'He gives strength to the weary and increases power to the weak. (Isaiah 40:29)' },
+  'תּוֹרָה': { quote: 'עֵץ חַיִּים הִיא לַמַּחֲזִיקִים בָּהּ.', translation: 'Wisdom is a tree of life to those who lay hold of her. (Proverbs 3:18)' },
+  'שַׁבָּת': { quote: 'יוֹתֵר מִשֶּׁשָּׁמְרוּ יִשְׂרָאֵל אֶת הַשַּׁבָּת, שָׁמְרָה הַשַּׁבָּת אוֹתָם.', translation: 'More than Israel has kept the Sabbath, the Sabbath has kept Israel.' },
+  'תְּפִלָּה': { quote: 'קָרוֹב ה\' לְכָל קֹרְאָיו, לְכֹל אֲשֶׁר יִקְרָאֻהוּ בֶאֱמֶת.', translation: 'Wisdom is near to all who call upon truth with sincerity. (Psalms 145:18)' },
+  'אֱלֹהִים': { quote: 'שִׁוִּיתִי ה\' לְנֶגְדִּי תָמִיד.', translation: 'I have set divine purpose always before me. (Psalms 16:8)' },
+  'מֶלֶךְ': { quote: 'אֵיזֶהוּ מֶלֶךְ? הַמּוֹשֵׁל בְּרוּחוֹ.', translation: 'Who is a true king? He who commands his own spirit.' },
+  'כָּבוֹד': { quote: 'אֵיזֶהוּ מְכֻבָּד? הַמְּכַבֵּד אֶת הַבְּרִיּוֹת.', translation: 'Who is honored? He who honors all fellow human beings. (Pirkei Avot 4:1)' },
+  'קֹדֶשׁ': { quote: 'קְדֹשִׁים תִּהְיוּ, כִּי קָדוֹשׁ אָנִי.', translation: 'Strive for holy excellence in all your deeds. (Leviticus 19:2)' },
+  'רוּחַ': { quote: 'הָרוּחַ הוֹלֵךְ וְסוֹבֵב, וְעַל סְבִיבֹתָיו שָׁב הָרוּחַ.', translation: 'The spirit blows and returns on its circuit in eternal renewal. (Ecclesiastes 1:6)' },
+  'חֶסֶד': { quote: 'עוֹלָם חֶסֶד יִבָּנֶה.', translation: 'The world is built upon foundational loving-kindness. (Psalms 89:3)' },
+  'צֶדֶק': { quote: 'צֶדֶק צֶדֶק תִּרְדֹּף.', translation: 'Justice, justice shall you pursue. (Deuteronomy 16:20)' },
+  'תְּשׁוּבָה': { quote: 'שׁוּבָה אֵלַי וְאָשׁוּבָה אֲלֵיכֶם.', translation: 'Return to your core truth, and wisdom will return to you. (Malachi 3:7)' },
+  'עוֹלָם': { quote: 'כָּל הָעוֹלָם כֻּלּוֹ גֶּשֶׁר צַר מְאֹד, וְהָעִיקָר לֹא לְפַחֵד כְּלָל.', translation: 'The whole world is a narrow bridge; the essential thing is not to fear at all.' },
+  'בִּינָה': { quote: 'אִם אֵין דַּעַת, אֵין בִּינָה.', translation: 'Without attentive awareness, there is no deep understanding.' },
+  'דַּעַת': { quote: 'אִם דַּעַת קָנִיתָ, מֶה חָסַרְתָּ?', translation: 'If you have acquired wisdom and knowledge, what do you lack?' },
+  'אֱמוּנָה': { quote: 'וְצַדִּיק בֶּאֱמוּנָתוֹ יִחְיֶה.', translation: 'The righteous person thrives by steadfast faith and integrity. (Habakkuk 2:4)' },
+  'סַבְלָנוּת': { quote: 'טוֹב אֶרֶךְ רוּחַ מִגְּבַהּ רוּחַ.', translation: 'Better is patience of spirit than pride of spirit. (Ecclesiastes 7:8)' },
+  'עֲנָוָה': { quote: 'עֵקֶב עֲנָוָה יִרְאַת ה\', עֹשֶׁר וְכָבוֹד וְחַיִּים.', translation: 'The reward of genuine humility is honor and lasting life. (Proverbs 22:4)' },
+  'גְּבוּרָה': { quote: 'אֵיזֶהוּ גִבּוֹר? הַכּוֹבֵשׁ אֶת יִצְרוֹ.', translation: 'Who is mighty? He who subdues his own impulses. (Pirkei Avot 4:1)' },
+  'מַחֲשָׁבָה': { quote: 'סוֹף מַעֲשֶׂה בְּמַחֲשָׁבָה תְּחִלָּה.', translation: 'The end result of action begins in thoughtful intention.' },
+  'כַּוָּנָה': { quote: 'תְּפִלָּה בְּלִי כַּוָּנָה כְּגוּף בְּלִי נְשָׁמָה.', translation: 'Action without focused intention is like a body without a soul.' },
+  'תְּבוּנָה': { quote: 'לֵב נָבוֹן יִקַּח מִצְוֺת.', translation: 'A wise heart embraces moral duty with clarity.' },
+  'סוֹד': { quote: 'סוֹד ה\' לִירֵאָיו וּבְרִיתוֹ לְהוֹדִיעָם.', translation: 'The secret of life belongs to those who revere truth. (Psalms 25:14)' },
+};
+
+export function getHebrewQuoteForItem(item: HebrewVocabItem): { quote: string; translation: string } {
+  if (HEBREW_WISE_QUOTES[item.char]) {
+    return HEBREW_WISE_QUOTES[item.char];
+  }
+  const defaultQuotes = [
+    { quote: `${item.char} — דַּע אֶת עַצְמְךָ וֶהֱיֵה יָשָׁר.`, translation: 'Know yourself and walk with unyielding integrity.' },
+    { quote: `${item.char} — אֵיזֶהוּ חָכָם? הַלּוֹמֵד מִכָּל אָדָם.`, translation: 'Who is wise? He who learns from every person.' },
+    { quote: `${item.char} — בַּקֵּשׁ שָׁלוֹם וְרָדְפֵהוּ.`, translation: 'Seek peace and pursue it eagerly.' },
+    { quote: `${item.char} — סוֹף מַעֲשֶׂה בְּמַחֲשָׁבָה תְּחִלָּה.`, translation: 'The end result of action begins in thoughtful intention.' },
+    { quote: `${item.char} — אֵיזֶהוּ גִבּוֹר? הַכּוֹבֵשׁ אֶת יִצְרוֹ.`, translation: 'Who is mighty? He who subdues his own impulses.' }
+  ];
+  let hash = 0;
+  for (let i = 0; i < item.char.length; i++) {
+    hash = (hash << 5) - hash + item.char.charCodeAt(i);
+  }
+  const idx = Math.abs(hash) % defaultQuotes.length;
+  return defaultQuotes[idx];
+}
+

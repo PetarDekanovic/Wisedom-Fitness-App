@@ -23,11 +23,52 @@ import { cn } from '../lib/utils';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { HEBREW_VOCAB_EXPANDED, HebrewVocabItem } from '../data/hebrewVocabData';
+import { HEBREW_VOCAB_EXPANDED, HebrewVocabItem, getHebrewQuoteForItem } from '../data/hebrewVocabData';
 
 export type { HebrewVocabItem };
 
-const HEBREW_VOCAB_DATA: HebrewVocabItem[] = HEBREW_VOCAB_EXPANDED;
+const HEBREW_VOCAB_DATA: HebrewVocabItem[] = (() => {
+  const seen = new Set<string>();
+  const list: HebrewVocabItem[] = [];
+  for (const item of HEBREW_VOCAB_EXPANDED) {
+    const key = item.char.trim();
+    if (!seen.has(key)) {
+      seen.add(key);
+      list.push(item);
+    }
+  }
+  return list;
+})();
+
+const HEBREW_CONFIG_SUBJECTS = [
+  { char: 'אֲנִי', vuk: 'Ani', translationSr: 'Ja', translationEn: 'I' },
+  { char: 'אַתָּה', vuk: 'Atah', translationSr: 'Ti', translationEn: 'You' },
+  { char: 'הֵם', vuk: 'Hem', translationSr: 'Oni', translationEn: 'They' },
+];
+
+const HEBREW_CONFIG_VERBS = [
+  { char: { 'אֲנִי': 'לוֹמֵד', 'אַתָּה': 'לוֹמֵד', 'הֵם': 'לוֹמְדִים' }, vuk: { 'אֲנִי': 'lomed', 'אַתָּה': 'lomed', 'הֵם': 'lomdim' }, label: 'לוֹמֵד (Učiti)', sr: { 'אֲנִי': 'učim', 'אַתָּה': 'učiš', 'הֵם': 'uče' }, en: 'study' },
+  { char: { 'אֲנִי': 'חוֹשֵׁב', 'אַתָּה': 'חוֹשֵׁב', 'הֵם': 'חוֹשְׁבִים' }, vuk: { 'אֲנִי': 'choshev', 'אַתָּה': 'choshev', 'הֵם': 'choshvim' }, label: 'חוֹשֵׁב (Misliti)', sr: { 'אֲנִי': 'promišljam o', 'אַתָּה': 'promišljaš o', 'הֵם': 'promišljaju o' }, en: 'ponder' },
+  { char: { 'אֲנִי': 'אוֹהֵב', 'אַתָּה': 'אוֹהֵב', 'הֵם': 'אוֹהֲבִים' }, vuk: { 'אֲנִי': 'ohev', 'אַתָּה': 'ohev', 'הֵם': 'ohavim' }, label: 'אוֹהֵב (Voleti)', sr: { 'אֲנִי': 'volim', 'אַתָּה': 'voliš', 'הֵם': 'vole' }, en: 'love' },
+  { char: { 'אֲנִי': 'מְחַפֵּשׂ', 'אַתָּה': 'מְחַפֵּשׂ', 'הֵם': 'מְחַפְּשִׂים' }, vuk: { 'אֲנִי': 'mechapes', 'אַתָּה': 'mechapes', 'הֵם': 'mechapsim' }, label: 'מְחַפֵּשׂ (Tražiti)', sr: { 'אֲנִי': 'tražim', 'אַתָּה': 'tražiš', 'הֵם': 'traže' }, en: 'seek' },
+  { char: { 'אֲנִי': 'רוֹאֶה', 'אַתָּה': 'רוֹאֶה', 'הֵם': 'רוֹאִים' }, vuk: { 'אֲנִי': 'roeh', 'אַתָּה': 'roeh', 'הֵם': 'roim' }, label: 'רוֹאֶה (Videti)', sr: { 'אֲנִי': 'vidim', 'אַתָּה': 'vidiš', 'הֵם': 'vide' }, en: 'see' },
+  { char: { 'אֲנִי': 'שׁוֹמֵעַ', 'אַתָּה': 'שׁוֹמֵעַ', 'הֵם': 'שׁוֹמְעִים' }, vuk: { 'אֲנִי': 'shomea', 'אַתָּה': 'shomea', 'הֵם': 'shomim' }, label: 'שׁוֹמֵעַ (Slušati)', sr: { 'אֲנִי': 'slušam', 'אַתָּה': 'slušaš', 'הֵם': 'slušaju' }, en: 'listen to' },
+  { char: { 'אֲנִי': 'יוֹצֵר', 'אַתָּה': 'יוֹצֵר', 'הֵם': 'יוֹצְרִים' }, vuk: { 'אֲנִי': 'yotzer', 'אַתָּה': 'yotzer', 'הֵם': 'yotzrim' }, label: 'יוֹצֵר (Stvarati)', sr: { 'אֲנִי': 'stvaram', 'אַתָּה': 'stvaraš', 'הֵם': 'stvaraju' }, en: 'create' },
+  { char: { 'אֲנִי': 'כּוֹתֵב', 'אַתָּה': 'כּוֹתֵב', 'הֵם': 'כּוֹתְבִים' }, vuk: { 'אֲנִי': 'kotev', 'אַתָּה': 'kotev', 'הֵם': 'kotvim' }, label: 'כּוֹתֵב (Pisati)', sr: { 'אֲנִי': 'pišem', 'אַתָּה': 'pišeš', 'הֵם': 'pišu' }, en: 'write' },
+];
+
+const HEBREW_CONFIG_NOUNS = [
+  { char: 'חָכְמָה', vuk: 'chokhmah', sr: 'mudrost', en: 'wisdom' },
+  { char: 'אֱמֶת', vuk: 'emet', sr: 'istinu', en: 'truth' },
+  { char: 'שָׁלוֹם', vuk: 'shalom', sr: 'mir', en: 'peace' },
+  { char: 'אוֹר', vuk: 'or', sr: 'svetlost', en: 'light' },
+  { char: 'סֵפֶר', vuk: 'sefer', sr: 'knjigu', en: 'book' },
+  { char: 'דֶּרֶךְ', vuk: 'derekh', sr: 'put', en: 'path' },
+  { char: 'כֹּחַ', vuk: 'koach', sr: 'snagu', en: 'strength' },
+  { char: 'לֵב', vuk: 'lev', sr: 'srce', en: 'heart' },
+  { char: 'תִּקְוָה', vuk: 'tikvah', sr: 'nadu', en: 'hope' },
+  { char: 'בְּרִיאוּת', vuk: 'briut', sr: 'zdravlje', en: 'health' },
+];
 
 export interface HebrewVocabViewProps {
   isDarkMode: boolean;
@@ -40,6 +81,11 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
   const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz'>('learn');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 3-Step Word Configurator State (I / You / They -> Verb -> Noun)
+  const [hCfgSubIdx, setHCfgSubIdx] = useState(0); // 'אֲנִי'
+  const [hCfgVerbIdx, setHCfgVerbIdx] = useState(1); // 'חוֹשֵׁב'
+  const [hCfgNounIdx, setHCfgNounIdx] = useState(0); // 'חָכְמָה'
 
   
   // Weaver state
@@ -656,12 +702,22 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                         <p className={cn("text-xs font-medium", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
                           🇬🇧 {item.english}
                         </p>
-                        {item.visualTip && (
-                          <div className="text-xs italic text-blue-800 dark:text-blue-300 bg-blue-500/10 border border-blue-500/20 p-2.5 rounded-xl flex items-start gap-1.5 mt-2">
-                            <span>💡</span>
-                            <span>{item.visualTip}</span>
-                          </div>
-                        )}
+                        {(() => {
+                          const quoteInfo = getHebrewQuoteForItem(item);
+                          return (
+                            <div className="text-[11px] leading-snug bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 p-2.5 rounded-xl flex items-start gap-2 mt-2">
+                              <span className="text-sm shrink-0">💡</span>
+                              <div className="space-y-0.5">
+                                <p className="font-semibold text-blue-900 dark:text-blue-200 tracking-wide font-serif">
+                                  {quoteInfo.quote}
+                                </p>
+                                <p className="text-[10px] italic text-blue-700/90 dark:text-blue-300/80 font-sans">
+                                  "{quoteInfo.translation}"
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -728,17 +784,169 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
         {/* AI SENTENCE WEAVER */}
         {activeTab === 'weaver' && (
           <motion.div key="weaver-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+            {/* 3-STEP SENTENCE CONFIGURATOR */}
+            <div className={cn(
+              "p-6 rounded-3xl border space-y-5",
+              isDarkMode ? "bg-zinc-900/90 border-blue-500/40 shadow-xl" : "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-300 shadow-md"
+            )}>
+              <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 border-blue-500/20">
+                <div className="flex items-center gap-2">
+                  <Wand2 className="w-5 h-5 text-blue-500 animate-pulse" />
+                  <h3 className="text-base font-black tracking-tight">Konfigurator Hebrejskih Rečenica (Brzi Sklop)</h3>
+                </div>
+                <span className="text-[10px] font-mono font-extrabold uppercase bg-blue-500/20 text-blue-600 dark:text-blue-300 px-2.5 py-1 rounded-full border border-blue-500/30">
+                  Subjekat → Glagol → Imenica
+                </span>
+              </div>
+
+              {/* STEP 1: SUBJECT */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1.5 font-mono">
+                  <span>1. Subjekat:</span>
+                  <span className="text-[10px] font-normal opacity-80">(Izaberite subjekat)</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {HEBREW_CONFIG_SUBJECTS.map((sub, idx) => (
+                    <button
+                      key={`hsub-${idx}`}
+                      onClick={() => setHCfgSubIdx(idx)}
+                      className={cn(
+                        "p-3 rounded-2xl border transition-all text-center",
+                        hCfgSubIdx === idx
+                          ? "bg-blue-600 text-white border-blue-500 shadow-md scale-[1.02]"
+                          : isDarkMode ? "bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:border-blue-500/50" : "bg-white border-blue-200 text-zinc-800 hover:bg-blue-100/50"
+                      )}
+                    >
+                      <p className="text-xl font-serif font-black" dir="rtl">{sub.char}</p>
+                      <p className="text-[10px] font-mono opacity-90">{sub.vuk}</p>
+                      <p className="text-[10px] font-bold mt-0.5">{sub.translationSr}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* STEP 2: VERB */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1.5 font-mono">
+                  <span>2. Glagol:</span>
+                  <span className="text-[10px] font-normal opacity-80">(Izaberite radnju)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {HEBREW_CONFIG_VERBS.map((v, idx) => {
+                    const subChar = HEBREW_CONFIG_SUBJECTS[hCfgSubIdx].char;
+                    const vChar = v.char[subChar as 'אֲנִי' | 'אַתָּה' | 'הֵם'];
+                    const vVuk = v.vuk[subChar as 'אֲנִי' | 'אַתָּה' | 'הֵם'];
+                    return (
+                      <button
+                        key={`hverb-${idx}`}
+                        onClick={() => setHCfgVerbIdx(idx)}
+                        className={cn(
+                          "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                          hCfgVerbIdx === idx
+                            ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                            : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-blue-500/40" : "bg-white border-blue-200 text-zinc-700 hover:bg-blue-100/50"
+                        )}
+                      >
+                        <span className="font-serif text-sm font-black" dir="rtl">{vChar}</span>
+                        <span className="text-[10px] opacity-80 font-mono">({vVuk})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* STEP 3: NOUN */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1.5 font-mono">
+                  <span>3. Imenica / Objekat:</span>
+                  <span className="text-[10px] font-normal opacity-80">(Izaberite pojam)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {HEBREW_CONFIG_NOUNS.map((n, idx) => (
+                    <button
+                      key={`hnoun-${idx}`}
+                      onClick={() => setHCfgNounIdx(idx)}
+                      className={cn(
+                        "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                        hCfgNounIdx === idx
+                          ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                          : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-blue-500/40" : "bg-white border-blue-200 text-zinc-700 hover:bg-blue-100/50"
+                      )}
+                    >
+                      <span className="font-serif text-sm font-black" dir="rtl">{n.char}</span>
+                      <span className="text-[10px] opacity-80 font-mono">({n.sr})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* GENERATED CONFIGURATOR PREVIEW CARD */}
+              {(() => {
+                const sub = HEBREW_CONFIG_SUBJECTS[hCfgSubIdx];
+                const verbObj = HEBREW_CONFIG_VERBS[hCfgVerbIdx];
+                const noun = HEBREW_CONFIG_NOUNS[hCfgNounIdx];
+
+                const subChar = sub.char as 'אֲנִי' | 'אַתָּה' | 'הֵם';
+                const verbChar = verbObj.char[subChar];
+                const verbVuk = verbObj.vuk[subChar];
+                const verbSr = verbObj.sr[subChar];
+
+                const sentenceHebrew = `${subChar} ${verbChar} ${noun.char}`;
+                const sentenceVuk = `${sub.vuk} ${verbVuk} ${noun.vuk}`;
+                const sentenceSr = `${sub.translationSr} ${verbSr} ${noun.sr}.`;
+                const sentenceEn = `${sub.translationEn} ${verbObj.en} ${noun.en}.`;
+
+                return (
+                  <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-500/50 space-y-2.5 mt-4 text-left">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-[10px] font-mono font-black text-blue-400 uppercase tracking-widest">
+                        Sklopljena Hebrejska Rečenica
+                      </span>
+                      <button
+                        onClick={() => speakHebrew(sentenceHebrew)}
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-500 text-white hover:bg-blue-400 transition-all flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Volume2 className="w-4 h-4" /> Izgovori Rečenicu
+                      </button>
+                    </div>
+
+                    <p className="text-3xl font-serif font-black text-blue-300 tracking-wide text-right" dir="rtl">
+                      {sentenceHebrew}
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono pt-1">
+                      <p className="text-emerald-400 font-bold">
+                        Vuk: <span className="text-white">"{sentenceVuk}"</span>
+                      </p>
+                    </div>
+
+                    <div className="border-t pt-2 border-blue-500/20 text-xs space-y-0.5 font-sans">
+                      <p className="text-blue-200 font-semibold">🇭🇷 {sentenceSr}</p>
+                      <p className="text-blue-300/80 text-[11px] italic">🇬🇧 {sentenceEn}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* CUSTOM WORD PICKER GRID */}
             <div className={cn(
               "p-6 rounded-3xl border space-y-4",
               isDarkMode ? "bg-zinc-900/80 border-purple-500/30" : "bg-purple-50/50 border-purple-200"
             )}>
-              <div className="flex items-center gap-2">
-                <Wand2 className="w-5 h-5 text-purple-500 animate-spin" />
-                <h3 className="text-base font-black tracking-tight">Interaktivni Sklop Rečenica (Interaktivno Učenje)</h3>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-purple-400 font-mono">
+                  Slobodni Sklop iz Rečnika (Izaberi reči)
+                </h4>
+                {selectedWeaverItems.length > 0 && (
+                  <button
+                    onClick={() => { setSelectedWeaverItems([]); setWovenSentence(null); }}
+                    className="text-xs font-bold text-red-400 hover:text-red-300"
+                  >
+                    Očisti selekciju
+                  </button>
+                )}
               </div>
-              <p className="text-xs text-zinc-400">
-                Izaberite do 3 reči iz rečnika ispod i ispletite pravu upotrebljivu hebrejsku rečenicu sa izgovorom!
-              </p>
 
               <div className="flex flex-wrap gap-2">
                 {selectedWeaverItems.map(item => (
@@ -748,29 +956,24 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   </span>
                 ))}
                 {selectedWeaverItems.length === 0 && (
-                  <span className="text-xs italic text-zinc-500">Kliknite na reči ispod da ih dodate...</span>
+                  <span className="text-xs italic text-zinc-500">Kliknite na reči iz rečnika ispod da ih spojite...</span>
                 )}
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={weaveSentence}
-                  disabled={selectedWeaverItems.length === 0}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-50 transition-all flex items-center gap-1.5"
-                >
-                  <Zap className="w-4 h-4" /> Ispleti Rečenicu & Izgovori
-                </button>
-                <button
-                  onClick={() => { setSelectedWeaverItems([]); setWovenSentence(null); }}
-                  className="px-3 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:text-zinc-200"
-                >
-                  Poništi
-                </button>
-              </div>
+              {selectedWeaverItems.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={weaveSentence}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white hover:bg-purple-500 transition-all flex items-center gap-1.5"
+                  >
+                    <Zap className="w-4 h-4" /> Ispleti Slobodnu Rečenicu
+                  </button>
+                </div>
+              )}
 
               {wovenSentence && (
                 <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-500/40 space-y-2">
-                  <p className="text-xl font-serif font-bold text-purple-300">{wovenSentence.hebrew}</p>
+                  <p className="text-xl font-serif font-bold text-purple-300" dir="rtl">{wovenSentence.hebrew}</p>
                   <p className="text-xs font-mono font-bold text-emerald-400">Vuk: "{wovenSentence.vuk}"</p>
                   <p className="text-xs font-medium text-zinc-200">Prevod: {wovenSentence.serbian}</p>
                   <button
@@ -813,6 +1016,43 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
         {/* DUOLINGO QUIZ VIEW */}
         {activeTab === 'quiz' && (
           <motion.div key="quiz-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-2xl mx-auto space-y-6">
+            {!quizStarted && !quizComplete && (
+              <div className={cn(
+                "p-8 rounded-3xl border text-center space-y-6",
+                isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-white border-zinc-200 shadow-lg"
+              )}>
+                <div className="w-16 h-16 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto text-3xl shadow-inner">
+                  🕎
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-serif font-black tracking-tight">Hebrejski Duo Kviz Arena</h3>
+                  <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
+                    Testirajte svoje znanje hebrejskih reči, korena i Vuk Karadžić transliteracije kroz 5 brzih i izazovnih pitanja.
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto font-mono text-xs">
+                  <div className={cn("p-3 rounded-2xl border", isDarkMode ? "bg-zinc-800/40 border-zinc-700/50" : "bg-zinc-50 border-zinc-200")}>
+                    <p className="text-[10px] text-zinc-400">Najbolji Skor</p>
+                    <p className="text-base font-black text-amber-400">{highScore} pts</p>
+                  </div>
+                  <div className={cn("p-3 rounded-2xl border", isDarkMode ? "bg-zinc-800/40 border-zinc-700/50" : "bg-zinc-50 border-zinc-200")}>
+                    <p className="text-[10px] text-zinc-400">Savladano</p>
+                    <p className="text-base font-black text-emerald-400">{masteredIds.length}/{HEBREW_VOCAB_DATA.length}</p>
+                  </div>
+                  <div className={cn("p-3 rounded-2xl border", isDarkMode ? "bg-zinc-800/40 border-zinc-700/50" : "bg-zinc-50 border-zinc-200")}>
+                    <p className="text-[10px] text-zinc-400">Životi</p>
+                    <p className="text-base font-black text-red-400">3 ❤️</p>
+                  </div>
+                </div>
+                <button
+                  onClick={generateQuizRound}
+                  className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
+                >
+                  Započni Kviz Rundu 🚀
+                </button>
+              </div>
+            )}
+
             {!quizComplete && quizStarted && roundQuestions.length > 0 && (
               <div className={cn(
                 "p-6 md:p-8 rounded-3xl border space-y-6",
@@ -834,7 +1074,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                 {/* Question */}
                 <div className="text-center space-y-3 my-4">
                   <span className="text-5xl">{roundQuestions[questionIdx].vocab.emoji}</span>
-                  <h3 className="text-3xl font-serif font-black text-blue-500">
+                  <h3 className="text-3xl font-serif font-black text-blue-500" dir="rtl">
                     {roundQuestions[questionIdx].vocab.char}
                   </h3>
                   <p className="text-xs font-mono text-zinc-400">
@@ -888,16 +1128,26 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
             )}
 
             {quizComplete && (
-              <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 text-center space-y-4">
-                <Trophy className="w-12 h-12 text-yellow-500 mx-auto animate-bounce" />
-                <h3 className="text-xl font-black text-white">Kviz Završen!</h3>
-                <p className="text-sm font-mono text-emerald-400">Ostvaren rezultat: {score} poena</p>
-                <button
-                  onClick={generateQuizRound}
-                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-blue-600 text-white hover:bg-blue-500"
-                >
-                  Igraj Ponovo 🔄
-                </button>
+              <div className={cn(
+                "p-8 rounded-3xl border text-center space-y-5",
+                isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-xl"
+              )}>
+                <Trophy className="w-14 h-14 text-yellow-500 mx-auto animate-bounce" />
+                <div className="space-y-1">
+                  <h3 className="text-2xl font-serif font-black">Runda Kvida Završena!</h3>
+                  <p className="text-xs text-zinc-400">Uspešno ste testirali vaše hebrejsko znanje.</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 inline-block font-mono text-sm font-black text-emerald-400">
+                  Ostvaren Rezultat: {score} Poena
+                </div>
+                <div>
+                  <button
+                    onClick={generateQuizRound}
+                    className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20"
+                  >
+                    Igraj Ponovo 🔄
+                  </button>
+                </div>
               </div>
             )}
           </motion.div>

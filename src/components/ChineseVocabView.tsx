@@ -18,7 +18,7 @@ import { cn } from '../lib/utils';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { CHINESE_VOCAB_EXPANDED, VocabItem } from '../data/chineseVocabData';
+import { CHINESE_VOCAB_EXPANDED, VocabItem, getChineseQuoteForItem } from '../data/chineseVocabData';
 
 export type { VocabItem };
 
@@ -28,12 +28,60 @@ interface ChineseVocabViewProps {
   user: User | null;
 }
 
-const VOCAB_DATA: VocabItem[] = CHINESE_VOCAB_EXPANDED;
+const VOCAB_DATA: VocabItem[] = (() => {
+  const seen = new Set<string>();
+  const list: VocabItem[] = [];
+  for (const item of CHINESE_VOCAB_EXPANDED) {
+    const key = item.char.trim();
+    if (!seen.has(key)) {
+      seen.add(key);
+      list.push(item);
+    }
+  }
+  return list;
+})();
+
+const CONFIGURATOR_SUBJECTS = [
+  { char: '我', pinyin: 'Wǒ', vuk: 'Vo', translationSr: 'Ja', translationEn: 'I' },
+  { char: '你', pinyin: 'Nǐ', vuk: 'Ni', translationSr: 'Ti', translationEn: 'You' },
+  { char: '他们', pinyin: 'Tāmen', vuk: 'Ta men', translationSr: 'Oni', translationEn: 'They' },
+];
+
+const CONFIGURATOR_VERBS = [
+  { char: '看', pinyin: 'kàn', vuk: 'kan', sr: { '我': 'gledam', '你': 'gledaš', '他们': 'gledaju' }, en: 'look at' },
+  { char: '学', pinyin: 'xué', vuk: 'sjue', sr: { '我': 'učim', '你': 'učiš', '他们': 'uče' }, en: 'study' },
+  { char: '喜欢', pinyin: 'xǐhuan', vuk: 'si huan', sr: { '我': 'volim', '你': 'voliš', '他们': 'vole' }, en: 'like' },
+  { char: '思考', pinyin: 'sīkǎo', vuk: 'si kao', sr: { '我': 'promišljam o', '你': 'promišljaš o', '他们': 'promišljaju o' }, en: 'ponder' },
+  { char: '听', pinyin: 'tīng', vuk: 'ting', sr: { '我': 'slušam', '你': 'slušaš', '他们': 'slušaju' }, en: 'listen to' },
+  { char: '创造', pinyin: 'chuàngzào', vuk: 'čuang dzao', sr: { '我': 'stvaram', '你': 'stvaraš', '他们': 'stvaraju' }, en: 'create' },
+  { char: '坚持', pinyin: 'jiānchí', vuk: 'đjien či', sr: { '我': 'istrajavam u', '你': 'istrajavaš u', '他们': 'istrajavaju u' }, en: 'persist in' },
+  { char: '爱', pinyin: 'ài', vuk: 'ai', sr: { '我': 'volim', '你': 'voliš', '他们': 'vole' }, en: 'love' },
+  { char: '寻找', pinyin: 'xúnzhǎo', vuk: 'sun džao', sr: { '我': 'tražim', '你': 'tražiš', '他们': 'traže' }, en: 'seek' },
+  { char: '写', pinyin: 'xiě', vuk: 'sje', sr: { '我': 'pišem', '你': 'pišeš', '他们': 'pišu' }, en: 'write' },
+];
+
+const CONFIGURATOR_NOUNS = [
+  { char: '智慧', pinyin: 'zhìhuì', vuk: 'dži hui', sr: 'mudrost', en: 'wisdom' },
+  { char: '真理', pinyin: 'zhēnlǐ', vuk: 'džen li', sr: 'istinu', en: 'truth' },
+  { char: '和平', pinyin: 'hépíng', vuk: 'he ping', sr: 'mir', en: 'peace' },
+  { char: '光明', pinyin: 'guāngmíng', vuk: 'guang ming', sr: 'svetlost', en: 'light' },
+  { char: '书', pinyin: 'shū', vuk: 'šu', sr: 'knjigu', en: 'book' },
+  { char: '道', pinyin: 'dào', vuk: 'dao', sr: 'Put / Dao', en: 'the Way' },
+  { char: '力量', pinyin: 'lìliàng', vuk: 'li ljang', sr: 'snagu', en: 'strength' },
+  { char: '心', pinyin: 'xīn', vuk: 'sin', sr: 'srce / um', en: 'heart / mind' },
+  { char: '希望', pinyin: 'xīwàng', vuk: 'si vang', sr: 'nadu', en: 'hope' },
+  { char: '健康', pinyin: 'jiànkāng', vuk: 'đjen kang', sr: 'zdravlje', en: 'health' },
+];
 
 export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
   const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz'>('learn');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 3-Step Word Configurator State (I / You / They -> Verb -> Noun)
+  const [cfgSubIdx, setCfgSubIdx] = useState(0); // '我'
+  const [cfgVerbIdx, setCfgVerbIdx] = useState(3); // '思考'
+  const [cfgNounIdx, setCfgNounIdx] = useState(0); // '智慧'
 
   // Weaver
   const [selectedWeaverItems, setSelectedWeaverItems] = useState<VocabItem[]>([]);
@@ -649,12 +697,22 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                         <p className={cn("text-xs font-medium", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
                           🇬🇧 {item.english}
                         </p>
-                        {item.visualTip && (
-                          <div className="text-xs italic text-amber-800 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl flex items-start gap-1.5 mt-2">
-                            <span>💡</span>
-                            <span>{item.visualTip}</span>
-                          </div>
-                        )}
+                        {(() => {
+                          const quoteInfo = getChineseQuoteForItem(item);
+                          return (
+                            <div className="text-[11px] leading-snug bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 p-2.5 rounded-xl flex items-start gap-2 mt-2">
+                              <span className="text-sm shrink-0">💡</span>
+                              <div className="space-y-0.5">
+                                <p className="font-semibold text-amber-900 dark:text-amber-200 tracking-wide font-serif">
+                                  {quoteInfo.quote}
+                                </p>
+                                <p className="text-[10px] italic text-amber-700/90 dark:text-amber-300/80 font-sans">
+                                  "{quoteInfo.translation}"
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -722,17 +780,163 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
         {/* AI SENTENCE WEAVER */}
         {activeTab === 'weaver' && (
           <motion.div key="weaver-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+            {/* 3-STEP SENTENCE CONFIGURATOR */}
+            <div className={cn(
+              "p-6 rounded-3xl border space-y-5",
+              isDarkMode ? "bg-zinc-900/90 border-amber-500/40 shadow-xl" : "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300 shadow-md"
+            )}>
+              <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 border-amber-500/20">
+                <div className="flex items-center gap-2">
+                  <Wand2 className="w-5 h-5 text-amber-500 animate-pulse" />
+                  <h3 className="text-base font-black tracking-tight">Konfigurator Kineskih Rečenica (Brzi Sklop)</h3>
+                </div>
+                <span className="text-[10px] font-mono font-extrabold uppercase bg-amber-500/20 text-amber-600 dark:text-amber-300 px-2.5 py-1 rounded-full border border-amber-500/30">
+                  Subjekat → Glagol → Imenica
+                </span>
+              </div>
+
+              {/* STEP 1: SUBJECT */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
+                  <span>1. Subjekat:</span>
+                  <span className="text-[10px] font-normal opacity-80">(Izaberite subjekat)</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {CONFIGURATOR_SUBJECTS.map((sub, idx) => (
+                    <button
+                      key={`sub-${idx}`}
+                      onClick={() => setCfgSubIdx(idx)}
+                      className={cn(
+                        "p-3 rounded-2xl border transition-all text-center",
+                        cfgSubIdx === idx
+                          ? "bg-amber-600 text-white border-amber-500 shadow-md scale-[1.02]"
+                          : isDarkMode ? "bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:border-amber-500/50" : "bg-white border-amber-200 text-zinc-800 hover:bg-amber-100/50"
+                      )}
+                    >
+                      <p className="text-xl font-serif font-black">{sub.char}</p>
+                      <p className="text-[10px] font-mono opacity-90">{sub.pinyin} ({sub.vuk})</p>
+                      <p className="text-[10px] font-bold mt-0.5">{sub.translationSr}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* STEP 2: VERB */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
+                  <span>2. Glagol:</span>
+                  <span className="text-[10px] font-normal opacity-80">(Izaberite radnju)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {CONFIGURATOR_VERBS.map((v, idx) => (
+                    <button
+                      key={`verb-${idx}`}
+                      onClick={() => setCfgVerbIdx(idx)}
+                      className={cn(
+                        "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                        cfgVerbIdx === idx
+                          ? "bg-amber-600 text-white border-amber-500 shadow-sm"
+                          : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-zinc-700 hover:bg-amber-100/50"
+                      )}
+                    >
+                      <span className="font-serif text-sm font-black">{v.char}</span>
+                      <span className="text-[10px] opacity-80 font-mono">[{v.pinyin}]</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* STEP 3: NOUN */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
+                  <span>3. Imenica / Objekat:</span>
+                  <span className="text-[10px] font-normal opacity-80">(Izaberite pojam)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {CONFIGURATOR_NOUNS.map((n, idx) => (
+                    <button
+                      key={`noun-${idx}`}
+                      onClick={() => setCfgNounIdx(idx)}
+                      className={cn(
+                        "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                        cfgNounIdx === idx
+                          ? "bg-amber-600 text-white border-amber-500 shadow-sm"
+                          : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-zinc-700 hover:bg-amber-100/50"
+                      )}
+                    >
+                      <span className="font-serif text-sm font-black">{n.char}</span>
+                      <span className="text-[10px] opacity-80 font-mono">({n.sr})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* GENERATED CONFIGURATOR PREVIEW CARD */}
+              {(() => {
+                const sub = CONFIGURATOR_SUBJECTS[cfgSubIdx];
+                const verb = CONFIGURATOR_VERBS[cfgVerbIdx];
+                const noun = CONFIGURATOR_NOUNS[cfgNounIdx];
+                const sentenceChar = `${sub.char} ${verb.char} ${noun.char}`;
+                const sentencePinyin = `${sub.pinyin} ${verb.pinyin} ${noun.pinyin}`;
+                const sentenceVuk = `${sub.vuk} ${verb.vuk} ${noun.vuk}`;
+                const verbSr = verb.sr[sub.char as '我' | '你' | '他们'];
+                const sentenceSr = `${sub.translationSr} ${verbSr} ${noun.sr}.`;
+                const sentenceEn = `${sub.translationEn} ${verb.en} ${noun.en}.`;
+
+                return (
+                  <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/50 space-y-2.5 mt-4 text-left">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-[10px] font-mono font-black text-amber-400 uppercase tracking-widest">
+                        Sklopljena Kineska Rečenica
+                      </span>
+                      <button
+                        onClick={() => speakChinese(sentenceChar)}
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-zinc-950 hover:bg-amber-400 transition-all flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Volume2 className="w-4 h-4" /> Izgovori Rečenicu
+                      </button>
+                    </div>
+
+                    <p className="text-3xl font-serif font-black text-amber-300 tracking-wide">
+                      {sentenceChar}
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono pt-1">
+                      <p className="text-amber-400 font-bold">
+                        Pinyin: <span className="text-white">{sentencePinyin}</span>
+                      </p>
+                      <p className="text-emerald-400 font-bold">
+                        Vuk: <span className="text-white">"{sentenceVuk}"</span>
+                      </p>
+                    </div>
+
+                    <div className="border-t pt-2 border-amber-500/20 text-xs space-y-0.5 font-sans">
+                      <p className="text-amber-200 font-semibold">🇭🇷 {sentenceSr}</p>
+                      <p className="text-amber-300/80 text-[11px] italic">🇬🇧 {sentenceEn}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* CUSTOM WORD PICKER GRID */}
             <div className={cn(
               "p-6 rounded-3xl border space-y-4",
               isDarkMode ? "bg-zinc-900/80 border-amber-500/30" : "bg-amber-50/50 border-amber-200"
             )}>
-              <div className="flex items-center gap-2">
-                <Wand2 className="w-5 h-5 text-amber-500 animate-spin" />
-                <h3 className="text-base font-black tracking-tight">Interaktivni Sklop Rečenica (Kineski Izrazi)</h3>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-amber-500 font-mono">
+                  Slobodni Sklop iz Rečnika (Izaberi reči)
+                </h4>
+                {selectedWeaverItems.length > 0 && (
+                  <button
+                    onClick={() => { setSelectedWeaverItems([]); setWovenSentence(null); }}
+                    className="text-xs font-bold text-red-400 hover:text-red-300"
+                  >
+                    Očisti selekciju
+                  </button>
+                )}
               </div>
-              <p className="text-xs text-zinc-400">
-                Izaberite do 3 hanzi karaktera iz rečnika ispod i ispletite pravu upotrebljivu kinesku rečenicu sa izgovorom!
-              </p>
 
               <div className="flex flex-wrap gap-2">
                 {selectedWeaverItems.map(item => (
@@ -742,25 +946,20 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   </span>
                 ))}
                 {selectedWeaverItems.length === 0 && (
-                  <span className="text-xs italic text-zinc-500">Kliknite na karaktere ispod da ih dodate...</span>
+                  <span className="text-xs italic text-zinc-500">Kliknite na karaktere iz rečnika ispod da ih spojite...</span>
                 )}
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={weaveSentence}
-                  disabled={selectedWeaverItems.length === 0}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 text-white hover:bg-amber-500 disabled:opacity-50 transition-all flex items-center gap-1.5"
-                >
-                  <Zap className="w-4 h-4" /> Ispleti Rečenicu & Izgovori
-                </button>
-                <button
-                  onClick={() => { setSelectedWeaverItems([]); setWovenSentence(null); }}
-                  className="px-3 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:text-zinc-200"
-                >
-                  Poništi
-                </button>
-              </div>
+              {selectedWeaverItems.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={weaveSentence}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 text-white hover:bg-amber-500 transition-all flex items-center gap-1.5"
+                  >
+                    <Zap className="w-4 h-4" /> Ispleti Slobodnu Rečenicu
+                  </button>
+                </div>
+              )}
 
               {wovenSentence && (
                 <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/40 space-y-2">
@@ -808,6 +1007,43 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
         {/* DUOLINGO QUIZ VIEW */}
         {activeTab === 'quiz' && (
           <motion.div key="quiz-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-2xl mx-auto space-y-6">
+            {!quizStarted && !quizComplete && (
+              <div className={cn(
+                "p-8 rounded-3xl border text-center space-y-6",
+                isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-white border-zinc-200 shadow-lg"
+              )}>
+                <div className="w-16 h-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto text-3xl shadow-inner">
+                  🏮
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-serif font-black tracking-tight">Kineski Hanzi Duo Kviz Arena</h3>
+                  <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
+                    Testirajte svoje znanje drevnih hanzi karaktera, pinyina i Vuk Karadžić transliteracije kroz 5 brzih i izazovnih pitanja.
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto font-mono text-xs">
+                  <div className={cn("p-3 rounded-2xl border", isDarkMode ? "bg-zinc-800/40 border-zinc-700/50" : "bg-zinc-50 border-zinc-200")}>
+                    <p className="text-[10px] text-zinc-400">Najbolji Skor</p>
+                    <p className="text-base font-black text-amber-400">{highScore} pts</p>
+                  </div>
+                  <div className={cn("p-3 rounded-2xl border", isDarkMode ? "bg-zinc-800/40 border-zinc-700/50" : "bg-zinc-50 border-zinc-200")}>
+                    <p className="text-[10px] text-zinc-400">Savladano</p>
+                    <p className="text-base font-black text-emerald-400">{masteredIds.length}/{VOCAB_DATA.length}</p>
+                  </div>
+                  <div className={cn("p-3 rounded-2xl border", isDarkMode ? "bg-zinc-800/40 border-zinc-700/50" : "bg-zinc-50 border-zinc-200")}>
+                    <p className="text-[10px] text-zinc-400">Životi</p>
+                    <p className="text-base font-black text-red-400">3 ❤️</p>
+                  </div>
+                </div>
+                <button
+                  onClick={generateQuizRound}
+                  className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-wider bg-red-600 text-white hover:bg-red-500 transition-all shadow-lg shadow-red-600/20"
+                >
+                  Započni Kviz Rundu 🚀
+                </button>
+              </div>
+            )}
+
             {!quizComplete && quizStarted && roundQuestions.length > 0 && (
               <div className={cn(
                 "p-6 md:p-8 rounded-3xl border space-y-6",
@@ -883,16 +1119,26 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             )}
 
             {quizComplete && (
-              <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800 text-center space-y-4">
-                <Trophy className="w-12 h-12 text-yellow-500 mx-auto animate-bounce" />
-                <h3 className="text-xl font-black text-white">Kviz Završen!</h3>
-                <p className="text-sm font-mono text-emerald-400">Ostvaren rezultat: {score} poena</p>
-                <button
-                  onClick={generateQuizRound}
-                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-red-600 text-white hover:bg-red-500"
-                >
-                  Igraj Ponovo 🔄
-                </button>
+              <div className={cn(
+                "p-8 rounded-3xl border text-center space-y-5",
+                isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-xl"
+              )}>
+                <Trophy className="w-14 h-14 text-yellow-500 mx-auto animate-bounce" />
+                <div className="space-y-1">
+                  <h3 className="text-2xl font-serif font-black">Runda Kvida Završena!</h3>
+                  <p className="text-xs text-zinc-400">Uspešno ste testirali vaše kinesko hanzi znanje.</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 inline-block font-mono text-sm font-black text-emerald-400">
+                  Ostvaren Rezultat: {score} Poena
+                </div>
+                <div>
+                  <button
+                    onClick={generateQuizRound}
+                    className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-wider bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20"
+                  >
+                    Igraj Ponovo 🔄
+                  </button>
+                </div>
               </div>
             )}
           </motion.div>
