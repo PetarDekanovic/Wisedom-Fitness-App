@@ -73,15 +73,88 @@ const CONFIGURATOR_NOUNS = [
   { char: '健康', pinyin: 'jiànkāng', vuk: 'đjen kang', sr: 'zdravlje', en: 'health' },
 ];
 
+const CONFIGURATOR_ADJECTIVES = [
+  { char: '酷', pinyin: 'kù', vuk: 'ku', sr: 'kul / super', en: 'cool' },
+  { char: '有趣', pinyin: 'yǒuqù', vuk: 'jo ćjü', sr: 'zabavno', en: 'fun / interesting' },
+  { char: '美', pinyin: 'měi', vuk: 'mei', sr: 'prelepo', en: 'beautiful' },
+  { char: '棒', pinyin: 'bàng', vuk: 'bang', sr: 'sjajno / fantastično', en: 'awesome' },
+  { char: '好', pinyin: 'hǎo', vuk: 'hao', sr: 'dobro / divno', en: 'good / wonderful' },
+  { char: '智', pinyin: 'zhì', vuk: 'dži', sr: 'mudro', en: 'wise' },
+  { char: '强', pinyin: 'qiáng', vuk: 'ćjiang', sr: 'snažno', en: 'strong' },
+  { char: '平静', pinyin: 'píngjìng', vuk: 'ping đjing', sr: 'spokojno', en: 'calm' },
+];
+
+const SOCIAL_MEDIA_PRESETS = [
+  {
+    char: '我喜欢这个！',
+    pinyin: 'Wǒ xǐhuan zhège!',
+    vuk: 'Vo si huan dže ge!',
+    sr: 'Ovo mi se sviđa!',
+    en: 'I like this!',
+    badge: '❤️ Popularno'
+  },
+  {
+    char: '这个很酷！',
+    pinyin: 'Zhège hěn kù!',
+    vuk: 'Dže ge hen ku!',
+    sr: 'Ovo je super kul!',
+    en: 'This is cool!',
+    tag: 'Trending',
+    badge: '🔥 Kul'
+  },
+  {
+    char: '这个很有趣！',
+    pinyin: 'Zhège hěn yǒuqù!',
+    vuk: 'Dže ge hen jo ćjü!',
+    sr: 'Ovo je veoma zabavno!',
+    en: 'This is fun!',
+    badge: '🎉 Zabavno'
+  },
+  {
+    char: '太棒了！',
+    pinyin: 'Tài bàng le!',
+    vuk: 'Tai bang le!',
+    sr: 'Fantastično! / Prelepo!',
+    en: 'This is awesome!',
+    badge: '🌟 Top'
+  },
+  {
+    char: '追求智慧与和平。',
+    pinyin: 'Zhuīqiú zhìhuì yǔ hépíng.',
+    vuk: 'Džui ćjiu dži hui ju he ping.',
+    sr: 'Težim mudrosti i miru.',
+    en: 'Seeking wisdom and peace.',
+    badge: '📜 Stoički'
+  },
+  {
+    char: '加油！',
+    pinyin: 'Jiāyóu!',
+    vuk: 'Đjia jou!',
+    sr: 'Idemo napred! / Snaga!',
+    en: 'Keep going! / Let\'s go!',
+    badge: '⚡ Motivacija'
+  }
+];
+
 export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
   const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz'>('learn');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 3-Step Word Configurator State (I / You / They -> Verb -> Noun)
+  // 3-Step Word Configurator State (I / You / They -> Verb -> Noun/Adjective OR Social Presets)
   const [cfgSubIdx, setCfgSubIdx] = useState(0); // '我'
   const [cfgVerbIdx, setCfgVerbIdx] = useState(3); // '思考'
+  const [cfgEndingType, setCfgEndingType] = useState<'noun' | 'adjective'>('noun');
   const [cfgNounIdx, setCfgNounIdx] = useState(0); // '智慧'
+  const [cfgAdjIdx, setCfgAdjIdx] = useState(0); // '酷'
+  const [selectedSocialPresetIdx, setSelectedSocialPresetIdx] = useState<number | null>(null);
+  const [copiedConfigSentence, setCopiedConfigSentence] = useState(false);
+
+  const handleCopyConfigText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedConfigSentence(true);
+    setTimeout(() => setCopiedConfigSentence(false), 2000);
+  };
 
   // Weaver
   const [selectedWeaverItems, setSelectedWeaverItems] = useState<VocabItem[]>([]);
@@ -782,17 +855,52 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
           <motion.div key="weaver-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
             {/* 3-STEP SENTENCE CONFIGURATOR */}
             <div className={cn(
-              "p-6 rounded-3xl border space-y-5",
+              "p-6 rounded-3xl border space-y-6",
               isDarkMode ? "bg-zinc-900/90 border-amber-500/40 shadow-xl" : "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300 shadow-md"
             )}>
               <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 border-amber-500/20">
                 <div className="flex items-center gap-2">
                   <Wand2 className="w-5 h-5 text-amber-500 animate-pulse" />
-                  <h3 className="text-base font-black tracking-tight">Konfigurator Kineskih Rečenica (Brzi Sklop)</h3>
+                  <h3 className="text-base font-black tracking-tight">Konfigurator Kineskih Rečenica & Social Media Izrazi</h3>
                 </div>
                 <span className="text-[10px] font-mono font-extrabold uppercase bg-amber-500/20 text-amber-600 dark:text-amber-300 px-2.5 py-1 rounded-full border border-amber-500/30">
-                  Subjekat → Glagol → Imenica
+                  Subjekat → Glagol → Imenica / Pridev
                 </span>
+              </div>
+
+              {/* SOCIAL MEDIA QUICK PRESETS BAR */}
+              <div className="space-y-2.5 bg-amber-500/10 dark:bg-amber-950/50 p-3.5 rounded-2xl border border-amber-500/20">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-700 dark:text-amber-300 font-mono flex items-center gap-1.5">
+                    <span>📲 Popularni Social Media Izrazi (Jedan klik za Facebook):</span>
+                  </span>
+                  {selectedSocialPresetIdx !== null && (
+                    <button
+                      onClick={() => setSelectedSocialPresetIdx(null)}
+                      className="text-[10px] font-bold text-amber-500 hover:underline"
+                    >
+                      Poništi Preset
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {SOCIAL_MEDIA_PRESETS.map((preset, idx) => (
+                    <button
+                      key={`sm-${idx}`}
+                      onClick={() => setSelectedSocialPresetIdx(idx)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                        selectedSocialPresetIdx === idx
+                          ? "bg-amber-600 text-white border-amber-400 shadow-md scale-[1.02]"
+                          : isDarkMode ? "bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:border-amber-500/50" : "bg-white border-amber-200 text-zinc-800 hover:bg-amber-100/60"
+                      )}
+                    >
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-mono font-black">{preset.badge}</span>
+                      <span className="font-serif font-black">{preset.char}</span>
+                      <span className="text-[10px] opacity-75 font-normal">({preset.sr})</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* STEP 1: SUBJECT */}
@@ -805,10 +913,10 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   {CONFIGURATOR_SUBJECTS.map((sub, idx) => (
                     <button
                       key={`sub-${idx}`}
-                      onClick={() => setCfgSubIdx(idx)}
+                      onClick={() => { setCfgSubIdx(idx); setSelectedSocialPresetIdx(null); }}
                       className={cn(
                         "p-3 rounded-2xl border transition-all text-center",
-                        cfgSubIdx === idx
+                        selectedSocialPresetIdx === null && cfgSubIdx === idx
                           ? "bg-amber-600 text-white border-amber-500 shadow-md scale-[1.02]"
                           : isDarkMode ? "bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:border-amber-500/50" : "bg-white border-amber-200 text-zinc-800 hover:bg-amber-100/50"
                       )}
@@ -831,10 +939,10 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   {CONFIGURATOR_VERBS.map((v, idx) => (
                     <button
                       key={`verb-${idx}`}
-                      onClick={() => setCfgVerbIdx(idx)}
+                      onClick={() => { setCfgVerbIdx(idx); setSelectedSocialPresetIdx(null); }}
                       className={cn(
                         "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
-                        cfgVerbIdx === idx
+                        selectedSocialPresetIdx === null && cfgVerbIdx === idx
                           ? "bg-amber-600 text-white border-amber-500 shadow-sm"
                           : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-zinc-700 hover:bg-amber-100/50"
                       )}
@@ -846,55 +954,134 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                 </div>
               </div>
 
-              {/* STEP 3: NOUN */}
+              {/* STEP 3: NOUN OR ADJECTIVE */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
-                  <span>3. Imenica / Objekat:</span>
-                  <span className="text-[10px] font-normal opacity-80">(Izaberite pojam)</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {CONFIGURATOR_NOUNS.map((n, idx) => (
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
+                    <span>3. Kraj Rečenice (Imenica ili Pridev):</span>
+                  </label>
+                  <div className="flex bg-amber-500/20 p-0.5 rounded-lg border border-amber-500/30 font-mono text-[10px]">
                     <button
-                      key={`noun-${idx}`}
-                      onClick={() => setCfgNounIdx(idx)}
-                      className={cn(
-                        "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
-                        cfgNounIdx === idx
-                          ? "bg-amber-600 text-white border-amber-500 shadow-sm"
-                          : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-zinc-700 hover:bg-amber-100/50"
-                      )}
+                      onClick={() => setCfgEndingType('noun')}
+                      className={cn("px-2.5 py-1 rounded-md font-bold transition-all", cfgEndingType === 'noun' ? "bg-amber-600 text-white shadow" : "text-amber-400 hover:text-white")}
                     >
-                      <span className="font-serif text-sm font-black">{n.char}</span>
-                      <span className="text-[10px] opacity-80 font-mono">({n.sr})</span>
+                      Imenice (Pojmovi)
                     </button>
-                  ))}
+                    <button
+                      onClick={() => setCfgEndingType('adjective')}
+                      className={cn("px-2.5 py-1 rounded-md font-bold transition-all", cfgEndingType === 'adjective' ? "bg-amber-600 text-white shadow" : "text-amber-400 hover:text-white")}
+                    >
+                      Pridevi (Opisi) ✨
+                    </button>
+                  </div>
                 </div>
+
+                {cfgEndingType === 'noun' ? (
+                  <div className="flex flex-wrap gap-2">
+                    {CONFIGURATOR_NOUNS.map((n, idx) => (
+                      <button
+                        key={`noun-${idx}`}
+                        onClick={() => { setCfgNounIdx(idx); setSelectedSocialPresetIdx(null); }}
+                        className={cn(
+                          "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                          selectedSocialPresetIdx === null && cfgNounIdx === idx
+                            ? "bg-amber-600 text-white border-amber-500 shadow-sm"
+                            : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-zinc-700 hover:bg-amber-100/50"
+                        )}
+                      >
+                        <span className="font-serif text-sm font-black">{n.char}</span>
+                        <span className="text-[10px] opacity-80 font-mono">({n.sr})</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {CONFIGURATOR_ADJECTIVES.map((adj, idx) => (
+                      <button
+                        key={`adj-${idx}`}
+                        onClick={() => { setCfgAdjIdx(idx); setSelectedSocialPresetIdx(null); }}
+                        className={cn(
+                          "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                          selectedSocialPresetIdx === null && cfgAdjIdx === idx
+                            ? "bg-amber-600 text-white border-amber-500 shadow-sm"
+                            : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-amber-800 hover:bg-amber-100/50"
+                        )}
+                      >
+                        <span className="font-serif text-sm font-black">{adj.char}</span>
+                        <span className="text-[10px] opacity-80 font-mono">({adj.sr})</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* GENERATED CONFIGURATOR PREVIEW CARD */}
               {(() => {
-                const sub = CONFIGURATOR_SUBJECTS[cfgSubIdx];
-                const verb = CONFIGURATOR_VERBS[cfgVerbIdx];
-                const noun = CONFIGURATOR_NOUNS[cfgNounIdx];
-                const sentenceChar = `${sub.char} ${verb.char} ${noun.char}`;
-                const sentencePinyin = `${sub.pinyin} ${verb.pinyin} ${noun.pinyin}`;
-                const sentenceVuk = `${sub.vuk} ${verb.vuk} ${noun.vuk}`;
-                const verbSr = verb.sr[sub.char as '我' | '你' | '他们'];
-                const sentenceSr = `${sub.translationSr} ${verbSr} ${noun.sr}.`;
-                const sentenceEn = `${sub.translationEn} ${verb.en} ${noun.en}.`;
+                let sentenceChar = '';
+                let sentencePinyin = '';
+                let sentenceVuk = '';
+                let sentenceSr = '';
+                let sentenceEn = '';
+
+                if (selectedSocialPresetIdx !== null) {
+                  const preset = SOCIAL_MEDIA_PRESETS[selectedSocialPresetIdx];
+                  sentenceChar = preset.char;
+                  sentencePinyin = preset.pinyin;
+                  sentenceVuk = preset.vuk;
+                  sentenceSr = preset.sr;
+                  sentenceEn = preset.en;
+                } else {
+                  const sub = CONFIGURATOR_SUBJECTS[cfgSubIdx];
+                  const verb = CONFIGURATOR_VERBS[cfgVerbIdx];
+                  const verbSr = verb.sr[sub.char as '我' | '你' | '他们'];
+
+                  if (cfgEndingType === 'noun') {
+                    const noun = CONFIGURATOR_NOUNS[cfgNounIdx];
+                    sentenceChar = `${sub.char} ${verb.char} ${noun.char}`;
+                    sentencePinyin = `${sub.pinyin} ${verb.pinyin} ${noun.pinyin}`;
+                    sentenceVuk = `${sub.vuk} ${verb.vuk} ${noun.vuk}`;
+                    sentenceSr = `${sub.translationSr} ${verbSr} ${noun.sr}.`;
+                    sentenceEn = `${sub.translationEn} ${verb.en} ${noun.en}.`;
+                  } else {
+                    const adj = CONFIGURATOR_ADJECTIVES[cfgAdjIdx];
+                    sentenceChar = `${sub.char} ${verb.char} ${adj.char}`;
+                    sentencePinyin = `${sub.pinyin} ${verb.pinyin} ${adj.pinyin}`;
+                    sentenceVuk = `${sub.vuk} ${verb.vuk} ${adj.vuk}`;
+                    sentenceSr = `${sub.translationSr} ${verbSr} ${adj.sr}.`;
+                    sentenceEn = `${sub.translationEn} ${verb.en} ${adj.en}.`;
+                  }
+                }
+
+                const socialShareText = `${sentenceChar} (${sentencePinyin}) - "${sentenceSr}" #WiseFit #Chinese #Stoic`;
 
                 return (
-                  <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/50 space-y-2.5 mt-4 text-left">
+                  <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/50 space-y-3 mt-4 text-left">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="text-[10px] font-mono font-black text-amber-400 uppercase tracking-widest">
-                        Sklopljena Kineska Rečenica
+                      <span className="text-[10px] font-mono font-black text-amber-400 uppercase tracking-widest flex items-center gap-1">
+                        <span>✨ Sklopljena Kineska Rečenica</span>
                       </span>
-                      <button
-                        onClick={() => speakChinese(sentenceChar)}
-                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-zinc-950 hover:bg-amber-400 transition-all flex items-center gap-1.5 shadow-sm"
-                      >
-                        <Volume2 className="w-4 h-4" /> Izgovori Rečenicu
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleCopyConfigText(socialShareText)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border",
+                            copiedConfigSentence
+                              ? "bg-emerald-600 text-white border-emerald-500"
+                              : "bg-amber-600/30 text-amber-200 border-amber-500/40 hover:bg-amber-600 hover:text-white"
+                          )}
+                          title="Kopiraj za Facebook / Instagram / Twitter"
+                        >
+                          {copiedConfigSentence ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedConfigSentence ? "Kopirano!" : "Kopiraj za Social Media"}</span>
+                        </button>
+
+                        <button
+                          onClick={() => speakChinese(sentenceChar)}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-zinc-950 hover:bg-amber-400 transition-all flex items-center gap-1.5 shadow-sm"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" /> Izgovori
+                        </button>
+                      </div>
                     </div>
 
                     <p className="text-3xl font-serif font-black text-amber-300 tracking-wide">

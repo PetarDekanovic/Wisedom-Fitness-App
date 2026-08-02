@@ -70,6 +70,62 @@ const HEBREW_CONFIG_NOUNS = [
   { char: 'בְּרִיאוּת', vuk: 'briut', sr: 'zdravlje', en: 'health' },
 ];
 
+const HEBREW_CONFIG_ADJECTIVES = [
+  { char: 'מגְנִיב', vuk: 'megniv', sr: 'kul / super', en: 'cool' },
+  { char: 'כֵּיף', vuk: 'kef', sr: 'zabavno', en: 'fun' },
+  { char: 'יָפֶה', vuk: 'yafeh', sr: 'lepo / predivno', en: 'beautiful' },
+  { char: 'מְעוּלֶה', vuk: 'meuleh', sr: 'sjajno / fantastično', en: 'awesome' },
+  { char: 'טוֹב', vuk: 'tov', sr: 'dobro / divno', en: 'good / wonderful' },
+  { char: 'חָכָם', vuk: 'chakham', sr: 'mudro', en: 'wise' },
+  { char: 'חָזָק', vuk: 'chazak', sr: 'snažno', en: 'strong' },
+  { char: 'רָגוּעַ', vuk: 'ragua', sr: 'spokojno / mirno', en: 'calm' },
+];
+
+const HEBREW_SOCIAL_PRESETS = [
+  {
+    char: 'אֲנִי אוֹהֵב אֶת זֶה!',
+    vuk: 'Ani ohev et zeh!',
+    sr: 'Ovo mi se sviđa! / Volim ovo!',
+    en: 'I like this!',
+    badge: '❤️ Popularno'
+  },
+  {
+    char: 'זֶה מגְנִיב!',
+    vuk: 'Zeh megniv!',
+    sr: 'Ovo je super kul!',
+    en: 'This is cool!',
+    badge: '🔥 Kul'
+  },
+  {
+    char: 'זֶה כֵּיף!',
+    vuk: 'Zeh kef!',
+    sr: 'Ovo je zabavno!',
+    en: 'This is fun!',
+    badge: '🎉 Zabavno'
+  },
+  {
+    char: 'מְעוּלֶה!',
+    vuk: 'Meuleh!',
+    sr: 'Sjajno! / Izvanredno!',
+    en: 'Awesome!',
+    badge: '🌟 Top'
+  },
+  {
+    char: 'חָכְמָה וְשָׁלוֹם.',
+    vuk: 'Chokhmah ve-shalom.',
+    sr: 'Mudrost i mir.',
+    en: 'Wisdom and peace.',
+    badge: '📜 Stoički'
+  },
+  {
+    char: 'חָזָק וְאֶמָץ!',
+    vuk: 'Chazak ve-amatz!',
+    sr: 'Budi jak i hrabar!',
+    en: 'Be strong and courageous!',
+    badge: '⚡ Motivacija'
+  }
+];
+
 export interface HebrewVocabViewProps {
   isDarkMode: boolean;
   isGirlyMode: boolean;
@@ -82,10 +138,20 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 3-Step Word Configurator State (I / You / They -> Verb -> Noun)
+  // 3-Step Word Configurator State (I / You / They -> Verb -> Noun/Adjective OR Social Presets)
   const [hCfgSubIdx, setHCfgSubIdx] = useState(0); // 'אֲנִי'
   const [hCfgVerbIdx, setHCfgVerbIdx] = useState(1); // 'חוֹשֵׁב'
+  const [hCfgEndingType, setHCfgEndingType] = useState<'noun' | 'adjective'>('noun');
   const [hCfgNounIdx, setHCfgNounIdx] = useState(0); // 'חָכְמָה'
+  const [hCfgAdjIdx, setHCfgAdjIdx] = useState(0); // 'מגְנִיב'
+  const [hSelectedSocialPresetIdx, setHSelectedSocialPresetIdx] = useState<number | null>(null);
+  const [hCopiedConfigSentence, setHCopiedConfigSentence] = useState(false);
+
+  const handleCopyConfigText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setHCopiedConfigSentence(true);
+    setTimeout(() => setHCopiedConfigSentence(false), 2000);
+  };
 
   
   // Weaver state
@@ -786,17 +852,52 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
           <motion.div key="weaver-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
             {/* 3-STEP SENTENCE CONFIGURATOR */}
             <div className={cn(
-              "p-6 rounded-3xl border space-y-5",
+              "p-6 rounded-3xl border space-y-6",
               isDarkMode ? "bg-zinc-900/90 border-blue-500/40 shadow-xl" : "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-300 shadow-md"
             )}>
               <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 border-blue-500/20">
                 <div className="flex items-center gap-2">
                   <Wand2 className="w-5 h-5 text-blue-500 animate-pulse" />
-                  <h3 className="text-base font-black tracking-tight">Konfigurator Hebrejskih Rečenica (Brzi Sklop)</h3>
+                  <h3 className="text-base font-black tracking-tight">Konfigurator Hebrejskih Rečenica & Social Media Izrazi</h3>
                 </div>
                 <span className="text-[10px] font-mono font-extrabold uppercase bg-blue-500/20 text-blue-600 dark:text-blue-300 px-2.5 py-1 rounded-full border border-blue-500/30">
-                  Subjekat → Glagol → Imenica
+                  Subjekat → Glagol → Imenica / Pridev
                 </span>
+              </div>
+
+              {/* SOCIAL MEDIA QUICK PRESETS BAR */}
+              <div className="space-y-2.5 bg-blue-500/10 dark:bg-blue-950/50 p-3.5 rounded-2xl border border-blue-500/20">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-blue-700 dark:text-blue-300 font-mono flex items-center gap-1.5">
+                    <span>📲 Popularni Social Media Izrazi (Jedan klik za Facebook):</span>
+                  </span>
+                  {hSelectedSocialPresetIdx !== null && (
+                    <button
+                      onClick={() => setHSelectedSocialPresetIdx(null)}
+                      className="text-[10px] font-bold text-blue-500 hover:underline"
+                    >
+                      Poništi Preset
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {HEBREW_SOCIAL_PRESETS.map((preset, idx) => (
+                    <button
+                      key={`hsm-${idx}`}
+                      onClick={() => setHSelectedSocialPresetIdx(idx)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                        hSelectedSocialPresetIdx === idx
+                          ? "bg-blue-600 text-white border-blue-400 shadow-md scale-[1.02]"
+                          : isDarkMode ? "bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:border-blue-500/50" : "bg-white border-blue-200 text-zinc-800 hover:bg-blue-100/60"
+                      )}
+                    >
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-mono font-black">{preset.badge}</span>
+                      <span className="font-serif font-black" dir="rtl">{preset.char}</span>
+                      <span className="text-[10px] opacity-75 font-normal">({preset.sr})</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* STEP 1: SUBJECT */}
@@ -809,10 +910,10 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   {HEBREW_CONFIG_SUBJECTS.map((sub, idx) => (
                     <button
                       key={`hsub-${idx}`}
-                      onClick={() => setHCfgSubIdx(idx)}
+                      onClick={() => { setHCfgSubIdx(idx); setHSelectedSocialPresetIdx(null); }}
                       className={cn(
                         "p-3 rounded-2xl border transition-all text-center",
-                        hCfgSubIdx === idx
+                        hSelectedSocialPresetIdx === null && hCfgSubIdx === idx
                           ? "bg-blue-600 text-white border-blue-500 shadow-md scale-[1.02]"
                           : isDarkMode ? "bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:border-blue-500/50" : "bg-white border-blue-200 text-zinc-800 hover:bg-blue-100/50"
                       )}
@@ -839,10 +940,10 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                     return (
                       <button
                         key={`hverb-${idx}`}
-                        onClick={() => setHCfgVerbIdx(idx)}
+                        onClick={() => { setHCfgVerbIdx(idx); setHSelectedSocialPresetIdx(null); }}
                         className={cn(
                           "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
-                          hCfgVerbIdx === idx
+                          hSelectedSocialPresetIdx === null && hCfgVerbIdx === idx
                             ? "bg-blue-600 text-white border-blue-500 shadow-sm"
                             : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-blue-500/40" : "bg-white border-blue-200 text-zinc-700 hover:bg-blue-100/50"
                         )}
@@ -855,59 +956,133 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                 </div>
               </div>
 
-              {/* STEP 3: NOUN */}
+              {/* STEP 3: NOUN OR ADJECTIVE */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1.5 font-mono">
-                  <span>3. Imenica / Objekat:</span>
-                  <span className="text-[10px] font-normal opacity-80">(Izaberite pojam)</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {HEBREW_CONFIG_NOUNS.map((n, idx) => (
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1.5 font-mono">
+                    <span>3. Kraj Rečenice (Imenica ili Pridev):</span>
+                  </label>
+                  <div className="flex bg-blue-500/20 p-0.5 rounded-lg border border-blue-500/30 font-mono text-[10px]">
                     <button
-                      key={`hnoun-${idx}`}
-                      onClick={() => setHCfgNounIdx(idx)}
-                      className={cn(
-                        "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
-                        hCfgNounIdx === idx
-                          ? "bg-blue-600 text-white border-blue-500 shadow-sm"
-                          : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-blue-500/40" : "bg-white border-blue-200 text-zinc-700 hover:bg-blue-100/50"
-                      )}
+                      onClick={() => setHCfgEndingType('noun')}
+                      className={cn("px-2.5 py-1 rounded-md font-bold transition-all", hCfgEndingType === 'noun' ? "bg-blue-600 text-white shadow" : "text-blue-400 hover:text-white")}
                     >
-                      <span className="font-serif text-sm font-black" dir="rtl">{n.char}</span>
-                      <span className="text-[10px] opacity-80 font-mono">({n.sr})</span>
+                      Imenice (Pojmovi)
                     </button>
-                  ))}
+                    <button
+                      onClick={() => setHCfgEndingType('adjective')}
+                      className={cn("px-2.5 py-1 rounded-md font-bold transition-all", hCfgEndingType === 'adjective' ? "bg-blue-600 text-white shadow" : "text-blue-400 hover:text-white")}
+                    >
+                      Pridevi (Opisi) ✨
+                    </button>
+                  </div>
                 </div>
+
+                {hCfgEndingType === 'noun' ? (
+                  <div className="flex flex-wrap gap-2">
+                    {HEBREW_CONFIG_NOUNS.map((n, idx) => (
+                      <button
+                        key={`hnoun-${idx}`}
+                        onClick={() => { setHCfgNounIdx(idx); setHSelectedSocialPresetIdx(null); }}
+                        className={cn(
+                          "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                          hSelectedSocialPresetIdx === null && hCfgNounIdx === idx
+                            ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                            : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-blue-500/40" : "bg-white border-blue-200 text-zinc-700 hover:bg-blue-100/50"
+                        )}
+                      >
+                        <span className="font-serif text-sm font-black" dir="rtl">{n.char}</span>
+                        <span className="text-[10px] opacity-80 font-mono">({n.sr})</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {HEBREW_CONFIG_ADJECTIVES.map((adj, idx) => (
+                      <button
+                        key={`hadj-${idx}`}
+                        onClick={() => { setHCfgAdjIdx(idx); setHSelectedSocialPresetIdx(null); }}
+                        className={cn(
+                          "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                          hSelectedSocialPresetIdx === null && hCfgAdjIdx === idx
+                            ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                            : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-blue-500/40" : "bg-white border-blue-200 text-blue-800 hover:bg-blue-100/50"
+                        )}
+                      >
+                        <span className="font-serif text-sm font-black" dir="rtl">{adj.char}</span>
+                        <span className="text-[10px] opacity-80 font-mono">({adj.sr})</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* GENERATED CONFIGURATOR PREVIEW CARD */}
               {(() => {
-                const sub = HEBREW_CONFIG_SUBJECTS[hCfgSubIdx];
-                const verbObj = HEBREW_CONFIG_VERBS[hCfgVerbIdx];
-                const noun = HEBREW_CONFIG_NOUNS[hCfgNounIdx];
+                let sentenceHebrew = '';
+                let sentenceVuk = '';
+                let sentenceSr = '';
+                let sentenceEn = '';
 
-                const subChar = sub.char as 'אֲנִי' | 'אַתָּה' | 'הֵם';
-                const verbChar = verbObj.char[subChar];
-                const verbVuk = verbObj.vuk[subChar];
-                const verbSr = verbObj.sr[subChar];
+                if (hSelectedSocialPresetIdx !== null) {
+                  const preset = HEBREW_SOCIAL_PRESETS[hSelectedSocialPresetIdx];
+                  sentenceHebrew = preset.char;
+                  sentenceVuk = preset.vuk;
+                  sentenceSr = preset.sr;
+                  sentenceEn = preset.en;
+                } else {
+                  const sub = HEBREW_CONFIG_SUBJECTS[hCfgSubIdx];
+                  const verbObj = HEBREW_CONFIG_VERBS[hCfgVerbIdx];
+                  const subChar = sub.char as 'אֲנִי' | 'אַתָּה' | 'הֵם';
+                  const verbChar = verbObj.char[subChar];
+                  const verbVuk = verbObj.vuk[subChar];
+                  const verbSr = verbObj.sr[subChar];
 
-                const sentenceHebrew = `${subChar} ${verbChar} ${noun.char}`;
-                const sentenceVuk = `${sub.vuk} ${verbVuk} ${noun.vuk}`;
-                const sentenceSr = `${sub.translationSr} ${verbSr} ${noun.sr}.`;
-                const sentenceEn = `${sub.translationEn} ${verbObj.en} ${noun.en}.`;
+                  if (hCfgEndingType === 'noun') {
+                    const noun = HEBREW_CONFIG_NOUNS[hCfgNounIdx];
+                    sentenceHebrew = `${subChar} ${verbChar} ${noun.char}`;
+                    sentenceVuk = `${sub.vuk} ${verbVuk} ${noun.vuk}`;
+                    sentenceSr = `${sub.translationSr} ${verbSr} ${noun.sr}.`;
+                    sentenceEn = `${sub.translationEn} ${verbObj.en} ${noun.en}.`;
+                  } else {
+                    const adj = HEBREW_CONFIG_ADJECTIVES[hCfgAdjIdx];
+                    sentenceHebrew = `${subChar} ${verbChar} ${adj.char}`;
+                    sentenceVuk = `${sub.vuk} ${verbVuk} ${adj.vuk}`;
+                    sentenceSr = `${sub.translationSr} ${verbSr} ${adj.sr}.`;
+                    sentenceEn = `${sub.translationEn} ${verbObj.en} ${adj.en}.`;
+                  }
+                }
+
+                const socialShareText = `${sentenceHebrew} (${sentenceVuk}) - "${sentenceSr}" #WiseFit #Hebrew #Stoic`;
 
                 return (
-                  <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-500/50 space-y-2.5 mt-4 text-left">
+                  <div className="p-4 rounded-2xl bg-blue-950/40 border border-blue-500/50 space-y-3 mt-4 text-left">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="text-[10px] font-mono font-black text-blue-400 uppercase tracking-widest">
-                        Sklopljena Hebrejska Rečenica
+                      <span className="text-[10px] font-mono font-black text-blue-400 uppercase tracking-widest flex items-center gap-1">
+                        <span>✨ Sklopljena Hebrejska Rečenica</span>
                       </span>
-                      <button
-                        onClick={() => speakHebrew(sentenceHebrew)}
-                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-500 text-white hover:bg-blue-400 transition-all flex items-center gap-1.5 shadow-sm"
-                      >
-                        <Volume2 className="w-4 h-4" /> Izgovori Rečenicu
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleCopyConfigText(socialShareText)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border",
+                            hCopiedConfigSentence
+                              ? "bg-emerald-600 text-white border-emerald-500"
+                              : "bg-blue-600/30 text-blue-200 border-blue-500/40 hover:bg-blue-600 hover:text-white"
+                          )}
+                          title="Kopiraj za Facebook / Instagram / Twitter"
+                        >
+                          {hCopiedConfigSentence ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{hCopiedConfigSentence ? "Kopirano!" : "Kopiraj za Social Media"}</span>
+                        </button>
+
+                        <button
+                          onClick={() => speakHebrew(sentenceHebrew)}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-500 text-white hover:bg-blue-400 transition-all flex items-center gap-1.5 shadow-sm"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" /> Izgovori
+                        </button>
+                      </div>
                     </div>
 
                     <p className="text-3xl font-serif font-black text-blue-300 tracking-wide text-right" dir="rtl">
