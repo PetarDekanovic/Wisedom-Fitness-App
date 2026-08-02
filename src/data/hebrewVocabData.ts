@@ -186,7 +186,27 @@ const highUtilityBase: Array<{ char: string; transliteration: string; vuk: strin
   { char: 'עתיד', transliteration: 'Atid', vuk: 'atid', translation: 'Budućnost', english: 'Future', emoji: '🚀', root: 'ע-ת-ד' },
   { char: 'חבר', transliteration: 'Chaver', vuk: 'haver', translation: 'Prijatelj', english: 'Friend', emoji: '🤝', root: 'ח-ב-ר' },
   { char: 'משפחה', transliteration: 'Mishpacha', vuk: 'mišpaha', translation: 'Porodica', english: 'Family', emoji: '🏡', root: 'ש-פ-ח' },
-  { char: 'מיקוד', transliteration: 'Mikud', vuk: 'mikud', translation: 'Fokus', english: 'Focus', emoji: '🎯', root: 'מ-ק-ד' }
+  { char: 'מיקוד', transliteration: 'Mikud', vuk: 'mikud', translation: 'Fokus', english: 'Focus', emoji: '🎯', root: 'מ-ק-ד' },
+  { char: 'מִשְׁמַעַת עַצְמִית', transliteration: 'Mishmaat Atzmit', vuk: 'mišmaat acmit', translation: 'Samo-disciplina', english: 'Self-discipline', emoji: '🛡️', root: 'ש-מ-ע' },
+  { char: 'הִתְבּוֹנְנוּת', transliteration: 'Hitbonenut', vuk: 'hitbonenut', translation: 'Meditacija', english: 'Contemplation / Meditation', emoji: '🧘', root: 'ב-י-ן' },
+  { char: 'אֹרֶךְ רוּחַ', transliteration: 'Orekh Ruach', vuk: 'oreh ruah', translation: 'Strpljenje', english: 'Patience', emoji: '⏳', root: 'ר-ו-ח' },
+  { char: 'צְנִיעוּת', transliteration: 'Tzniut', vuk: 'cniut', translation: 'Skromnost', english: 'Humility', emoji: '🌾', root: 'צ-נ-ע' },
+  { char: 'כָּבוֹד עַצְמִי', transliteration: 'Kavod Atzmi', vuk: 'kavod acmi', translation: 'Dostojanstvo', english: 'Self-respect / Dignity', emoji: '👑', root: 'כ-ב-ד' },
+  { char: 'הִתְעוֹרְרוּת', transliteration: 'Hitorerut', vuk: 'hitorerut', translation: 'Buđenje', english: 'Awakening', emoji: '🌅', root: 'ע-ו-ר' },
+  { char: 'חֹסֶן', transliteration: 'Chosen', vuk: 'hosen', translation: 'Otpornost', english: 'Resilience', emoji: '🌲', root: 'ח-ס-נ' },
+  { char: 'כֵּנוּת', transliteration: 'Kenut', vuk: 'kenut', translation: 'Iskrenost', english: 'Sincerity', emoji: '💎', root: 'כ-ו-ן' },
+  { char: 'רִכּוּז', transliteration: 'Rikuz', vuk: 'rikuz', translation: 'Moć koncentracije', english: 'Concentration power', emoji: '🎯', root: 'ר-כ-ז' },
+  { char: 'מְנוּחָה', transliteration: 'Menucha', vuk: 'menuha', translation: 'Spokoj / Odmor', english: 'Serenity', emoji: '🕊️', root: 'נ-ו-ח' },
+  { char: 'נְחִישׁוּת', transliteration: 'Nechishut', vuk: 'nehišut', translation: 'Čelična odlučnost', english: 'Determination', emoji: '🏔️', root: 'נ-ח-ש' },
+  { char: 'זְרִיזּוּת', transliteration: 'Zrizut', vuk: 'zrizut', translation: 'Agilnost / Hitrost', english: 'Agility', emoji: '⚡', root: 'ז-ר-ז' },
+  { char: 'אִזּוּן', transliteration: 'Izun', vuk: 'izun', translation: 'Balans', english: 'Equilibrium', emoji: '☯️', root: 'א-ז-נ' },
+  { char: 'עַקְבָנוּת', transliteration: 'Akvanut', vuk: 'akvanut', translation: 'Doslednost', english: 'Consistency', emoji: '💖', root: 'ע-ק-ב' },
+  { char: 'תְּבוּנָה פְּנִימִית', transliteration: 'Tevunah Pnimit', vuk: 'tevuna pnimit', translation: 'Unutrašnji uvid', english: 'Inner insight', emoji: '👁️', root: 'ב-י-ן' },
+  { char: 'סְלִיחָה', transliteration: 'Slicha', vuk: 'sliha', translation: 'Oproštaj', english: 'Forgiveness', emoji: '🤝', root: 'ס-ל-ח' },
+  { char: 'עֵרָנוּת', transliteration: 'Eranut', vuk: 'eranut', translation: 'Budnost', english: 'Alertness', emoji: '👁️‍🗨️', root: 'ע-ו-ר' },
+  { char: 'פַּשְׁטוּת', transliteration: 'Pashtut', vuk: 'paštut', translation: 'Minimalizam / Jednostavnost', english: 'Simplicity', emoji: '🍃', root: 'פ-ש-ט' },
+  { char: 'מוּעָרָנוּת', transliteration: 'Moaranut', vuk: 'moaranut', translation: 'Svesnost', english: 'Mindfulness', emoji: '💡', radical: 'ע-ו-ר' },
+  { char: 'מְוּיָּנּוּת', transliteration: 'Meyuyanut', vuk: 'mejujanut', translation: 'Izvrsnost', english: 'Excellence', emoji: '🏆', root: 'י-ו-נ' }
 ];
 
 // Add unique items from high utility base without duplicates

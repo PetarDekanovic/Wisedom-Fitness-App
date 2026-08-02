@@ -176,7 +176,27 @@ const chineseHighUtilityBase: Array<{ char: string; pinyin: string; vuk: string;
   { char: '希望', pinyin: 'xī wàng', vuk: 'si vang', translation: 'Nada', english: 'Hope', emoji: '🌟', radical: '巾 Scarf' },
   { char: '真理', pinyin: 'zhēn lǐ', vuk: 'džen li', translation: 'Istina', english: 'Truth', emoji: '⚖️', radical: '目 Eye' },
   { char: '命运', pinyin: 'mìng yùn', vuk: 'ming jun', translation: 'Sudbina', english: 'Destiny', emoji: '🧭', radical: '口 Mouth' },
-  { char: '专注', pinyin: 'zhuān zhù', vuk: 'džuan džu', translation: 'Fokus / Koncentracija', english: 'Focus', emoji: '🎯', radical: '寸 Inch' }
+  { char: '专注', pinyin: 'zhuān zhù', vuk: 'džuan džu', translation: 'Fokus / Koncentracija', english: 'Focus', emoji: '🎯', radical: '寸 Inch' },
+  { char: '自律', pinyin: 'zì lǜ', vuk: 'dzi lu', translation: 'Samo-disciplina', english: 'Self-discipline', emoji: '🛡️', radical: '自 Self' },
+  { char: '冥想', pinyin: 'míng xiǎng', vuk: 'ming sjang', translation: 'Meditacija', english: 'Meditation', emoji: '🧘', radical: '日 Sun' },
+  { char: '耐心', pinyin: 'nài xīn', vuk: 'nai sin', translation: 'Strpljenje', english: 'Patience', emoji: '⏳', radical: '寸 Inch' },
+  { char: '谦逊', pinyin: 'qiān xùn', vuk: 'ćien sun', translation: 'Skromnost', english: 'Humility', emoji: '🌾', radical: '讠 Speech' },
+  { char: '尊严', pinyin: 'zūn yán', vuk: 'dzun jan', translation: 'Dostojanstvo', english: 'Dignity', emoji: '👑', radical: '寸 Inch' },
+  { char: '觉醒', pinyin: 'jué xǐng', vuk: 'đjue sing', translation: 'Buđenje', english: 'Awakening', emoji: '🌅', radical: '见 See' },
+  { char: '韧性', pinyin: 'rèn xìng', vuk: 'žen sing', translation: 'Otpornost', english: 'Resilience', emoji: '🌲', radical: '韦 Leather' },
+  { char: '真诚', pinyin: 'zhēn chéng', vuk: 'džēn čeng', translation: 'Iskrenost', english: 'Sincerity', emoji: '💎', radical: '目 Eye' },
+  { char: '专注力', pinyin: 'zhuān zhù lì', vuk: 'džuan džu li', translation: 'Moć fokusa', english: 'Power of focus', emoji: '🎯', radical: '力 Power' },
+  { char: '宁静', pinyin: 'níng jìng', vuk: 'ning đjing', translation: 'Spokoj', english: 'Serenity', emoji: '🕊️', radical: '宀 Roof' },
+  { char: '毅志', pinyin: 'yì zhì', vuk: 'i dži', translation: 'Čelična volja', english: 'Unwavering resolve', emoji: '🏔️', radical: '心 Heart' },
+  { char: '敏捷', pinyin: 'mǐn jié', vuk: 'min đjie', translation: 'Agilnost', english: 'Agility', emoji: '⚡', radical: '攵 Whip' },
+  { char: '均衡', pinyin: 'jūn héng', vuk: 'đjun heng', translation: 'Balans', english: 'Balance', emoji: '☯️', radical: '土 Earth' },
+  { char: '恒心', pinyin: 'héng xīn', vuk: 'heng sin', translation: 'Istrajno srce', english: 'Perseverance of heart', emoji: '💖', radical: '忄 Heart' },
+  { char: '洞察', pinyin: 'dòng chá', vuk: 'dong ča', translation: 'Uvid / Intuitivna spoznaja', english: 'Insight', emoji: '👁️', radical: '氵 Water' },
+  { char: '宽容', pinyin: 'kuān róng', vuk: 'kuan rong', translation: 'Tolerancija / Oproštaj', english: 'Forgiveness', emoji: '🤝', radical: '宀 Roof' },
+  { char: '警觉', pinyin: 'jǐng jué', vuk: 'đjing đjue', translation: 'Budnost', english: 'Vigilance', emoji: '👁️‍🗨️', radical: '言 Speech' },
+  { char: '极简', pinyin: 'jí jiǎn', vuk: 'đji đjien', translation: 'Minimalizam', english: 'Minimalism', emoji: '🍃', radical: '木 Tree' },
+  { char: '觉察', pinyin: 'jué chá', vuk: 'đjue ča', translation: 'Svesnost', english: 'Mindful awareness', emoji: '💡', radical: '见 See' },
+  { char: '卓越', pinyin: 'zhuó yuè', vuk: 'džuo jue', translation: 'Izvrsnost', english: 'Excellence', emoji: '🏆', radical: '十 Ten' }
 ];
 
 // Add unique items from high utility base without duplicates
