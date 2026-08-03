@@ -50,14 +50,38 @@ const HEBREW_VOCAB_DATA: HebrewVocabItem[] = (() => {
   return list;
 })();
 
-const HEBREW_CONFIG_SUBJECTS = [
+export const HEBREW_CONFIG_SUBJECTS = [
+  // Personal Pronouns
   { char: 'אֲנִי', vuk: 'Ani', translationSr: 'Ja', translationEn: 'I' },
   { char: 'אַתָּה', vuk: 'Atah', translationSr: 'Ti (m)', translationEn: 'You (m)' },
   { char: 'אַתְּ', vuk: 'At', translationSr: 'Ti (f)', translationEn: 'You (f)' },
   { char: 'הוּא', vuk: 'Hu', translationSr: 'On', translationEn: 'He' },
   { char: 'הִיא', vuk: 'Hi', translationSr: 'Ona', translationEn: 'She' },
   { char: 'אֲנַחְנוּ', vuk: 'Anachnu', translationSr: 'Mi', translationEn: 'We' },
-  { char: 'הֵם', vuk: 'Hem', translationSr: 'Oni', translationEn: 'They' },
+  { char: 'אַתֶּם', vuk: 'Atem', translationSr: 'Vi (m)', translationEn: 'You (m.pl)' },
+  { char: 'אַתֵּן', vuk: 'Aten', translationSr: 'Vi (f)', translationEn: 'You (f.pl)' },
+  { char: 'הֵם', vuk: 'Hem', translationSr: 'Oni (m)', translationEn: 'They (m.pl)' },
+  { char: 'הֵן', vuk: 'Hen', translationSr: 'One (f)', translationEn: 'They (f.pl)' },
+  { char: 'כֻּלָּם', vuk: 'Kulam', translationSr: 'Svi', translationEn: 'Everyone' },
+  { char: 'עַצְמוֹ', vuk: 'Atzmo', translationSr: 'Sebe', translationEn: 'Self / Oneself' },
+
+  // Demonstrative Pronouns (This, That, These, Those, It)
+  { char: 'זֶה', vuk: 'Zeh', translationSr: 'Ovo / Ovaj / To', translationEn: 'This / It (m)' },
+  { char: 'זֹאת', vuk: 'Zot', translationSr: 'Ova / To', translationEn: 'This (f)' },
+  { char: 'אֵלֶּה', vuk: 'Eleh', translationSr: 'Ovi / Ove', translationEn: 'These' },
+  { char: 'הַהוּא', vuk: 'Hahu', translationSr: 'Ono / Onaj', translationEn: 'That (m)' },
+  { char: 'הַהִיא', vuk: 'Hahi', translationSr: 'Ona / Onaj', translationEn: 'That (f)' },
+  { char: 'הָאֵלֶּה', vuk: 'Ha\'eleh', translationSr: 'Oni / Ovi', translationEn: 'Those / These' },
+
+  // Interrogative & Indefinite Pronouns
+  { char: 'מָה', vuk: 'Mah', translationSr: 'Šta', translationEn: 'What' },
+  { char: 'מִי', vuk: 'Mi', translationSr: 'Ko', translationEn: 'Who' },
+  { char: 'אֵיזֶה', vuk: 'Eizeh', translationSr: 'Koji', translationEn: 'Which (m)' },
+  { char: 'אֵיזוֹ', vuk: 'Eizo', translationSr: 'Koja', translationEn: 'Which (f)' },
+  { char: 'אֵיפֹה', vuk: 'Eifoh', translationSr: 'Gde', translationEn: 'Where' },
+  { char: 'מִישֶׁהוּ', vuk: 'Mishehu', translationSr: 'Neko', translationEn: 'Someone' },
+  { char: 'מַשֶּׁהוּ', vuk: 'Mashehu', translationSr: 'Nešto', translationEn: 'Something' },
+  { char: 'הַכֹּל', vuk: 'Hakol', translationSr: 'Sve', translationEn: 'Everything' },
 ];
 
 export interface HebDndWordItem {
@@ -71,14 +95,15 @@ export interface HebDndWordItem {
 
 export const DND_HEBREW_WORDS: HebDndWordItem[] = (() => {
   const manual: HebDndWordItem[] = [
-    // Pronouns
-    { id: 'he-p1', char: 'אֲנִי', vuk: 'Ani', sr: 'Ja', en: 'I', type: 'pronoun' },
-    { id: 'he-p2', char: 'אַתָּה', vuk: 'Atah', sr: 'Ti (m)', en: 'You (m)', type: 'pronoun' },
-    { id: 'he-p3', char: 'אַתְּ', vuk: 'At', sr: 'Ti (f)', en: 'You (f)', type: 'pronoun' },
-    { id: 'he-p4', char: 'הוּא', vuk: 'Hu', sr: 'On', en: 'He', type: 'pronoun' },
-    { id: 'he-p5', char: 'הִיא', vuk: 'Hi', sr: 'Ona', en: 'She', type: 'pronoun' },
-    { id: 'he-p6', char: 'אֲנַחְנוּ', vuk: 'Anachnu', sr: 'Mi', en: 'We', type: 'pronoun' },
-    { id: 'he-p7', char: 'הֵם', vuk: 'Hem', sr: 'Oni', en: 'They', type: 'pronoun' },
+    // Pronouns / Subjects
+    ...HEBREW_CONFIG_SUBJECTS.map((s, idx) => ({
+      id: `he-p-${idx}`,
+      char: s.char,
+      vuk: s.vuk,
+      sr: s.translationSr,
+      en: s.translationEn,
+      type: 'pronoun' as const
+    })),
 
     // Connectors
     { id: 'he-c1', char: 'וְ', vuk: 've-', sr: 'i / a', en: 'and', type: 'connector' },
@@ -90,7 +115,11 @@ export const DND_HEBREW_WORDS: HebDndWordItem[] = (() => {
   const seen = new Set<string>(manual.map(m => m.char.trim()));
   const list: HebDndWordItem[] = [...manual];
 
-  const pronChars = new Set(['אֲנִי', 'אַתָּה', 'אַתְּ', 'הוּא', 'הִיא', 'אֲנַחְנוּ', 'הֵם', 'הֵן', 'אַתֶּם', 'אַתֵּן']);
+  const pronChars = new Set([
+    'אֲנִי', 'אַתָּה', 'אַתְּ', 'הוּא', 'הִיא', 'אֲנַחְנוּ', 'הֵם', 'הֵן', 'אַתֶּם', 'אַתֵּן', 'כֻּלָּם', 'עַצְמוֹ',
+    'זֶה', 'זֹאת', 'אֵלֶּה', 'הַהוּא', 'הַהִיא', 'הָאֵלֶּה',
+    'מָה', 'מִי', 'אֵיזֶה', 'אֵיזוֹ', 'אֵיפֹה', 'מִישֶׁהוּ', 'מַשֶּׁהוּ', 'הַכֹּל'
+  ]);
   const connChars = new Set(['וְ', 'אֶת', 'עִם', 'מְאֹד', 'שֶׁ', 'כִּי', 'לְ', 'בְּ', 'מִ', 'עַל', 'אֶל']);
 
   const isVerb = (i: HebrewVocabItem) => {
@@ -1706,9 +1735,19 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   } else {
                     const sub = HEBREW_CONFIG_SUBJECTS[hCfgSubIdx];
                     const verbObj = HEBREW_CONFIG_VERBS[hCfgVerbIdx];
-                    const verbChar = (verbObj.char as any)[sub.char] || verbObj.char['אֲנִי'];
-                    const verbVuk = (verbObj.vuk as any)[sub.char] || verbObj.vuk['אֲנִי'];
-                    const verbSr = (verbObj.sr as any)[sub.char] || verbObj.sr['אֲנִי'];
+
+                    const getVForm = (prop: any) => {
+                      if (typeof prop === 'string') return prop;
+                      if (!prop) return '';
+                      if (prop[sub.char]) return prop[sub.char];
+                      if (['זֹאת', 'הַהִיא', 'אֵיזוֹ'].includes(sub.char)) return prop['הִיא'] || prop['הוּא'] || prop['אֲנִי'];
+                      if (['אֵלֶּה', 'הָאֵלֶּה'].includes(sub.char)) return prop['הֵם'] || prop['אֲנַחְנוּ'] || prop['אֲנִי'];
+                      return prop['הוּא'] || prop['אֲנִי'] || Object.values(prop)[0] || '';
+                    };
+
+                    const verbChar = getVForm(verbObj.char);
+                    const verbVuk = getVForm(verbObj.vuk);
+                    const verbSr = getVForm(verbObj.sr);
 
                     if (hCfgEndingType === 'noun') {
                       const noun = HEBREW_CONFIG_NOUNS[hCfgNounIdx];

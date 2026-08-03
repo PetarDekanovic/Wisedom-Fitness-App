@@ -56,16 +56,35 @@ const VOCAB_DATA: VocabItem[] = (() => {
 })();
 
 const CONFIGURATOR_SUBJECTS = [
+  // Personal Pronouns
   { char: '我', pinyin: 'Wǒ', vuk: 'Vo', translationSr: 'Ja', translationEn: 'I' },
   { char: '你', pinyin: 'Nǐ', vuk: 'Ni', translationSr: 'Ti', translationEn: 'You' },
   { char: '他', pinyin: 'Tā', vuk: 'Ta', translationSr: 'On', translationEn: 'He' },
   { char: '她', pinyin: 'Tā', vuk: 'Ta', translationSr: 'Ona', translationEn: 'She' },
+  { char: '它', pinyin: 'Tā', vuk: 'Ta', translationSr: 'Ono / To', translationEn: 'It' },
   { char: '我们', pinyin: 'Wǒmen', vuk: 'Vo men', translationSr: 'Mi', translationEn: 'We' },
-  { char: '他们', pinyin: 'Tāmen', vuk: 'Ta men', translationSr: 'Oni', translationEn: 'They' },
   { char: '你们', pinyin: 'Nǐmen', vuk: 'Ni men', translationSr: 'Vi', translationEn: 'You (plural)' },
+  { char: '他们', pinyin: 'Tāmen', vuk: 'Ta men', translationSr: 'Oni', translationEn: 'They (masc)' },
   { char: '她们', pinyin: 'Tāmen', vuk: 'Ta men', translationSr: 'One', translationEn: 'They (fem)' },
+  { char: '它们', pinyin: 'Tāmen', vuk: 'Ta men', translationSr: 'Ona / Ti', translationEn: 'They (inanimate)' },
   { char: '大家', pinyin: 'Dàjiā', vuk: 'Da đia', translationSr: 'Svi', translationEn: 'Everyone' },
   { char: '自己', pinyin: 'Zìjǐ', vuk: 'Dzi đji', translationSr: 'Sebe', translationEn: 'Self / Oneself' },
+
+  // Demonstrative Pronouns (This, That, These, Those)
+  { char: '这', pinyin: 'Zhè', vuk: 'Dže', translationSr: 'Ovo / Ovaj', translationEn: 'This' },
+  { char: '这个', pinyin: 'Zhège', vuk: 'Dže ge', translationSr: 'Ovo / Ovaj', translationEn: 'This (one)' },
+  { char: '那', pinyin: 'Nà', vuk: 'Na', translationSr: 'Ono / Onaj', translationEn: 'That' },
+  { char: '那个', pinyin: 'Nàge', vuk: 'Na ge', translationSr: 'Ono / Onaj', translationEn: 'That (one)' },
+  { char: '这些', pinyin: 'Zhèxiē', vuk: 'Dže sje', translationSr: 'Ovi / Ove / Ova', translationEn: 'These' },
+  { char: '那些', pinyin: 'Nàxiē', vuk: 'Na sje', translationSr: 'Oni / One / Ona', translationEn: 'Those' },
+
+  // Interrogative & Indefinite Pronouns
+  { char: '什么', pinyin: 'Shénme', vuk: 'Šen me', translationSr: 'Šta', translationEn: 'What' },
+  { char: '谁', pinyin: 'Shéi', vuk: 'Šei', translationSr: 'Ko', translationEn: 'Who' },
+  { char: '哪个', pinyin: 'Nǎge', vuk: 'Na ge', translationSr: 'Koji', translationEn: 'Which' },
+  { char: '哪里', pinyin: 'Nǎlǐ', vuk: 'Na li', translationSr: 'Gde', translationEn: 'Where' },
+  { char: '有人', pinyin: 'Yǒurén', vuk: 'Jo ren', translationSr: 'Neko', translationEn: 'Someone' },
+  { char: '一切', pinyin: 'Yīqiè', vuk: 'I ćje', translationSr: 'Sve', translationEn: 'Everything' },
 ];
 
 export interface DndWordItem {
@@ -113,7 +132,10 @@ export const DND_CHINESE_WORDS: DndWordItem[] = (() => {
   ].forEach(add);
 
   // 3. Populate ALL items from VOCAB_DATA into classified categories
-  const pronChars = new Set(['我', '你', '他', '她', '我们', '他们', '你们', '她们', '大家', '自己']);
+  const pronChars = new Set([
+    '我', '你', '他', '她', '它', '我们', '他们', '你们', '她们', '它们', '大家', '自己',
+    '这', '这个', '那', '那个', 'these', '那些', '这些', '什么', '谁', '哪个', '哪里', '有人', '一切'
+  ]);
   const connChars = new Set(['的', '和', '很', '也', '在', '不']);
 
   const isVerb = (i: VocabItem) => i.category === 'glagoli' || i.english.toLowerCase().startsWith('to ') || ['思考', '学', '喜欢', '爱', '创造', '寻找', '听', '看', '写', '燃烧', '呼唤', '飞翔', '照亮', '改变', '坚持', '走', '跑', '笑', '哭', '说', '想', '做', '有', '去', '买', '卖', '读', '坐', '站', '睡', '懂', '问', '答', '开', '关'].includes(i.char);
@@ -1675,7 +1697,9 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   } else {
                     const sub = CONFIGURATOR_SUBJECTS[cfgSubIdx];
                     const verb = CONFIGURATOR_VERBS[cfgVerbIdx];
-                    const verbSr = (verb.sr as any)[sub.char] || verb.sr['我'] || 'radi';
+                    const verbSr = typeof verb.sr === 'string'
+                      ? verb.sr
+                      : ((verb.sr as any)[sub.char] || verb.sr['我'] || Object.values(verb.sr)[0] || 'radi');
 
                     if (cfgEndingType === 'noun') {
                       const noun = CONFIGURATOR_NOUNS[cfgNounIdx];
