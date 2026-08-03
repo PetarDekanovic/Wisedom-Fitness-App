@@ -69,133 +69,192 @@ export interface HebDndWordItem {
   type: 'pronoun' | 'verb' | 'noun' | 'adjective' | 'connector';
 }
 
-export const DND_HEBREW_WORDS: HebDndWordItem[] = [
-  // Pronouns
-  { id: 'he-p1', char: 'אֲנִי', vuk: 'Ani', sr: 'Ja', en: 'I', type: 'pronoun' },
-  { id: 'he-p2', char: 'אַתָּה', vuk: 'Atah', sr: 'Ti (m)', en: 'You (m)', type: 'pronoun' },
-  { id: 'he-p3', char: 'אַתְּ', vuk: 'At', sr: 'Ti (f)', en: 'You (f)', type: 'pronoun' },
-  { id: 'he-p4', char: 'הוּא', vuk: 'Hu', sr: 'On', en: 'He', type: 'pronoun' },
-  { id: 'he-p5', char: 'הִיא', vuk: 'Hi', sr: 'Ona', en: 'She', type: 'pronoun' },
-  { id: 'he-p6', char: 'אֲנַחְנוּ', vuk: 'Anachnu', sr: 'Mi', en: 'We', type: 'pronoun' },
-  { id: 'he-p7', char: 'הֵם', vuk: 'Hem', sr: 'Oni', en: 'They', type: 'pronoun' },
+export const DND_HEBREW_WORDS: HebDndWordItem[] = (() => {
+  const manual: HebDndWordItem[] = [
+    // Pronouns
+    { id: 'he-p1', char: 'אֲנִי', vuk: 'Ani', sr: 'Ja', en: 'I', type: 'pronoun' },
+    { id: 'he-p2', char: 'אַתָּה', vuk: 'Atah', sr: 'Ti (m)', en: 'You (m)', type: 'pronoun' },
+    { id: 'he-p3', char: 'אַתְּ', vuk: 'At', sr: 'Ti (f)', en: 'You (f)', type: 'pronoun' },
+    { id: 'he-p4', char: 'הוּא', vuk: 'Hu', sr: 'On', en: 'He', type: 'pronoun' },
+    { id: 'he-p5', char: 'הִיא', vuk: 'Hi', sr: 'Ona', en: 'She', type: 'pronoun' },
+    { id: 'he-p6', char: 'אֲנַחְנוּ', vuk: 'Anachnu', sr: 'Mi', en: 'We', type: 'pronoun' },
+    { id: 'he-p7', char: 'הֵם', vuk: 'Hem', sr: 'Oni', en: 'They', type: 'pronoun' },
 
-  // Verbs
-  { id: 'he-v1', char: 'לוֹמֵד', vuk: 'lomed', sr: 'učim / uči', en: 'study / learn', type: 'verb' },
-  { id: 'he-v2', char: 'חוֹשֵׁב', vuk: 'choshev', sr: 'razmišljam', en: 'ponder / think', type: 'verb' },
-  { id: 'he-v3', char: 'אוֹהֵב', vuk: 'ohev', sr: 'volim', en: 'love', type: 'verb' },
-  { id: 'he-v4', char: 'מְחַפֵּשׂ', vuk: 'mechapes', sr: 'tražim', en: 'seek', type: 'verb' },
-  { id: 'he-v5', char: 'רוֹאֶה', vuk: 'roeh', sr: 'vidim', en: 'see', type: 'verb' },
-  { id: 'he-v6', char: 'שׁוֹמֵעַ', vuk: 'shomea', sr: 'slušam', en: 'listen', type: 'verb' },
-  { id: 'he-v7', char: 'יוֹצֵר', vuk: 'yotzer', sr: 'stvaram', en: 'create', type: 'verb' },
-  { id: 'he-v8', char: 'כּוֹתֵב', vuk: 'kotev', sr: 'pišem', en: 'write', type: 'verb' },
+    // Connectors
+    { id: 'he-c1', char: 'וְ', vuk: 've-', sr: 'i / a', en: 'and', type: 'connector' },
+    { id: 'he-c2', char: 'אֶת', vuk: 'et', sr: '(akuzativ)', en: 'direct object marker', type: 'connector' },
+    { id: 'he-c3', char: 'עִם', vuk: 'im', sr: 'sa', en: 'with', type: 'connector' },
+    { id: 'he-c4', char: 'מְאֹד', vuk: 'meod', sr: 'veoma', en: 'very', type: 'connector' },
+  ];
 
-  // Nouns
-  { id: 'he-n1', char: 'חָכְמָה', vuk: 'chokhmah', sr: 'mudrost', en: 'wisdom', type: 'noun' },
-  { id: 'he-n2', char: 'אֱמֶת', vuk: 'emet', sr: 'istinu', en: 'truth', type: 'noun' },
-  { id: 'he-n3', char: 'שָׁלוֹם', vuk: 'shalom', sr: 'mir', en: 'peace', type: 'noun' },
-  { id: 'he-n4', char: 'אוֹר', vuk: 'or', sr: 'svetlost', en: 'light', type: 'noun' },
-  { id: 'he-n5', char: 'סֵפֶר', vuk: 'sefer', sr: 'knjigu', en: 'book', type: 'noun' },
-  { id: 'he-n6', char: 'דֶּרֶךְ', vuk: 'derekh', sr: 'put', en: 'path', type: 'noun' },
-  { id: 'he-n7', char: 'כֹּחַ', vuk: 'koach', sr: 'snagu', en: 'strength', type: 'noun' },
-  { id: 'he-n8', char: 'לֵב', vuk: 'lev', sr: 'srce', en: 'heart / mind', type: 'noun' },
+  const seen = new Set<string>(manual.map(m => m.char.trim()));
+  const list: HebDndWordItem[] = [...manual];
 
-  // Adjectives
-  { id: 'he-a1', char: 'מגְנִיב', vuk: 'megniv', sr: 'super / kul', en: 'cool', type: 'adjective' },
-  { id: 'he-a2', char: 'כֵּיף', vuk: 'kef', sr: 'zabavno', en: 'fun', type: 'adjective' },
-  { id: 'he-a3', char: 'יָפֶה', vuk: 'yafeh', sr: 'lepo', en: 'beautiful', type: 'adjective' },
-  { id: 'he-a4', char: 'טוֹב', vuk: 'tov', sr: 'dobro', en: 'good', type: 'adjective' },
-  { id: 'he-a5', char: 'חָכָם', vuk: 'chakham', sr: 'mudro', en: 'wise', type: 'adjective' },
-  { id: 'he-a6', char: 'חָזָק', vuk: 'chazak', sr: 'snažno', en: 'strong', type: 'adjective' },
+  const pronChars = new Set(['אֲנִי', 'אַתָּה', 'אַתְּ', 'הוּא', 'הִיא', 'אֲנַחְנוּ', 'הֵם', 'הֵן', 'אַתֶּם', 'אַתֵּן']);
+  const connChars = new Set(['וְ', 'אֶת', 'עִם', 'מְאֹד', 'שֶׁ', 'כִּי', 'לְ', 'בְּ', 'מִ', 'עַל', 'אֶל']);
 
-  // Connectors
-  { id: 'he-c1', char: 'וְ', vuk: 've-', sr: 'i / a', en: 'and', type: 'connector' },
-  { id: 'he-c2', char: 'אֶת', vuk: 'et', sr: '(akuzativ)', en: 'direct object marker', type: 'connector' },
-  { id: 'he-c3', char: 'עִם', vuk: 'im', sr: 'sa', en: 'with', type: 'connector' },
-  { id: 'he-c4', char: 'מְאֹד', vuk: 'meod', sr: 'veoma', en: 'very', type: 'connector' },
-];
+  const isVerb = (i: HebrewVocabItem) => {
+    if (i.category === 'glagoli') return true;
+    const v = i.vuk.toLowerCase();
+    const en = i.english.toLowerCase();
+    const sr = i.translation.toLowerCase();
+    return v.startsWith('l') || en.includes('to ') || en.includes('study') || en.includes('think') || en.includes('love') || en.includes('seek') || en.includes('see') || en.includes('listen') || en.includes('create') || en.includes('write') || sr.includes('učim') || sr.includes('radim') || sr.includes('govorim');
+  };
 
-const HEBREW_CONFIG_VERBS = [
-  { 
-    char: { 'אֲנִי': 'לוֹמֵד', 'אַתָּה': 'לוֹמֵד', 'אַתְּ': 'לוֹמֶדֶת', 'הוּא': 'לוֹמֵד', 'הִיא': 'לוֹמֶדֶת', 'אֲנַחְנוּ': 'לוֹמְדִים', 'הֵם': 'לוֹמְדִים' }, 
-    vuk: { 'אֲנִי': 'lomed', 'אַתָּה': 'lomed', 'אַתְּ': 'lomedet', 'הוּא': 'lomed', 'הִיא': 'lomedet', 'אֲנַחְנוּ': 'lomdim', 'הֵם': 'lomdim' }, 
-    label: 'לוֹמֵד (Učiti)', 
-    sr: { 'אֲנִי': 'učim', 'אַתָּה': 'učiš', 'אַתְּ': 'učiš (ž)', 'הוּא': 'uči', 'הִיא': 'uči', 'אֲנַחְנוּ': 'učimo', 'הֵם': 'uče' }, 
-    en: 'study' 
-  },
-  { 
-    char: { 'אֲנִי': 'חוֹשֵׁב', 'אַתָּה': 'חוֹשֵׁב', 'אַתְּ': 'חוֹשֶׁבֶת', 'הוּא': 'חוֹשֵׁב', 'הִיא': 'חוֹשֶׁבֶת', 'אֲנַחְנוּ': 'חוֹשְׁבִים', 'הֵם': 'חוֹשְׁבִים' }, 
-    vuk: { 'אֲנִי': 'choshev', 'אַתָּה': 'choshev', 'אַתְּ': 'choshevet', 'הוּא': 'choshev', 'הִיא': 'choshevet', 'אֲנַחְנוּ': 'choshvim', 'הֵם': 'choshvim' }, 
-    label: 'חוֹשֵׁב (Misliti)', 
-    sr: { 'אֲנִי': 'promišljam o', 'אַתָּה': 'promišljaš o', 'אַתְּ': 'promišljaš o', 'הוּא': 'promišlja o', 'הִיא': 'promišlja o', 'אֲנַחְנוּ': 'promišljamo o', 'הֵם': 'promišljaju o' }, 
-    en: 'ponder' 
-  },
-  { 
-    char: { 'אֲנִי': 'אוֹהֵב', 'אַתָּה': 'אוֹהֵב', 'אַתְּ': 'אוֹהֶבֶת', 'הוּא': 'אוֹהֵב', 'הִיא': 'אוֹהֶבֶת', 'אֲנַחְנוּ': 'אוֹהֲבִים', 'הֵם': 'אוֹהֲבִים' }, 
-    vuk: { 'אֲנִי': 'ohev', 'אַתָּה': 'ohev', 'אַתְּ': 'ohevet', 'הוּא': 'ohev', 'הִיא': 'ohevet', 'אֲנַחְנוּ': 'ohavim', 'הֵם': 'ohavim' }, 
-    label: 'אוֹהֵב (Voleti)', 
-    sr: { 'אֲנִי': 'volim', 'אַתָּה': 'voliš', 'אַתְּ': 'voliš', 'הוּא': 'voli', 'הִיא': 'voli', 'אֲנַחְנוּ': 'volimo', 'הֵם': 'vole' }, 
-    en: 'love' 
-  },
-  { 
-    char: { 'אֲנִי': 'מְחַפֵּשׂ', 'אַתָּה': 'מְחַפֵּשׂ', 'אַתְּ': 'מְחַפֶּשֶׁת', 'הוּא': 'מְחַפֵּשׂ', 'הִיא': 'מְחַפֶּשֶׁת', 'אֲנַחְנוּ': 'מְחַפְּשִׂים', 'הֵם': 'מְחַפְּשִׂים' }, 
-    vuk: { 'אֲנִי': 'mechapes', 'אַתָּה': 'mechapes', 'אַתְּ': 'mechapeset', 'הוּא': 'mechapes', 'הִיא': 'mechapeset', 'אֲנַחְנוּ': 'mechapsim', 'הֵם': 'mechapsim' }, 
-    label: 'מְחַפֵּשׂ (Tražiti)', 
-    sr: { 'אֲנִי': 'tražim', 'אַתָּה': 'tražiš', 'אַתְּ': 'tražiš', 'הוּא': 'traži', 'הִיא': 'traži', 'אֲנַחְנוּ': 'tražimo', 'הֵם': 'traže' }, 
-    en: 'seek' 
-  },
-  { 
-    char: { 'אֲנִי': 'רוֹאֶה', 'אַתָּה': 'רוֹאֶה', 'אַתְּ': 'רוֹאָה', 'הוּא': 'רוֹאֶה', 'הִיא': 'רוֹאָה', 'אֲנַחְנוּ': 'רוֹאִים', 'הֵם': 'רוֹאִים' }, 
-    vuk: { 'אֲנִי': 'roeh', 'אַתָּה': 'roeh', 'אַתְּ': 'roah', 'הוּא': 'roeh', 'הִיא': 'roah', 'אֲנַחְנוּ': 'roim', 'הֵם': 'roim' }, 
-    label: 'רוֹאֶה (Videti)', 
-    sr: { 'אֲנִי': 'vidim', 'אַתָּה': 'vidiš', 'אַתְּ': 'vidiš', 'הוּא': 'vidi', 'הִיא': 'vidi', 'אֲנַחְנוּ': 'vidimo', 'הֵם': 'vide' }, 
-    en: 'see' 
-  },
-  { 
-    char: { 'אֲנִי': 'שׁוֹמֵעַ', 'אַתָּה': 'שׁוֹמֵעַ', 'אַתְּ': 'שׁוֹמַעַת', 'הוּא': 'שׁוֹמֵעַ', 'הִיא': 'שׁוֹמַעַת', 'אֲנַחְנוּ': 'שׁוֹמְעִים', 'הֵם': 'שׁוֹמְעִים' }, 
-    vuk: { 'אֲנִי': 'shomea', 'אַתָּה': 'shomea', 'אַתְּ': 'shomaat', 'הוּא': 'shomea', 'הִיא': 'shomaat', 'אֲנַחְנוּ': 'shomim', 'הֵם': 'shomim' }, 
-    label: 'שׁוֹמֵעַ (Slušati)', 
-    sr: { 'אֲנִי': 'slušam', 'אַתָּה': 'slušaš', 'אַתְּ': 'slušaš', 'הוּא': 'sluša', 'הִיא': 'sluša', 'אֲנַחְנוּ': 'slušamo', 'הֵם': 'slušaju' }, 
-    en: 'listen to' 
-  },
-  { 
-    char: { 'אֲנִי': 'יוֹצֵר', 'אַתָּה': 'יוֹצֵר', 'אַתְּ': 'יוֹצֶרֶת', 'הוּא': 'יוֹצֵר', 'הִיא': 'יוֹצֶרֶת', 'אֲנַחְנוּ': 'יוֹצְרִים', 'הֵם': 'יוֹצְרִים' }, 
-    vuk: { 'אֲנִי': 'yotzer', 'אַתָּה': 'yotzer', 'אַתְּ': 'yotzeret', 'הוּא': 'yotzer', 'הִיא': 'yotzeret', 'אֲנַחְנוּ': 'yotzrim', 'הֵם': 'yotzrim' }, 
-    label: 'יוֹצֵר (Stvarati)', 
-    sr: { 'אֲנִי': 'stvaram', 'אַתָּה': 'stvaraš', 'אַתְּ': 'stvaraš', 'הוּא': 'stvara', 'הִיא': 'stvara', 'אֲנַחְנוּ': 'stvaramo', 'הֵם': 'stvaraju' }, 
-    en: 'create' 
-  },
-  { 
-    char: { 'אֲנִי': 'כּוֹתֵב', 'אַתָּה': 'כּוֹתֵב', 'אַתְּ': 'כּוֹתֶבֶת', 'הוּא': 'כּוֹתֵב', 'הִיא': 'כּוֹתֶבֶת', 'אֲנַחְנוּ': 'כּוֹתְבִים', 'הֵם': 'כּוֹתְבִים' }, 
-    vuk: { 'אֲנִי': 'kotev', 'אַתָּה': 'kotev', 'אַתְּ': 'kotevet', 'הוּא': 'kotev', 'הִיא': 'kotevet', 'אֲנַחְנוּ': 'kotvim', 'הֵם': 'kotvim' }, 
-    label: 'כּוֹתֵב (Pisati)', 
-    sr: { 'אֲנִי': 'pišem', 'אַתָּה': 'pišeš', 'אַתְּ': 'pišeš', 'הוּא': 'piše', 'הִיא': 'piše', 'אֲנַחְנוּ': 'pišemo', 'הֵם': 'pišu' }, 
-    en: 'write' 
-  },
-];
+  const isAdj = (i: HebrewVocabItem) => {
+    if (i.category === 'pridevi') return true;
+    const en = i.english.toLowerCase();
+    const sr = i.translation.toLowerCase();
+    return en.includes('cool') || en.includes('fun') || en.includes('beautiful') || en.includes('good') || en.includes('wise') || en.includes('strong') || en.includes('calm') || en.includes('great') || en.includes('pure') || en.includes('holy') || en.includes('new') || sr.includes('lepo') || sr.includes('dobro') || sr.includes('mudro') || sr.includes('snazno') || sr.includes('spokojno') || sr.includes('sveto');
+  };
 
-const HEBREW_CONFIG_NOUNS = [
-  { char: 'חָכְמָה', vuk: 'chokhmah', sr: 'mudrost', en: 'wisdom' },
-  { char: 'אֱמֶת', vuk: 'emet', sr: 'istinu', en: 'truth' },
-  { char: 'שָׁלוֹם', vuk: 'shalom', sr: 'mir', en: 'peace' },
-  { char: 'אוֹר', vuk: 'or', sr: 'svetlost', en: 'light' },
-  { char: 'סֵפֶר', vuk: 'sefer', sr: 'knjigu', en: 'book' },
-  { char: 'דֶּרֶךְ', vuk: 'derekh', sr: 'put', en: 'path' },
-  { char: 'כֹּחַ', vuk: 'koach', sr: 'snagu', en: 'strength' },
-  { char: 'לֵב', vuk: 'lev', sr: 'srce', en: 'heart' },
-  { char: 'תִּקְוָה', vuk: 'tikvah', sr: 'nadu', en: 'hope' },
-  { char: 'בְּרִיאוּת', vuk: 'briut', sr: 'zdravlje', en: 'health' },
-];
+  const add = (item: HebDndWordItem) => {
+    const k = item.char.trim();
+    if (!seen.has(k)) {
+      seen.add(k);
+      list.push(item);
+    }
+  };
 
-const HEBREW_CONFIG_ADJECTIVES = [
-  { char: 'מגְנִיב', vuk: 'megniv', sr: 'kul / super', en: 'cool' },
-  { char: 'כֵּיף', vuk: 'kef', sr: 'zabavno', en: 'fun' },
-  { char: 'יָפֶה', vuk: 'yafeh', sr: 'lepo / predivno', en: 'beautiful' },
-  { char: 'מְעוּלֶה', vuk: 'meuleh', sr: 'sjajno / fantastično', en: 'awesome' },
-  { char: 'טוֹב', vuk: 'tov', sr: 'dobro / divno', en: 'good / wonderful' },
-  { char: 'חָכָם', vuk: 'chakham', sr: 'mudro', en: 'wise' },
-  { char: 'חָזָק', vuk: 'chazak', sr: 'snažno', en: 'strong' },
-  { char: 'רָגוּעַ', vuk: 'ragua', sr: 'spokojno / mirno', en: 'calm' },
-];
+  for (const item of HEBREW_VOCAB_DATA) {
+    let t: HebDndWordItem['type'] = 'noun';
+    if (pronChars.has(item.char)) t = 'pronoun';
+    else if (connChars.has(item.char)) t = 'connector';
+    else if (isVerb(item)) t = 'verb';
+    else if (isAdj(item)) t = 'adjective';
+
+    add({
+      id: `he-db-${item.id}`,
+      char: item.char,
+      vuk: item.vuk,
+      sr: item.translation,
+      en: item.english,
+      type: t
+    });
+  }
+
+  return list;
+})();
+
+export const HEBREW_CONFIG_VERBS = (() => {
+  const conjugated = [
+    { 
+      char: { 'אֲנִי': 'לוֹמֵד', 'אַתָּה': 'לוֹמֵד', 'אַתְּ': 'לוֹמֶדֶת', 'הוּא': 'לוֹמֵד', 'הִיא': 'לוֹמֶדֶת', 'אֲנַחְנוּ': 'לוֹמְדִים', 'הֵם': 'לוֹמְדִים' }, 
+      vuk: { 'אֲנִי': 'lomed', 'אַתָּה': 'lomed', 'אַתְּ': 'lomedet', 'הוּא': 'lomed', 'הִיא': 'lomedet', 'אֲנַחְנוּ': 'lomdim', 'הֵם': 'lomdim' }, 
+      label: 'לוֹמֵד (Učiti)', 
+      sr: { 'אֲנִי': 'učim', 'אַתָּה': 'učiš', 'אַתְּ': 'učiš (ž)', 'הוּא': 'uči', 'הִיא': 'uči', 'אֲנַחְנוּ': 'učimo', 'הֵם': 'uče' }, 
+      en: 'study' 
+    },
+    { 
+      char: { 'אֲנִי': 'חוֹשֵׁב', 'אַתָּה': 'חוֹשֵׁב', 'אַתְּ': 'חוֹשֶׁבֶת', 'הוּא': 'חוֹשֵׁב', 'הִיא': 'חוֹשֶׁבֶת', 'אֲנַחְנוּ': 'חוֹשְׁבִים', 'הֵם': 'חוֹשְׁבִים' }, 
+      vuk: { 'אֲנִי': 'choshev', 'אַתָּה': 'choshev', 'אַתְּ': 'choshevet', 'הוּא': 'choshev', 'הִיא': 'choshevet', 'אֲנַחְנוּ': 'choshvim', 'הֵם': 'choshvim' }, 
+      label: 'חוֹשֵׁב (Misliti)', 
+      sr: { 'אֲנִי': 'promišljam o', 'אַתָּה': 'promišljaš o', 'אַתְּ': 'promišljaš o', 'הוּא': 'promišlja o', 'הִיא': 'promišlja o', 'אֲנַחְנוּ': 'promišljamo o', 'הֵם': 'promišljaju o' }, 
+      en: 'ponder' 
+    },
+    { 
+      char: { 'אֲנִי': 'אוֹהֵב', 'אַתָּה': 'אוֹהֵב', 'אַתְּ': 'אוֹהֶבֶת', 'הוּא': 'אוֹהֵב', 'הִיא': 'אוֹהֶבֶת', 'אֲנַחְנוּ': 'אוֹהֲבִים', 'הֵם': 'אוֹהֲבִים' }, 
+      vuk: { 'אֲנִי': 'ohev', 'אַתָּה': 'ohev', 'אַתְּ': 'ohevet', 'הוּא': 'ohev', 'הִיא': 'ohevet', 'אֲנַחְנוּ': 'ohavim', 'הֵם': 'ohavim' }, 
+      label: 'אוֹהֵב (Voleti)', 
+      sr: { 'אֲנִי': 'volim', 'אַתָּה': 'voliš', 'אַתְּ': 'voliš', 'הוּא': 'voli', 'הִיא': 'voli', 'אֲנַחְנוּ': 'volimo', 'הֵם': 'vole' }, 
+      en: 'love' 
+    },
+    { 
+      char: { 'אֲנִי': 'מְחַפֵּשׂ', 'אַתָּה': 'מְחַפֵּשׂ', 'אַתְּ': 'מְחַפֶּשֶׁת', 'הוּא': 'מְחַפֵּשׂ', 'הִיא': 'מְחַפֶּשֶׁת', 'אֲנַחְנוּ': 'מְחַפְּשִׂים', 'הֵם': 'מְחַפְּשִׂים' }, 
+      vuk: { 'אֲנִי': 'mechapes', 'אַתָּה': 'mechapes', 'אַתְּ': 'mechapeset', 'הוּא': 'mechapes', 'הִיא': 'mechapeset', 'אֲנַחְנוּ': 'mechapsim', 'הֵם': 'mechapsim' }, 
+      label: 'מְחַפֵּשׂ (Tražiti)', 
+      sr: { 'אֲנִי': 'tražim', 'אַתָּה': 'tražiš', 'אַתְּ': 'tražiš', 'הוּא': 'traži', 'הִיא': 'traži', 'אֲנַחְנוּ': 'tražimo', 'הֵם': 'traže' }, 
+      en: 'seek' 
+    },
+    { 
+      char: { 'אֲנִי': 'רוֹאֶה', 'אַתָּה': 'רוֹאֶה', 'אַתְּ': 'רוֹאָה', 'הוּא': 'רוֹאֶה', 'הִיא': 'רוֹאָה', 'אֲנַחְנוּ': 'רוֹאִים', 'הֵם': 'רוֹאִים' }, 
+      vuk: { 'אֲנִי': 'roeh', 'אַתָּה': 'roeh', 'אַתְּ': 'roah', 'הוּא': 'roeh', 'הִיא': 'roah', 'אֲנַחְנוּ': 'roim', 'הֵם': 'roim' }, 
+      label: 'רוֹאֶה (Videti)', 
+      sr: { 'אֲנִי': 'vidim', 'אַתָּה': 'vidiš', 'אַתְּ': 'vidiš', 'הוּא': 'vidi', 'הִיא': 'vidi', 'אֲנַחְנוּ': 'vidimo', 'הֵם': 'vide' }, 
+      en: 'see' 
+    },
+    { 
+      char: { 'אֲנִי': 'שׁוֹמֵעַ', 'אַתָּה': 'שׁוֹמֵעַ', 'אַתְּ': 'שׁוֹמַעַת', 'הוּא': 'שׁוֹמֵעַ', 'הִיא': 'שׁוֹמַעַת', 'אֲנַחְנוּ': 'שׁוֹמְעִים', 'הֵם': 'שׁוֹמְעִים' }, 
+      vuk: { 'אֲנִי': 'shomea', 'אַתָּה': 'shomea', 'אַתְּ': 'shomaat', 'הוּא': 'shomea', 'הִיא': 'shomaat', 'אֲנַחְנוּ': 'shomim', 'הֵם': 'shomim' }, 
+      label: 'שׁוֹמֵעַ (Slušati)', 
+      sr: { 'אֲנִי': 'slušam', 'אַתָּה': 'slušaš', 'אַתְּ': 'slušaš', 'הוּא': 'sluša', 'הִיא': 'sluša', 'אֲנַחְנוּ': 'slušamo', 'הֵם': 'slušaju' }, 
+      en: 'listen to' 
+    },
+    { 
+      char: { 'אֲנִי': 'יוֹצֵר', 'אַתָּה': 'יוֹצֵר', 'אַתְּ': 'יוֹצֶרֶת', 'הוּא': 'יוֹצֵר', 'הִיא': 'יוֹצֶרֶת', 'אֲנַחְנוּ': 'יוֹצְרִים', 'הֵם': 'יוֹצְרִים' }, 
+      vuk: { 'אֲנִי': 'yotzer', 'אַתָּה': 'yotzer', 'אַתְּ': 'yotzeret', 'הוּא': 'yotzer', 'הִיא': 'yotzeret', 'אֲנַחְנוּ': 'yotzrim', 'הֵם': 'yotzrim' }, 
+      label: 'יוֹצֵר (Stvarati)', 
+      sr: { 'אֲנִי': 'stvaram', 'אַתָּה': 'stvaraš', 'אַתְּ': 'stvaraš', 'הוּא': 'stvara', 'הִיא': 'stvara', 'אֲנַחְנוּ': 'stvaramo', 'הֵם': 'stvaraju' }, 
+      en: 'create' 
+    },
+    { 
+      char: { 'אֲנִי': 'כּוֹתֵב', 'אַתָּה': 'כּוֹתֵב', 'אַתְּ': 'כּוֹתֶבֶת', 'הוּא': 'כּוֹתֵב', 'הִיא': 'כּוֹתֶבֶת', 'אֲנַחְנוּ': 'כּוֹתְבִים', 'הֵם': 'כּוֹתְבִים' }, 
+      vuk: { 'אֲנִי': 'kotev', 'אַתָּה': 'kotev', 'אַתְּ': 'kotevet', 'הוּא': 'kotev', 'הִיא': 'kotevet', 'אֲנַחְנוּ': 'kotvim', 'הֵם': 'kotvim' }, 
+      label: 'כּוֹתֵב (Pisati)', 
+      sr: { 'אֲנִי': 'pišem', 'אַתָּה': 'pišeš', 'אַתְּ': 'pišeš', 'הוּא': 'piše', 'הִיא': 'piše', 'אֲנַחְנוּ': 'pišemo', 'הֵם': 'pišu' }, 
+      en: 'write' 
+    },
+  ];
+
+  const seen = new Set<string>();
+  const result: any[] = [...conjugated];
+
+  for (const item of DND_HEBREW_WORDS) {
+    if (item.type === 'verb') {
+      const charStr = typeof item.char === 'string' ? item.char : item.char['אֲנִי'] || '';
+      if (charStr && !seen.has(charStr)) {
+        seen.add(charStr);
+        result.push({
+          char: item.char,
+          vuk: item.vuk,
+          label: `${charStr} (${item.en})`,
+          sr: item.sr,
+          en: item.en
+        });
+      }
+    }
+  }
+
+  return result;
+})();
+
+export const HEBREW_CONFIG_NOUNS = (() => {
+  const result: { char: string; vuk: string; sr: string; en: string }[] = [];
+  const seen = new Set<string>();
+
+  for (const item of DND_HEBREW_WORDS) {
+    if (item.type === 'noun' && !seen.has(item.char)) {
+      seen.add(item.char);
+      result.push({
+        char: item.char,
+        vuk: item.vuk,
+        sr: item.sr,
+        en: item.en
+      });
+    }
+  }
+
+  return result;
+})();
+
+export const HEBREW_CONFIG_ADJECTIVES = (() => {
+  const result: { char: string; vuk: string; sr: string; en: string }[] = [];
+  const seen = new Set<string>();
+
+  for (const item of DND_HEBREW_WORDS) {
+    if (item.type === 'adjective' && !seen.has(item.char)) {
+      seen.add(item.char);
+      result.push({
+        char: item.char,
+        vuk: item.vuk,
+        sr: item.sr,
+        en: item.en
+      });
+    }
+  }
+
+  return result;
+})();
 
 const HEBREW_SOCIAL_PRESETS = [
   {

@@ -62,6 +62,10 @@ const CONFIGURATOR_SUBJECTS = [
   { char: '她', pinyin: 'Tā', vuk: 'Ta', translationSr: 'Ona', translationEn: 'She' },
   { char: '我们', pinyin: 'Wǒmen', vuk: 'Vo men', translationSr: 'Mi', translationEn: 'We' },
   { char: '他们', pinyin: 'Tāmen', vuk: 'Ta men', translationSr: 'Oni', translationEn: 'They' },
+  { char: '你们', pinyin: 'Nǐmen', vuk: 'Ni men', translationSr: 'Vi', translationEn: 'You (plural)' },
+  { char: '她们', pinyin: 'Tāmen', vuk: 'Ta men', translationSr: 'One', translationEn: 'They (fem)' },
+  { char: '大家', pinyin: 'Dàjiā', vuk: 'Da đia', translationSr: 'Svi', translationEn: 'Everyone' },
+  { char: '自己', pinyin: 'Zìjǐ', vuk: 'Dzi đji', translationSr: 'Sebe', translationEn: 'Self / Oneself' },
 ];
 
 export interface DndWordItem {
@@ -74,87 +78,140 @@ export interface DndWordItem {
   type: 'pronoun' | 'verb' | 'noun' | 'adjective' | 'connector';
 }
 
-export const DND_CHINESE_WORDS: DndWordItem[] = [
-  // Pronouns / Subjects
-  { id: 'cn-p1', char: '我', pinyin: 'Wǒ', vuk: 'Vo', sr: 'Ja', en: 'I', type: 'pronoun' },
-  { id: 'cn-p2', char: '你', pinyin: 'Nǐ', vuk: 'Ni', sr: 'Ti', en: 'You', type: 'pronoun' },
-  { id: 'cn-p3', char: '他', pinyin: 'Tā', vuk: 'Ta', sr: 'On', en: 'He', type: 'pronoun' },
-  { id: 'cn-p4', char: '她', pinyin: 'Tā', vuk: 'Ta', sr: 'Ona', en: 'She', type: 'pronoun' },
-  { id: 'cn-p5', char: '我们', pinyin: 'Wǒmen', vuk: 'Vo men', sr: 'Mi', en: 'We', type: 'pronoun' },
-  { id: 'cn-p6', char: '他们', pinyin: 'Tāmen', vuk: 'Ta men', sr: 'Oni', en: 'They', type: 'pronoun' },
+export const DND_CHINESE_WORDS: DndWordItem[] = (() => {
+  const list: DndWordItem[] = [];
+  const seen = new Set<string>();
 
-  // Verbs
-  { id: 'cn-v1', char: '思考', pinyin: 'sīkǎo', vuk: 'si kao', sr: 'promišljam', en: 'ponder / think', type: 'verb' },
-  { id: 'cn-v2', char: '学', pinyin: 'xué', vuk: 'sjue', sr: 'učim', en: 'study / learn', type: 'verb' },
-  { id: 'cn-v3', char: '喜欢', pinyin: 'xǐhuan', vuk: 'si huan', sr: 'volim', en: 'like', type: 'verb' },
-  { id: 'cn-v4', char: '爱', pinyin: 'ài', vuk: 'ai', sr: 'volim (ljubav)', en: 'love', type: 'verb' },
-  { id: 'cn-v5', char: '创造', pinyin: 'chuàngzào', vuk: 'čuang dzao', sr: 'stvaram', en: 'create', type: 'verb' },
-  { id: 'cn-v6', char: '寻找', pinyin: 'xúnzhǎo', vuk: 'sun džao', sr: 'tražim', en: 'seek', type: 'verb' },
-  { id: 'cn-v7', char: '听', pinyin: 'tīng', vuk: 'ting', sr: 'slušam', en: 'listen', type: 'verb' },
-  { id: 'cn-v8', char: '看', pinyin: 'kàn', vuk: 'kan', sr: 'gledam', en: 'watch / see', type: 'verb' },
-  { id: 'cn-v9', char: '写', pinyin: 'xiě', vuk: 'sje', sr: 'pišem', en: 'write', type: 'verb' },
+  const add = (item: DndWordItem) => {
+    if (!seen.has(item.char)) {
+      seen.add(item.char);
+      list.push(item);
+    }
+  };
 
-  // Nouns
-  { id: 'cn-n1', char: '智慧', pinyin: 'zhìhuì', vuk: 'dži hui', sr: 'mudrost', en: 'wisdom', type: 'noun' },
-  { id: 'cn-n2', char: '真理', pinyin: 'zhēnlǐ', vuk: 'džen li', sr: 'istinu', en: 'truth', type: 'noun' },
-  { id: 'cn-n3', char: '和平', pinyin: 'hépíng', vuk: 'he ping', sr: 'mir', en: 'peace', type: 'noun' },
-  { id: 'cn-n4', char: '光明', pinyin: 'guāngmíng', vuk: 'guang ming', sr: 'svetlost', en: 'light', type: 'noun' },
-  { id: 'cn-n5', char: '道', pinyin: 'dào', vuk: 'dao', sr: 'Put / Dao', en: 'the Way', type: 'noun' },
-  { id: 'cn-n6', char: '力量', pinyin: 'lìliàng', vuk: 'li ljang', sr: 'snagu', en: 'strength', type: 'noun' },
-  { id: 'cn-n7', char: '心', pinyin: 'xīn', vuk: 'sin', sr: 'srce / um', en: 'heart / mind', type: 'noun' },
-  { id: 'cn-n8', char: '书', pinyin: 'shū', vuk: 'šu', sr: 'knjigu', en: 'book', type: 'noun' },
+  // 1. Core Pronouns / Subjects
+  CONFIGURATOR_SUBJECTS.forEach((sub, idx) => {
+    add({
+      id: `cn-p-${idx}`,
+      char: sub.char,
+      pinyin: sub.pinyin,
+      vuk: sub.vuk,
+      sr: sub.translationSr,
+      en: sub.translationEn,
+      type: 'pronoun'
+    });
+  });
 
-  // Adjectives
-  { id: 'cn-a1', char: '酷', pinyin: 'kù', vuk: 'ku', sr: 'kul / super', en: 'cool', type: 'adjective' },
-  { id: 'cn-a2', char: '有趣', pinyin: 'yǒuqù', vuk: 'jo ćjü', sr: 'zabavno', en: 'fun / interesting', type: 'adjective' },
-  { id: 'cn-a3', char: '美', pinyin: 'měi', vuk: 'mei', sr: 'prelepo', en: 'beautiful', type: 'adjective' },
-  { id: 'cn-a4', char: '棒', pinyin: 'bàng', vuk: 'bang', sr: 'fantastično', en: 'awesome', type: 'adjective' },
-  { id: 'cn-a5', char: '好', pinyin: 'hǎo', vuk: 'hao', sr: 'dobro', en: 'good', type: 'adjective' },
-  { id: 'cn-a6', char: '平静', pinyin: 'píngjìng', vuk: 'ping đjing', sr: 'spokojno', en: 'calm', type: 'adjective' },
+  // 2. Connectors
+  [
+    { id: 'cn-c1', char: '的', pinyin: 'de', vuk: 'de', sr: '(prisvojna rečca)', en: "of / 's", type: 'connector' as const },
+    { id: 'cn-c2', char: '和', pinyin: 'hé', vuk: 'he', sr: 'i / sa', en: 'and / with', type: 'connector' as const },
+    { id: 'cn-c3', char: '很', pinyin: 'hěn', vuk: 'hen', sr: 'veoma / jako', en: 'very', type: 'connector' as const },
+    { id: 'cn-c4', char: '也', pinyin: 'yě', vuk: 'je', sr: 'takođe', en: 'also', type: 'connector' as const },
+    { id: 'cn-c5', char: '在', pinyin: 'zài', vuk: 'dzai', sr: 'u / na', en: 'at / in', type: 'connector' as const },
+    { id: 'cn-c6', char: '不', pinyin: 'bù', vuk: 'bu', sr: 'ne / nije', en: 'not / no', type: 'connector' as const },
+  ].forEach(add);
 
-  // Connectors
-  { id: 'cn-c1', char: '的', pinyin: 'de', vuk: 'de', sr: '(prisvojna rečca)', en: "of / 's", type: 'connector' },
-  { id: 'cn-c2', char: '和', pinyin: 'hé', vuk: 'he', sr: 'i / sa', en: 'and / with', type: 'connector' },
-  { id: 'cn-c3', char: '很', pinyin: 'hěn', vuk: 'hen', sr: 'veoma / jako', en: 'very', type: 'connector' },
-  { id: 'cn-c4', char: '也', pinyin: 'yě', vuk: 'je', sr: 'takođe', en: 'also', type: 'connector' },
-];
+  // 3. Populate ALL items from VOCAB_DATA into classified categories
+  const pronChars = new Set(['我', '你', '他', '她', '我们', '他们', '你们', '她们', '大家', '自己']);
+  const connChars = new Set(['的', '和', '很', '也', '在', '不']);
 
-const CONFIGURATOR_VERBS = [
-  { char: '看', pinyin: 'kàn', vuk: 'kan', sr: { '我': 'gledam', '你': 'gledaš', '他们': 'gledaju' }, en: 'look at' },
-  { char: '学', pinyin: 'xué', vuk: 'sjue', sr: { '我': 'učim', '你': 'učiš', '他们': 'uče' }, en: 'study' },
-  { char: '喜欢', pinyin: 'xǐhuan', vuk: 'si huan', sr: { '我': 'volim', '你': 'voliš', '他们': 'vole' }, en: 'like' },
-  { char: '思考', pinyin: 'sīkǎo', vuk: 'si kao', sr: { '我': 'promišljam o', '你': 'promišljaš o', '他们': 'promišljaju o' }, en: 'ponder' },
-  { char: '听', pinyin: 'tīng', vuk: 'ting', sr: { '我': 'slušam', '你': 'slušaš', '他们': 'slušaju' }, en: 'listen to' },
-  { char: '创造', pinyin: 'chuàngzào', vuk: 'čuang dzao', sr: { '我': 'stvaram', '你': 'stvaraš', '他们': 'stvaraju' }, en: 'create' },
-  { char: '坚持', pinyin: 'jiānchí', vuk: 'đjien či', sr: { '我': 'istrajavam u', '你': 'istrajavaš u', '他们': 'istrajavaju u' }, en: 'persist in' },
-  { char: '爱', pinyin: 'ài', vuk: 'ai', sr: { '我': 'volim', '你': 'voliš', '他们': 'vole' }, en: 'love' },
-  { char: '寻找', pinyin: 'xúnzhǎo', vuk: 'sun džao', sr: { '我': 'tražim', '你': 'tražiš', '他们': 'traže' }, en: 'seek' },
-  { char: '写', pinyin: 'xiě', vuk: 'sje', sr: { '我': 'pišem', '你': 'pišeš', '他们': 'pišu' }, en: 'write' },
-];
+  const isVerb = (i: VocabItem) => i.category === 'glagoli' || i.english.toLowerCase().startsWith('to ') || ['思考', '学', '喜欢', '爱', '创造', '寻找', '听', '看', '写', '燃烧', '呼唤', '飞翔', '照亮', '改变', '坚持', '走', '跑', '笑', '哭', '说', '想', '做', '有', '去', '买', '卖', '读', '坐', '站', '睡', '懂', '问', '答', '开', '关'].includes(i.char);
+  const isAdj = (i: VocabItem) => ['酷', '有趣', '美', '棒', '好', '平静', '寂静', '光明', '黑夜', '永远', '奇迹', '深处'].includes(i.char) || i.english.toLowerCase().includes('beautiful') || i.english.toLowerCase().includes('good') || i.english.toLowerCase().includes('bright') || i.english.toLowerCase().includes('calm') || i.translation.toLowerCase().includes('lepo') || i.translation.toLowerCase().includes('dobr') || i.translation.toLowerCase().includes('spokojn');
 
-const CONFIGURATOR_NOUNS = [
-  { char: '智慧', pinyin: 'zhìhuì', vuk: 'dži hui', sr: 'mudrost', en: 'wisdom' },
-  { char: '真理', pinyin: 'zhēnlǐ', vuk: 'džen li', sr: 'istinu', en: 'truth' },
-  { char: '和平', pinyin: 'hépíng', vuk: 'he ping', sr: 'mir', en: 'peace' },
-  { char: '光明', pinyin: 'guāngmíng', vuk: 'guang ming', sr: 'svetlost', en: 'light' },
-  { char: '书', pinyin: 'shū', vuk: 'šu', sr: 'knjigu', en: 'book' },
-  { char: '道', pinyin: 'dào', vuk: 'dao', sr: 'Put / Dao', en: 'the Way' },
-  { char: '力量', pinyin: 'lìliàng', vuk: 'li ljang', sr: 'snagu', en: 'strength' },
-  { char: '心', pinyin: 'xīn', vuk: 'sin', sr: 'srce / um', en: 'heart / mind' },
-  { char: '希望', pinyin: 'xīwàng', vuk: 'si vang', sr: 'nadu', en: 'hope' },
-  { char: '健康', pinyin: 'jiànkāng', vuk: 'đjen kang', sr: 'zdravlje', en: 'health' },
-];
+  for (const item of VOCAB_DATA) {
+    let t: DndWordItem['type'] = 'noun';
+    if (pronChars.has(item.char)) t = 'pronoun';
+    else if (connChars.has(item.char)) t = 'connector';
+    else if (isVerb(item)) t = 'verb';
+    else if (isAdj(item)) t = 'adjective';
 
-const CONFIGURATOR_ADJECTIVES = [
-  { char: '酷', pinyin: 'kù', vuk: 'ku', sr: 'kul / super', en: 'cool' },
-  { char: '有趣', pinyin: 'yǒuqù', vuk: 'jo ćjü', sr: 'zabavno', en: 'fun / interesting' },
-  { char: '美', pinyin: 'měi', vuk: 'mei', sr: 'prelepo', en: 'beautiful' },
-  { char: '棒', pinyin: 'bàng', vuk: 'bang', sr: 'sjajno / fantastično', en: 'awesome' },
-  { char: '好', pinyin: 'hǎo', vuk: 'hao', sr: 'dobro / divno', en: 'good / wonderful' },
-  { char: '智', pinyin: 'zhì', vuk: 'dži', sr: 'mudro', en: 'wise' },
-  { char: '强', pinyin: 'qiáng', vuk: 'ćjiang', sr: 'snažno', en: 'strong' },
-  { char: '平静', pinyin: 'píngjìng', vuk: 'ping đjing', sr: 'spokojno', en: 'calm' },
-];
+    add({
+      id: `cn-db-${item.id}`,
+      char: item.char,
+      pinyin: item.pinyin,
+      vuk: item.vuk,
+      sr: item.translation,
+      en: item.english,
+      type: t
+    });
+  }
+
+  return list;
+})();
+
+export const CONFIGURATOR_VERBS = (() => {
+  const conjugated = [
+    { char: '看', pinyin: 'kàn', vuk: 'kan', sr: { '我': 'gledam', '你': 'gledaš', '他们': 'gledaju' }, en: 'look at' },
+    { char: '学', pinyin: 'xué', vuk: 'sjue', sr: { '我': 'učim', '你': 'učiš', '他们': 'uče' }, en: 'study' },
+    { char: '喜欢', pinyin: 'xǐhuan', vuk: 'si huan', sr: { '我': 'volim', '你': 'voliš', 'they': 'vole' }, en: 'like' },
+    { char: '思考', pinyin: 'sīkǎo', vuk: 'si kao', sr: { '我': 'promišljam o', '你': 'promišljaš o', 'they': 'promišljaju o' }, en: 'ponder' },
+    { char: '听', pinyin: 'tīng', vuk: 'ting', sr: { '我': 'slušam', '你': 'slušaš', 'they': 'slušaju' }, en: 'listen to' },
+    { char: '创造', pinyin: 'chuàngzào', vuk: 'čuang dzao', sr: { '我': 'stvaram', '你': 'stvaraš', 'they': 'stvaraju' }, en: 'create' },
+    { char: '坚持', pinyin: 'jiānchí', vuk: 'đjien či', sr: { '我': 'istrajavam u', '权': 'istrajavaš u', 'they': 'istrajavaju u' }, en: 'persist in' },
+    { char: '爱', pinyin: 'ài', vuk: 'ai', sr: { '我': 'volim', '你': 'voliš', 'they': 'vole' }, en: 'love' },
+    { char: '寻找', pinyin: 'xúnzhǎo', vuk: 'sun džao', sr: { '我': 'tražim', '你': 'tražiš', 'they': 'traže' }, en: 'seek' },
+    { char: '写', pinyin: 'xiě', vuk: 'sje', sr: { '我': 'pišem', '你': 'pišeš', 'they': 'pišu' }, en: 'write' },
+  ];
+
+  const seen = new Set<string>(conjugated.map(v => v.char));
+  const result: { char: string; pinyin: string; vuk: string; sr: any; en: string }[] = [...conjugated];
+
+  for (const item of DND_CHINESE_WORDS) {
+    if (item.type === 'verb' && !seen.has(item.char)) {
+      seen.add(item.char);
+      result.push({
+        char: item.char,
+        pinyin: item.pinyin,
+        vuk: item.vuk,
+        sr: item.sr,
+        en: item.en
+      });
+    }
+  }
+
+  return result;
+})();
+
+export const CONFIGURATOR_NOUNS = (() => {
+  const result: { char: string; pinyin: string; vuk: string; sr: string; en: string }[] = [];
+  const seen = new Set<string>();
+
+  for (const item of DND_CHINESE_WORDS) {
+    if (item.type === 'noun' && !seen.has(item.char)) {
+      seen.add(item.char);
+      result.push({
+        char: item.char,
+        pinyin: item.pinyin,
+        vuk: item.vuk,
+        sr: item.sr,
+        en: item.en
+      });
+    }
+  }
+
+  return result;
+})();
+
+export const CONFIGURATOR_ADJECTIVES = (() => {
+  const result: { char: string; pinyin: string; vuk: string; sr: string; en: string }[] = [];
+  const seen = new Set<string>();
+
+  for (const item of DND_CHINESE_WORDS) {
+    if (item.type === 'adjective' && !seen.has(item.char)) {
+      seen.add(item.char);
+      result.push({
+        char: item.char,
+        pinyin: item.pinyin,
+        vuk: item.vuk,
+        sr: item.sr,
+        en: item.en
+      });
+    }
+  }
+
+  return result;
+})();
 
 const SOCIAL_MEDIA_PRESETS = [
   {
