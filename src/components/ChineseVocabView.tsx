@@ -16,7 +16,17 @@ import {
   Pencil,
   X,
   Save,
-  RotateCcw
+  RotateCcw,
+  Sparkles,
+  GripVertical,
+  Trash2,
+  RefreshCw,
+  MoveLeft,
+  MoveRight,
+  Plus,
+  Layers,
+  Sliders,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { db } from '../firebase';
@@ -48,7 +58,65 @@ const VOCAB_DATA: VocabItem[] = (() => {
 const CONFIGURATOR_SUBJECTS = [
   { char: '我', pinyin: 'Wǒ', vuk: 'Vo', translationSr: 'Ja', translationEn: 'I' },
   { char: '你', pinyin: 'Nǐ', vuk: 'Ni', translationSr: 'Ti', translationEn: 'You' },
+  { char: '他', pinyin: 'Tā', vuk: 'Ta', translationSr: 'On', translationEn: 'He' },
+  { char: '她', pinyin: 'Tā', vuk: 'Ta', translationSr: 'Ona', translationEn: 'She' },
+  { char: '我们', pinyin: 'Wǒmen', vuk: 'Vo men', translationSr: 'Mi', translationEn: 'We' },
   { char: '他们', pinyin: 'Tāmen', vuk: 'Ta men', translationSr: 'Oni', translationEn: 'They' },
+];
+
+export interface DndWordItem {
+  id: string;
+  char: string;
+  pinyin: string;
+  vuk: string;
+  sr: string;
+  en: string;
+  type: 'pronoun' | 'verb' | 'noun' | 'adjective' | 'connector';
+}
+
+export const DND_CHINESE_WORDS: DndWordItem[] = [
+  // Pronouns / Subjects
+  { id: 'cn-p1', char: '我', pinyin: 'Wǒ', vuk: 'Vo', sr: 'Ja', en: 'I', type: 'pronoun' },
+  { id: 'cn-p2', char: '你', pinyin: 'Nǐ', vuk: 'Ni', sr: 'Ti', en: 'You', type: 'pronoun' },
+  { id: 'cn-p3', char: '他', pinyin: 'Tā', vuk: 'Ta', sr: 'On', en: 'He', type: 'pronoun' },
+  { id: 'cn-p4', char: '她', pinyin: 'Tā', vuk: 'Ta', sr: 'Ona', en: 'She', type: 'pronoun' },
+  { id: 'cn-p5', char: '我们', pinyin: 'Wǒmen', vuk: 'Vo men', sr: 'Mi', en: 'We', type: 'pronoun' },
+  { id: 'cn-p6', char: '他们', pinyin: 'Tāmen', vuk: 'Ta men', sr: 'Oni', en: 'They', type: 'pronoun' },
+
+  // Verbs
+  { id: 'cn-v1', char: '思考', pinyin: 'sīkǎo', vuk: 'si kao', sr: 'promišljam', en: 'ponder / think', type: 'verb' },
+  { id: 'cn-v2', char: '学', pinyin: 'xué', vuk: 'sjue', sr: 'učim', en: 'study / learn', type: 'verb' },
+  { id: 'cn-v3', char: '喜欢', pinyin: 'xǐhuan', vuk: 'si huan', sr: 'volim', en: 'like', type: 'verb' },
+  { id: 'cn-v4', char: '爱', pinyin: 'ài', vuk: 'ai', sr: 'volim (ljubav)', en: 'love', type: 'verb' },
+  { id: 'cn-v5', char: '创造', pinyin: 'chuàngzào', vuk: 'čuang dzao', sr: 'stvaram', en: 'create', type: 'verb' },
+  { id: 'cn-v6', char: '寻找', pinyin: 'xúnzhǎo', vuk: 'sun džao', sr: 'tražim', en: 'seek', type: 'verb' },
+  { id: 'cn-v7', char: '听', pinyin: 'tīng', vuk: 'ting', sr: 'slušam', en: 'listen', type: 'verb' },
+  { id: 'cn-v8', char: '看', pinyin: 'kàn', vuk: 'kan', sr: 'gledam', en: 'watch / see', type: 'verb' },
+  { id: 'cn-v9', char: '写', pinyin: 'xiě', vuk: 'sje', sr: 'pišem', en: 'write', type: 'verb' },
+
+  // Nouns
+  { id: 'cn-n1', char: '智慧', pinyin: 'zhìhuì', vuk: 'dži hui', sr: 'mudrost', en: 'wisdom', type: 'noun' },
+  { id: 'cn-n2', char: '真理', pinyin: 'zhēnlǐ', vuk: 'džen li', sr: 'istinu', en: 'truth', type: 'noun' },
+  { id: 'cn-n3', char: '和平', pinyin: 'hépíng', vuk: 'he ping', sr: 'mir', en: 'peace', type: 'noun' },
+  { id: 'cn-n4', char: '光明', pinyin: 'guāngmíng', vuk: 'guang ming', sr: 'svetlost', en: 'light', type: 'noun' },
+  { id: 'cn-n5', char: '道', pinyin: 'dào', vuk: 'dao', sr: 'Put / Dao', en: 'the Way', type: 'noun' },
+  { id: 'cn-n6', char: '力量', pinyin: 'lìliàng', vuk: 'li ljang', sr: 'snagu', en: 'strength', type: 'noun' },
+  { id: 'cn-n7', char: '心', pinyin: 'xīn', vuk: 'sin', sr: 'srce / um', en: 'heart / mind', type: 'noun' },
+  { id: 'cn-n8', char: '书', pinyin: 'shū', vuk: 'šu', sr: 'knjigu', en: 'book', type: 'noun' },
+
+  // Adjectives
+  { id: 'cn-a1', char: '酷', pinyin: 'kù', vuk: 'ku', sr: 'kul / super', en: 'cool', type: 'adjective' },
+  { id: 'cn-a2', char: '有趣', pinyin: 'yǒuqù', vuk: 'jo ćjü', sr: 'zabavno', en: 'fun / interesting', type: 'adjective' },
+  { id: 'cn-a3', char: '美', pinyin: 'měi', vuk: 'mei', sr: 'prelepo', en: 'beautiful', type: 'adjective' },
+  { id: 'cn-a4', char: '棒', pinyin: 'bàng', vuk: 'bang', sr: 'fantastično', en: 'awesome', type: 'adjective' },
+  { id: 'cn-a5', char: '好', pinyin: 'hǎo', vuk: 'hao', sr: 'dobro', en: 'good', type: 'adjective' },
+  { id: 'cn-a6', char: '平静', pinyin: 'píngjìng', vuk: 'ping đjing', sr: 'spokojno', en: 'calm', type: 'adjective' },
+
+  // Connectors
+  { id: 'cn-c1', char: '的', pinyin: 'de', vuk: 'de', sr: '(prisvojna rečca)', en: "of / 's", type: 'connector' },
+  { id: 'cn-c2', char: '和', pinyin: 'hé', vuk: 'he', sr: 'i / sa', en: 'and / with', type: 'connector' },
+  { id: 'cn-c3', char: '很', pinyin: 'hěn', vuk: 'hen', sr: 'veoma / jako', en: 'very', type: 'connector' },
+  { id: 'cn-c4', char: '也', pinyin: 'yě', vuk: 'je', sr: 'takođe', en: 'also', type: 'connector' },
 ];
 
 const CONFIGURATOR_VERBS = [
@@ -253,7 +321,46 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   };
 
   // 3-Step Word Configurator State (I / You / They -> Verb -> Noun/Adjective OR Social Presets)
-  const [cfgSubIdx, setCfgSubIdx] = useState(0); // '我'
+  const [cfgSubIdx, setCfgSubIdx] = useState(0);
+  const [dndStageWords, setDndStageWords] = useState<DndWordItem[]>([]);
+  const [dndFilter, setDndFilter] = useState<'all' | 'pronoun' | 'verb' | 'noun' | 'adjective' | 'connector'>('all');
+  const [configTabMode, setConfigTabMode] = useState<'dnd' | 'dropdown'>('dnd');
+
+  const handleDndAddWord = (item: DndWordItem) => {
+    setDndStageWords(prev => [...prev, item]);
+  };
+
+  const handleDndRemoveWord = (index: number) => {
+    setDndStageWords(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDndMoveWord = (index: number, direction: 'left' | 'right') => {
+    setDndStageWords(prev => {
+      const next = [...prev];
+      const targetIdx = direction === 'left' ? index - 1 : index + 1;
+      if (targetIdx < 0 || targetIdx >= next.length) return prev;
+      const temp = next[index];
+      next[index] = next[targetIdx];
+      next[targetIdx] = temp;
+      return next;
+    });
+  };
+
+  const handleDndRandomize = () => {
+    const pronouns = DND_CHINESE_WORDS.filter(w => w.type === 'pronoun');
+    const verbs = DND_CHINESE_WORDS.filter(w => w.type === 'verb');
+    const nouns = DND_CHINESE_WORDS.filter(w => w.type === 'noun');
+    const adjs = DND_CHINESE_WORDS.filter(w => w.type === 'adjective');
+
+    const randSub = pronouns[Math.floor(Math.random() * pronouns.length)];
+    const randVerb = verbs[Math.floor(Math.random() * verbs.length)];
+    const isNoun = Math.random() > 0.5;
+    const randEnd = isNoun 
+      ? nouns[Math.floor(Math.random() * nouns.length)] 
+      : adjs[Math.floor(Math.random() * adjs.length)];
+
+    setDndStageWords([randSub, randVerb, randEnd]);
+  }; // '我'
   const [cfgVerbIdx, setCfgVerbIdx] = useState(3); // '思考'
   const [cfgEndingType, setCfgEndingType] = useState<'noun' | 'adjective'>('noun');
   const [cfgNounIdx, setCfgNounIdx] = useState(0); // '智慧'
@@ -1005,344 +1112,584 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
           </motion.div>
         )}
 
-        {/* AI SENTENCE WEAVER */}
+        {/* AI SENTENCE WEAVER / DRAG & DROP CREATIVE STUDIO */}
         {activeTab === 'weaver' && (
           <motion.div key="weaver-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
-            {/* 3-STEP SENTENCE CONFIGURATOR */}
-            <div className={cn(
-              "p-6 rounded-3xl border space-y-6",
-              isDarkMode ? "bg-zinc-900/90 border-amber-500/40 shadow-xl" : "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300 shadow-md"
-            )}>
-              <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 border-amber-500/20">
-                <div className="flex items-center gap-2">
-                  <Wand2 className="w-5 h-5 text-amber-500 animate-pulse" />
-                  <h3 className="text-base font-black tracking-tight">Konfigurator Kineskih Rečenica & Social Media Izrazi</h3>
-                </div>
-                <span className="text-[10px] font-mono font-extrabold uppercase bg-amber-500/20 text-amber-600 dark:text-amber-300 px-2.5 py-1 rounded-full border border-amber-500/30">
-                  Subjekat → Glagol → Imenica / Pridev
-                </span>
-              </div>
+            
+            {/* CREATIVITY TAGLINE BANNER */}
+            <div className="p-4 md:p-5 rounded-3xl bg-gradient-to-r from-amber-600/20 via-orange-500/20 to-amber-700/20 border border-amber-500/40 text-center space-y-1.5 shadow-lg">
+              <p className="text-xl md:text-2xl font-black font-serif text-amber-400 tracking-wide flex items-center justify-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
+                Learn language by creativity, that's the idea.
+                <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
+              </p>
+              <p className="text-xs md:text-sm text-amber-200/90 font-medium italic">
+                "Uči jezik kroz kreativnost, to je ideja." — Izaberite reči, prevucite ih i sklopite sopstvene rečenice!
+              </p>
+            </div>
 
-              {/* SOCIAL MEDIA QUICK PRESETS BAR */}
-              <div className="space-y-2.5 bg-amber-500/10 dark:bg-amber-950/50 p-3.5 rounded-2xl border border-amber-500/20">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-amber-700 dark:text-amber-300 font-mono flex items-center gap-1.5">
-                    <span>📲 Popularni Social Media Izrazi (Jedan klik za Facebook):</span>
-                  </span>
-                  {selectedSocialPresetIdx !== null && (
-                    <button
-                      onClick={() => setSelectedSocialPresetIdx(null)}
-                      className="text-[10px] font-bold text-amber-500 hover:underline"
-                    >
-                      Poništi Preset
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {SOCIAL_MEDIA_PRESETS.map((preset, idx) => (
-                    <button
-                      key={`sm-${idx}`}
-                      onClick={() => setSelectedSocialPresetIdx(idx)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
-                        selectedSocialPresetIdx === idx
-                          ? "bg-amber-600 text-white border-amber-400 shadow-md scale-[1.02]"
-                          : isDarkMode ? "bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:border-amber-500/50" : "bg-white border-amber-200 text-zinc-800 hover:bg-amber-100/60"
-                      )}
-                    >
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-mono font-black">{preset.badge}</span>
-                      <span className="font-serif font-black">{preset.char}</span>
-                      <span className="text-[10px] opacity-75 font-normal">({preset.sr})</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* CONFIGURATOR MODE SWITCHER TABS */}
+            <div className="flex items-center justify-center gap-2 p-1.5 rounded-2xl bg-zinc-900/80 border border-amber-500/30 max-w-md mx-auto">
+              <button
+                onClick={() => setConfigTabMode('dnd')}
+                className={cn(
+                  "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2",
+                  configTabMode === 'dnd'
+                    ? "bg-amber-600 text-white shadow-md font-black"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                )}
+              >
+                <GripVertical className="w-4 h-4" />
+                <span>🎨 Drag & Drop Studio</span>
+              </button>
 
-              {/* STEP 1: SUBJECT */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
-                  <span>1. Subjekat:</span>
-                  <span className="text-[10px] font-normal opacity-80">(Izaberite subjekat)</span>
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {CONFIGURATOR_SUBJECTS.map((sub, idx) => (
-                    <button
-                      key={`sub-${idx}`}
-                      onClick={() => { setCfgSubIdx(idx); setSelectedSocialPresetIdx(null); }}
-                      className={cn(
-                        "p-3 rounded-2xl border transition-all text-center",
-                        selectedSocialPresetIdx === null && cfgSubIdx === idx
-                          ? "bg-amber-600 text-white border-amber-500 shadow-md scale-[1.02]"
-                          : isDarkMode ? "bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:border-amber-500/50" : "bg-white border-amber-200 text-zinc-800 hover:bg-amber-100/50"
-                      )}
-                    >
-                      <p className="text-xl font-serif font-black">{sub.char}</p>
-                      <p className="text-[10px] font-mono opacity-90">{sub.pinyin} ({sub.vuk})</p>
-                      <p className="text-[10px] font-bold mt-0.5">{sub.translationSr}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <button
+                onClick={() => setConfigTabMode('dropdown')}
+                className={cn(
+                  "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2",
+                  configTabMode === 'dropdown'
+                    ? "bg-amber-600 text-white shadow-md font-black"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                )}
+              >
+                <Sliders className="w-4 h-4" />
+                <span>⚡ Izbor sa Menijem</span>
+              </button>
+            </div>
 
-              {/* STEP 2: VERB */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
-                  <span>2. Glagol:</span>
-                  <span className="text-[10px] font-normal opacity-80">(Izaberite radnju)</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {CONFIGURATOR_VERBS.map((v, idx) => (
-                    <button
-                      key={`verb-${idx}`}
-                      onClick={() => { setCfgVerbIdx(idx); setSelectedSocialPresetIdx(null); }}
-                      className={cn(
-                        "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
-                        selectedSocialPresetIdx === null && cfgVerbIdx === idx
-                          ? "bg-amber-600 text-white border-amber-500 shadow-sm"
-                          : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-zinc-700 hover:bg-amber-100/50"
-                      )}
-                    >
-                      <span className="font-serif text-sm font-black">{v.char}</span>
-                      <span className="text-[10px] opacity-80 font-mono">[{v.pinyin}]</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* MODE 1: DRAG & DROP CREATIVE STUDIO */}
+            {configTabMode === 'dnd' && (
+              <div className="space-y-6">
+                {/* WORD BANK PALETTE */}
+                <div className={cn(
+                  "p-5 rounded-3xl border space-y-4",
+                  isDarkMode ? "bg-zinc-900/90 border-amber-500/40 shadow-xl" : "bg-white border-amber-300 shadow-md"
+                )}>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-amber-500" />
+                      <h4 className="text-xs font-black uppercase tracking-wider text-amber-500 font-mono">
+                        Banka Reči (Kliknite ili Prevucite u polje ispod)
+                      </h4>
+                    </div>
 
-              {/* STEP 3: NOUN OR ADJECTIVE */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
-                    <span>3. Kraj Rečenice (Imenica ili Pridev):</span>
-                  </label>
-                  <div className="flex bg-amber-500/20 p-0.5 rounded-lg border border-amber-500/30 font-mono text-[10px]">
-                    <button
-                      onClick={() => setCfgEndingType('noun')}
-                      className={cn("px-2.5 py-1 rounded-md font-bold transition-all", cfgEndingType === 'noun' ? "bg-amber-600 text-white shadow" : "text-amber-400 hover:text-white")}
-                    >
-                      Imenice (Pojmovi)
-                    </button>
-                    <button
-                      onClick={() => setCfgEndingType('adjective')}
-                      className={cn("px-2.5 py-1 rounded-md font-bold transition-all", cfgEndingType === 'adjective' ? "bg-amber-600 text-white shadow" : "text-amber-400 hover:text-white")}
-                    >
-                      Pridevi (Opisi) ✨
-                    </button>
+                    {/* Filter Pills */}
+                    <div className="flex flex-wrap gap-1 text-[11px] font-mono">
+                      {[
+                        { id: 'all', label: 'Sve' },
+                        { id: 'pronoun', label: '👤 Zamenice (I, You, They, We...)' },
+                        { id: 'verb', label: '⚡ Glagoli' },
+                        { id: 'noun', label: '📦 Imenice' },
+                        { id: 'adjective', label: '✨ Pridevi' },
+                        { id: 'connector', label: '🔗 Veznici' },
+                      ].map(cat => (
+                        <button
+                          key={`cat-${cat.id}`}
+                          onClick={() => setDndFilter(cat.id as any)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-lg border font-bold transition-all",
+                            dndFilter === cat.id
+                              ? "bg-amber-600 text-white border-amber-500"
+                              : "bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                          )}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Word Cards Palette Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-60 overflow-y-auto p-1 custom-scrollbar">
+                    {DND_CHINESE_WORDS
+                      .filter(w => dndFilter === 'all' || w.type === dndFilter)
+                      .map(item => (
+                        <div
+                          key={item.id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', JSON.stringify(item));
+                          }}
+                          onClick={() => handleDndAddWord(item)}
+                          className={cn(
+                            "p-2.5 rounded-2xl border cursor-grab active:cursor-grabbing hover:scale-105 transition-all text-left group relative",
+                            isDarkMode ? "bg-zinc-800/90 border-zinc-700 hover:border-amber-500/60 text-zinc-200" : "bg-amber-50/80 border-amber-200 hover:border-amber-400 text-zinc-800"
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                              {item.type}
+                            </span>
+                            <GripVertical className="w-3.5 h-3.5 text-zinc-500 group-hover:text-amber-400 transition-colors" />
+                          </div>
+                          <p className="text-xl font-serif font-black text-amber-400 mt-1">{item.char}</p>
+                          <p className="text-[10px] font-mono font-bold text-amber-200/80">{item.pinyin} ({item.vuk})</p>
+                          <p className="text-[10px] font-medium text-zinc-400 truncate">{item.sr}</p>
+                        </div>
+                      ))}
                   </div>
                 </div>
 
-                {cfgEndingType === 'noun' ? (
-                  <div className="flex flex-wrap gap-2">
-                    {CONFIGURATOR_NOUNS.map((n, idx) => (
+                {/* DROP ZONE CANVA / CONSTRUCTION STAGE */}
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    try {
+                      const data = e.dataTransfer.getData('text/plain');
+                      if (data) {
+                        const parsed = JSON.parse(data) as DndWordItem;
+                        handleDndAddWord(parsed);
+                      }
+                    } catch (err) {
+                      console.error('Drop parse error', err);
+                    }
+                  }}
+                  className={cn(
+                    "p-6 rounded-3xl border-2 border-dashed space-y-5 transition-all min-h-[160px] flex flex-col justify-center",
+                    dndStageWords.length > 0
+                      ? isDarkMode ? "bg-zinc-900/90 border-amber-500/60" : "bg-amber-500/10 border-amber-400"
+                      : isDarkMode ? "bg-zinc-900/40 border-zinc-700 hover:border-amber-500/40" : "bg-zinc-50 border-zinc-300 hover:border-amber-300"
+                  )}
+                >
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-xs font-mono font-black uppercase text-amber-500 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>Polje za Sklapanje (Prevucite ili Kliknite reči):</span>
+                    </span>
+
+                    <div className="flex items-center gap-2">
                       <button
-                        key={`noun-${idx}`}
-                        onClick={() => { setCfgNounIdx(idx); setSelectedSocialPresetIdx(null); }}
+                        onClick={handleDndRandomize}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:bg-amber-500 hover:text-zinc-950 transition-all flex items-center gap-1.5"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>🎲 Nasumična Kreativna Rečenica</span>
+                      </button>
+
+                      {dndStageWords.length > 0 && (
+                        <button
+                          onClick={() => setDndStageWords([])}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-600 hover:text-white transition-all flex items-center gap-1.5"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Očisti</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Stage Draggable Word Pills */}
+                  {dndStageWords.length === 0 ? (
+                    <div className="py-8 text-center space-y-2">
+                      <p className="text-sm font-medium text-zinc-400 italic">
+                        "Learn language by creativity, that's the idea."
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        Prevucite kartice iz banke iznad ili kliknite na njih da biste napravili svoju prvu rečenicu!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2 p-2">
+                      {dndStageWords.map((word, idx) => (
+                        <motion.div
+                          key={`stage-${word.id}-${idx}`}
+                          layout
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.8, opacity: 0 }}
+                          className="px-3.5 py-2.5 rounded-2xl bg-amber-600 text-white shadow-md flex items-center gap-2 border border-amber-400 group"
+                        >
+                          <div className="text-left">
+                            <p className="text-lg font-serif font-black leading-none">{word.char}</p>
+                            <p className="text-[9px] font-mono opacity-90">{word.pinyin} ({word.vuk})</p>
+                          </div>
+
+                          <div className="flex items-center gap-0.5 ml-1 opacity-80 group-hover:opacity-100">
+                            {idx > 0 && (
+                              <button
+                                onClick={() => handleDndMoveWord(idx, 'left')}
+                                className="p-1 hover:bg-amber-700 rounded text-amber-200"
+                                title="Pomeri levo"
+                              >
+                                <MoveLeft className="w-3 h-3" />
+                              </button>
+                            )}
+                            {idx < dndStageWords.length - 1 && (
+                              <button
+                                onClick={() => handleDndMoveWord(idx, 'right')}
+                                className="p-1 hover:bg-amber-700 rounded text-amber-200"
+                                title="Pomeri desno"
+                              >
+                                <MoveRight className="w-3 h-3" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDndRemoveWord(idx)}
+                              className="p-1 hover:bg-red-700 rounded text-red-200 ml-1"
+                              title="Ukloni reč"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* ASSEMBLED OUTPUT ANALYSIS CARD */}
+                  {dndStageWords.length > 0 && (() => {
+                    const fullChar = dndStageWords.map(w => w.char).join(' ');
+                    const fullPinyin = dndStageWords.map(w => w.pinyin).join(' ');
+                    const fullVuk = dndStageWords.map(w => w.vuk).join(' ');
+                    const fullSr = dndStageWords.map(w => w.sr).join(' ') + '.';
+                    const fullEn = dndStageWords.map(w => w.en).join(' ') + '.';
+                    const shareText = `${fullChar} (${fullPinyin}) - "${fullSr}" #WiseFit #Chinese #LanguageByCreativity`;
+
+                    return (
+                      <div className="p-4 rounded-2xl bg-amber-950/60 border border-amber-500/50 space-y-3 mt-2 text-left">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <span className="text-[10px] font-mono font-black text-amber-400 uppercase tracking-widest flex items-center gap-1">
+                            <span>✨ Rezultat Vaše Stvorene Rečenice</span>
+                          </span>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleCopyConfigText(shareText)}
+                              className={cn(
+                                "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border",
+                                copiedConfigSentence
+                                  ? "bg-emerald-600 text-white border-emerald-500"
+                                  : "bg-amber-600/30 text-amber-200 border-amber-500/40 hover:bg-amber-600 hover:text-white"
+                              )}
+                            >
+                              {copiedConfigSentence ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{copiedConfigSentence ? "Kopirano!" : "Kopiraj za Social Media"}</span>
+                            </button>
+
+                            <button
+                              onClick={() => speakChinese(fullChar)}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-zinc-950 hover:bg-amber-400 transition-all flex items-center gap-1.5 shadow-sm"
+                            >
+                              <Volume2 className="w-3.5 h-3.5" /> Izgovori Rečenicu
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-3xl font-serif font-black text-amber-300 tracking-wide">
+                          {fullChar}
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono pt-1">
+                          <p className="text-amber-400 font-bold">
+                            Pinyin: <span className="text-white">{fullPinyin}</span>
+                          </p>
+                          <p className="text-emerald-400 font-bold">
+                            Vuk Transliteracija: <span className="text-white">"{fullVuk}"</span>
+                          </p>
+                        </div>
+
+                        <div className="border-t pt-2 border-amber-500/20 text-xs space-y-0.5 font-sans">
+                          <p className="text-amber-200 font-semibold">🇭🇷 Značenje: {fullSr}</p>
+                          <p className="text-amber-300/80 text-[11px] italic">🇬🇧 English: {fullEn}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* MODE 2: GUIDED DROPDOWN & SELECTOR MODE */}
+            {configTabMode === 'dropdown' && (
+              <div className={cn(
+                "p-6 rounded-3xl border space-y-6",
+                isDarkMode ? "bg-zinc-900/90 border-amber-500/40 shadow-xl" : "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300 shadow-md"
+              )}>
+                <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 border-amber-500/20">
+                  <div className="flex items-center gap-2">
+                    <Wand2 className="w-5 h-5 text-amber-500 animate-pulse" />
+                    <h3 className="text-base font-black tracking-tight">Vodeći Konfigurator Rečenica (Padajući Meniji)</h3>
+                  </div>
+                  <span className="text-[10px] font-mono font-extrabold uppercase bg-amber-500/20 text-amber-600 dark:text-amber-300 px-2.5 py-1 rounded-full border border-amber-500/30">
+                    Sve Zamenice (I, You, They, We...)
+                  </span>
+                </div>
+
+                {/* SOCIAL MEDIA QUICK PRESETS BAR */}
+                <div className="space-y-2.5 bg-amber-500/10 dark:bg-amber-950/50 p-3.5 rounded-2xl border border-amber-500/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-300 font-mono flex items-center gap-1.5">
+                      <span>📲 Popularni Social Media Izrazi (Jedan klik za Facebook):</span>
+                    </span>
+                    {selectedSocialPresetIdx !== null && (
+                      <button
+                        onClick={() => setSelectedSocialPresetIdx(null)}
+                        className="text-[10px] font-bold text-amber-500 hover:underline"
+                      >
+                        Poništi Preset
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {SOCIAL_MEDIA_PRESETS.map((preset, idx) => (
+                      <button
+                        key={`sm-${idx}`}
+                        onClick={() => setSelectedSocialPresetIdx(idx)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                          selectedSocialPresetIdx === idx
+                            ? "bg-amber-600 text-white border-amber-400 shadow-md scale-[1.02]"
+                            : isDarkMode ? "bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:border-amber-500/50" : "bg-white border-amber-200 text-zinc-800 hover:bg-amber-100/60"
+                        )}
+                      >
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-mono font-black">{preset.badge}</span>
+                        <span className="font-serif font-black">{preset.char}</span>
+                        <span className="text-[10px] opacity-75 font-normal">({preset.sr})</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* STEP 1: SUBJECT WITH DROPDOWN OR BUTTONS */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
+                      <span>1. Subjekat / Zamenica:</span>
+                      <span className="text-[10px] font-normal opacity-80">(Ja, Ti, On, Ona, Mi, Oni)</span>
+                    </label>
+
+                    {/* Dropdown Selector for Subjects */}
+                    <select
+                      value={cfgSubIdx}
+                      onChange={(e) => {
+                        setCfgSubIdx(Number(e.target.value));
+                        setSelectedSocialPresetIdx(null);
+                      }}
+                      className="text-xs font-bold bg-zinc-800 border border-amber-500/40 text-amber-300 px-3 py-1 rounded-xl"
+                    >
+                      {CONFIGURATOR_SUBJECTS.map((sub, idx) => (
+                        <option key={`sub-opt-${idx}`} value={idx}>
+                          {sub.char} [{sub.pinyin}] - {sub.translationSr} / {sub.translationEn}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                    {CONFIGURATOR_SUBJECTS.map((sub, idx) => (
+                      <button
+                        key={`sub-${idx}`}
+                        onClick={() => { setCfgSubIdx(idx); setSelectedSocialPresetIdx(null); }}
+                        className={cn(
+                          "p-2.5 rounded-2xl border transition-all text-center",
+                          selectedSocialPresetIdx === null && cfgSubIdx === idx
+                            ? "bg-amber-600 text-white border-amber-500 shadow-md scale-[1.02]"
+                            : isDarkMode ? "bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:border-amber-500/50" : "bg-white border-amber-200 text-zinc-800 hover:bg-amber-100/50"
+                        )}
+                      >
+                        <p className="text-lg font-serif font-black">{sub.char}</p>
+                        <p className="text-[9px] font-mono opacity-90">{sub.pinyin}</p>
+                        <p className="text-[10px] font-bold mt-0.5">{sub.translationSr}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* STEP 2: VERB WITH DROPDOWN */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
+                      <span>2. Glagol:</span>
+                    </label>
+
+                    <select
+                      value={cfgVerbIdx}
+                      onChange={(e) => {
+                        setCfgVerbIdx(Number(e.target.value));
+                        setSelectedSocialPresetIdx(null);
+                      }}
+                      className="text-xs font-bold bg-zinc-800 border border-amber-500/40 text-amber-300 px-3 py-1 rounded-xl"
+                    >
+                      {CONFIGURATOR_VERBS.map((v, idx) => (
+                        <option key={`v-opt-${idx}`} value={idx}>
+                          {v.char} [{v.pinyin}] - {v.en}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {CONFIGURATOR_VERBS.map((v, idx) => (
+                      <button
+                        key={`verb-${idx}`}
+                        onClick={() => { setCfgVerbIdx(idx); setSelectedSocialPresetIdx(null); }}
                         className={cn(
                           "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
-                          selectedSocialPresetIdx === null && cfgNounIdx === idx
+                          selectedSocialPresetIdx === null && cfgVerbIdx === idx
                             ? "bg-amber-600 text-white border-amber-500 shadow-sm"
                             : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-zinc-700 hover:bg-amber-100/50"
                         )}
                       >
-                        <span className="font-serif text-sm font-black">{n.char}</span>
-                        <span className="text-[10px] opacity-80 font-mono">({n.sr})</span>
+                        <span className="font-serif text-sm font-black">{v.char}</span>
+                        <span className="text-[10px] opacity-80 font-mono">[{v.pinyin}]</span>
                       </button>
                     ))}
                   </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {CONFIGURATOR_ADJECTIVES.map((adj, idx) => (
+                </div>
+
+                {/* STEP 3: NOUN OR ADJECTIVE */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <label className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-mono">
+                      <span>3. Kraj Rečenice (Imenica ili Pridev):</span>
+                    </label>
+
+                    <div className="flex bg-amber-500/20 p-0.5 rounded-lg border border-amber-500/30 font-mono text-[10px]">
                       <button
-                        key={`adj-${idx}`}
-                        onClick={() => { setCfgAdjIdx(idx); setSelectedSocialPresetIdx(null); }}
-                        className={cn(
-                          "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
-                          selectedSocialPresetIdx === null && cfgAdjIdx === idx
-                            ? "bg-amber-600 text-white border-amber-500 shadow-sm"
-                            : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-amber-800 hover:bg-amber-100/50"
-                        )}
+                        onClick={() => setCfgEndingType('noun')}
+                        className={cn("px-2.5 py-1 rounded-md font-bold transition-all", cfgEndingType === 'noun' ? "bg-amber-600 text-white shadow" : "text-amber-400 hover:text-white")}
                       >
-                        <span className="font-serif text-sm font-black">{adj.char}</span>
-                        <span className="text-[10px] opacity-80 font-mono">({adj.sr})</span>
+                        Imenice
                       </button>
-                    ))}
+                      <button
+                        onClick={() => setCfgEndingType('adjective')}
+                        className={cn("px-2.5 py-1 rounded-md font-bold transition-all", cfgEndingType === 'adjective' ? "bg-amber-600 text-white shadow" : "text-amber-400 hover:text-white")}
+                      >
+                        Pridevi ✨
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* GENERATED CONFIGURATOR PREVIEW CARD */}
-              {(() => {
-                let sentenceChar = '';
-                let sentencePinyin = '';
-                let sentenceVuk = '';
-                let sentenceSr = '';
-                let sentenceEn = '';
-
-                if (selectedSocialPresetIdx !== null) {
-                  const preset = SOCIAL_MEDIA_PRESETS[selectedSocialPresetIdx];
-                  sentenceChar = preset.char;
-                  sentencePinyin = preset.pinyin;
-                  sentenceVuk = preset.vuk;
-                  sentenceSr = preset.sr;
-                  sentenceEn = preset.en;
-                } else {
-                  const sub = CONFIGURATOR_SUBJECTS[cfgSubIdx];
-                  const verb = CONFIGURATOR_VERBS[cfgVerbIdx];
-                  const verbSr = verb.sr[sub.char as '我' | '你' | '他们'];
-
-                  if (cfgEndingType === 'noun') {
-                    const noun = CONFIGURATOR_NOUNS[cfgNounIdx];
-                    sentenceChar = `${sub.char} ${verb.char} ${noun.char}`;
-                    sentencePinyin = `${sub.pinyin} ${verb.pinyin} ${noun.pinyin}`;
-                    sentenceVuk = `${sub.vuk} ${verb.vuk} ${noun.vuk}`;
-                    sentenceSr = `${sub.translationSr} ${verbSr} ${noun.sr}.`;
-                    sentenceEn = `${sub.translationEn} ${verb.en} ${noun.en}.`;
-                  } else {
-                    const adj = CONFIGURATOR_ADJECTIVES[cfgAdjIdx];
-                    sentenceChar = `${sub.char} ${verb.char} ${adj.char}`;
-                    sentencePinyin = `${sub.pinyin} ${verb.pinyin} ${adj.pinyin}`;
-                    sentenceVuk = `${sub.vuk} ${verb.vuk} ${adj.vuk}`;
-                    sentenceSr = `${sub.translationSr} ${verbSr} ${adj.sr}.`;
-                    sentenceEn = `${sub.translationEn} ${verb.en} ${adj.en}.`;
-                  }
-                }
-
-                const socialShareText = `${sentenceChar} (${sentencePinyin}) - "${sentenceSr}" #WiseFit #Chinese #Stoic`;
-
-                return (
-                  <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/50 space-y-3 mt-4 text-left">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="text-[10px] font-mono font-black text-amber-400 uppercase tracking-widest flex items-center gap-1">
-                        <span>✨ Sklopljena Kineska Rečenica</span>
-                      </span>
-                      <div className="flex items-center gap-2">
+                  {cfgEndingType === 'noun' ? (
+                    <div className="flex flex-wrap gap-2">
+                      {CONFIGURATOR_NOUNS.map((n, idx) => (
                         <button
-                          onClick={() => handleCopyConfigText(socialShareText)}
+                          key={`noun-${idx}`}
+                          onClick={() => { setCfgNounIdx(idx); setSelectedSocialPresetIdx(null); }}
                           className={cn(
-                            "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border",
-                            copiedConfigSentence
-                              ? "bg-emerald-600 text-white border-emerald-500"
-                              : "bg-amber-600/30 text-amber-200 border-amber-500/40 hover:bg-amber-600 hover:text-white"
+                            "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                            selectedSocialPresetIdx === null && cfgNounIdx === idx
+                              ? "bg-amber-600 text-white border-amber-500 shadow-sm"
+                              : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-zinc-700 hover:bg-amber-100/50"
                           )}
-                          title="Kopiraj za Facebook / Instagram / Twitter"
                         >
-                          {copiedConfigSentence ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{copiedConfigSentence ? "Kopirano!" : "Kopiraj za Social Media"}</span>
+                          <span className="font-serif text-sm font-black">{n.char}</span>
+                          <span className="text-[10px] opacity-80 font-mono">({n.sr})</span>
                         </button>
-
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {CONFIGURATOR_ADJECTIVES.map((adj, idx) => (
                         <button
-                          onClick={() => speakChinese(sentenceChar)}
-                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-zinc-950 hover:bg-amber-400 transition-all flex items-center gap-1.5 shadow-sm"
+                          key={`adj-${idx}`}
+                          onClick={() => { setCfgAdjIdx(idx); setSelectedSocialPresetIdx(null); }}
+                          className={cn(
+                            "px-3 py-2 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                            selectedSocialPresetIdx === null && cfgAdjIdx === idx
+                              ? "bg-amber-600 text-white border-amber-500 shadow-sm"
+                              : isDarkMode ? "bg-zinc-800/70 border-zinc-700 text-zinc-300 hover:border-amber-500/40" : "bg-white border-amber-200 text-amber-800 hover:bg-amber-100/50"
+                          )}
                         >
-                          <Volume2 className="w-3.5 h-3.5" /> Izgovori
+                          <span className="font-serif text-sm font-black">{adj.char}</span>
+                          <span className="text-[10px] opacity-80 font-mono">({adj.sr})</span>
                         </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* GENERATED CONFIGURATOR PREVIEW CARD */}
+                {(() => {
+                  let sentenceChar = '';
+                  let sentencePinyin = '';
+                  let sentenceVuk = '';
+                  let sentenceSr = '';
+                  let sentenceEn = '';
+
+                  if (selectedSocialPresetIdx !== null) {
+                    const preset = SOCIAL_MEDIA_PRESETS[selectedSocialPresetIdx];
+                    sentenceChar = preset.char;
+                    sentencePinyin = preset.pinyin;
+                    sentenceVuk = preset.vuk;
+                    sentenceSr = preset.sr;
+                    sentenceEn = preset.en;
+                  } else {
+                    const sub = CONFIGURATOR_SUBJECTS[cfgSubIdx];
+                    const verb = CONFIGURATOR_VERBS[cfgVerbIdx];
+                    const verbSr = (verb.sr as any)[sub.char] || verb.sr['我'] || 'radi';
+
+                    if (cfgEndingType === 'noun') {
+                      const noun = CONFIGURATOR_NOUNS[cfgNounIdx];
+                      sentenceChar = `${sub.char} ${verb.char} ${noun.char}`;
+                      sentencePinyin = `${sub.pinyin} ${verb.pinyin} ${noun.pinyin}`;
+                      sentenceVuk = `${sub.vuk} ${verb.vuk} ${noun.vuk}`;
+                      sentenceSr = `${sub.translationSr} ${verbSr} ${noun.sr}.`;
+                      sentenceEn = `${sub.translationEn} ${verb.en} ${noun.en}.`;
+                    } else {
+                      const adj = CONFIGURATOR_ADJECTIVES[cfgAdjIdx];
+                      sentenceChar = `${sub.char} ${verb.char} ${adj.char}`;
+                      sentencePinyin = `${sub.pinyin} ${verb.pinyin} ${adj.pinyin}`;
+                      sentenceVuk = `${sub.vuk} ${verb.vuk} ${adj.vuk}`;
+                      sentenceSr = `${sub.translationSr} ${verbSr} ${adj.sr}.`;
+                      sentenceEn = `${sub.translationEn} ${verb.en} ${adj.en}.`;
+                    }
+                  }
+
+                  const socialShareText = `${sentenceChar} (${sentencePinyin}) - "${sentenceSr}" #WiseFit #Chinese #Stoic`;
+
+                  return (
+                    <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/50 space-y-3 mt-4 text-left">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <span className="text-[10px] font-mono font-black text-amber-400 uppercase tracking-widest flex items-center gap-1">
+                          <span>✨ Sklopljena Kineska Rečenica</span>
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleCopyConfigText(socialShareText)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border",
+                              copiedConfigSentence
+                                ? "bg-emerald-600 text-white border-emerald-500"
+                                : "bg-amber-600/30 text-amber-200 border-amber-500/40 hover:bg-amber-600 hover:text-white"
+                            )}
+                          >
+                            {copiedConfigSentence ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedConfigSentence ? "Kopirano!" : "Kopiraj za Social Media"}</span>
+                          </button>
+
+                          <button
+                            onClick={() => speakChinese(sentenceChar)}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-zinc-950 hover:bg-amber-400 transition-all flex items-center gap-1.5 shadow-sm"
+                          >
+                            <Volume2 className="w-3.5 h-3.5" /> Izgovori
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="text-3xl font-serif font-black text-amber-300 tracking-wide">
+                        {sentenceChar}
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono pt-1">
+                        <p className="text-amber-400 font-bold">
+                          Pinyin: <span className="text-white">{sentencePinyin}</span>
+                        </p>
+                        <p className="text-emerald-400 font-bold">
+                          Vuk: <span className="text-white">"{sentenceVuk}"</span>
+                        </p>
+                      </div>
+
+                      <div className="border-t pt-2 border-amber-500/20 text-xs space-y-0.5 font-sans">
+                        <p className="text-amber-200 font-semibold">🇭🇷 {sentenceSr}</p>
+                        <p className="text-amber-300/80 text-[11px] italic">🇬🇧 {sentenceEn}</p>
                       </div>
                     </div>
-
-                    <p className="text-3xl font-serif font-black text-amber-300 tracking-wide">
-                      {sentenceChar}
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono pt-1">
-                      <p className="text-amber-400 font-bold">
-                        Pinyin: <span className="text-white">{sentencePinyin}</span>
-                      </p>
-                      <p className="text-emerald-400 font-bold">
-                        Vuk: <span className="text-white">"{sentenceVuk}"</span>
-                      </p>
-                    </div>
-
-                    <div className="border-t pt-2 border-amber-500/20 text-xs space-y-0.5 font-sans">
-                      <p className="text-amber-200 font-semibold">🇭🇷 {sentenceSr}</p>
-                      <p className="text-amber-300/80 text-[11px] italic">🇬🇧 {sentenceEn}</p>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* CUSTOM WORD PICKER GRID */}
-            <div className={cn(
-              "p-6 rounded-3xl border space-y-4",
-              isDarkMode ? "bg-zinc-900/80 border-amber-500/30" : "bg-amber-50/50 border-amber-200"
-            )}>
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-black uppercase tracking-wider text-amber-500 font-mono">
-                  Slobodni Sklop iz Rečnika (Izaberi reči)
-                </h4>
-                {selectedWeaverItems.length > 0 && (
-                  <button
-                    onClick={() => { setSelectedWeaverItems([]); setWovenSentence(null); }}
-                    className="text-xs font-bold text-red-400 hover:text-red-300"
-                  >
-                    Očisti selekciju
-                  </button>
-                )}
+                  );
+                })()}
               </div>
-
-              <div className="flex flex-wrap gap-2">
-                {selectedWeaverItems.map(item => (
-                  <span key={item.id} className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-600 text-white flex items-center gap-1.5">
-                    {item.emoji} {item.char} [{item.pinyin}] ({item.vuk})
-                    <button onClick={() => handleToggleWeaverSelect(item)} className="hover:text-red-300">×</button>
-                  </span>
-                ))}
-                {selectedWeaverItems.length === 0 && (
-                  <span className="text-xs italic text-zinc-500">Kliknite na karaktere iz rečnika ispod da ih spojite...</span>
-                )}
-              </div>
-
-              {selectedWeaverItems.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={weaveSentence}
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 text-white hover:bg-amber-500 transition-all flex items-center gap-1.5"
-                  >
-                    <Zap className="w-4 h-4" /> Ispleti Slobodnu Rečenicu
-                  </button>
-                </div>
-              )}
-
-              {wovenSentence && (
-                <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/40 space-y-2">
-                  <p className="text-2xl font-serif font-black text-amber-300">{wovenSentence.chinese}</p>
-                  <p className="text-xs font-mono font-bold text-amber-400">Pinyin: {wovenSentence.pinyin}</p>
-                  <p className="text-xs font-mono font-bold text-emerald-400">Vuk: "{wovenSentence.vuk}"</p>
-                  <p className="text-xs font-medium text-zinc-200">Prevod: {wovenSentence.serbian}</p>
-                  <button
-                    onClick={() => speakChinese(wovenSentence.chinese)}
-                    className="mt-2 px-3 py-1 rounded-lg text-xs font-bold bg-amber-600 text-white flex items-center gap-1"
-                  >
-                    <Volume2 className="w-3.5 h-3.5" /> Pusti Zvuk Rečenice
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Selection Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {VOCAB_DATA.slice(0, 36).map(item => {
-                const isSelected = selectedWeaverItems.some(i => i.id === item.id);
-                return (
-                  <button
-                    key={`weaver-pick-${item.id}`}
-                    onClick={() => handleToggleWeaverSelect(item)}
-                    className={cn(
-                      "p-3 rounded-2xl border text-left transition-all",
-                      isSelected 
-                        ? "bg-amber-600 border-amber-500 text-white" 
-                        : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-amber-500/40" : "bg-white border-zinc-200 text-zinc-800"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg">{item.emoji}</span>
-                      <span className="text-[10px] font-mono font-bold opacity-80">{item.pinyin}</span>
-                    </div>
-                    <p className="text-xl font-serif font-bold mt-1">{item.char}</p>
-                  </button>
-                );
-              })}
-            </div>
+            )}
           </motion.div>
         )}
 
