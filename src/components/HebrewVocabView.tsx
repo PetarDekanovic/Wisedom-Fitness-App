@@ -552,6 +552,8 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
 
   // Game States
   const [quizStarted, setQuizStarted] = useState(false);
+  const [hQuizCategory, setHQuizCategory] = useState<string>('all');
+  const [hQuizQuestionCount, setHQuizQuestionCount] = useState<number>(5);
   const [roundQuestions, setRoundQuestions] = useState<{
     vocab: HebrewVocabItem;
     options: string[];
@@ -816,8 +818,13 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
   };
 
   const generateQuizRound = () => {
-    const shuffled = [...HEBREW_VOCAB_DATA].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 5);
+    let pool = [...HEBREW_VOCAB_DATA];
+    if (hQuizCategory !== 'all') {
+      pool = pool.filter(v => v.category === hQuizCategory || (hQuizCategory === 'noun' && (v.category === 'imenice' || !['glagoli', 'pridevi'].includes(v.category))));
+      if (pool.length < 5) pool = [...HEBREW_VOCAB_DATA];
+    }
+    const shuffled = pool.sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, Math.min(hQuizQuestionCount, shuffled.length));
     
     const questionsList = selected.map(vocab => {
       const types: ('meaning' | 'vuk' | 'character' | 'listen')[] = ['meaning', 'vuk', 'character', 'listen'];
@@ -859,7 +866,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     setQuizStarted(true);
     
     if (questionsList[0].questionType === 'listen') {
-      setTimeout(() => speakHebrew(questionsList[0].vocab.char), 600);
+      setTimeout(() => speakHebrew(questionsList[0].vocab.char, `quiz-${questionsList[0].vocab.id}`), 600);
     }
   };
 
@@ -870,6 +877,9 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     
     const currentQ = roundQuestions[questionIdx];
     const isCorrect = optionIndex === currentQ.correctIndex;
+
+    // Auto-play Hebrew TTS audio on selection so user hears exact pronunciation!
+    speakHebrew(currentQ.vocab.char, `quiz-${currentQ.vocab.id}`);
     
     if (isCorrect) {
       playSound('correct');
@@ -1873,9 +1883,45 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                 <div className="space-y-2">
                   <h3 className="text-2xl font-serif font-black tracking-tight">Hebrejski Duo Kviz Arena</h3>
                   <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
-                    Testirajte svoje znanje hebrejskih reči, korena i Vuk Karadžić transliteracije kroz 5 brzih i izazovnih pitanja.
+                    Testirajte svoje znanje hebrejskih reči, korena, Vuk Karadžić transliteracije i engleskih prevoda kroz interaktivni audio kviz.
                   </p>
                 </div>
+
+                {/* QUIZ SETTINGS FILTERS */}
+                <div className="p-4 rounded-2xl bg-zinc-800/40 border border-zinc-700/50 space-y-3 text-left">
+                  <p className="text-[11px] font-mono font-bold uppercase text-blue-400">⚙️ Opcije Kviz Runde:</p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                    <div className="space-y-1">
+                      <label className="text-zinc-400 text-[10px]">Kategorija Reči:</label>
+                      <select
+                        value={hQuizCategory}
+                        onChange={(e) => setHQuizCategory(e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-blue-300 font-bold"
+                      >
+                        <option value="all">🌐 Sve Reči & Imenice ({HEBREW_VOCAB_DATA.length})</option>
+                        <option value="imenice">📦 Imenice & Objekti</option>
+                        <option value="glagoli">⚡ Glagoli & Akcije</option>
+                        <option value="pridevi">✨ Pridevi & Opisi</option>
+                        <option value="zamenice">👤 Zamenice & Subjekti</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-zinc-400 text-[10px]">Broj Pitanja:</label>
+                      <select
+                        value={hQuizQuestionCount}
+                        onChange={(e) => setHQuizQuestionCount(Number(e.target.value))}
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-blue-300 font-bold"
+                      >
+                        <option value={5}>⚡ 5 Pitanja (Brzi Test)</option>
+                        <option value={10}>🔥 10 Pitanja (Standard)</option>
+                        <option value={15}>🏆 15 Pitanja (Ekspert)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto font-mono text-xs">
                   <div className={cn("p-3 rounded-2xl border", isDarkMode ? "bg-zinc-800/40 border-zinc-700/50" : "bg-zinc-50 border-zinc-200")}>
                     <p className="text-[10px] text-zinc-400">Najbolji Skor</p>
@@ -1890,9 +1936,10 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                     <p className="text-base font-black text-red-400">3 ❤️</p>
                   </div>
                 </div>
+
                 <button
                   onClick={generateQuizRound}
-                  className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
                 >
                   Započni Kviz Rundu 🚀
                 </button>
@@ -1920,7 +1967,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                 {/* Question */}
                 <div className="text-center space-y-3 my-4">
                   <span className="text-5xl">{roundQuestions[questionIdx].vocab.emoji}</span>
-                  <h3 className="text-3xl font-serif font-black text-blue-500" dir="rtl">
+                  <h3 className="text-4xl font-serif font-black text-blue-400" dir="rtl">
                     {roundQuestions[questionIdx].vocab.char}
                   </h3>
 
@@ -1929,51 +1976,20 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                     <span className="text-emerald-500 font-bold">Vuk: "{getItemVuk(roundQuestions[questionIdx].vocab)}"</span>
                   </div>
 
-                  {/* Wise Quote Box in Quiz */}
-                  {(() => {
-                    const qItem = roundQuestions[questionIdx].vocab;
-                    const quoteInfo = getItemQuote(qItem);
-                    return (
-                      <div className="text-[11px] leading-snug bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 p-3 rounded-2xl flex items-start justify-between gap-2 max-w-lg mx-auto text-left mt-2">
-                        <div className="flex items-start gap-2">
-                          <span className="text-sm shrink-0">📜</span>
-                          <div className="space-y-0.5">
-                            <p className="font-semibold text-blue-900 dark:text-blue-200 tracking-wide font-serif" dir="rtl">
-                              {quoteInfo.quote}
-                            </p>
-                            <p className="text-[10px] italic text-blue-700/90 dark:text-blue-300/80 font-sans">
-                              "{quoteInfo.translation}"
-                            </p>
-                          </div>
-                        </div>
-                        {isAdmin && (
-                          <button
-                            onClick={(e) => openEditModal(qItem, e)}
-                            className="px-2 py-1 rounded-lg text-[10px] font-bold bg-blue-500/20 text-blue-700 dark:text-blue-300 hover:bg-blue-500/30 transition-all shrink-0 flex items-center gap-1 border border-blue-500/30 shadow-xs"
-                            title="Uredi izreku i izgovor (Petar / Admin)"
-                          >
-                            <Pencil className="w-3 h-3 text-blue-500" /> Uredi
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })()}
-
+                  {/* Audio TTS Button on Question */}
                   <div className="flex items-center justify-center gap-2 pt-1">
                     <button
-                      onClick={() => speakHebrew(roundQuestions[questionIdx].vocab.char)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 inline-flex items-center gap-1.5"
+                      onClick={() => speakHebrew(roundQuestions[questionIdx].vocab.char, `quiz-${roundQuestions[questionIdx].vocab.id}`)}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-2 shadow-sm border",
+                        isPronouncing === `quiz-${roundQuestions[questionIdx].vocab.id}`
+                          ? "bg-amber-500 text-zinc-950 border-amber-300 animate-pulse"
+                          : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border-blue-500/20"
+                      )}
                     >
-                      <Volume2 className="w-3.5 h-3.5" /> Pusti Zvuk
+                      <Volume2 className="w-4 h-4" />
+                      <span>{isPronouncing === `quiz-${roundQuestions[questionIdx].vocab.id}` ? "Pusta se..." : "Pusti Zvuk / Audio TTS"}</span>
                     </button>
-                    {isAdmin && (
-                      <button
-                        onClick={(e) => openEditModal(roundQuestions[questionIdx].vocab, e)}
-                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 inline-flex items-center gap-1.5 border border-blue-500/20"
-                      >
-                        <Pencil className="w-3.5 h-3.5" /> Uredi Kviz Izreku & Izgovor
-                      </button>
-                    )}
                   </div>
                 </div>
 
@@ -1991,8 +2007,8 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                         className={cn(
                           "p-4 rounded-2xl border text-left text-xs font-bold transition-all flex items-center justify-between",
                           !isAnswered && (isDarkMode ? "bg-zinc-800/60 border-zinc-700 hover:border-blue-500" : "bg-zinc-50 border-zinc-200 hover:border-blue-400"),
-                          isAnswered && isCorrect && "bg-emerald-500 text-white border-emerald-500",
-                          isAnswered && isSelected && !isCorrect && "bg-red-500 text-white border-red-500"
+                          isAnswered && isCorrect && "bg-emerald-600 text-white border-emerald-500 shadow-md",
+                          isAnswered && isSelected && !isCorrect && "bg-red-600 text-white border-red-500 shadow-md"
                         )}
                       >
                         <span>{opt}</span>
@@ -2003,15 +2019,130 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   })}
                 </div>
 
+                {/* DETAILED POST-ANSWER EXPLANATION & TRANSLATION BOTTOM CARD */}
                 {isAnswered && (
-                  <div className="pt-4 flex justify-end">
-                    <button
-                      onClick={handleNextQuestion}
-                      className="px-6 py-2.5 rounded-xl text-xs font-black bg-blue-600 text-white hover:bg-blue-500 transition-all"
-                    >
-                      Sledeće Pitanje →
-                    </button>
-                  </div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn(
+                      "p-5 rounded-3xl border space-y-4 text-left shadow-lg mt-4",
+                      selectedAnswer === roundQuestions[questionIdx].correctIndex
+                        ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-100"
+                        : "bg-red-950/40 border-red-500/50 text-red-100"
+                    )}
+                  >
+                    {/* Answer Result Banner */}
+                    <div className="flex items-center justify-between border-b pb-3 border-white/10 flex-wrap gap-2">
+                      <div className="flex items-center gap-2 font-mono text-sm font-black">
+                        {selectedAnswer === roundQuestions[questionIdx].correctIndex ? (
+                          <div className="flex items-center gap-2 text-emerald-400">
+                            <CheckCircle className="w-5 h-5" />
+                            <span>TAČNO! / CORRECT! (+10 pts)</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-red-400">
+                            <XCircle className="w-5 h-5" />
+                            <span>NETAČNO! / INCORRECT</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Primary Functional Audio Button */}
+                      <button
+                        onClick={() => speakHebrew(roundQuestions[questionIdx].vocab.char, `quiz-${roundQuestions[questionIdx].vocab.id}`)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-md border",
+                          isPronouncing === `quiz-${roundQuestions[questionIdx].vocab.id}`
+                            ? "bg-amber-500 text-zinc-950 border-amber-300 animate-pulse"
+                            : "bg-blue-600 text-white border-blue-400 hover:bg-blue-500"
+                        )}
+                      >
+                        <Volume2 className="w-4 h-4" />
+                        <span>{isPronouncing === `quiz-${roundQuestions[questionIdx].vocab.id}` ? "Slušate..." : "🔊 Izgovori Reč (TTS)"}</span>
+                      </button>
+                    </div>
+
+                    {/* Notice if Answer was Wrong */}
+                    {selectedAnswer !== roundQuestions[questionIdx].correctIndex && (
+                      <div className="p-3 rounded-2xl bg-red-500/15 border border-red-500/30 text-xs font-mono text-red-200 font-bold">
+                        🎯 Tačan odgovor: <span className="text-white underline">{roundQuestions[questionIdx].options[roundQuestions[questionIdx].correctIndex]}</span>
+                      </div>
+                    )}
+
+                    {/* Full Word Breakdown & Dual Translations */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-4xl font-serif font-black text-blue-300" dir="rtl">{roundQuestions[questionIdx].vocab.char}</span>
+                          <div>
+                            <p className="text-sm font-mono font-black text-indigo-200">
+                              Transliteracija: {getItemTransliteration(roundQuestions[questionIdx].vocab)}
+                            </p>
+                            <p className="text-xs font-mono font-bold text-emerald-300">
+                              Vuk Transliteracija: "{getItemVuk(roundQuestions[questionIdx].vocab)}"
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-3xl">{roundQuestions[questionIdx].vocab.emoji}</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-sans pt-2 border-t border-white/10">
+                        <div className="p-2.5 rounded-xl bg-black/20 border border-white/5 space-y-0.5">
+                          <span className="text-[10px] font-mono font-bold uppercase text-amber-400">🇭🇷 Značenje (Srpski/Hrvatski):</span>
+                          <p className="font-bold text-sm text-white">{getItemTranslation(roundQuestions[questionIdx].vocab)}</p>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-black/20 border border-white/5 space-y-0.5">
+                          <span className="text-[10px] font-mono font-bold uppercase text-blue-400">🇬🇧 English Translation:</span>
+                          <p className="font-bold text-sm text-white">{getItemEnglish(roundQuestions[questionIdx].vocab)}</p>
+                        </div>
+                      </div>
+
+                      {/* Part of speech & Root */}
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+                        <span className="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
+                          📦 Vrsta reči: {roundQuestions[questionIdx].vocab.category || 'Reč'}
+                        </span>
+                        {roundQuestions[questionIdx].vocab.root && (
+                          <span className="px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">
+                            🌱 Koren (Shoresh): {roundQuestions[questionIdx].vocab.root}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Stoic Quote / Wisdom Context */}
+                      {(() => {
+                        const qItem = roundQuestions[questionIdx].vocab;
+                        const quoteInfo = getItemQuote(qItem);
+                        return (
+                          <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs space-y-1">
+                            <div className="flex items-center gap-1.5 text-blue-300 font-mono font-bold text-[10px] uppercase">
+                              <Sparkles className="w-3.5 h-3.5 text-blue-400" /> Mudrost i primer upotrebe:
+                            </div>
+                            <p className="font-serif font-bold text-blue-200" dir="rtl">{quoteInfo.quote}</p>
+                            <p className="text-[11px] italic text-blue-300/80">"{quoteInfo.translation}"</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Action Bar */}
+                    <div className="pt-2 flex items-center justify-between flex-wrap gap-2">
+                      <button
+                        onClick={() => speakHebrew(roundQuestions[questionIdx].vocab.char, `quiz-${roundQuestions[questionIdx].vocab.id}`)}
+                        className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-all flex items-center gap-1.5"
+                      >
+                        <Volume2 className="w-4 h-4" /> Ponovi Audio Izgovor
+                      </button>
+
+                      <button
+                        onClick={handleNextQuestion}
+                        className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-md shadow-blue-600/30 flex items-center gap-2"
+                      >
+                        <span>Sledeće Pitanje</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+                  </motion.div>
                 )}
               </div>
             )}
