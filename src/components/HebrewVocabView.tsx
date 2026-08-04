@@ -287,6 +287,48 @@ export const HEBREW_CONFIG_ADJECTIVES = (() => {
 
 const HEBREW_SOCIAL_PRESETS = [
   {
+    char: 'כָּל הַכָּבוֹד אָחִי!',
+    vuk: 'Kol hakavod achi!',
+    sr: 'Bravo brate! / Svaka čast brate!',
+    en: 'Bravo brother! / Well done brother!',
+    badge: '👏 Bravo'
+  },
+  {
+    char: 'כָּל הַכָּבוֹד אָחוֹתִי!',
+    vuk: 'Kol hakavod achoti!',
+    sr: 'Bravo sestro! / Svaka čast sestro!',
+    en: 'Bravo sister! / Well done sister!',
+    badge: '👑 Sestro'
+  },
+  {
+    char: 'רַק קָדִימָה!',
+    vuk: 'Rak kadimah!',
+    sr: 'Samo naprijed! / Samo napred!',
+    en: 'Forward always! / Keep going!',
+    badge: '🚀 Naprijed'
+  },
+  {
+    char: 'אֵין וִיתּוּר!',
+    vuk: 'Ein vitur!',
+    sr: 'Nema predaje! / Bez odustajanja!',
+    en: 'No surrender! / Never give up!',
+    badge: '💪 Nema predaje'
+  },
+  {
+    char: 'אַגָּדָה!',
+    vuk: 'Agadah!',
+    sr: 'Legendo!',
+    en: 'Legend!',
+    badge: '🏆 Legendo'
+  },
+  {
+    char: 'כָּבוֹד!',
+    vuk: 'Kavod!',
+    sr: 'Respekt! / Poštovanje!',
+    en: 'Respect!',
+    badge: '🫡 Respekt'
+  },
+  {
     char: 'אֲנִי אוֹהֵב אֶת זֶה!',
     vuk: 'Ani ohev et zeh!',
     sr: 'Ovo mi se sviđa! / Volim ovo!',

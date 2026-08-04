@@ -237,6 +237,54 @@ export const CONFIGURATOR_ADJECTIVES = (() => {
 
 const SOCIAL_MEDIA_PRESETS = [
   {
+    char: '干得好，兄弟！',
+    pinyin: 'Gānde hǎo, xiōngdì!',
+    vuk: 'Gan de hao, siong di!',
+    sr: 'Bravo brate! / Odlično urađeno brate!',
+    en: 'Bravo brother! / Well done brother!',
+    badge: '👏 Bravo'
+  },
+  {
+    char: '干得好，姐妹！',
+    pinyin: 'Gānde hǎo, jiěmèi!',
+    vuk: 'Gan de hao, đjie mei!',
+    sr: 'Bravo sestro! / Odlično urađeno sestro!',
+    en: 'Bravo sister! / Well done sister!',
+    badge: '👑 Sestro'
+  },
+  {
+    char: '勇往直前！',
+    pinyin: 'Yǒngwǎng zhíqián!',
+    vuk: 'Jong vang dž’ ćjien!',
+    sr: 'Samo naprijed! / Hrabro napred!',
+    en: 'Forward always! / Keep going!',
+    badge: '🚀 Naprijed'
+  },
+  {
+    char: '永不言弃！',
+    pinyin: 'Yǒng bù yán qì!',
+    vuk: 'Jong bu jen ćji!',
+    sr: 'Nema predaje! / Nikada ne odustaj!',
+    en: 'Never surrender! / No giving up!',
+    badge: '💪 Nema predaje'
+  },
+  {
+    char: '传奇！',
+    pinyin: 'Chuánqí!',
+    vuk: 'Čuan ćji!',
+    sr: 'Legendo!',
+    en: 'Legend!',
+    badge: '🏆 Legendo'
+  },
+  {
+    char: '佩服！',
+    pinyin: 'Pèifú!',
+    vuk: 'Pei fu!',
+    sr: 'Respekt! / Poštovanje!',
+    en: 'Respect!',
+    badge: '🫡 Respekt'
+  },
+  {
     char: '我喜欢这个！',
     pinyin: 'Wǒ xǐhuan zhège!',
     vuk: 'Vo si huan dže ge!',
