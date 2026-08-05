@@ -5,7 +5,7 @@ import path from "path";
 import axios from "axios";
 import dotenv from "dotenv";
 import * as cheerio from "cheerio";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import Anthropic from "@anthropic-ai/sdk";
 import { initializeApp, getApp } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
@@ -70,8 +70,24 @@ const getGeminiKey = () => {
   return "";
 };
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(getGeminiKey());
+// Initialize Gemini Client Lazily with @google/genai
+let genAIClient: GoogleGenAI | null = null;
+const getGenAIClient = () => {
+  if (genAIClient) return genAIClient;
+  const key = getGeminiKey();
+  if (key) {
+    genAIClient = new GoogleGenAI({
+      apiKey: key,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build'
+        }
+      }
+    });
+    return genAIClient;
+  }
+  return null;
+};
 
 // Initialize Anthropic Lazily
 let anthropicClient: Anthropic | null = null;
@@ -99,20 +115,17 @@ function isAuthorized(email: string | undefined) {
 
 // Priority order for models
 const GEMINI_MODELS = [
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.1-pro-preview",
   "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-pro-latest",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro"
+  "gemini-2.0-flash"
 ];
 
 const CLAUDE_MODELS = [
   "claude-3-5-sonnet-20241022",
   "claude-3-5-haiku-20241022",
-  "claude-3-haiku-20240307",
-  "claude-3-sonnet-20240229",
-  "claude-3-opus-20240229"
+  "claude-3-haiku-20240307"
 ];
 
 async function startServer() {
@@ -383,34 +396,38 @@ async function startServer() {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
     if (!geminiKey && !anthropicKey) {
-      throw new Error("No AI API Keys configured. Please add GEMINI_API_KEY or ANTHROPIC_API_KEY to your Hostinger environment variables.");
+      throw new Error("No AI API Keys configured. Please add GEMINI_API_KEY or ANTHROPIC_API_KEY to your environment variables.");
     }
 
     let lastError = null;
 
-    // Try Gemini First - v1beta is often required for experimental/pre-release models
-    for (const modelName of GEMINI_MODELS) {
-      try {
-        console.log(`[WiseFit AI] Attempting Gemini: ${modelName}`);
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            ...config,
-            // Ensure we don't send incompatible fields
-            candidateCount: undefined
-          },
-          systemInstruction
-        }, { apiVersion: 'v1beta' }); 
-        const result = await model.generateContent(prompt);
-        const responseText = result.response.text();
-        if (responseText) return { text: () => responseText, raw: result };
-      } catch (e: any) {
-        lastError = e;
-        const errStr = e.message?.toLowerCase() || "";
-        console.warn(`[WiseFit AI] Gemini ${modelName} failed: ${errStr}`);
-        // If it's a structural error (like unauthorized), we might want to continue, but if it's a quota, we hop to Claude
-        if (errStr.includes("not found") || errStr.includes("404") || errStr.includes("not supported") || errStr.includes("403")) continue;
-        if (errStr.includes("quota") || errStr.includes("429") || errStr.includes("limit")) break; 
+    // Try Gemini First with @google/genai
+    const ai = getGenAIClient();
+    if (ai) {
+      for (const modelName of GEMINI_MODELS) {
+        try {
+          console.log(`[WiseFit AI] Attempting Gemini: ${modelName}`);
+          const res = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: {
+              systemInstruction,
+              temperature: config?.temperature,
+              topP: config?.topP,
+              topK: config?.topK,
+              responseMimeType: config?.responseMimeType,
+              responseSchema: config?.responseSchema
+            }
+          });
+          const responseText = res.text;
+          if (responseText) return { text: () => responseText, raw: res };
+        } catch (e: any) {
+          lastError = e;
+          const errStr = e.message?.toLowerCase() || "";
+          console.warn(`[WiseFit AI] Gemini ${modelName} failed: ${errStr}`);
+          if (errStr.includes("not found") || errStr.includes("404") || errStr.includes("not supported") || errStr.includes("403")) continue;
+          if (errStr.includes("quota") || errStr.includes("429") || errStr.includes("limit")) break; 
+        }
       }
     }
 
@@ -436,7 +453,7 @@ async function startServer() {
           const errLower = e.message?.toLowerCase() || "";
           console.warn(`[WiseFit AI] Claude ${modelName} failed: ${errLower}`);
           if (errLower.includes("not found") || errLower.includes("404")) continue;
-          if (errLower.includes("quota") || errLower.includes("429")) continue; // Try next Claude model if quota hit
+          if (errLower.includes("quota") || errLower.includes("429")) continue;
           break; 
         }
       }
@@ -460,33 +477,55 @@ async function startServer() {
     
     let lastError = null;
 
-    for (const modelName of GEMINI_MODELS) {
-      try {
-        console.log(`[WiseFit AI] Attempting GeminiMessages: ${modelName}`);
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            ...config,
-            candidateCount: undefined
-          },
-          systemInstruction
-        }, { apiVersion: 'v1beta' });
-        const result = await model.generateContent({ contents: messages });
-        const responseText = result.response.text();
-        if (responseText) return { text: () => responseText, raw: result };
-      } catch (e: any) {
-        lastError = e;
-        const errStr = e.message?.toLowerCase() || "";
-        console.warn(`[WiseFit AI] GeminiMessages ${modelName} failed: ${errStr}`);
-        if (errStr.includes("not found") || errStr.includes("404") || errStr.includes("not supported")) continue;
-        break; 
+    // Convert messages if necessary to clean structure for @google/genai
+    const formattedMessages = messages.map((m: any) => {
+      let role = m.role === 'assistant' ? 'model' : m.role;
+      let textContent = "";
+      if (Array.isArray(m.parts)) {
+        textContent = m.parts.map((p: any) => typeof p === 'string' ? p : p.text || "").join("\n");
+      } else if (typeof m.content === 'string') {
+        textContent = m.content;
+      } else if (typeof m.text === 'string') {
+        textContent = m.text;
+      }
+      return {
+        role: role || "user",
+        parts: [{ text: textContent || "..." }]
+      };
+    });
+
+    const ai = getGenAIClient();
+    if (ai) {
+      for (const modelName of GEMINI_MODELS) {
+        try {
+          console.log(`[WiseFit AI] Attempting GeminiMessages: ${modelName}`);
+          const res = await ai.models.generateContent({
+            model: modelName,
+            contents: formattedMessages,
+            config: {
+              systemInstruction,
+              temperature: config?.temperature,
+              topP: config?.topP,
+              topK: config?.topK,
+              responseMimeType: config?.responseMimeType
+            }
+          });
+          const responseText = res.text;
+          if (responseText) return { text: () => responseText, raw: res };
+        } catch (e: any) {
+          lastError = e;
+          const errStr = e.message?.toLowerCase() || "";
+          console.warn(`[WiseFit AI] GeminiMessages ${modelName} failed: ${errStr}`);
+          if (errStr.includes("not found") || errStr.includes("404") || errStr.includes("not supported")) continue;
+          break; 
+        }
       }
     }
 
     // Claude Messages Fallback
     const anthropic = getAnthropic();
     if (anthropic) {
-      const claudeMessages: any[] = messages.map(m => ({
+      const claudeMessages: any[] = formattedMessages.map(m => ({
         role: m.role === 'model' || m.role === 'assistant' ? 'assistant' : 'user',
         content: m.parts[0].text
       }));
@@ -702,13 +741,30 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
   app.post("/api/ai/psychologist", async (req, res) => {
     try {
-      const { messages, userEmail, healthData } = req.body;
+      const { messages, message, userEmail, healthData } = req.body;
       
       if (!isAuthorized(userEmail)) {
         return res.status(403).json({ error: "Psychology consultation requires a Higher Key." });
       }
 
-      const userMsg = messages[messages.length - 1].parts[0].text;
+      let messagesArr = Array.isArray(messages) ? messages : [];
+      if (messagesArr.length === 0 && message) {
+        messagesArr = [{ role: 'user', parts: [{ text: String(message) }] }];
+      }
+      if (messagesArr.length === 0) {
+        return res.status(400).json({ error: "Please enter a message for the psychologist." });
+      }
+
+      const lastMsg = messagesArr[messagesArr.length - 1];
+      let userMsg = "";
+      if (Array.isArray(lastMsg.parts) && lastMsg.parts[0]) {
+        userMsg = typeof lastMsg.parts[0] === 'string' ? lastMsg.parts[0] : (lastMsg.parts[0].text || String(lastMsg.parts[0]));
+      } else if (typeof lastMsg.content === 'string') {
+        userMsg = lastMsg.content;
+      } else if (typeof lastMsg.text === 'string') {
+        userMsg = lastMsg.text;
+      }
+
       const contextPrompt = `
         System: You are Dr. Sigmund Freud (adapted), a Classical Psychoanalyst and Clinical Psychologist. Your persona is refined, intellectually deep, and focused on uncovering the deep-seated emotional structures and subconscious patterns of your patient.
         
@@ -740,10 +796,18 @@ app.get("/api/ai/diagnostics", async (req, res) => {
 
   app.post("/api/ai/chat", async (req, res) => {
     try {
-      const { messages, userEmail } = req.body;
+      const { messages, message, userEmail } = req.body;
       
       if (!isAuthorized(userEmail)) {
         return res.status(403).json({ error: "The Stoic Chamber is private. Please contact the administrator." });
+      }
+
+      let messagesArr = Array.isArray(messages) ? messages : [];
+      if (messagesArr.length === 0 && message) {
+        messagesArr = [{ role: 'user', parts: [{ text: String(message) }] }];
+      }
+      if (messagesArr.length === 0) {
+        return res.status(400).json({ error: "No messages provided for Stoic mentor." });
       }
       
       const systemInstruction = `You are AI Stoic, an expert fitness coach and a master of ancient wisdom. 
@@ -763,7 +827,7 @@ app.get("/api/ai/diagnostics", async (req, res) => {
           - Enrich your response with relevant philosophical and athletic emojis (e.g., 🏛️, 🧠, ⚔️, 🏋️, 🧘, ⚓, ⏳, 🌸) to make it highly engaging.
           - ALWAYS use double-asterisk Markdown **bolding** to highlight important terms, concepts, rules, and names of people or texts (e.g., **Marcus Aurelius**, **discipline**, **HRV**, **willpower**, **Epictetus**) to maximize visual visibility and contrast.`;
 
-      const result = await generateMessagesWithFallback(messages, {}, systemInstruction);
+      const result = await generateMessagesWithFallback(messagesArr, {}, systemInstruction);
       res.json({ text: result.text() || "Sorry, I could not generate a response." });
     } catch (error: any) {
       console.error("Gemini Chat Error:", error);

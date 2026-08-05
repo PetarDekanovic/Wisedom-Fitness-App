@@ -131,7 +131,7 @@ export const DND_HEBREW_WORDS: HebDndWordItem[] = (() => {
   };
 
   const isAdj = (i: HebrewVocabItem) => {
-    if (i.category === 'pridevi') return true;
+    if ((i.category as string) === 'pridevi') return true;
     const en = i.english.toLowerCase();
     const sr = i.translation.toLowerCase();
     return en.includes('cool') || en.includes('fun') || en.includes('beautiful') || en.includes('good') || en.includes('wise') || en.includes('strong') || en.includes('calm') || en.includes('great') || en.includes('pure') || en.includes('holy') || en.includes('new') || sr.includes('lepo') || sr.includes('dobro') || sr.includes('mudro') || sr.includes('snazno') || sr.includes('spokojno') || sr.includes('sveto');
@@ -820,7 +820,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
   const generateQuizRound = () => {
     let pool = [...HEBREW_VOCAB_DATA];
     if (hQuizCategory !== 'all') {
-      pool = pool.filter(v => v.category === hQuizCategory || (hQuizCategory === 'noun' && (v.category === 'imenice' || !['glagoli', 'pridevi'].includes(v.category))));
+      pool = pool.filter(v => (v.category as string) === hQuizCategory || (hQuizCategory === 'noun' && ((v.category as string) === 'imenice' || !['glagoli', 'pridevi'].includes(v.category as string))));
       if (pool.length < 5) pool = [...HEBREW_VOCAB_DATA];
     }
     const shuffled = pool.sort(() => Math.random() - 0.5);

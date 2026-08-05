@@ -778,7 +778,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   const generateQuizRound = () => {
     let pool = [...VOCAB_DATA];
     if (quizCategory !== 'all') {
-      pool = pool.filter(v => v.category === quizCategory || (quizCategory === 'noun' && (v.category === 'imenice' || !['glagoli', 'pridevi'].includes(v.category))));
+      pool = pool.filter(v => (v.category as string) === quizCategory || (quizCategory === 'noun' && ((v.category as string) === 'imenice' || !['glagoli', 'pridevi'].includes(v.category as string))));
       if (pool.length < 5) pool = [...VOCAB_DATA]; // Fallback if filtered pool is small
     }
     const shuffled = pool.sort(() => Math.random() - 0.5);
