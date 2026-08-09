@@ -1089,15 +1089,15 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
         </div>
 
         {/* View Mode Nav */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap max-w-full">
           <div className={cn(
-            "p-1 rounded-xl border flex items-center gap-1",
+            "p-1 rounded-xl border flex items-center gap-1 overflow-x-auto max-w-full touch-pan-x scrollbar-none pb-0.5",
             isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-zinc-100 border-zinc-200"
           )}>
             <button
               onClick={() => setActiveTab('learn')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
                 activeTab === 'learn'
                   ? isGirlyMode ? "bg-pink-500 text-white" : "bg-red-600 text-white"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
@@ -1108,7 +1108,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             <button
               onClick={() => setActiveTab('canvas')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
                 activeTab === 'canvas'
                   ? isGirlyMode ? "bg-pink-500 text-white" : "bg-red-600 text-white"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
@@ -1119,7 +1119,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             <button
               onClick={() => setActiveTab('weaver')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
                 activeTab === 'weaver'
                   ? isGirlyMode ? "bg-pink-500 text-white" : "bg-amber-600 text-white"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
@@ -1130,7 +1130,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             <button
               onClick={() => { setActiveTab('quiz'); generateQuizRound(); }}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
                 activeTab === 'quiz'
                   ? isGirlyMode ? "bg-pink-500 text-white" : "bg-red-600 text-white"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
@@ -1141,7 +1141,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             <button
               onClick={() => setActiveTab('alphabet')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
                 activeTab === 'alphabet'
                   ? isGirlyMode ? "bg-pink-500 text-white" : "bg-red-600 text-white"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
