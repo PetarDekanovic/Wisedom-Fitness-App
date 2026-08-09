@@ -127,7 +127,14 @@ export const HEBREW_VOCAB_EXPANDED: HebrewVocabItem[] = [
   { id: 'h107', char: 'מִלָּה', transliteration: 'Milah', vuk: 'mila', translation: 'Reč', english: 'Word', emoji: '💬', category: 'svakodnevno', categoryLabel: 'Svakodnevno', root: 'מ-ל-ל', visualTip: 'Word' },
   { id: 'h108', char: 'שֵׁם', transliteration: 'Shem', vuk: 'šem', translation: 'Ime', english: 'Name', emoji: '🏷️', category: 'svakodnevno', categoryLabel: 'Svakodnevno', root: 'ש-ו-ם', visualTip: 'Name' },
   { id: 'h109', char: 'כֶּסֶף', transliteration: 'Kessef', vuk: 'kesef', translation: 'Novac', english: 'Money', emoji: '💵', category: 'svakodnevno', categoryLabel: 'Svakodnevno', root: 'כ-ס-פ', visualTip: 'Currency' },
-  { id: 'h110', char: 'מְכוֹנִית', transliteration: 'Mekhonit', vuk: 'mehonit', translation: 'Auto', english: 'Car', emoji: '🚗', category: 'svakodnevno', categoryLabel: 'Svakodnevno', root: 'כ-ו-ן', visualTip: 'Car' }
+  { id: 'h110', char: 'מְכוֹנִית', transliteration: 'Mekhonit', vuk: 'mehonit', translation: 'Auto', english: 'Car', emoji: '🚗', category: 'svakodnevno', categoryLabel: 'Svakodnevno', root: 'כ-ו-ן', visualTip: 'Car' },
+
+  // --- SOCIAL MEDIA POPULAR EXPRESSIONS ---
+  { id: 'h_sm_1', char: 'כָּל הַכָּבוֹד, אָחִי!', transliteration: 'Kol HaKavod, Achi!', vuk: 'kol hakavod, ahi!', translation: 'Bravo brate!', english: 'Bravo brother! / Well done, bro!', emoji: '👏', category: 'svakodnevno', categoryLabel: 'Društvene Mreže', root: 'כ-ב-ד', visualTip: 'Cheering for a brother' },
+  { id: 'h_sm_2', char: 'כָּל הַכָּבוֹד, אֲחוֹתִי!', transliteration: 'Kol HaKavod, Achoti!', vuk: 'kol hakavod, ahoti!', translation: 'Bravo sestro!', english: 'Bravo sister! / Well done, sis!', emoji: '👑', category: 'svakodnevno', categoryLabel: 'Društvene Mreže', root: 'כ-ב-ד', visualTip: 'Cheering for a sister' },
+  { id: 'h_sm_3', char: 'רַק קָדִימָה!', transliteration: 'Rak Kadima!', vuk: 'rak kadima!', translation: 'Samo napred!', english: 'Only forward! / Straight ahead!', emoji: '🚀', category: 'svakodnevno', categoryLabel: 'Društvene Mreže', root: 'ק-ד-מ', visualTip: 'Rocket moving forward' },
+  { id: 'h_sm_4', char: 'אֵין וִיתוּרִים!', transliteration: 'Ein Viturim!', vuk: 'ejn viturim!', translation: 'Nema predaje!', english: 'No giving up! / Never surrender!', emoji: '🔥', category: 'svakodnevno', categoryLabel: 'Društvene Mreže', root: 'ו-ת-ר', visualTip: 'Unstoppable willpower' },
+  { id: 'h_sm_5', char: 'תּוֹתָח!', transliteration: 'Totach!', vuk: 'totah!', translation: 'Svaka čast! / Legendo!', english: 'Legend! / You rock!', emoji: '⚡', category: 'svakodnevno', categoryLabel: 'Društvene Mreže', root: 'ת-ת-ח', visualTip: 'Legendary performance' }
 ];
 
 // Generate comprehensive remaining items to guarantee exactly 600 items in total

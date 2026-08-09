@@ -37,6 +37,49 @@ import { HEBREW_VOCAB_EXPANDED, HebrewVocabItem, getHebrewQuoteForItem } from '.
 
 export type { HebrewVocabItem };
 
+export interface HebrewAlphabetItem {
+  id: string;
+  char: string;
+  name: string;
+  vuk: string;
+  english: string;
+  gematria: number;
+  exampleWord: string;
+  exampleTranslationSr: string;
+  exampleTranslationEn: string;
+  isFinal?: boolean;
+}
+
+export const HEBREW_ALPHABET_DATA: HebrewAlphabetItem[] = [
+  { id: 'he-a-1', char: 'א', name: 'Alef', vuk: 'A / Tišina (Grleni nosilac samoglasnika)', english: 'Silent / Vowel Carrier', gematria: 1, exampleWord: 'אָב (Av)', exampleTranslationSr: 'Otac', exampleTranslationEn: 'Father' },
+  { id: 'he-a-2', char: 'ב', name: 'Bet / Vet', vuk: 'B (sa Dagesh tačkom) / V (bez Dagesh tačke)', english: 'B (as in Boy) / V (as in Vine)', gematria: 2, exampleWord: 'בַּיִת (Bayit)', exampleTranslationSr: 'Kuća / Dom', exampleTranslationEn: 'House' },
+  { id: 'he-a-3', char: 'ג', name: 'Gimel', vuk: 'G (tvrdo G kao u GRAD)', english: 'G (as in Good)', gematria: 3, exampleWord: 'גָּמָל (Gamal)', exampleTranslationSr: 'Kamila', exampleTranslationEn: 'Camel' },
+  { id: 'he-a-4', char: 'ד', name: 'Dalet', vuk: 'D (tvrdo D kao u DEDA)', english: 'D (as in Door)', gematria: 4, exampleWord: 'דֶּלֶת (Delet)', exampleTranslationSr: 'Vrata', exampleTranslationEn: 'Door' },
+  { id: 'he-a-5', char: 'ה', name: 'Hei', vuk: 'H (blago H kao u HLEB)', english: 'H (as in House)', gematria: 5, exampleWord: 'הֵיכָל (Heichal)', exampleTranslationSr: 'Hram / Palata', exampleTranslationEn: 'Temple' },
+  { id: 'he-a-6', char: 'ו', name: 'Vav', vuk: 'V / O / U (suglasnik V ili samoglasnici O/U)', english: 'V / O / U', gematria: 6, exampleWord: 'וֶרֶ德 (Vered)', exampleTranslationSr: 'Ruža', exampleTranslationEn: 'Rose' },
+  { id: 'he-a-7', char: 'ז', name: 'Zayin', vuk: 'Z (zujavo Z kao u ZEBRA)', english: 'Z (as in Zebra)', gematria: 7, exampleWord: 'זֵיתִים (Zeitim)', exampleTranslationSr: 'Masline', exampleTranslationEn: 'Olives' },
+  { id: 'he-a-8', char: 'ח', name: 'Chet', vuk: 'H (duboko grleno H kao u BACH)', english: 'Ch (as in Bach)', gematria: 8, exampleWord: 'חָבֵר (Chaver)', exampleTranslationSr: 'Prijatelj', exampleTranslationEn: 'Friend' },
+  { id: 'he-a-9', char: 'ט', name: 'Tet', vuk: 'T (tvrdo T ako u TRAVA)', english: 'T (as in Top)', gematria: 9, exampleWord: 'טוֹב (Tov)', exampleTranslationSr: 'Dobro / Lepo', exampleTranslationEn: 'Good' },
+  { id: 'he-a-10', char: 'י', name: 'Yod', vuk: 'J / I (kratko J kao u JELEN)', english: 'Y (as in Yes)', gematria: 10, exampleWord: 'יָד (Yad)', exampleTranslationSr: 'Ruka', exampleTranslationEn: 'Hand' },
+  { id: 'he-a-11', char: 'כ', name: 'Kaf / Chaf', vuk: 'K (sa Dagesh) / H (bez Dagesh)', english: 'K / Ch', gematria: 20, exampleWord: 'כֶּלֶב (Kelev)', exampleTranslationSr: 'Pas', exampleTranslationEn: 'Dog' },
+  { id: 'he-a-12', char: 'ך', name: 'Kaf Sofit (Krajnje)', vuk: 'H / K (samo na kraju reči)', english: 'Final K/Ch', gematria: 20, isFinal: true, exampleWord: 'מֶלֶךְ (Melech)', exampleTranslationSr: 'Kralj', exampleTranslationEn: 'King' },
+  { id: 'he-a-13', char: 'ל', name: 'Lamed', vuk: 'L (jasno L kao u LALA)', english: 'L (as in Lamp)', gematria: 30, exampleWord: 'לֶחֶם (Lechem)', exampleTranslationSr: 'Hleb', exampleTranslationEn: 'Bread' },
+  { id: 'he-a-14', char: 'מ', name: 'Mem', vuk: 'M (nosno M kao u MAMA)', english: 'M (as in Moon)', gematria: 40, exampleWord: 'מַמְלָכָה (Mamlacha)', exampleTranslationSr: 'Kraljevstvo', exampleTranslationEn: 'Kingdom' },
+  { id: 'he-a-15', char: 'ם', name: 'Mem Sofit (Krajnje)', vuk: 'M (samo na kraju reči)', english: 'Final M', gematria: 40, isFinal: true, exampleWord: 'שָׁלוֹם (Shalom)', exampleTranslationSr: 'Mir', exampleTranslationEn: 'Peace' },
+  { id: 'he-a-16', char: 'נ', name: 'Nun', vuk: 'N (nosno N kao u NOS)', english: 'N (as in Night)', gematria: 50, exampleWord: 'נֵר (Ner)', exampleTranslationSr: 'Sveća / Svetlo', exampleTranslationEn: 'Candle' },
+  { id: 'he-a-17', char: 'ן', name: 'Nun Sofit (Krajnje)', vuk: 'N (samo na kraju reči)', english: 'Final N', gematria: 50, isFinal: true, exampleWord: 'גַּן (Gan)', exampleTranslationSr: 'Bašta / Vrt', exampleTranslationEn: 'Garden' },
+  { id: 'he-a-18', char: 'ס', name: 'Samech', vuk: 'S (tvrdo S kao u SUNCE)', english: 'S (as in Sun)', gematria: 60, exampleWord: 'סֵפֶר (Sefer)', exampleTranslationSr: 'Knjiga', exampleTranslationEn: 'Book' },
+  { id: 'he-a-19', char: 'ע', name: 'Ayin', vuk: 'Duboki grleni fonem / Tišina', english: 'Silent / Deep Guttural', gematria: 70, exampleWord: 'עַיִן (Ayin)', exampleTranslationSr: 'Oko / Izvor', exampleTranslationEn: 'Eye' },
+  { id: 'he-a-20', char: 'פ', name: 'Pei / Fei', vuk: 'P (sa Dagesh) / F (bez Dagesh)', english: 'P / F', gematria: 80, exampleWord: 'פַּרְפַּר (Parpar)', exampleTranslationSr: 'Leptir', exampleTranslationEn: 'Butterfly' },
+  { id: 'he-a-21', char: 'ף', name: 'Pei Sofit (Krajnje)', vuk: 'F / P (samo na kraju reči)', english: 'Final F/P', gematria: 80, isFinal: true, exampleWord: 'כַּף (Kaf)', exampleTranslationSr: 'Dlan / Kašika', exampleTranslationEn: 'Palm' },
+  { id: 'he-a-22', char: 'צ', name: 'Tzadi', vuk: 'C (sliveno TZ kao u CAR)', english: 'Ts (as in Cats)', gematria: 90, exampleWord: 'צֶדֶק (Tzedek)', exampleTranslationSr: 'Pravda / Istina', exampleTranslationEn: 'Justice' },
+  { id: 'he-a-23', char: 'ץ', name: 'Tzadi Sofit (Krajnje)', vuk: 'C (samo na kraju reči)', english: 'Final Ts', gematria: 90, isFinal: true, exampleWord: 'עֵץ (Etz)', exampleTranslationSr: 'Drvo', exampleTranslationEn: 'Tree' },
+  { id: 'he-a-24', char: 'ק', name: 'Kof', vuk: 'K (duboko K)', english: 'K (as in Key)', gematria: 100, exampleWord: 'קוֹל (Kol)', exampleTranslationSr: 'Glas / Zvuk', exampleTranslationEn: 'Voice' },
+  { id: 'he-a-25', char: 'ר', name: 'Resh', vuk: 'R (grleno ili vršno R)', english: 'R (as in Run)', gematria: 200, exampleWord: 'רוּחַ (Ruach)', exampleTranslationSr: 'Duh / Vetar', exampleTranslationEn: 'Spirit / Wind' },
+  { id: 'he-a-26', char: 'ש', name: 'Shin / Sin', vuk: 'Š (desna tačka) / S (leva tačka)', english: 'Sh / S', gematria: 300, exampleWord: 'שָׁלוֹם (Shalom)', exampleTranslationSr: 'Mir / Pozdrav', exampleTranslationEn: 'Peace' },
+  { id: 'he-a-27', char: 'ת', name: 'Tav', vuk: 'T (tvrdo T)', english: 'T (as in Tree)', gematria: 400, exampleWord: 'תּוֹרָה (Torah)', exampleTranslationSr: 'Učenje / Tora', exampleTranslationEn: 'Law / Teaching' }
+];
+
 const HEBREW_VOCAB_DATA: HebrewVocabItem[] = (() => {
   const seen = new Set<string>();
   const list: HebrewVocabItem[] = [];
@@ -379,10 +422,14 @@ export interface HebrewVocabViewProps {
 }
 
 export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
-  // Navigation: Dictionary, Emoji Canvas, AI Weaver or Quiz
-  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz'>('learn');
+  // Navigation: Dictionary, Emoji Canvas, AI Weaver, Quiz or Alphabet
+  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz' | 'alphabet'>('learn');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Hebrew Alphabet View State
+  const [alphabetFilter, setAlphabetFilter] = useState<'all' | 'standard' | 'sofit'>('all');
+  const [alphabetSearch, setAlphabetSearch] = useState('');
 
   // Admin authorization for editing wise quotes and pronunciations (Petar)
   const isAdmin = user ? (user.email === 'petar.dekanovic@gmail.com' || user.email?.toLowerCase().includes('petar')) : true;
@@ -818,6 +865,66 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
   };
 
   const generateQuizRound = () => {
+    if (hQuizCategory === 'alphabet') {
+      const alphabetAsVocab: HebrewVocabItem[] = HEBREW_ALPHABET_DATA.map(item => ({
+        id: item.id,
+        char: item.char,
+        transliteration: item.name,
+        vuk: item.vuk,
+        translation: `Slovo ${item.name} (${item.vuk}) — Primer: ${item.exampleWord} (${item.exampleTranslationSr})`,
+        english: `Letter ${item.name} (${item.english})`,
+        category: 'alphabet',
+        categoryLabel: item.isFinal ? 'Sofit' : 'Alef-Bet',
+        emoji: '🔤',
+        root: `Gematrija: ${item.gematria}`
+      }));
+
+      const shuffled = [...alphabetAsVocab].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, Math.min(hQuizQuestionCount, shuffled.length));
+
+      const questionsList = selected.map(vocab => {
+        const item = HEBREW_ALPHABET_DATA.find(a => a.id === vocab.id) || HEBREW_ALPHABET_DATA[0];
+        const types: ('meaning' | 'vuk' | 'character' | 'listen')[] = ['meaning', 'vuk', 'character', 'listen'];
+        const questionType = types[Math.floor(Math.random() * types.length)];
+        const wrongOthers = HEBREW_ALPHABET_DATA.filter(a => a.id !== item.id).sort(() => Math.random() - 0.5).slice(0, 3);
+
+        let correctAnswer = '';
+        let wrongAnswers: string[] = [];
+
+        if (questionType === 'meaning') {
+          correctAnswer = `${item.name} — Vuk: "${item.vuk}" [Gematrija: ${item.gematria}]`;
+          wrongAnswers = wrongOthers.map(w => `${w.name} — Vuk: "${w.vuk}" [Gematrija: ${w.gematria}]`);
+        } else if (questionType === 'vuk') {
+          correctAnswer = `Vuk Izgovor: "${item.vuk}" (${item.english})`;
+          wrongAnswers = wrongOthers.map(w => `Vuk Izgovor: "${w.vuk}" (${w.english})`);
+        } else if (questionType === 'character') {
+          correctAnswer = `Slovo ${item.char} (${item.name}) — Gematrija: ${item.gematria}`;
+          wrongAnswers = wrongOthers.map(w => `Slovo ${w.char} (${w.name}) — Gematrija: ${w.gematria}`);
+        } else {
+          correctAnswer = `${item.char} (${item.name}) — Primer: ${item.exampleWord} (${item.exampleTranslationSr})`;
+          wrongAnswers = wrongOthers.map(w => `${w.char} (${w.name}) — Primer: ${w.exampleWord} (${w.exampleTranslationSr})`);
+        }
+
+        const allOptions = [correctAnswer, ...wrongAnswers].sort(() => Math.random() - 0.5);
+        const correctIndex = allOptions.indexOf(correctAnswer);
+
+        return { vocab, options: allOptions, correctIndex, questionType };
+      });
+
+      setRoundQuestions(questionsList);
+      setQuestionIdx(0);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+      setLives(3);
+      setScore(0);
+      setQuizComplete(false);
+      setQuizStarted(true);
+      if (questionsList[0].questionType === 'listen') {
+        setTimeout(() => speakHebrew(questionsList[0].vocab.char, `quiz-${questionsList[0].vocab.id}`), 600);
+      }
+      return;
+    }
+
     let pool = [...HEBREW_VOCAB_DATA];
     if (hQuizCategory !== 'all') {
       pool = pool.filter(v => (v.category as string) === hQuizCategory || (hQuizCategory === 'noun' && ((v.category as string) === 'imenice' || !['glagoli', 'pridevi'].includes(v.category as string))));
@@ -1017,6 +1124,17 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
               )}
             >
               <Gamepad2 className="w-3.5 h-3.5" /> Duo Kviz
+            </button>
+            <button
+              onClick={() => setActiveTab('alphabet')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                activeTab === 'alphabet'
+                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-blue-600 text-white"
+                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
+              )}
+            >
+              <span>🔤</span> Abeceda (Alef-Bet)
             </button>
           </div>
 
@@ -1900,6 +2018,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                         className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-blue-300 font-bold"
                       >
                         <option value="all">🌐 Sve Reči & Imenice ({HEBREW_VOCAB_DATA.length})</option>
+                        <option value="alphabet">🔤 Hebrejska Abeceda (Alef-Bet - 27 Slova & Gematrija)</option>
                         <option value="imenice">📦 Imenice & Objekti</option>
                         <option value="glagoli">⚡ Glagoli & Akcije</option>
                         <option value="pridevi">✨ Pridevi & Opisi</option>
@@ -2170,6 +2289,188 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                 </div>
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* ALPHABET (ALEF-BET) VIEW */}
+        {activeTab === 'alphabet' && (
+          <motion.div
+            key="alphabet"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="space-y-6"
+          >
+            {/* Banner */}
+            <div className={cn(
+              "p-6 md:p-8 rounded-3xl border relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6",
+              isDarkMode ? "bg-gradient-to-br from-blue-950/60 via-zinc-900 to-indigo-950/40 border-blue-500/30" : "bg-gradient-to-br from-blue-50 via-white to-indigo-50 border-blue-200 shadow-md"
+            )}>
+              <div className="space-y-2 max-w-xl">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                    📜 Hebrejski Alef-Bet
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                    🔢 Gematrija Sistem
+                  </span>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-serif font-black tracking-tight text-blue-400">
+                  Hebrejska Abeceda & Fonetika (אָלֶף־בֵּית)
+                </h3>
+                <p className="text-xs md:text-sm text-zinc-400 leading-relaxed">
+                  Naučite svih 27 slova (22 osnovnih + 5 krajnjih/Sofit oblika) uz zvučni izgovor, Vuk Karadžić fonetsku transliteraciju, engleska značenja i primere reči sa prevodom.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <button
+                  onClick={() => {
+                    setHQuizCategory('alphabet');
+                    setActiveTab('quiz');
+                    generateQuizRound();
+                  }}
+                  className="w-full sm:w-auto px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2"
+                >
+                  <Gamepad2 className="w-4 h-4" /> Pokreni Abeceda Kviz 🚀
+                </button>
+              </div>
+            </div>
+
+            {/* Controls: Search & Filters */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              {/* Category Pills */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                <button
+                  onClick={() => setAlphabetFilter('all')}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap",
+                    alphabetFilter === 'all'
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                      : isDarkMode ? "bg-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 text-zinc-600"
+                  )}
+                >
+                  🌐 Svih 27 Slova
+                </button>
+                <button
+                  onClick={() => setAlphabetFilter('standard')}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap",
+                    alphabetFilter === 'standard'
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                      : isDarkMode ? "bg-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 text-zinc-600"
+                  )}
+                >
+                  🔤 Osnovna (22)
+                </button>
+                <button
+                  onClick={() => setAlphabetFilter('sofit')}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap",
+                    alphabetFilter === 'sofit'
+                      ? "bg-purple-600 text-white shadow-md shadow-purple-600/20"
+                      : isDarkMode ? "bg-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 text-zinc-600"
+                  )}
+                >
+                  ✨ Sofit (Krajnja - 5)
+                </button>
+              </div>
+
+              {/* Search input */}
+              <div className="relative min-w-[240px]">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Pretraži slovo, naziv ili Vuk zvuk..."
+                  value={alphabetSearch}
+                  onChange={(e) => setAlphabetSearch(e.target.value)}
+                  className={cn(
+                    "w-full pl-9 pr-4 py-2 rounded-xl text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    isDarkMode ? "bg-zinc-900 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Alphabet Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {HEBREW_ALPHABET_DATA.filter(item => {
+                const matchesFilter =
+                  alphabetFilter === 'all' ||
+                  (alphabetFilter === 'sofit' && item.isFinal) ||
+                  (alphabetFilter === 'standard' && !item.isFinal);
+                const q = alphabetSearch.toLowerCase();
+                const matchesSearch =
+                  !q ||
+                  item.char.includes(q) ||
+                  item.name.toLowerCase().includes(q) ||
+                  item.vuk.toLowerCase().includes(q) ||
+                  item.english.toLowerCase().includes(q) ||
+                  item.exampleWord.toLowerCase().includes(q) ||
+                  item.exampleTranslationSr.toLowerCase().includes(q);
+                return matchesFilter && matchesSearch;
+              }).map(item => (
+                <motion.div
+                  key={item.id}
+                  whileHover={{ y: -3 }}
+                  className={cn(
+                    "p-5 rounded-2xl border flex flex-col justify-between space-y-4 relative group transition-all",
+                    isDarkMode ? "bg-zinc-900/90 border-zinc-800 hover:border-blue-500/50" : "bg-white border-zinc-200 hover:border-blue-300 shadow-sm"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-3xl font-serif font-black shadow-inner">
+                        {item.char}
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-blue-400 font-serif flex items-center gap-1.5">
+                          <span>{item.name}</span>
+                          {item.isFinal && (
+                            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                              Sofit
+                            </span>
+                          )}
+                        </h4>
+                        <p className="text-[11px] font-mono font-semibold text-emerald-400">
+                          Vuk: "{item.vuk}"
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => speakHebrew(item.char, `alphabet-${item.id}`)}
+                      className="p-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-all border border-blue-500/20"
+                      title="Slušaj izgovor slova"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 text-xs border-t pt-3 border-zinc-800/50">
+                    <div className="flex items-center justify-between text-[10px] font-mono">
+                      <span className="text-zinc-400">Engleski Fonem:</span>
+                      <span className="text-zinc-200 font-bold">{item.english}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] font-mono">
+                      <span className="text-zinc-400">Gematrija (Broj):</span>
+                      <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20">
+                        {item.gematria}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-zinc-800/40 border border-zinc-700/50 text-[11px] space-y-1 mt-2">
+                      <span className="text-[10px] font-mono font-bold text-blue-400 block uppercase">Primer Reči:</span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-serif font-bold text-blue-200 text-sm" dir="rtl">{item.exampleWord}</span>
+                        <span className="text-zinc-300 font-semibold">{item.exampleTranslationSr} ({item.exampleTranslationEn})</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

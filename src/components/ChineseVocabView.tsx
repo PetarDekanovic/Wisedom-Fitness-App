@@ -36,6 +36,67 @@ import { CHINESE_VOCAB_EXPANDED, VocabItem, getChineseQuoteForItem } from '../da
 
 export type { VocabItem };
 
+export interface ChinesePinyinItem {
+  id: string;
+  pinyin: string;
+  name: string;
+  vuk: string;
+  english: string;
+  exampleChar: string;
+  examplePinyin: string;
+  exampleSr: string;
+  exampleEn: string;
+}
+
+export interface ChineseRadicalItem {
+  id: string;
+  char: string;
+  pinyin: string;
+  vuk: string;
+  nameSr: string;
+  meaningSr: string;
+  meaningEn: string;
+  strokes: number;
+  exampleWord: string;
+}
+
+export const CHINESE_PINYIN_INITIALS: ChinesePinyinItem[] = [
+  { id: 'zh-p-1', pinyin: 'b', name: 'B (Inicijal)', vuk: 'B (nerasprsnuto B, meko B ako u BA)', english: 'Unaspirated P (sounds like B in Boy)', exampleChar: '爸爸', examplePinyin: 'bàba', exampleSr: 'Otac', exampleEn: 'Father' },
+  { id: 'zh-p-2', pinyin: 'p', name: 'P (Inicijal)', vuk: 'P (rasprsnuto P sa vazduhom jako P)', english: 'Aspirated P (strong puff of air)', exampleChar: '朋友', examplePinyin: 'péngyou', exampleSr: 'Prijatelj', exampleEn: 'Friend' },
+  { id: 'zh-p-3', pinyin: 'm', name: 'M (Inicijal)', vuk: 'M (nosno M kao u MAMA)', english: 'M (as in Mother)', exampleChar: '妈妈', examplePinyin: 'māma', exampleSr: 'Majka', exampleEn: 'Mother' },
+  { id: 'zh-p-4', pinyin: 'f', name: 'F (Inicijal)', vuk: 'F (zubno F kao u FOKA)', english: 'F (as in Fish)', exampleChar: '风', examplePinyin: 'fēng', exampleSr: 'Vetar', exampleEn: 'Wind' },
+  { id: 'zh-p-5', pinyin: 'd', name: 'D (Inicijal)', vuk: 'D (nerasprsnuto D kao u DEDA)', english: 'Unaspirated T (sounds like D in Door)', exampleChar: '大', examplePinyin: 'dà', exampleSr: 'Veliko', exampleEn: 'Big' },
+  { id: 'zh-p-6', pinyin: 't', name: 'T (Inicijal)', vuk: 'T (rasprsnuto T sa vazduhom)', english: 'Aspirated T (strong puff of air)', exampleChar: '天', examplePinyin: 'tiān', exampleSr: 'Nebo / Dan', exampleEn: 'Sky / Day' },
+  { id: 'zh-p-7', pinyin: 'n', name: 'N (Inicijal)', vuk: 'N (nosno N kao u NOS)', english: 'N (as in Night)', exampleChar: '你', examplePinyin: 'nǐ', exampleSr: 'Ti', exampleEn: 'You' },
+  { id: 'zh-p-8', pinyin: 'l', name: 'L (Inicijal)', vuk: 'L (jasno L kao u LALA)', english: 'L (as in Love)', exampleChar: '龙', examplePinyin: 'lóng', exampleSr: 'Zmaj', exampleEn: 'Dragon' },
+  { id: 'zh-p-9', pinyin: 'g', name: 'G (Inicijal)', vuk: 'G (nerasprsnuto K, kao tvrdo G u GRAD)', english: 'Unaspirated K (sounds like G in Go)', exampleChar: '高', examplePinyin: 'gāo', exampleSr: 'Visoko', exampleEn: 'High' },
+  { id: 'zh-p-10', pinyin: 'k', name: 'K (Inicijal)', vuk: 'K (rasprsnuto K sa hukanjem)', english: 'Aspirated K (strong puff of air)', exampleChar: '开', examplePinyin: 'kāi', exampleSr: 'Otvoriti', exampleEn: 'Open' },
+  { id: 'zh-p-11', pinyin: 'h', name: 'H (Inicijal)', vuk: 'H (grleno H kao u HLEB)', english: 'H (as in House)', exampleChar: '好', examplePinyin: 'hǎo', exampleSr: 'Dobro', exampleEn: 'Good' },
+  { id: 'zh-p-12', pinyin: 'j', name: 'J (Inicijal)', vuk: 'Đ (meko sliveno Đ/Ć kao u ĐORĐE)', english: 'Soft J/Gy (like J in Jeep)', exampleChar: '家', examplePinyin: 'jiā', exampleSr: 'Dom / Porodica', exampleEn: 'Home / Family' },
+  { id: 'zh-p-13', pinyin: 'q', name: 'Q (Inicijal)', vuk: 'Ć (meko rasprsnuto Ć sa vazduhom)', english: 'Aspirated Ch/Ts (like Ch in Cheap)', exampleChar: '七', examplePinyin: 'qī', exampleSr: 'Sedam', exampleEn: 'Seven' },
+  { id: 'zh-p-14', pinyin: 'x', name: 'X (Inicijal)', vuk: 'Ś / Š (meko šuštavo Š/Ś)', english: 'Soft Sh (like Hs or Sh in Sheep)', exampleChar: '心', examplePinyin: 'xīn', exampleSr: 'Srce / Um', exampleEn: 'Heart' },
+  { id: 'zh-p-15', pinyin: 'zh', name: 'ZH (Inicijal)', vuk: 'DŽ (tvrdo retrofleksno DŽ kao u DŽUNGLE)', english: 'Retroflex Dzh (like J in Jam)', exampleChar: '中', examplePinyin: 'zhōng', exampleSr: 'Centar / Kina', exampleEn: 'Middle / China' },
+  { id: 'zh-p-16', pinyin: 'ch', name: 'CH (Inicijal)', vuk: 'Č (tvrdo retrofleksno Č sa vazduhom)', english: 'Retroflex Ch (like Ch in Church)', exampleChar: '茶', examplePinyin: 'chá', exampleSr: 'Čaj', exampleEn: 'Tea' },
+  { id: 'zh-p-17', pinyin: 'sh', name: 'SH (Inicijal)', vuk: 'Š (tvrdo retrofleksno Š ako u ŠUMA)', english: 'Retroflex Sh (like Sh in Shoe)', exampleChar: '水', examplePinyin: 'shuǐ', exampleSr: 'Voda', exampleEn: 'Water' },
+  { id: 'zh-p-18', pinyin: 'r', name: 'R (Inicijal)', vuk: 'Ž / R (retrofleksno meko Ž/R)', english: 'Retroflex R (like R in Rain or Zh in Vision)', exampleChar: '人', examplePinyin: 'rén', exampleSr: 'Čovek', exampleEn: 'Person' },
+  { id: 'zh-p-19', pinyin: 'z', name: 'Z (Inicijal)', vuk: 'DZ / C (sliveno nerasprsnuto DZ kao u C)', english: 'Unaspirated Ts (like Dz in Kids)', exampleChar: '走', examplePinyin: 'zǒu', exampleSr: 'Hodati', exampleEn: 'Walk' },
+  { id: 'zh-p-20', pinyin: 'c', name: 'C (Inicijal)', vuk: 'C (rasprsnuto C sa vazduhom kao u CAR)', english: 'Aspirated Ts (like Ts in Cats)', exampleChar: '草', examplePinyin: 'cǎo', exampleSr: 'Trava', exampleEn: 'Grass' },
+  { id: 'zh-p-21', pinyin: 's', name: 'S (Inicijal)', vuk: 'S (tvrdo S kao u SUNCE)', english: 'S (as in Sun)', exampleChar: '三', examplePinyin: 'sān', exampleSr: 'Tri', exampleEn: 'Three' }
+];
+
+export const CHINESE_ESSENTIAL_RADICALS: ChineseRadicalItem[] = [
+  { id: 'zh-r-1', char: '亻 / 人', pinyin: 'Rén', vuk: 'Ren', nameSr: 'Radikal Čovek', meaningSr: 'Ono što se odnosi na ljude, radnje i ljudske osobine', meaningEn: 'Person / Human', strokes: 2, exampleWord: '你 (nǐ - Ti), 他 (tā - On)' },
+  { id: 'zh-r-2', char: '氵 / 水', pinyin: 'Shuǐ', vuk: 'Šui', nameSr: 'Radikal Voda', meaningSr: 'Tečnosti, reke, jezera, čišćenje i pranje', meaningEn: 'Water / Fluid', strokes: 3, exampleWord: '河 (hé - Reka), 洗 (xǐ - Prati)' },
+  { id: 'zh-r-3', char: '木', pinyin: 'Mù', vuk: 'Mu', nameSr: 'Radikal Drvo', meaningSr: 'Drveće, šuma, drveni predmeti i priroda', meaningEn: 'Wood / Tree', strokes: 4, exampleWord: '林 (lín - Šuma), 桌 (zhuō - Sto)' },
+  { id: 'zh-r-4', char: '灬 / 火', pinyin: 'Huǒ', vuk: 'Huo', nameSr: 'Radikal Vatra', meaningSr: 'Toplota, vatra, kuvanje i energija', meaningEn: 'Fire / Heat', strokes: 4, exampleWord: '热 (rè - Vruće), 煮 (zhǔ - Kuvati)' },
+  { id: 'zh-r-5', char: '讠 / 言', pinyin: 'Yán', vuk: 'Jan', nameSr: 'Radikal Govor', meaningSr: 'Reči, jezik, komunikacija i učenje', meaningEn: 'Speech / Language', strokes: 2, exampleWord: '话 (huà - Govor), 语 (yǔ - Jezik)' },
+  { id: 'zh-r-6', char: '忄 / 心', pinyin: 'Xīn', vuk: 'Sin', nameSr: 'Radikal Srce/Um', meaningSr: 'Emocije, misli, osećanja i stoic temperament', meaningEn: 'Heart / Mind', strokes: 3, exampleWord: '情 (qíng - Osećanje), 想 (xiǎng - Misliti)' },
+  { id: 'zh-r-7', char: '辶 / 走', pinyin: 'Zǒu', vuk: 'Zou', nameSr: 'Radikal Kretanje', meaningSr: 'Hodanje, putovanje, kretanje i razdaljine', meaningEn: 'Movement / Walking', strokes: 3, exampleWord: '道 (dào - Put/Tao), 进 (jìn - Ući)' },
+  { id: 'zh-r-8', char: '口', pinyin: 'Kǒu', vuk: 'Kou', nameSr: 'Radikal Usta', meaningSr: 'Jelo, piće, govor, otvorene strukture', meaningEn: 'Mouth / Opening', strokes: 3, exampleWord: '吃 (chī - Jesti), 喝 (hē - Piti)' },
+  { id: 'zh-r-9', char: '日', pinyin: 'Rì', vuk: 'Ri', nameSr: 'Radikal Sunce/Dan', meaningSr: 'Svetlost, vreme, dani, vremenski periodi', meaningEn: 'Sun / Day / Time', strokes: 4, exampleWord: '明 (míng - Jasno/Svetlo), 时 (shí - Vreme)' },
+  { id: 'zh-r-10', char: '女', pinyin: 'Nǚ', vuk: 'Nv', nameSr: 'Radikal Žensko', meaningSr: 'Žene, roditeljski odnosi, lepota', meaningEn: 'Woman / Female', strokes: 3, exampleWord: '好 (hǎo - Dobro), 妈 (mā - Majka)' }
+];
+
 interface ChineseVocabViewProps {
   isDarkMode: boolean;
   isGirlyMode: boolean;
@@ -336,9 +397,13 @@ const SOCIAL_MEDIA_PRESETS = [
 ];
 
 export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
-  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz'>('learn');
+  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz' | 'alphabet'>('learn');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Chinese Alphabet (Pinyin & Radicals) State
+  const [pinyinFilter, setPinyinFilter] = useState<'all' | 'initials' | 'radicals' | 'tones'>('all');
+  const [pinyinSearch, setPinyinSearch] = useState('');
 
   // Admin authorization for editing wise quotes and pronunciations (Petar)
   const isAdmin = user ? (user.email === 'petar.dekanovic@gmail.com' || user.email?.toLowerCase().includes('petar')) : true;
@@ -776,6 +841,101 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   };
 
   const generateQuizRound = () => {
+    if (quizCategory === 'alphabet') {
+      const pinyinAsVocab: VocabItem[] = [
+        ...CHINESE_PINYIN_INITIALS.map(item => ({
+          id: item.id,
+          char: item.pinyin,
+          pinyin: item.name,
+          vuk: item.vuk,
+          translation: `Vuk izgovor: "${item.vuk}" — Primer: ${item.exampleChar} (${item.examplePinyin}) ${item.exampleSr}`,
+          english: `Pinyin ${item.pinyin.toUpperCase()} (${item.english})`,
+          category: 'alphabet',
+          categoryLabel: 'Pinyin Glas',
+          emoji: '🔤',
+          radical: item.pinyin
+        })),
+        ...CHINESE_ESSENTIAL_RADICALS.map(item => ({
+          id: item.id,
+          char: item.char,
+          pinyin: item.pinyin,
+          vuk: item.vuk,
+          translation: `${item.nameSr}: ${item.meaningSr} — Primer: ${item.exampleWord}`,
+          english: `Radical ${item.pinyin} (${item.meaningEn})`,
+          category: 'alphabet',
+          categoryLabel: 'Korenski Radikal',
+          emoji: '🧱',
+          radical: item.pinyin
+        }))
+      ];
+
+      const shuffled = [...pinyinAsVocab].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, Math.min(quizQuestionCount, shuffled.length));
+
+      const questionsList = selected.map(vocab => {
+        const pItem = CHINESE_PINYIN_INITIALS.find(p => p.id === vocab.id);
+        const rItem = CHINESE_ESSENTIAL_RADICALS.find(r => r.id === vocab.id);
+
+        const types: ('meaning' | 'vuk' | 'pinyin' | 'listen')[] = ['meaning', 'vuk', 'pinyin', 'listen'];
+        const questionType = types[Math.floor(Math.random() * types.length)];
+        const wrongOthers = pinyinAsVocab.filter(p => p.id !== vocab.id).sort(() => Math.random() - 0.5).slice(0, 3);
+
+        let correctAnswer = '';
+        let wrongAnswers: string[] = [];
+
+        if (pItem) {
+          if (questionType === 'meaning') {
+            correctAnswer = `Inicijal "${pItem.pinyin.toUpperCase()}" — Vuk: "${pItem.vuk}"`;
+            wrongAnswers = wrongOthers.map(w => `Element "${w.char}" — ${w.translation.slice(0, 35)}`);
+          } else if (questionType === 'vuk') {
+            correctAnswer = `Vuk Izgovor: "${pItem.vuk}" (${pItem.english})`;
+            wrongAnswers = wrongOthers.map(w => `Vuk: "${w.vuk}"`);
+          } else if (questionType === 'pinyin') {
+            correctAnswer = `Pinyin Glas: ${pItem.pinyin} (${pItem.name})`;
+            wrongAnswers = wrongOthers.map(w => `Pinyin: ${w.pinyin}`);
+          } else {
+            correctAnswer = `Slovo ${pItem.pinyin} — Primer: ${pItem.exampleChar} (${pItem.exampleSr})`;
+            wrongAnswers = wrongOthers.map(w => `${w.char} — ${w.translation.slice(0, 30)}`);
+          }
+        } else if (rItem) {
+          if (questionType === 'meaning') {
+            correctAnswer = `${rItem.nameSr}: ${rItem.meaningSr}`;
+            wrongAnswers = wrongOthers.map(w => `${w.char} — ${w.translation.slice(0, 35)}`);
+          } else if (questionType === 'vuk') {
+            correctAnswer = `Radikal ${rItem.char} (${rItem.pinyin}) — Vuk: "${rItem.vuk}"`;
+            wrongAnswers = wrongOthers.map(w => `Vuk: "${w.vuk}"`);
+          } else if (questionType === 'pinyin') {
+            correctAnswer = `Radikal Pinyin: ${rItem.pinyin} (${rItem.meaningSr})`;
+            wrongAnswers = wrongOthers.map(w => `Pinyin: ${w.pinyin}`);
+          } else {
+            correctAnswer = `Radikal ${rItem.char} — Primeri: ${rItem.exampleWord}`;
+            wrongAnswers = wrongOthers.map(w => `${w.char} — ${w.translation.slice(0, 30)}`);
+          }
+        } else {
+          correctAnswer = `${vocab.char} — ${vocab.translation}`;
+          wrongAnswers = wrongOthers.map(w => `${w.char} — ${w.translation}`);
+        }
+
+        const allOptions = [correctAnswer, ...wrongAnswers].sort(() => Math.random() - 0.5);
+        const correctIndex = allOptions.indexOf(correctAnswer);
+
+        return { vocab, options: allOptions, correctIndex, questionType };
+      });
+
+      setRoundQuestions(questionsList);
+      setQuestionIdx(0);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+      setLives(3);
+      setScore(0);
+      setQuizComplete(false);
+      setQuizStarted(true);
+      if (questionsList[0].questionType === 'listen') {
+        setTimeout(() => speakChinese(questionsList[0].vocab.char, `quiz-${questionsList[0].vocab.id}`), 600);
+      }
+      return;
+    }
+
     let pool = [...VOCAB_DATA];
     if (quizCategory !== 'all') {
       pool = pool.filter(v => (v.category as string) === quizCategory || (quizCategory === 'noun' && ((v.category as string) === 'imenice' || !['glagoli', 'pridevi'].includes(v.category as string))));
@@ -977,6 +1137,17 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
               )}
             >
               <Gamepad2 className="w-3.5 h-3.5" /> Duo Kviz
+            </button>
+            <button
+              onClick={() => setActiveTab('alphabet')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5",
+                activeTab === 'alphabet'
+                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-red-600 text-white"
+                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
+              )}
+            >
+              <span>🔤</span> Abeceda (Pinyin & Radikali)
             </button>
           </div>
 
@@ -1863,6 +2034,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                         className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-amber-300 font-bold"
                       >
                         <option value="all">🌐 Sve Reči & Imenice ({VOCAB_DATA.length})</option>
+                        <option value="alphabet">🔤 Kineska Abeceda (Pinyin Glasovi & Radikali)</option>
                         <option value="imenice">📦 Imenice & Objekti</option>
                         <option value="glagoli">⚡ Glagoli & Akcije</option>
                         <option value="pridevi">✨ Pridevi & Opisi</option>
@@ -2130,6 +2302,315 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   >
                     Igraj Ponovo 🔄
                   </button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* CHINESE ALPHABET (PINYIN, RADICALS & TONES) VIEW */}
+        {activeTab === 'alphabet' && (
+          <motion.div
+            key="alphabet"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="space-y-6"
+          >
+            {/* Banner */}
+            <div className={cn(
+              "p-6 md:p-8 rounded-3xl border relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6",
+              isDarkMode ? "bg-gradient-to-br from-red-950/60 via-zinc-900 to-amber-950/40 border-red-500/30" : "bg-gradient-to-br from-red-50 via-white to-amber-50 border-red-200 shadow-md"
+            )}>
+              <div className="space-y-2 max-w-xl">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30">
+                    🇨🇳 Pinyin Fonetska Abeceda
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    🧱 Korenski Radikali
+                  </span>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-serif font-black tracking-tight text-red-500 dark:text-red-400">
+                  Kineska Abeceda: Pinyin, Radikali & 4 Tona (拼音与部首)
+                </h3>
+                <p className="text-xs md:text-sm text-zinc-400 leading-relaxed">
+                  Kineski jezik nema klasične slova, već koristi Pinyin (21 inicijalni glas), 4 intonaciona tona i korenski radikale (gradivne blokove za Hanzi karaktere). Ovde naučite osnovne zvukove uz Vuk Karadžić fonetiku!
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <button
+                  onClick={() => {
+                    setQuizCategory('alphabet');
+                    setActiveTab('quiz');
+                    generateQuizRound();
+                  }}
+                  className="w-full sm:w-auto px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider bg-red-600 text-white hover:bg-red-500 transition-all shadow-lg shadow-red-600/30 flex items-center justify-center gap-2"
+                >
+                  <Gamepad2 className="w-4 h-4" /> Pokreni Abeceda Kviz 🚀
+                </button>
+              </div>
+            </div>
+
+            {/* Controls: Search & Filters */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              {/* Category Pills */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                <button
+                  onClick={() => setPinyinFilter('all')}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap",
+                    pinyinFilter === 'all'
+                      ? "bg-red-600 text-white shadow-md shadow-red-600/20"
+                      : isDarkMode ? "bg-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 text-zinc-600"
+                  )}
+                >
+                  🌐 Sve (Pinyin & Radikali)
+                </button>
+                <button
+                  onClick={() => setPinyinFilter('initials')}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap",
+                    pinyinFilter === 'initials'
+                      ? "bg-red-600 text-white shadow-md shadow-red-600/20"
+                      : isDarkMode ? "bg-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 text-zinc-600"
+                  )}
+                >
+                  🔤 Pinyin Inicijali (21)
+                </button>
+                <button
+                  onClick={() => setPinyinFilter('radicals')}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap",
+                    pinyinFilter === 'radicals'
+                      ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
+                      : isDarkMode ? "bg-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 text-zinc-600"
+                  )}
+                >
+                  🧱 Korenski Radikali (10)
+                </button>
+                <button
+                  onClick={() => setPinyinFilter('tones')}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap",
+                    pinyinFilter === 'tones'
+                      ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
+                      : isDarkMode ? "bg-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 text-zinc-600"
+                  )}
+                >
+                  🎵 4 Tona Kineskog Izgovora
+                </button>
+              </div>
+
+              {/* Search input */}
+              <div className="relative min-w-[240px]">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Pretraži glas, radikal ili Vuk zvuk..."
+                  value={pinyinSearch}
+                  onChange={(e) => setPinyinSearch(e.target.value)}
+                  className={cn(
+                    "w-full pl-9 pr-4 py-2 rounded-xl text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-red-500",
+                    isDarkMode ? "bg-zinc-900 border-zinc-800 text-white" : "bg-white border-zinc-200 text-zinc-900"
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* 4 Tones Feature Banner */}
+            {(pinyinFilter === 'all' || pinyinFilter === 'tones') && !pinyinSearch && (
+              <div className={cn(
+                "p-6 rounded-3xl border space-y-4",
+                isDarkMode ? "bg-zinc-900/90 border-emerald-500/30" : "bg-emerald-50/50 border-emerald-200"
+              )}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🎵</span>
+                  <h4 className="text-base font-bold text-emerald-400 font-serif">
+                    Vodič za 4 Tona Kineskog Izgovora (Intonacija menja značenje!)
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs font-sans">
+                  <div className="p-3.5 rounded-2xl bg-zinc-800/40 border border-emerald-500/20 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-black text-emerald-400">1. Ton (mā)</span>
+                      <button onClick={() => speakChinese('妈')} className="p-1 text-emerald-400 hover:text-white"><Volume2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                    <p className="font-black text-white text-sm">Visoki Ravni (5-5)</p>
+                    <p className="text-[11px] text-zinc-400">妈 (mā) — Majka</p>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-zinc-800/40 border border-emerald-500/20 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-black text-amber-400">2. Ton (má)</span>
+                      <button onClick={() => speakChinese('麻')} className="p-1 text-amber-400 hover:text-white"><Volume2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                    <p className="font-black text-white text-sm">Rastući Ton (3-5)</p>
+                    <p className="text-[11px] text-zinc-400">麻 (má) — Konoplja / Utrnuti</p>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-zinc-800/40 border border-emerald-500/20 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-black text-blue-400">3. Ton (mǎ)</span>
+                      <button onClick={() => speakChinese('马')} className="p-1 text-blue-400 hover:text-white"><Volume2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                    <p className="font-black text-white text-sm">Silazno-Rastući (2-1-4)</p>
+                    <p className="text-[11px] text-zinc-400">马 (mǎ) — Konj</p>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-zinc-800/40 border border-emerald-500/20 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-black text-red-400">4. Ton (mà)</span>
+                      <button onClick={() => speakChinese('骂')} className="p-1 text-red-400 hover:text-white"><Volume2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                    <p className="font-black text-white text-sm">Oštar Silazni (5-1)</p>
+                    <p className="text-[11px] text-zinc-400">骂 (mà) — Grditi / Psovati</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Pinyin Initials Section */}
+            {(pinyinFilter === 'all' || pinyinFilter === 'initials') && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-mono font-black text-red-400 uppercase tracking-wider flex items-center gap-2">
+                  <span>🔤 Pinyin Glasovi & Inicijali</span>
+                  <span className="text-xs text-zinc-500 font-normal">({CHINESE_PINYIN_INITIALS.length} Glasova)</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {CHINESE_PINYIN_INITIALS.filter(item => {
+                    const q = pinyinSearch.toLowerCase();
+                    return !q ||
+                      item.pinyin.toLowerCase().includes(q) ||
+                      item.name.toLowerCase().includes(q) ||
+                      item.vuk.toLowerCase().includes(q) ||
+                      item.english.toLowerCase().includes(q) ||
+                      item.exampleChar.includes(q) ||
+                      item.exampleSr.toLowerCase().includes(q);
+                  }).map(item => (
+                    <motion.div
+                      key={item.id}
+                      whileHover={{ y: -3 }}
+                      className={cn(
+                        "p-5 rounded-2xl border flex flex-col justify-between space-y-4 relative group transition-all",
+                        isDarkMode ? "bg-zinc-900/90 border-zinc-800 hover:border-red-500/50" : "bg-white border-zinc-200 hover:border-red-300 shadow-sm"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center text-3xl font-mono font-black shadow-inner">
+                            {item.pinyin}
+                          </div>
+                          <div>
+                            <h5 className="text-base font-bold text-red-400 font-serif">
+                              {item.name}
+                            </h5>
+                            <p className="text-[11px] font-mono font-semibold text-emerald-400">
+                              Vuk: "{item.vuk}"
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => speakChinese(item.exampleChar, `pinyin-${item.id}`)}
+                          className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all border border-red-500/20"
+                          title="Slušaj primer sa ovim glasom"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2 text-xs border-t pt-3 border-zinc-800/50">
+                        <div className="flex items-center justify-between text-[10px] font-mono">
+                          <span className="text-zinc-400">Engleski Fonem:</span>
+                          <span className="text-zinc-200 font-bold">{item.english}</span>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-zinc-800/40 border border-zinc-700/50 text-[11px] space-y-1">
+                          <span className="text-[10px] font-mono font-bold text-red-400 block uppercase">Primer Upotrebe:</span>
+                          <div className="flex items-center justify-between">
+                            <span className="font-serif font-bold text-red-200 text-sm">{item.exampleChar} ({item.examplePinyin})</span>
+                            <span className="text-zinc-300 font-semibold">{item.exampleSr} ({item.exampleEn})</span>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Radicals Section */}
+            {(pinyinFilter === 'all' || pinyinFilter === 'radicals') && (
+              <div className="space-y-3 pt-4 border-t border-zinc-800/60">
+                <h4 className="text-sm font-mono font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                  <span>🧱 Korenski Radikali (Hanzi Gradivni Blokovi)</span>
+                  <span className="text-xs text-zinc-500 font-normal">({CHINESE_ESSENTIAL_RADICALS.length} Radikala)</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {CHINESE_ESSENTIAL_RADICALS.filter(item => {
+                    const q = pinyinSearch.toLowerCase();
+                    return !q ||
+                      item.char.includes(q) ||
+                      item.pinyin.toLowerCase().includes(q) ||
+                      item.vuk.toLowerCase().includes(q) ||
+                      item.nameSr.toLowerCase().includes(q) ||
+                      item.meaningSr.toLowerCase().includes(q) ||
+                      item.exampleWord.toLowerCase().includes(q);
+                  }).map(item => (
+                    <motion.div
+                      key={item.id}
+                      whileHover={{ y: -3 }}
+                      className={cn(
+                        "p-5 rounded-2xl border flex flex-col justify-between space-y-4 relative group transition-all",
+                        isDarkMode ? "bg-zinc-900/90 border-zinc-800 hover:border-amber-500/50" : "bg-white border-zinc-200 hover:border-amber-300 shadow-sm"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl font-serif font-black shadow-inner">
+                            {item.char}
+                          </div>
+                          <div>
+                            <h5 className="text-base font-bold text-amber-400 font-serif">
+                              {item.nameSr}
+                            </h5>
+                            <p className="text-[11px] font-mono font-semibold text-emerald-400">
+                              Pinyin: {item.pinyin} (Vuk: "{item.vuk}")
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => speakChinese(item.char.split('/')[0].trim(), `radical-${item.id}`)}
+                          className="p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 transition-all border border-amber-500/20"
+                          title="Slušaj izgovor radikala"
+                        >
+                          <Volume2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2 text-xs border-t pt-3 border-zinc-800/50">
+                        <div className="flex items-center justify-between text-[10px] font-mono">
+                          <span className="text-zinc-400">Broj Poteza (Strokes):</span>
+                          <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">{item.strokes} Poteza</span>
+                        </div>
+
+                        <p className="text-xs text-zinc-300 italic">
+                          "{item.meaningSr}"
+                        </p>
+
+                        <div className="p-2.5 rounded-xl bg-zinc-800/40 border border-zinc-700/50 text-[11px] space-y-1">
+                          <span className="text-[10px] font-mono font-bold text-amber-400 block uppercase">Karakteri sa ovim radikalom:</span>
+                          <p className="font-serif text-amber-200 font-bold">{item.exampleWord}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             )}

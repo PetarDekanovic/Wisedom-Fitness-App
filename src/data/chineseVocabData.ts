@@ -13,6 +13,13 @@ export interface VocabItem {
 }
 
 export const CHINESE_VOCAB_EXPANDED: VocabItem[] = [
+  // --- POPULAR SOCIAL MEDIA PHRASES ---
+  { id: 'c_sm_1', char: '太棒了，兄弟！', pinyin: 'tài bàng le, xiōng dì!', vuk: 'tai bang le, siong di!', translation: 'Bravo brate!', english: 'Bravo brother! / Great job, bro!', emoji: '👏', category: 'svakodnevno', categoryLabel: 'Društvene Mreže', radical: '兄 Brother' },
+  { id: 'c_sm_2', char: '太棒了，姐妹！', pinyin: 'tài bàng le, jiě mèi!', vuk: 'tai bang le, đjie mei!', translation: 'Bravo sestro!', english: 'Bravo sister! / Great job, sis!', emoji: '👑', category: 'svakodnevno', categoryLabel: 'Društvene Mreže', radical: '女 Woman' },
+  { id: 'c_sm_3', char: '加油！勇往直前！', pinyin: 'jiā yóu! yǒng wǎng zhí qián!', vuk: 'đjia jou! jong vang džii ćien!', translation: 'Samo napred!', english: 'Keep going! Charge forward!', emoji: '🚀', category: 'svakodnevno', categoryLabel: 'Društvene Mreže', radical: '力 Power' },
+  { id: 'c_sm_4', char: '绝不放弃！', pinyin: 'jué bù fàng qì!', vuk: 'đjue bu fang ći!', translation: 'Nema predaje!', english: 'Never give up! / No surrender!', emoji: '🔥', category: 'svakodnevno', categoryLabel: 'Društvene Mreže', radical: '方 Square' },
+  { id: 'c_sm_5', char: '佩服！太给力了！', pinyin: 'pèi fú! tài gěi lì le!', vuk: 'pej fu! tai gej li le!', translation: 'Svaka čast! / Legendo!', english: 'Kudos! Absolutely awesome!', emoji: '⚡', category: 'svakodnevno', categoryLabel: 'Društvene Mreže', radical: '亻 Person' },
+
   // --- STROFA 1 / CORE (c1 - c15) ---
   { id: 'c1', char: '深处', pinyin: 'shēn chù', vuk: 'šen ču', translation: 'Duboko u / Ponor', english: 'Deep place / Abyss', emoji: '🌌', category: 'strofa_1', categoryLabel: 'Strofa 1', radical: '氵 Water', visualTip: 'Water streaming into deep space' },
   { id: 'c2', char: '在', pinyin: 'zài', vuk: 'dzai', translation: 'U / Na / Nalaziti se', english: 'At / In / On', emoji: '📍', category: 'strofa_1', categoryLabel: 'Strofa 1', radical: '土 Earth', visualTip: 'Earth anchor marking a place' },
