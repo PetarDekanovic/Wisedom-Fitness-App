@@ -5631,9 +5631,9 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
     const seedPrompt = `I am contemplating this quote from a psychological standpoint:
 "${quote.text}" — ${quote.author}
 
-As my AI Psychologist, please analyze this quote from the perspective of psychology as a science. Provide a comprehensive overview of relevant psychological theories (e.g., Carl Jung, Sigmund Freud, Viktor Frankl, Aaron Beck, Carl Rogers, Albert Bandura, Mihaly Csikszentmihalyi, etc.), explaining how psychological science interprets this wisdom and how it relates to human cognition, emotional regulation, or behavioral patterns.
+As my AI Psychologist, please analyze this quote from the perspective of psychology as a science. Provide a comprehensive overview of relevant psychological theories combining Western frameworks (e.g., Carl Jung, Sigmund Freud, Viktor Frankl, Aaron Beck, Carl Rogers, Mihaly Csikszentmihalyi) AND explicitly quote/reference a couple of influential Chinese psychologists (e.g., Pan Shu 潘菽, Kuo Zing-yang 郭任遠, Kwang-Kuo Hwang 黃光國, Gao Juefu 高覺敷, or indigenous Chinese psychological self-regulation models). Explain how psychological science interprets this wisdom and how it relates to human cognition, emotional regulation, or behavioral patterns.
 
-Keep your response structured, insightful, clear, and grounded in psychological theory.`;
+Keep your response structured, insightful, clear, and grounded in psychological theory. Address me strictly by my first name only (never use or spell my last name Dekanovic).`;
 
     const userMessage: ChatMessage = { role: 'user', parts: [{ text: seedPrompt }] };
     
