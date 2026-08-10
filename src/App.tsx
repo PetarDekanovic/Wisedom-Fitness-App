@@ -2833,12 +2833,12 @@ function AppContent() {
     const wordCount = articleContent.trim().split(/\s+/).filter(Boolean).length;
     const charCount = articleContent.length;
 
-    if (charCount > 60000) {
-      alert("Article is too long! (Max 60,000 characters)");
+    if (charCount > 80000) {
+      alert("Article is too long! (Max 80,000 characters)");
       return;
     }
-    if (wordCount > 10000) {
-      alert("Article has too many words! (Max 10,000 words)");
+    if (wordCount > 13000) {
+      alert("Article has too many words! (Max 13,000 words)");
       return;
     }
     
@@ -11772,14 +11772,14 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                       )}>Content (Markdown Supported)</label>
                       <div className="flex gap-3 text-[10px] font-bold">
                         <span className={cn(
-                          articleContent.length > 60000 ? "text-red-500" : "text-zinc-500"
+                          articleContent.length > 80000 ? "text-red-500" : "text-zinc-500"
                         )}>
-                          {articleContent.length.toLocaleString()} / 60,000 chars
+                          {articleContent.length.toLocaleString()} / 80,000 chars
                         </span>
                         <span className={cn(
-                          articleContent.trim().split(/\s+/).filter(Boolean).length > 10000 ? "text-red-500" : "text-zinc-500"
+                          articleContent.trim().split(/\s+/).filter(Boolean).length > 13000 ? "text-red-500" : "text-zinc-500"
                         )}>
-                          {articleContent.trim().split(/\s+/).filter(Boolean).length.toLocaleString()} / 10,000 words
+                          {articleContent.trim().split(/\s+/).filter(Boolean).length.toLocaleString()} / 13,000 words
                         </span>
                       </div>
                     </div>
@@ -11812,10 +11812,10 @@ Keep your response structured, insightful, clear, and grounded in psychological 
               <div className="p-6 border-t border-zinc-800/20 bg-zinc-950/20">
                 <button 
                   onClick={handleAddArticle}
-                  disabled={!articleTitle.trim() || !articleContent.trim() || articleContent.length > 60000 || articleContent.trim().split(/\s+/).filter(Boolean).length > 10000}
+                  disabled={!articleTitle.trim() || !articleContent.trim() || articleContent.length > 80000 || articleContent.trim().split(/\s+/).filter(Boolean).length > 13000}
                   className={cn(
                     "w-full py-4 rounded-2xl font-black italic tracking-tighter shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 uppercase",
-                    (!articleTitle.trim() || !articleContent.trim() || articleContent.length > 60000 || articleContent.trim().split(/\s+/).filter(Boolean).length > 10000)
+                    (!articleTitle.trim() || !articleContent.trim() || articleContent.length > 80000 || articleContent.trim().split(/\s+/).filter(Boolean).length > 13000)
                       ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
                       : "bg-emerald-500 text-zinc-950 shadow-emerald-500/20"
                   )}
