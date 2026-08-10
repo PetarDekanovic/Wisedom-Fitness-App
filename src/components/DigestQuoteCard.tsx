@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Copy, Sparkles, Heart } from 'lucide-react';
+import { CheckCircle2, Copy, Sparkles, Heart, Brain } from 'lucide-react';
 
 interface DigestQuoteCardProps {
   quote: {
@@ -15,6 +15,7 @@ interface DigestQuoteCardProps {
   idx: number;
   isDarkMode: boolean;
   onExpand: (quote: any) => void;
+  onExpandPsych?: (quote: any) => void;
   cn: (...inputs: any[]) => string;
   currentUserId?: string;
   onLike: (quote: any) => void;
@@ -25,6 +26,7 @@ export const DigestQuoteCard: React.FC<DigestQuoteCardProps> = ({
   idx,
   isDarkMode,
   onExpand,
+  onExpandPsych,
   cn,
   currentUserId,
   onLike
@@ -162,21 +164,42 @@ export const DigestQuoteCard: React.FC<DigestQuoteCardProps> = ({
           </button>
         </div>
         
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onExpand(quote);
-          }}
-          className={cn(
-            "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 shadow-md",
-            isZenQuote
-              ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30"
-              : "bg-emerald-500 hover:bg-emerald-600 text-zinc-950 shadow-emerald-500/10"
-          )}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          Stoic AI Mentor
-        </button>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onExpand(quote);
+            }}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 shadow-md",
+              isZenQuote
+                ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30"
+                : "bg-emerald-500 hover:bg-emerald-600 text-zinc-950 shadow-emerald-500/10"
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            AI Stoic
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onExpandPsych) {
+                onExpandPsych(quote);
+              }
+            }}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 shadow-md",
+              isDarkMode 
+                ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20" 
+                : "bg-indigo-500 hover:bg-indigo-600 text-white shadow-indigo-500/10"
+            )}
+            title="Analyze quote with AI Psychologist"
+          >
+            <Brain className="w-3.5 h-3.5" />
+            AI Psychologist
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -5620,6 +5620,75 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
     }
   }, [chatMessages, user, isSpeaking]);
 
+  const expandQuoteWithPsychAI = useCallback(async (quote: any) => {
+    // Navigate straight to the PSYCHOLOGIST panel
+    setActiveView('psychologist');
+    if (!isPremiumUser) {
+      return;
+    }
+    
+    // Construct a psychological analysis prompt
+    const seedPrompt = `I am contemplating this quote from a psychological standpoint:
+"${quote.text}" — ${quote.author}
+
+As my AI Psychologist, please analyze this quote from the perspective of psychology as a science. Provide a comprehensive overview of relevant psychological theories (e.g., Carl Jung, Sigmund Freud, Viktor Frankl, Aaron Beck, Carl Rogers, Albert Bandura, Mihaly Csikszentmihalyi, etc.), explaining how psychological science interprets this wisdom and how it relates to human cognition, emotional regulation, or behavioral patterns.
+
+Keep your response structured, insightful, clear, and grounded in psychological theory.`;
+
+    const userMessage: ChatMessage = { role: 'user', parts: [{ text: seedPrompt }] };
+    
+    // Stop any speech output that is active
+    if (isSpeaking !== null) {
+      currentSourceRef.current?.stop();
+      setIsSpeaking(null);
+    }
+
+    setPsychMessages(prev => [...prev, userMessage]);
+    setIsPsychLoading(true);
+
+    try {
+      const resp = await fetch('/api/ai/psychologist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: [...psychMessages, userMessage],
+          userEmail: user?.email,
+          healthData: userProfile
+        })
+      });
+      
+      const text = await resp.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        console.error("Parse Error. Body:", text);
+        throw new Error("The Psych Clinic returned an invalid response.");
+      }
+      
+      if (!resp.ok) {
+        throw new Error(result.error || `Server responded with status ${resp.status}`);
+      }
+
+      const modelMessage: ChatMessage = { 
+        role: 'model', 
+        parts: [{ text: result.text || 'Sorry, I could not generate a response.' }] 
+      };
+      setPsychMessages(prev => [...prev, modelMessage]);
+    } catch (error: any) {
+      console.error('Psych AI Error:', error);
+      setPsychMessages(prev => [
+        ...prev, 
+        { 
+          role: 'model', 
+          parts: [{ text: error.message || 'Error connecting to the Psych clinic.' }] 
+        }
+      ]);
+    } finally {
+      setIsPsychLoading(false);
+    }
+  }, [psychMessages, user, userProfile, isSpeaking, isPremiumUser]);
+
   const handlePsychSendMessage = async () => {
     if (!psychInput.trim() || isPsychLoading || !isPremiumUser) return;
 
@@ -8047,7 +8116,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                     type="button"
                                     onClick={markDigestQuoteAsSeen}
                                     className={cn(
-                                      "flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95",
+                                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95",
                                       isSaved 
                                         ? "bg-emerald-500 text-white" 
                                         : (isDarkMode ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100")
@@ -8055,6 +8124,34 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                   >
                                     <Sparkles className="w-3.5 h-3.5" />
                                     Mark as Wise
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => activeQuote && expandQuoteWithStoicAI(activeQuote)}
+                                    className={cn(
+                                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm",
+                                      isDarkMode 
+                                        ? "bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30" 
+                                        : "bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200"
+                                    )}
+                                    title="Analyze quote with AI Stoic Mentor"
+                                  >
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    AI Stoic
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => activeQuote && expandQuoteWithPsychAI(activeQuote)}
+                                    className={cn(
+                                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm",
+                                      isDarkMode 
+                                        ? "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30" 
+                                        : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"
+                                    )}
+                                    title="Analyze quote with AI Psychologist"
+                                  >
+                                    <Brain className="w-3.5 h-3.5" />
+                                    AI Psychologist
                                   </button>
                                 </div>
                               </div>
@@ -8155,6 +8252,7 @@ Keep your response highly intense, intellectually rich, yet compact (under 5 sen
                                     idx={activeIdx}
                                     isDarkMode={isDarkMode}
                                     onExpand={expandQuoteWithStoicAI}
+                                    onExpandPsych={expandQuoteWithPsychAI}
                                     cn={cn}
                                     currentUserId={user?.uid}
                                     onLike={toggleLikeDigestQuote}
