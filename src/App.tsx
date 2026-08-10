@@ -8051,7 +8051,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                   </div>
                                 </div>
 
-                                <div className="flex items-center justify-center gap-2">
+                                <div className="flex flex-wrap items-center justify-center gap-2 max-w-full">
                                   {(() => {
                                     const activeQuote = digestData.quotes[digestActiveIndex];
                                     if (!activeQuote) return null;
@@ -8067,7 +8067,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                           toggleLikeDigestQuote(activeQuote);
                                         }}
                                         className={cn(
-                                          "p-2 rounded-lg transition-all active:scale-95 flex items-center gap-1.5",
+                                          "p-2 rounded-lg transition-all active:scale-95 flex items-center gap-1.5 shrink-0 whitespace-nowrap",
                                           isLiked 
                                             ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" 
                                             : (isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200")
@@ -8083,7 +8083,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                   <button
                                     onClick={handleCopyDigestQuote}
                                     className={cn(
-                                      "p-2 rounded-lg transition-all active:scale-95",
+                                      "p-2 rounded-lg transition-all active:scale-95 shrink-0",
                                       isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                                     )}
                                     title="Copy Quote"
@@ -8093,7 +8093,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                   <button
                                     onClick={toggleSpeakDigestQuote}
                                     className={cn(
-                                      "p-2 rounded-lg transition-all active:scale-95",
+                                      "p-2 rounded-lg transition-all active:scale-95 shrink-0",
                                       isDigestSpeechPlaying 
                                         ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 animate-pulse"
                                         : (isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200")
@@ -8105,7 +8105,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                   <button
                                     onClick={handleShareDigestQuote}
                                     className={cn(
-                                      "p-2 rounded-lg transition-all active:scale-95",
+                                      "p-2 rounded-lg transition-all active:scale-95 shrink-0",
                                       isDarkMode ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
                                     )}
                                     title="Share Quote"
@@ -8116,7 +8116,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                     type="button"
                                     onClick={markDigestQuoteAsSeen}
                                     className={cn(
-                                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95",
+                                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shrink-0 whitespace-nowrap",
                                       isSaved 
                                         ? "bg-emerald-500 text-white" 
                                         : (isDarkMode ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100")
@@ -8129,7 +8129,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                     type="button"
                                     onClick={() => activeQuote && expandQuoteWithStoicAI(activeQuote)}
                                     className={cn(
-                                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm",
+                                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap",
                                       isDarkMode 
                                         ? "bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30" 
                                         : "bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200"
@@ -8143,7 +8143,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                     type="button"
                                     onClick={() => activeQuote && expandQuoteWithPsychAI(activeQuote)}
                                     className={cn(
-                                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm",
+                                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap",
                                       isDarkMode 
                                         ? "bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30" 
                                         : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200"

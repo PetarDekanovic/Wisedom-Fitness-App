@@ -128,16 +128,16 @@ export const DigestQuoteCard: React.FC<DigestQuoteCardProps> = ({
 
       {/* Micro Actions */}
       <div className={cn(
-        "flex items-center justify-between gap-2 mt-6 pt-4 border-t z-10",
+        "flex flex-wrap items-center justify-between gap-2 mt-6 pt-4 border-t z-10",
         isZenQuote
           ? (isDarkMode ? "border-purple-500/20" : "border-purple-200")
           : "border-zinc-800/10 dark:border-zinc-800/50"
       )}>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <button
             onClick={handleCopy}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shrink-0 whitespace-nowrap",
               isZenQuote
                 ? (isDarkMode ? "bg-purple-900/50 hover:bg-purple-800/60 text-purple-200" : "bg-purple-100/80 hover:bg-purple-200 text-purple-800")
                 : (isDarkMode ? "bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700")
@@ -150,7 +150,7 @@ export const DigestQuoteCard: React.FC<DigestQuoteCardProps> = ({
           <button
             onClick={handleLikeClick}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 shrink-0 whitespace-nowrap",
               isLiked 
                 ? "bg-rose-500/10 text-rose-500 hover:bg-rose-500/20" 
                 : (isZenQuote
@@ -171,7 +171,7 @@ export const DigestQuoteCard: React.FC<DigestQuoteCardProps> = ({
               onExpand(quote);
             }}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 shadow-md",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 shadow-md shrink-0 whitespace-nowrap",
               isZenQuote
                 ? "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30"
                 : "bg-emerald-500 hover:bg-emerald-600 text-zinc-950 shadow-emerald-500/10"
@@ -189,7 +189,7 @@ export const DigestQuoteCard: React.FC<DigestQuoteCardProps> = ({
               }
             }}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 shadow-md",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all active:scale-95 shadow-md shrink-0 whitespace-nowrap",
               isDarkMode 
                 ? "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20" 
                 : "bg-indigo-500 hover:bg-indigo-600 text-white shadow-indigo-500/10"
