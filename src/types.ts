@@ -78,7 +78,7 @@ export interface YogaFlow {
 export interface Article {
   id: string;
   userId: string;
-  title: string;
+  title?: string;
   content: string;
   date: string;
   tags?: string[];

@@ -1359,7 +1359,9 @@ function ArticleCard({
       }
 
       const filteredChunks = chunks.filter(c => c.length > 0);
-      const finalChunks = [article.title, ...filteredChunks];
+      const finalChunks = (article.title && article.title.trim()) 
+        ? [article.title.trim(), ...filteredChunks] 
+        : filteredChunks;
       
       speechQueue.current = finalChunks;
       setTotalChunks(finalChunks.length);
@@ -1517,7 +1519,8 @@ function ArticleCard({
 
   const handleShare = async (platform?: string) => {
     const shareUrl = `${window.location.origin}/?view=articles&id=${article.id}`; 
-    const text = `Check out this article on WiseFit: ${article.title}`;
+    const shareTitle = article.title?.trim() || 'Intellectual Post';
+    const text = `Check out this post on WiseFit: ${shareTitle}`;
     
     // Increment share count
     await updateEngagement('shares');
@@ -1541,12 +1544,13 @@ function ArticleCard({
   const handleShareTriggerClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareUrl = `${window.location.origin}/?view=articles&id=${article.id}`; 
-    const text = `Check out this article on WiseFit: ${article.title}`;
+    const shareTitle = article.title?.trim() || 'Intellectual Post';
+    const text = `Check out this post on WiseFit: ${shareTitle}`;
     
     if (navigator.share) {
       try {
         await navigator.share({
-          title: article.title,
+          title: shareTitle,
           text: text,
           url: shareUrl
         });
@@ -1584,12 +1588,14 @@ function ArticleCard({
           <FileText className="w-5 h-5 text-emerald-500" />
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className={cn(
-            "font-black text-lg md:text-xl leading-snug tracking-tight text-wrap break-words",
-            isDarkMode ? "text-zinc-100" : "text-zinc-900"
-          )}>
-            {article.title}
-          </h4>
+          {article.title && article.title.trim() && (
+            <h4 className={cn(
+              "font-black text-lg md:text-xl leading-snug tracking-tight text-wrap break-words",
+              isDarkMode ? "text-zinc-100" : "text-zinc-900"
+            )}>
+              {article.title}
+            </h4>
+          )}
           <p className={cn("text-[10px] uppercase font-bold tracking-widest mt-1.5", isDarkMode ? "text-zinc-400" : "text-zinc-500")}>
             {format(new Date(article.date), 'MMM d, yyyy • HH:mm')}
           </p>
@@ -2828,7 +2834,7 @@ function AppContent() {
   }, [user, isQuotaExceeded]);
 
   const handleAddArticle = async () => {
-    if (!user || !articleContent.trim() || !articleTitle.trim()) return;
+    if (!user || !articleContent.trim()) return;
 
     const wordCount = articleContent.trim().split(/\s+/).filter(Boolean).length;
     const charCount = articleContent.length;
@@ -2849,7 +2855,7 @@ function AppContent() {
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
           await updateDoc(doc(db, 'articles', snapshot.docs[0].id), {
-            title: articleTitle,
+            title: articleTitle || '',
             content: articleContent,
             url: articleUrl,
             thumbnailUrl: articleThumbnailUrl,
@@ -2858,7 +2864,7 @@ function AppContent() {
         }
         setArticles(prev => prev.map(a => a.id === editingArticle.id ? { 
           ...a, 
-          title: articleTitle, 
+          title: articleTitle || '', 
           content: articleContent, 
           url: articleUrl,
           thumbnailUrl: articleThumbnailUrl,
@@ -2878,7 +2884,7 @@ function AppContent() {
       const newArticle: Article = {
         id: `art-${Date.now()}`,
         userId: user.uid,
-        title: articleTitle,
+        title: articleTitle || '',
         content: articleContent,
         url: articleUrl,
         thumbnailUrl: articleThumbnailUrl,
@@ -11524,23 +11530,6 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                     <label className={cn(
                       "text-xs font-bold uppercase mb-1 block transition-colors",
                       isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>Title</label>
-                    <input 
-                      type="text" 
-                      value={articleTitle}
-                      onChange={(e) => setArticleTitle(e.target.value)}
-                      placeholder="e.g. The Strategic Path to HRV Mastery"
-                      className={cn(
-                        "w-full border rounded-xl px-4 py-3 text-lg font-bold focus:outline-none focus:border-emerald-500 transition-all",
-                        isDarkMode ? "bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900"
-                      )}
-                    />
-                  </div>
-
-                  <div>
-                    <label className={cn(
-                      "text-xs font-bold uppercase mb-1 block transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
                     )}>Video URL (Optional .mp4)</label>
                     <div className="flex gap-2">
                       <input 
@@ -11812,10 +11801,10 @@ Keep your response structured, insightful, clear, and grounded in psychological 
               <div className="p-6 border-t border-zinc-800/20 bg-zinc-950/20">
                 <button 
                   onClick={handleAddArticle}
-                  disabled={!articleTitle.trim() || !articleContent.trim() || articleContent.length > 80000 || articleContent.trim().split(/\s+/).filter(Boolean).length > 13000}
+                  disabled={!articleContent.trim() || articleContent.length > 80000 || articleContent.trim().split(/\s+/).filter(Boolean).length > 13000}
                   className={cn(
                     "w-full py-4 rounded-2xl font-black italic tracking-tighter shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 uppercase",
-                    (!articleTitle.trim() || !articleContent.trim() || articleContent.length > 80000 || articleContent.trim().split(/\s+/).filter(Boolean).length > 13000)
+                    (!articleContent.trim() || articleContent.length > 80000 || articleContent.trim().split(/\s+/).filter(Boolean).length > 13000)
                       ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
                       : "bg-emerald-500 text-zinc-950 shadow-emerald-500/20"
                   )}
