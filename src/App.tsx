@@ -2876,8 +2876,9 @@ function AppContent() {
         setArticleThumbnailUrl('');
         setArticleExcerpt('');
         setEditingArticle(null);
-      } catch (e) {
+      } catch (e: any) {
         console.error("Error updating article:", e);
+        alert("Failed to update article: " + (e?.message || "Unknown error"));
       }
     } else {
       // Create new article
@@ -2904,8 +2905,9 @@ function AppContent() {
         setArticleThumbnailUrl('');
         setArticleExcerpt('');
         setIsAddingArticle(false);
-      } catch (e) {
+      } catch (e: any) {
         console.error("Error adding article:", e);
+        alert("Failed to publish article: " + (e?.message || "Unknown error"));
       }
     }
   };
@@ -8133,7 +8135,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => activeQuote && expandQuoteWithStoicAI(activeQuote)}
+                                    onClick={() => digestData.quotes[digestActiveIndex] && expandQuoteWithStoicAI(digestData.quotes[digestActiveIndex])}
                                     className={cn(
                                       "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap",
                                       isDarkMode 
@@ -8147,7 +8149,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => activeQuote && expandQuoteWithPsychAI(activeQuote)}
+                                    onClick={() => digestData.quotes[digestActiveIndex] && expandQuoteWithPsychAI(digestData.quotes[digestActiveIndex])}
                                     className={cn(
                                       "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm shrink-0 whitespace-nowrap",
                                       isDarkMode 
@@ -11588,6 +11590,53 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                             setIsUploadingArticleVideo(true);
                             setArticleVideoProgress(0);
 
+                            // Helper function to try server upload fallback
+                            const runServerFallback = async () => {
+                              try {
+                                const reader = new FileReader();
+                                reader.onloadend = async () => {
+                                  try {
+                                    const base64Data = reader.result as string;
+                                    const response = await fetch('/api/upload', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        filename: file.name,
+                                        fileType: file.type || 'video/mp4',
+                                        base64Data,
+                                        folder: 'articles_videos'
+                                      }),
+                                    });
+                                    if (!response.ok) {
+                                      const errJson = await response.json().catch(() => ({}));
+                                      throw new Error(errJson.error || `Server status ${response.status}`);
+                                    }
+                                    const data = await response.json();
+                                    if (data.url) {
+                                      setArticleUrl(data.url);
+                                      setIsUploadingArticleVideo(false);
+                                      return;
+                                    }
+                                    throw new Error(data.error || 'Server upload returned empty URL');
+                                  } catch (fallbackErr: any) {
+                                    console.error('Video fallback upload failed:', fallbackErr);
+                                    alert('Upload failed: ' + (fallbackErr.message || 'Server error'));
+                                    setIsUploadingArticleVideo(false);
+                                  }
+                                };
+                                reader.onerror = (err) => {
+                                  console.error('FileReader error:', err);
+                                  alert('Could not read video file');
+                                  setIsUploadingArticleVideo(false);
+                                };
+                                reader.readAsDataURL(file);
+                              } catch (err: any) {
+                                console.error('Fallback setup error:', err);
+                                alert('Upload failed: ' + err.message);
+                                setIsUploadingArticleVideo(false);
+                              }
+                            };
+
                             try {
                               const uniqueName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
                               const storageRef = ref(storage, `articles_videos/${uniqueName}`);
@@ -11598,10 +11647,9 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                   const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
                                   setArticleVideoProgress(progress);
                                 }, 
-                                (error) => {
-                                  console.error('Video upload failed:', error);
-                                  alert('Upload channels rejected the file: ' + error.message);
-                                  setIsUploadingArticleVideo(false);
+                                async (error) => {
+                                  console.warn('Direct Firebase video upload failed or blocked, attempting server fallback:', error);
+                                  await runServerFallback();
                                 }, 
                                 async () => {
                                   const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
@@ -11610,9 +11658,8 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                 }
                               );
                             } catch (err: any) {
-                              console.error('Video upload outer failed:', err);
-                              alert('Attachment transit interrupted: ' + err.message);
-                              setIsUploadingArticleVideo(false);
+                              console.warn('Direct Firebase video upload init failed, attempting server fallback:', err);
+                              await runServerFallback();
                             }
                           }}
                         />

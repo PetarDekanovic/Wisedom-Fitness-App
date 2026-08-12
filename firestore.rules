@@ -178,9 +178,9 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidArticle(data) {
-      return data.keys().hasAll(['id', 'userId', 'title', 'content', 'date']) &&
+      return data.keys().hasAll(['id', 'userId', 'content', 'date']) &&
              data.userId == request.auth.uid &&
-             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             (data.get('title', null) == null || (data.title is string && data.title.size() < 200)) &&
              data.content is string && data.content.size() > 0 && data.content.size() < 100000 &&
              data.date is string;
     }
