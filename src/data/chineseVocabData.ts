@@ -6,7 +6,7 @@ export interface VocabItem {
   translation: string;
   english: string;
   emoji: string;
-  category: 'strofa_1' | 'refren' | 'glagoli' | 'svakodnevno' | 'filozofija' | 'zdravlje' | 'posao_tehnologija' | 'hrana' | 'vreme_brojevi' | 'emocije';
+  category: 'strofa_1' | 'refren' | 'glagoli' | 'svakodnevno' | 'filozofija' | 'zdravlje' | 'posao_tehnologija' | 'hrana' | 'vreme_brojevi' | 'emocije' | 'alphabet';
   categoryLabel: string;
   radical?: string;
   visualTip?: string;

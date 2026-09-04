@@ -6,7 +6,7 @@ export interface HebrewVocabItem {
   translation: string;
   english: string;
   emoji: string;
-  category: 'mudrost' | 'svakodnevno' | 'priroda' | 'glagoli' | 'misaoni' | 'zdravlje' | 'posao_tehnologija' | 'hrana' | 'vreme_brojevi' | 'emocije';
+  category: 'mudrost' | 'svakodnevno' | 'priroda' | 'glagoli' | 'misaoni' | 'zdravlje' | 'posao_tehnologija' | 'hrana' | 'vreme_brojevi' | 'emocije' | 'alphabet';
   categoryLabel: string;
   root?: string;
   visualTip?: string;
