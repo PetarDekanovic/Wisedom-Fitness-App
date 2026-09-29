@@ -13,6 +13,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp as initializeClientApp } from "firebase/app";
 import { getFirestore as getClientFirestore, collection, getDocs, doc, setDoc, addDoc, query, where, writeBatch, orderBy, limit } from "firebase/firestore";
 import { FALLBACK_QUOTES, FALLBACK_NEWS } from "./src/fallbackQuotes";
+import { Resvg } from "@resvg/resvg-js";
 
 dotenv.config();
 
@@ -2007,140 +2008,468 @@ Respond with JSON only, no markdown formatting, no code blocks.`;
     res.json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
   });
 
-  // --- STATIC SERVING ---
-  const distPath = path.resolve(process.cwd(), "dist");
-  const isProd = process.env.NODE_ENV === "production" || fs.existsSync(distPath);
-  
-  if (isProd) {
-    console.log(`[WiseFit] Production Mode: Serving static files from ${distPath}`);
-    // Disable automatic serving of index.html by express.static so that it falls through to our wildcard route
-    app.use(express.static(distPath, { index: false }));
+  // --- DYNAMIC FACEBOOK & SOCIAL OG THUMBNAIL GENERATOR ---
+  function escapeXml(unsafe?: string): string {
+    return (unsafe || "").replace(/[<>&"'\\]/g, (c) => {
+      switch (c) {
+        case "<": return "&lt;";
+        case ">": return "&gt;";
+        case "&": return "&amp;";
+        case "\"": return "&quot;";
+        case "'": return "&apos;";
+        case "\\": return "";
+        default: return c;
+      }
+    });
+  }
+
+  function wrapText(text: string, maxChars: number, maxLines: number): string[] {
+    const words = (text || "").split(/\s+/).filter(Boolean);
+    const lines: string[] = [];
+    let currentLine = "";
+    for (const word of words) {
+      if ((currentLine + " " + word).trim().length <= maxChars) {
+        currentLine = (currentLine + " " + word).trim();
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+        if (lines.length >= maxLines - 1) break;
+      }
+    }
+    if (currentLine && lines.length < maxLines) {
+      lines.push(currentLine);
+    } else if (currentLine && lines.length >= maxLines) {
+      lines[maxLines - 1] = lines[maxLines - 1] + "...";
+    }
+    return lines.length > 0 ? lines : ["WiseFit Reflection"];
+  }
+
+  function cleanArticleTitle(title?: string): string {
+    if (!title || !title.trim()) return "WiseFit Sanctuary Reflection";
+    return title
+      .replace(/[#*`_~]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function cleanArticleExcerpt(excerpt?: string, content?: string, title?: string): string {
+    if (excerpt && excerpt.trim()) {
+      return excerpt.replace(/[#*`_~]/g, "").replace(/\s+/g, " ").trim();
+    }
+    if (!content) return "Explore philosophical insights, biometric intelligence, and timeless Stoic discipline on WiseFit.";
     
-    // SPA Fallback for all non-API paths
-    app.get("*", async (req, res, next) => {
-      if (req.path.startsWith('/api/')) return next();
+    const normTitle = (title || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const rawLines = content.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    let meaningful = "";
+    
+    for (const line of rawLines) {
+      // Skip markdown headers, intro preambles, horizontal rules, format boilerplate
+      if (/^(here is|here's|---|\*\*\*|###?|trilingual|full trilingual|format:)/i.test(line)) continue;
       
-      const indexPath = path.join(distPath, "index.html");
-      const view = req.query.view;
-      const articleId = req.query.id as string;
-      
-      if (view === 'articles' && articleId) {
-        try {
-          console.log(`[Dynamic OG] Serving dynamic OG tags for article ${articleId}`);
-          let html = fs.readFileSync(indexPath, "utf-8");
-          
-          const projectId = "gen-lang-client-0833207836";
-          const firestoreDatabaseId = "ai-studio-4d7e1cec-5733-4ce6-a67d-e27f38f60915";
-          const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${firestoreDatabaseId}/documents:runQuery`;
-          
-          const requestBody = {
-            structuredQuery: {
-              from: [{ collectionId: "articles" }],
-              where: {
-                fieldFilter: {
-                  field: { fieldPath: "id" },
-                  op: "EQUAL",
-                  value: { stringValue: articleId }
-                }
-              },
-              limit: 1
-            }
-          };
-          
-          const response = await axios.post(firestoreUrl, requestBody, { timeout: 3000 });
-          const documents = response.data;
-          
-          if (documents && documents[0] && documents[0].document) {
-            const fields = documents[0].document.fields;
-            const title = fields.title?.stringValue || "WiseFit Link";
-            const content = fields.content?.stringValue || "";
-            const videoUrlRaw = fields.url?.stringValue || "";
-            
-            const dbThumbnail = fields.thumbnailUrl?.stringValue || "";
-            const dbExcerpt = fields.excerpt?.stringValue || "";
-            
-            let description = dbExcerpt || content
-              .replace(/[#*`~]/g, '')
-              .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-              .trim();
-            if (description.length > 200) {
-              description = description.substring(0, 200) + "...";
-            }
-            
-            const host = req.get('host') || "wisefit.fun";
-            const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-            const absoluteBase = `${protocol}://${host}`;
-            
-            let videoUrl = videoUrlRaw;
-            if (videoUrl && !videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
-              videoUrl = `${absoluteBase}${videoUrl.startsWith('/') ? '' : '/'}${videoUrl}`;
-            }
-            
-            let imageUrl = dbThumbnail || "https://compcharity.org/wp-content/uploads/2026/04/e0efb5a2-1d04-40b2-b3fa-459dfdab069e_839bb3b2-scaled.jpg";
-            if (imageUrl && !imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-              imageUrl = `${absoluteBase}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
-            }
-            
-            const titleEscaped = title.replace(/"/g, '&quot;');
-            const descriptionEscaped = description.replace(/"/g, '&quot;');
-            const urlEscaped = `${absoluteBase}${req.originalUrl}`.replace(/"/g, '&quot;');
-            const imageEscaped = imageUrl.replace(/"/g, '&quot;');
-            
-            // Replaces patterns
-            html = html.replace(/<title>[\s\S]*?<\/title>/gi, `<title>${titleEscaped} - WiseFit</title>`);
-            
-            // Clean other duplicate meta tags
-            html = html.replace(/<meta name="description" content="[^"]*" \/>/gi, '');
-            html = html.replace(/<meta property="og:title" content="[^"]*" \/>/gi, '');
-            html = html.replace(/<meta property="og:description" content="[^"]*" \/>/gi, '');
-            html = html.replace(/<meta property="og:url" content="[^"]*" \/>/gi, '');
-            html = html.replace(/<meta property="og:image" content="[^"]*" \/>/gi, '');
-            html = html.replace(/<meta property="og:type" content="[^"]*" \/>/gi, '');
-            
-            html = html.replace(/<meta property="twitter:card" content="[^"]*" \/>/gi, '');
-            html = html.replace(/<meta property="twitter:url" content="[^"]*" \/>/gi, '');
-            html = html.replace(/<meta property="twitter:title" content="[^"]*" \/>/gi, '');
-            html = html.replace(/<meta property="twitter:description" content="[^"]*" \/>/gi, '');
-            html = html.replace(/<meta property="twitter:image" content="[^"]*" \/>/gi, '');
-            
-            let newMeta = `
-              <meta name="description" content="${descriptionEscaped}" />
-              <meta property="og:title" content="${titleEscaped}" />
-              <meta property="og:description" content="${descriptionEscaped}" />
-              <meta property="og:url" content="${urlEscaped}" />
-              <meta property="og:image" content="${imageEscaped}" />
-              <meta property="og:type" content="${videoUrl ? 'video.other' : 'website'}" />
-            `;
-            
-            if (videoUrl) {
-              const videoEscaped = videoUrl.replace(/"/g, '&quot;');
-              newMeta += `
-              <meta property="og:video" content="${videoEscaped}" />
-              <meta property="og:video:secure_url" content="${videoEscaped}" />
-              <meta property="og:video:type" content="video/mp4" />
-              <meta name="twitter:card" content="player" />
-              <meta name="twitter:player" content="${videoEscaped}" />
-              <meta name="twitter:player:width" content="720" />
-              <meta name="twitter:player:height" content="1280" />
-              <meta name="twitter:image" content="${imageEscaped}" />
-              `;
-            } else {
-              newMeta += `
-              <meta name="twitter:card" content="summary_large_image" />
-              <meta name="twitter:title" content="${titleEscaped}" />
-              <meta name="twitter:description" content="${descriptionEscaped}" />
-              <meta name="twitter:image" content="${imageEscaped}" />
-              `;
-            }
-            
-            html = html.replace(/<head>/i, `<head>${newMeta}`);
-            return res.send(html);
-          }
-        } catch (dbErr: any) {
-          console.error("[Dynamic OG Database/Network Error]", dbErr.message);
+      const cleaned = line
+        .replace(/[#*`_~]/g, "")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/\s+/g, " ")
+        .trim();
+        
+      const normLine = cleaned.toLowerCase().replace(/[^a-z0-9]/g, "");
+      // Skip if this line is just repeating the title
+      if (normLine.length > 10 && normTitle.includes(normLine.substring(0, Math.min(normLine.length, 30)))) {
+        continue;
+      }
+      if (cleaned.length > 25) {
+        meaningful = cleaned;
+        break;
+      }
+    }
+    
+    if (!meaningful && rawLines.length > 0) {
+      meaningful = rawLines[0].replace(/[#*`_~]/g, "").trim();
+    }
+    if (meaningful.length > 210) {
+      return meaningful.substring(0, 207).trim() + "...";
+    }
+    return meaningful || "Explore philosophical insights, biometric intelligence, and timeless Stoic discipline on WiseFit.";
+  }
+
+  async function getImageAsBase64(imageUrl?: string): Promise<string | null> {
+    if (!imageUrl) return null;
+    try {
+      if (imageUrl.startsWith("data:image")) {
+        return imageUrl;
+      }
+      if (imageUrl.startsWith("/uploads/") || imageUrl.startsWith("uploads/")) {
+        const localPath = path.resolve(process.cwd(), imageUrl.startsWith("/") ? imageUrl.slice(1) : imageUrl);
+        if (fs.existsSync(localPath)) {
+          const ext = path.extname(localPath).slice(1) || "jpeg";
+          const data = fs.readFileSync(localPath);
+          return `data:image/${ext};base64,${data.toString("base64")}`;
         }
       }
+      if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+        const response = await axios.get(imageUrl, {
+          responseType: "arraybuffer",
+          timeout: 2500,
+          headers: { "User-Agent": "WiseFit-Social-OG/1.0" }
+        });
+        const contentType = response.headers["content-type"] || "image/jpeg";
+        const base64 = Buffer.from(response.data).toString("base64");
+        return `data:${contentType};base64,${base64}`;
+      }
+    } catch (err: any) {
+      console.warn("[OG-Image] Notice: Could not load external background thumbnail, using sanctuary gradient:", err.message);
+    }
+    return null;
+  }
+
+  function generateOgCardSvg(options: { title: string; excerpt: string; bgBase64?: string | null }): string {
+    const { title, excerpt, bgBase64 } = options;
+    const cleanTitle = escapeXml(title);
+    const titleLines = wrapText(cleanTitle, 36, 3);
+    const descLines = wrapText(escapeXml(excerpt), 52, 3);
+
+    const titleStartY = 200;
+    const titleLineHeight = 60;
+    const titleEndY = titleStartY + (titleLines.length - 1) * titleLineHeight;
+    const dividerY = titleEndY + 45;
+    const descStartY = dividerY + 45;
+    const descLineHeight = 38;
+
+    return `
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgBase" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080b0f"/>
+      <stop offset="50%" stop-color="#0e141c"/>
+      <stop offset="100%" stop-color="#05070a"/>
+    </linearGradient>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="cardOverlay" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#080b0f" stop-opacity="0.82"/>
+      <stop offset="60%" stop-color="#080b0f" stop-opacity="0.94"/>
+      <stop offset="100%" stop-color="#05070a" stop-opacity="0.98"/>
+    </linearGradient>
+    <radialGradient id="glowTopRight" cx="88%" cy="12%" r="65%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.22"/>
+      <stop offset="50%" stop-color="#059669" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowBottomLeft" cx="12%" cy="90%" r="55%">
+      <stop offset="0%" stop-color="#047857" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Base background -->
+  <rect width="1200" height="630" fill="url(#bgBase)"/>
+  
+  ${bgBase64 ? `<image href="${bgBase64}" width="1200" height="630" preserveAspectRatio="xMidYMid slice" opacity="0.3"/>` : ""}
+  
+  <rect width="1200" height="630" fill="url(#cardOverlay)"/>
+  <rect width="1200" height="630" fill="url(#glowTopRight)"/>
+  <rect width="1200" height="630" fill="url(#glowBottomLeft)"/>
+
+  <!-- Subtle architectural grid pattern -->
+  <g opacity="0.035" stroke="#ffffff" stroke-width="1">
+    <line x1="0" y1="126" x2="1200" y2="126"/>
+    <line x1="0" y1="252" x2="1200" y2="252"/>
+    <line x1="0" y1="378" x2="1200" y2="378"/>
+    <line x1="0" y1="504" x2="1200" y2="504"/>
+    <line x1="240" y1="0" x2="240" y2="630"/>
+    <line x1="480" y1="0" x2="480" y2="630"/>
+    <line x1="720" y1="0" x2="720" y2="630"/>
+    <line x1="960" y1="0" x2="960" y2="630"/>
+  </g>
+
+  <!-- Outer Card Frame with subtle Emerald Accent Glow -->
+  <rect x="24" y="24" width="1152" height="582" rx="28" fill="none" stroke="#27272a" stroke-width="2"/>
+  <rect x="24" y="24" width="1152" height="582" rx="28" fill="none" stroke="#10b981" stroke-width="2" stroke-opacity="0.32"/>
+
+  <!-- Top Badges / Sanctuary Branding -->
+  <g transform="translate(72, 68)">
+    <!-- Pill 1: WiseFit Sanctuary -->
+    <rect width="220" height="42" rx="21" fill="#10b981" fill-opacity="0.14" stroke="#10b981" stroke-opacity="0.45" stroke-width="1.5"/>
+    <circle cx="24" cy="21" r="5" fill="#34d399"/>
+    <text x="38" y="27" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#34d399" letter-spacing="2">WISEFIT SANCTUARY</text>
+
+    <!-- Pill 2: Intellectual Commons -->
+    <g transform="translate(232, 0)">
+      <rect width="230" height="42" rx="21" fill="#27272a" fill-opacity="0.6" stroke="#3f3f46" stroke-width="1.2"/>
+      <text x="22" y="26" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" fill="#a1a1aa" letter-spacing="1.5">INTELLECTUAL COMMONS</text>
+    </g>
+  </g>
+
+  <!-- Title (Page Title / Excerpt) -->
+  <g transform="translate(72, ${titleStartY})">
+    ${titleLines.map((line, i) => `<text x="0" y="${i * titleLineHeight}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="50" font-weight="800" fill="#ffffff" letter-spacing="-1">${line}</text>`).join("\n    ")}
+  </g>
+
+  <!-- Glowing Emerald Accent Divider -->
+  <rect x="72" y="${dividerY}" width="140" height="4" rx="2" fill="url(#emeraldGrad)"/>
+
+  <!-- Quick Description / Excerpt -->
+  <g transform="translate(72, ${descStartY})">
+    ${descLines.map((line, i) => `<text x="0" y="${i * descLineHeight}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="26" font-weight="400" fill="#cbd5e1" letter-spacing="0">${line}</text>`).join("\n    ")}
+  </g>
+
+  <!-- Bottom Metadata Footer -->
+  <g transform="translate(72, 564)">
+    <text x="0" y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#71717a">wisefit.fun • Read Full Reflection</text>
+    
+    <g transform="translate(830, -8)">
+      <rect width="220" height="34" rx="17" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-opacity="0.3" stroke-width="1"/>
+      <text x="18" y="22" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#10b981" letter-spacing="1">PHILOSOPHY &amp; BIOMETRICS</text>
+    </g>
+  </g>
+</svg>
+    `;
+  }
+
+  function renderOgCardPng(options: { title: string; excerpt: string; bgBase64?: string | null }): Buffer {
+    const svg = generateOgCardSvg(options);
+    const resvg = new Resvg(svg, {
+      fitTo: { mode: "width", value: 1200 }
+    });
+    return resvg.render().asPng();
+  }
+
+  async function fetchArticleData(articleId: string) {
+    if (!articleId) return null;
+
+    // 1. Try Client Firestore SDK if initialized
+    if (clientFirestoreDb) {
+      try {
+        const q = query(collection(clientFirestoreDb, "articles"), where("id", "==", articleId), limit(1));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const docData = snap.docs[0].data();
+          const cleanTitle = cleanArticleTitle(docData.title);
+          const cleanExcerpt = cleanArticleExcerpt(docData.excerpt, docData.content, docData.title);
+          return {
+            id: articleId,
+            title: cleanTitle,
+            excerpt: cleanExcerpt,
+            content: docData.content || "",
+            thumbnailUrl: docData.thumbnailUrl || "",
+            videoUrl: docData.url || ""
+          };
+        }
+      } catch (err: any) {
+        console.warn("[Dynamic OG] clientFirestoreDb fetch error:", err.message);
+      }
+    }
+
+    // 2. Fallback to Firestore REST API
+    try {
+      const projectId = firebaseConfig.projectId || "gen-lang-client-0833207836";
+      const firestoreDatabaseId = firebaseConfig.firestoreDatabaseId || "ai-studio-4d7e1cec-5733-4ce6-a67d-e27f38f60915";
+      const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${firestoreDatabaseId}/documents:runQuery`;
       
+      const requestBody = {
+        structuredQuery: {
+          from: [{ collectionId: "articles" }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: "id" },
+              op: "EQUAL",
+              value: { stringValue: articleId }
+            }
+          },
+          limit: 1
+        }
+      };
+      
+      const response = await axios.post(firestoreUrl, requestBody, { timeout: 3500 });
+      const documents = response.data;
+      if (documents && documents[0] && documents[0].document) {
+        const fields = documents[0].document.fields;
+        const rawTitle = fields.title?.stringValue || "";
+        const rawContent = fields.content?.stringValue || "";
+        const rawExcerpt = fields.excerpt?.stringValue || "";
+        const rawThumb = fields.thumbnailUrl?.stringValue || "";
+        const rawVideo = fields.url?.stringValue || "";
+
+        return {
+          id: articleId,
+          title: cleanArticleTitle(rawTitle),
+          excerpt: cleanArticleExcerpt(rawExcerpt, rawContent, rawTitle),
+          content: rawContent,
+          thumbnailUrl: rawThumb,
+          videoUrl: rawVideo
+        };
+      }
+    } catch (err: any) {
+      console.warn("[Dynamic OG] Firestore REST fallback error:", err.message);
+    }
+
+    return null;
+  }
+
+  // --- API ENDPOINT: Dynamic Facebook Thumbnail Image (1200x630 PNG) ---
+  app.get(["/api/articles/:id/og-image", "/api/og-image"], async (req, res) => {
+    try {
+      const articleId = (req.params.id || req.query.id || req.query.articleId) as string;
+      let title = (req.query.title as string) || "";
+      let excerpt = (req.query.excerpt || req.query.desc) as string || "";
+      let thumbnailUrl = (req.query.bg || req.query.thumbnail) as string || "";
+
+      if (articleId) {
+        const article = await fetchArticleData(articleId);
+        if (article) {
+          title = article.title;
+          excerpt = article.excerpt;
+          thumbnailUrl = article.thumbnailUrl || thumbnailUrl;
+        }
+      }
+
+      if (!title) {
+        title = "WiseFit - Digital Sanctuary & Biometric Intelligence";
+      }
+      if (!excerpt) {
+        excerpt = "Explore philosophical reflections, biometric synchronization, and elite discipline on WiseFit.";
+      }
+
+      const bgBase64 = await getImageAsBase64(thumbnailUrl);
+      const pngBuffer = renderOgCardPng({
+        title,
+        excerpt,
+        bgBase64
+      });
+
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader("Content-Length", pngBuffer.length.toString());
+      res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+      return res.status(200).send(pngBuffer);
+    } catch (err: any) {
+      console.error("[OG-Image Endpoint Error]", err);
+      // Emergency minimalist fallback PNG
+      try {
+        const fallbackPng = renderOgCardPng({
+          title: "WiseFit Sanctuary Reflection",
+          excerpt: "Connecting biometric signals with timeless Stoic wisdom and intellectual depth."
+        });
+        res.setHeader("Content-Type", "image/png");
+        return res.status(200).send(fallbackPng);
+      } catch {
+        return res.status(500).json({ error: "Failed to render OpenGraph thumbnail" });
+      }
+    }
+  });
+
+  // --- HTML OPEN GRAPH INJECTOR FOR FACEBOOK & SOCIAL SCRAPERS ---
+  const distPath = path.resolve(process.cwd(), "dist");
+  const isProd = process.env.NODE_ENV === "production" || fs.existsSync(distPath);
+
+  const getTemplateHtml = () => {
+    const distIndex = path.join(distPath, "index.html");
+    if (fs.existsSync(distIndex)) return fs.readFileSync(distIndex, "utf-8");
+    const rootIndex = path.resolve(process.cwd(), "index.html");
+    if (fs.existsSync(rootIndex)) return fs.readFileSync(rootIndex, "utf-8");
+    return "";
+  };
+
+  const serveDynamicOgPage = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.path.startsWith("/api/")) return next();
+
+    const view = req.query.view;
+    const articleId = (req.query.id || req.query.articleId || (req.path.startsWith("/articles/") ? req.path.split("/")[2] : "")) as string;
+    const isSocialCrawler = /facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Pinterest|Slackbot|TelegramBot|WhatsApp|Googlebot/i.test(req.get("user-agent") || "");
+
+    const shouldHandle = (view === "articles" && articleId) || (articleId && articleId.startsWith("art-")) || req.path.startsWith("/articles/") || (articleId && isSocialCrawler);
+
+    if (!shouldHandle) {
+      return next();
+    }
+
+    try {
+      let html = getTemplateHtml();
+      if (!html) return next();
+
+      const article = await fetchArticleData(articleId);
+      if (article) {
+        console.log(`[Dynamic OG] Serving customized Open Graph card for article: "${article.title}" (${articleId})`);
+
+        const host = req.get("host") || "wisefit.fun";
+        const protocol = req.secure || req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+        const absoluteBase = `${protocol}://${host}`;
+
+        const titleEscaped = article.title.replace(/"/g, "&quot;");
+        const descriptionEscaped = article.excerpt.replace(/"/g, "&quot;");
+        const urlEscaped = `${absoluteBase}/?view=articles&id=${articleId}`.replace(/"/g, "&quot;");
+        const ogImageUrl = `${absoluteBase}/api/articles/${articleId}/og-image`;
+
+        let videoUrl = article.videoUrl || "";
+        if (videoUrl && !videoUrl.startsWith("http://") && !videoUrl.startsWith("https://")) {
+          videoUrl = `${absoluteBase}${videoUrl.startsWith("/") ? "" : "/"}${videoUrl}`;
+        }
+
+        // Replace title tag
+        html = html.replace(/<title>[\s\S]*?<\/title>/gi, `<title>${titleEscaped} - WiseFit</title>`);
+
+        // Clean out default static tags
+        html = html.replace(/<meta name="description" content="[^"]*" \/>/gi, "");
+        html = html.replace(/<meta property="og:[^"]*" content="[^"]*" \/>/gi, "");
+        html = html.replace(/<meta property="twitter:[^"]*" content="[^"]*" \/>/gi, "");
+        html = html.replace(/<meta name="twitter:[^"]*" content="[^"]*" \/>/gi, "");
+
+        let newMeta = `
+          <meta name="description" content="${descriptionEscaped}" />
+          <meta property="og:site_name" content="WiseFit Sanctuary" />
+          <meta property="og:type" content="article" />
+          <meta property="og:title" content="${titleEscaped}" />
+          <meta property="og:description" content="${descriptionEscaped}" />
+          <meta property="og:url" content="${urlEscaped}" />
+          <meta property="og:image" content="${ogImageUrl}" />
+          <meta property="og:image:secure_url" content="${ogImageUrl}" />
+          <meta property="og:image:type" content="image/png" />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:image:alt" content="${titleEscaped}" />
+        `;
+
+        if (videoUrl) {
+          const videoEscaped = videoUrl.replace(/"/g, "&quot;");
+          newMeta += `
+          <meta property="og:video" content="${videoEscaped}" />
+          <meta property="og:video:secure_url" content="${videoEscaped}" />
+          <meta property="og:video:type" content="video/mp4" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="${titleEscaped}" />
+          <meta name="twitter:description" content="${descriptionEscaped}" />
+          <meta name="twitter:image" content="${ogImageUrl}" />
+          `;
+        } else {
+          newMeta += `
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="${titleEscaped}" />
+          <meta name="twitter:description" content="${descriptionEscaped}" />
+          <meta name="twitter:image" content="${ogImageUrl}" />
+          `;
+        }
+
+        html = html.replace(/<head>/i, `<head>${newMeta}`);
+        return res.send(html);
+      }
+    } catch (err: any) {
+      console.error("[Dynamic OG Serving Error]", err.message);
+    }
+
+    return next();
+  };
+
+  // Intercept article shares for both production & development crawlers
+  app.use(serveDynamicOgPage);
+
+  // --- STATIC SERVING ---
+  if (isProd) {
+    console.log(`[WiseFit] Production Mode: Serving static files from ${distPath}`);
+    app.use(express.static(distPath, { index: false }));
+    
+    app.get("*", (req, res) => {
+      const indexPath = path.join(distPath, "index.html");
       res.sendFile(indexPath, (err) => {
         if (err) {
           console.error(`[SPA Error] Failed to send index.html: ${err.message}`);

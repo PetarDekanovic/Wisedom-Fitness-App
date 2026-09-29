@@ -3060,6 +3060,207 @@ function AppContent() {
     }
   };
 
+  const autoExtractExcerptFromContent = () => {
+    if (!articleContent.trim()) {
+      alert("Please write or paste article content first to extract an excerpt.");
+      return;
+    }
+    const rawLines = articleContent.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const normTitle = (articleTitle || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    let found = '';
+    
+    for (const line of rawLines) {
+      if (/^(here is|here's|---|\*\*\*|###?|trilingual|full trilingual|format:)/i.test(line)) continue;
+      const cleaned = line
+        .replace(/[#*`_~]/g, '')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/\s+/g, ' ')
+        .trim();
+        
+      const normLine = cleaned.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (normLine.length > 10 && normTitle.includes(normLine.substring(0, Math.min(normLine.length, 30)))) {
+        continue;
+      }
+      if (cleaned.length > 25) {
+        found = cleaned;
+        break;
+      }
+    }
+    
+    if (!found && rawLines.length > 0) {
+      found = rawLines[0].replace(/[#*`_~]/g, '').trim();
+    }
+    if (found.length > 210) {
+      found = found.substring(0, 207).trim() + '...';
+    }
+    
+    if (found) {
+      setArticleExcerpt(found);
+    } else {
+      alert("Could not automatically identify a distinct excerpt. You can type one manually.");
+    }
+  };
+
+  const stampTitleAndExcerptToThumbnail = async () => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 630;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Base sanctuary gradient background
+      const grad = ctx.createLinearGradient(0, 0, 1200, 630);
+      grad.addColorStop(0, '#080b0f');
+      grad.addColorStop(0.5, '#0e141c');
+      grad.addColorStop(1, '#05070a');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1200, 630);
+
+      // If an existing background image / video frame exists, draw it with overlay
+      if (articleThumbnailUrl) {
+        try {
+          const img = new (window as any).Image();
+          img.crossOrigin = 'anonymous';
+          img.src = articleThumbnailUrl;
+          await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            setTimeout(resolve, 2000);
+          });
+          if (img.width > 0) {
+            ctx.globalAlpha = 0.32;
+            ctx.drawImage(img, 0, 0, 1200, 630);
+            ctx.globalAlpha = 1.0;
+
+            const overlay = ctx.createLinearGradient(0, 0, 0, 630);
+            overlay.addColorStop(0, 'rgba(8, 11, 15, 0.82)');
+            overlay.addColorStop(0.6, 'rgba(8, 11, 15, 0.94)');
+            overlay.addColorStop(1, 'rgba(5, 7, 10, 0.98)');
+            ctx.fillStyle = overlay;
+            ctx.fillRect(0, 0, 1200, 630);
+          }
+        } catch {
+          // Continue with gradient background
+        }
+      }
+
+      // Outer Card Frame
+      ctx.strokeStyle = '#27272a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(24, 24, 1152, 582);
+
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(24, 24, 1152, 582);
+
+      // Top Header Badges
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.14)';
+      ctx.beginPath();
+      ctx.roundRect(72, 64, 220, 42, 21);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#34d399';
+      ctx.beginPath();
+      ctx.arc(96, 85, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillText('WISEFIT SANCTUARY', 110, 90);
+
+      // Secondary badge
+      ctx.fillStyle = 'rgba(39, 39, 42, 0.6)';
+      ctx.beginPath();
+      ctx.roundRect(304, 64, 210, 42, 21);
+      ctx.fill();
+      ctx.strokeStyle = '#3f3f46';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#a1a1aa';
+      ctx.font = '600 12px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillText('INTELLECTUAL COMMONS', 324, 89);
+
+      // Page Title (Cleanly Wrapped)
+      const displayTitle = articleTitle.trim() || 'WiseFit Sanctuary Reflection';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 48px -apple-system, BlinkMacSystemFont, sans-serif';
+
+      const titleWords = displayTitle.split(/\s+/);
+      let curTitleLine = '';
+      let titleY = 195;
+      let titleLineCount = 0;
+      for (const w of titleWords) {
+        if (titleLineCount >= 3) break;
+        const test = curTitleLine + (curTitleLine ? ' ' : '') + w;
+        if (ctx.measureText(test).width > 1050) {
+          ctx.fillText(curTitleLine, 72, titleY);
+          curTitleLine = w;
+          titleY += 58;
+          titleLineCount++;
+        } else {
+          curTitleLine = test;
+        }
+      }
+      if (curTitleLine && titleLineCount < 3) {
+        ctx.fillText(curTitleLine, 72, titleY);
+        titleY += 58;
+      }
+
+      // Emerald Divider
+      const divGrad = ctx.createLinearGradient(72, 0, 220, 0);
+      divGrad.addColorStop(0, '#10b981');
+      divGrad.addColorStop(1, '#059669');
+      ctx.fillStyle = divGrad;
+      ctx.fillRect(72, titleY - 12, 140, 4);
+
+      // Quick Description / Excerpt
+      const displayExcerpt = articleExcerpt.trim() || 'Explore philosophical reflections, biometric synchronization, and elite discipline on WiseFit.';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '400 25px -apple-system, BlinkMacSystemFont, sans-serif';
+
+      const descWords = displayExcerpt.split(/\s+/);
+      let curDescLine = '';
+      let descY = titleY + 34;
+      let descLineCount = 0;
+      for (const w of descWords) {
+        if (descLineCount >= 3) break;
+        const test = curDescLine + (curDescLine ? ' ' : '') + w;
+        if (ctx.measureText(test).width > 1050) {
+          ctx.fillText(curDescLine, 72, descY);
+          curDescLine = w;
+          descY += 36;
+          descLineCount++;
+        } else {
+          curDescLine = test;
+        }
+      }
+      if (curDescLine && descLineCount < 3) {
+        ctx.fillText(curDescLine, 72, descY);
+      }
+
+      // Footer
+      ctx.fillStyle = '#71717a';
+      ctx.font = '600 16px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillText('wisefit.fun • Read Full Reflection', 72, 566);
+
+      const base64 = canvas.toDataURL('image/jpeg', 0.92);
+      try {
+        const downloadUrl = await uploadBase64ToStorage(base64, `fb_thumbnail_${Date.now()}.jpg`, 'thumbnails');
+        setArticleThumbnailUrl(downloadUrl);
+      } catch {
+        setArticleThumbnailUrl(base64);
+      }
+    } catch (err: any) {
+      console.error("Failed to generate stamped thumbnail:", err);
+      alert("Notice: Could not stamp canvas thumbnail: " + err.message);
+    }
+  };
+
   const deleteArticle = async (id: string) => {
     if (!user) return;
     if (!confirm("Are you sure you want to delete this article?")) return;
@@ -11871,14 +12072,27 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                     </div>
                   </div>
 
-                  {/* Custom Excerpt / Description for Facebook Feed */}
+                  {/* Custom Excerpt / Description for Facebook Feed & Social Share Cards */}
                   <div>
-                    <label className={cn(
-                      "text-xs font-bold uppercase mb-1 block transition-colors",
-                      isDarkMode ? "text-zinc-500" : "text-zinc-400"
-                    )}>
-                      Facebook Feed Description / Excerpt (Optional)
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className={cn(
+                        "text-xs font-bold uppercase transition-colors flex items-center gap-1.5",
+                        isDarkMode ? "text-zinc-400" : "text-zinc-500"
+                      )}>
+                        <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
+                        <span>Facebook Feed Description / Excerpt (Auto or Custom)</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={autoExtractExcerptFromContent}
+                        className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                        title="Extract the best introductory paragraph from your article content"
+                      >
+                        <Sparkles className="w-3 h-3 text-emerald-400" />
+                        <span>Auto-Extract from Content</span>
+                      </button>
+                    </div>
+
                     <textarea 
                       value={articleExcerpt}
                       onChange={(e) => setArticleExcerpt(e.target.value)}
@@ -11888,6 +12102,95 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                         isDarkMode ? "bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600" : "bg-zinc-50 border-zinc-200 text-zinc-900"
                       )}
                     />
+
+                    {/* Stamping Tool Action */}
+                    <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={stampTitleAndExcerptToThumbnail}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Stamp Title &amp; Excerpt onto Thumbnail Image</span>
+                      </button>
+                      <span className="text-[11px] text-zinc-500">
+                        {articleExcerpt.length} / 210 chars recommended
+                      </span>
+                    </div>
+
+                    {/* Live Facebook Share Thumbnail Preview */}
+                    <div className="mt-3 p-3 rounded-2xl border border-zinc-700/40 bg-zinc-900/60 overflow-hidden">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400">
+                          <Facebook className="w-3.5 h-3.5 text-[#1877F2]" />
+                          <span>Facebook Link Preview (Dynamic 1200 × 630 Thumbnail)</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-mono font-semibold">
+                          Live OG Card
+                        </span>
+                      </div>
+
+                      {/* Mockup Facebook Link Card */}
+                      <div className="rounded-xl overflow-hidden border border-zinc-700/60 bg-[#080b0f] shadow-lg">
+                        {/* 1.91:1 Card Banner */}
+                        <div className="relative aspect-[1200/630] w-full p-4 flex flex-col justify-between overflow-hidden">
+                          {/* Optional Background image with dark overlay */}
+                          {articleThumbnailUrl ? (
+                            <>
+                              <img 
+                                src={articleThumbnailUrl} 
+                                alt="Card Background" 
+                                className="absolute inset-0 w-full h-full object-cover opacity-30" 
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-b from-[#080b0f]/80 via-[#080b0f]/95 to-[#05070a]" />
+                            </>
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-[#080b0f] via-[#0e141c] to-[#05070a]" />
+                          )}
+
+                          {/* Top Badges */}
+                          <div className="relative z-10 flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/40 text-emerald-400">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              WISEFIT SANCTUARY
+                            </span>
+                            <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-semibold bg-zinc-800/70 border border-zinc-700 text-zinc-400">
+                              INTELLECTUAL COMMONS
+                            </span>
+                          </div>
+
+                          {/* Title & Divider & Quick Description */}
+                          <div className="relative z-10 my-auto py-1">
+                            <h4 className="text-white font-extrabold text-sm sm:text-base leading-snug line-clamp-2">
+                              {articleTitle.trim() || 'WiseFit Sanctuary Reflection'}
+                            </h4>
+                            <div className="w-12 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-700 rounded-full my-1.5" />
+                            <p className="text-zinc-300 text-[11px] sm:text-xs leading-relaxed line-clamp-2">
+                              {articleExcerpt.trim() || 'A quick description summarizing what this article is about will appear here for Facebook users.'}
+                            </p>
+                          </div>
+
+                          {/* Footer */}
+                          <div className="relative z-10 flex items-center justify-between text-[9px] text-zinc-500 pt-1 border-t border-zinc-800/40">
+                            <span>wisefit.fun • Read Full Reflection</span>
+                            <span className="text-emerald-500 font-semibold">PHILOSOPHY &amp; BIOMETRICS</span>
+                          </div>
+                        </div>
+
+                        {/* Facebook Feed Link Summary Footer */}
+                        <div className="p-2.5 bg-zinc-900 border-t border-zinc-800/80">
+                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
+                            WISEFIT.FUN
+                          </span>
+                          <span className="text-xs font-bold text-zinc-200 line-clamp-1 block mt-0.5">
+                            {articleTitle.trim() || 'WiseFit Sanctuary Reflection'}
+                          </span>
+                          <span className="text-[11px] text-zinc-400 line-clamp-1 block">
+                            {articleExcerpt.trim() || 'Explore philosophical reflections, biometric synchronization, and elite discipline.'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex-1">
