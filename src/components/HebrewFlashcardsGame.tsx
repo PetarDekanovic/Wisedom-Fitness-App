@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Volume2, 
@@ -22,7 +22,12 @@ import {
   BookOpen,
   VolumeX,
   Eye,
-  HelpCircle
+  HelpCircle,
+  Play,
+  Pause,
+  Clock,
+  Sliders,
+  FastForward
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { HebrewVocabItem } from '../data/hebrewVocabData';
@@ -38,6 +43,8 @@ export interface HebrewFlashcardsGameProps {
   isGirlyMode: boolean;
   onSwitchToQuiz?: () => void;
 }
+
+export type PacingMode = 'manual' | 'relaxed' | 'normal';
 
 type GameMode = 'cards' | 'match' | 'speed';
 
@@ -99,6 +106,20 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [speedScore, setSpeedScore] = useState(0);
   const [speedComplete, setSpeedComplete] = useState(false);
+
+  // --- GAME PACING CONTROLS (MAKE WORDS SERENE & PLAYABLE) ---
+  // 'manual': Never auto-advances, waits for player to click Next Word
+  // 'relaxed': 3.8s countdown before advancing with Pause & Skip buttons
+  // 'normal': 2.5s countdown before advancing
+  const [pacingMode, setPacingMode] = useState<PacingMode>('manual');
+  const [speedCountdownRemaining, setSpeedCountdownRemaining] = useState<number | null>(null);
+  const [isSlideshowActive, setIsSlideshowActive] = useState(false);
+
+  // Timer references for robust cleanup
+  const speedTimerRef = useRef<any>(null);
+  const speedCountdownIntervalRef = useRef<any>(null);
+  const mismatchTimeoutRef = useRef<any>(null);
+  const slideshowTimerRef = useRef<any>(null);
 
   // Filter vocabulary pool based on category and mastery
   const filteredPool = useMemo(() => {
@@ -226,36 +247,143 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     }
   };
 
+  // Timer and Slideshow Cleanup
+  const clearAllTimers = useCallback(() => {
+    if (speedTimerRef.current) {
+      clearTimeout(speedTimerRef.current);
+      speedTimerRef.current = null;
+    }
+    if (speedCountdownIntervalRef.current) {
+      clearInterval(speedCountdownIntervalRef.current);
+      speedCountdownIntervalRef.current = null;
+    }
+    if (mismatchTimeoutRef.current) {
+      clearTimeout(mismatchTimeoutRef.current);
+      mismatchTimeoutRef.current = null;
+    }
+    if (slideshowTimerRef.current) {
+      clearTimeout(slideshowTimerRef.current);
+      slideshowTimerRef.current = null;
+    }
+    setSpeedCountdownRemaining(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearAllTimers();
+    };
+  }, [clearAllTimers]);
+
+  // Advance to next speed challenge question (manual or auto)
+  const advanceToNextSpeedQuestion = useCallback(() => {
+    clearAllTimers();
+
+    if (speedQuestionIdx + 1 < speedQuestions.length) {
+      const nextIdx = speedQuestionIdx + 1;
+      setSpeedQuestionIdx(nextIdx);
+      setSelectedAnswer(null);
+      if (autoSpeak && speedQuestions[nextIdx]) {
+        setTimeout(() => {
+          speakHebrew(speedQuestions[nextIdx].vocab.char, `speed-${speedQuestions[nextIdx].vocab.id}`);
+        }, 300);
+      }
+    } else {
+      setSpeedComplete(true);
+    }
+  }, [clearAllTimers, speedQuestionIdx, speedQuestions, autoSpeak, speakHebrew]);
+
+  // Pause speed countdown so player can study word in calm stillness
+  const pauseSpeedTimer = () => {
+    clearAllTimers();
+    setPacingMode('manual');
+  };
+
+  // 3D Deck Auto-Slideshow (Serene Hands-Free Learning)
+  const toggleSlideshow = () => {
+    if (isSlideshowActive) {
+      if (slideshowTimerRef.current) {
+        clearTimeout(slideshowTimerRef.current);
+        slideshowTimerRef.current = null;
+      }
+      setIsSlideshowActive(false);
+    } else {
+      setIsSlideshowActive(true);
+    }
+  };
+
+  useEffect(() => {
+    if (gameMode !== 'cards' || !isSlideshowActive || isDeckFinished) {
+      if (slideshowTimerRef.current) {
+        clearTimeout(slideshowTimerRef.current);
+        slideshowTimerRef.current = null;
+      }
+      return;
+    }
+
+    // Relaxed slideshow pacing: 4s on Hebrew face, flip to back for 4.5s, then advance
+    const flipTimer = setTimeout(() => {
+      setIsFlipped(prev => !prev);
+
+      const advanceTimer = setTimeout(() => {
+        advanceToNextCard();
+      }, 4500);
+
+      slideshowTimerRef.current = advanceTimer;
+    }, 4000);
+
+    slideshowTimerRef.current = flipTimer;
+
+    return () => {
+      if (flipTimer) clearTimeout(flipTimer);
+      if (slideshowTimerRef.current) clearTimeout(slideshowTimerRef.current);
+    };
+  }, [gameMode, isSlideshowActive, currentIndex, isDeckFinished]);
+
   // Keyboard navigation for power users
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameMode !== 'cards') return;
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
 
-      if (e.code === 'Space' || e.code === 'Enter') {
-        e.preventDefault();
-        handleFlipCard();
-      } else if (e.code === 'ArrowRight') {
-        e.preventDefault();
-        advanceToNextCard();
-      } else if (e.code === 'ArrowLeft') {
-        e.preventDefault();
-        handlePrevCard();
-      } else if (e.key === '1') {
-        e.preventDefault();
-        handleNeedReview();
-      } else if (e.key === '2') {
-        e.preventDefault();
-        handleMarkMastered();
+      if (gameMode === 'cards') {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          e.preventDefault();
+          handleFlipCard();
+        } else if (e.code === 'ArrowRight') {
+          e.preventDefault();
+          advanceToNextCard();
+        } else if (e.code === 'ArrowLeft') {
+          e.preventDefault();
+          handlePrevCard();
+        } else if (e.key === '1') {
+          e.preventDefault();
+          handleNeedReview();
+        } else if (e.key === '2') {
+          e.preventDefault();
+          handleMarkMastered();
+        }
+      } else if (gameMode === 'speed') {
+        if (selectedAnswer !== null) {
+          if (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight') {
+            e.preventDefault();
+            advanceToNextSpeedQuestion();
+          }
+        } else if (speedQuestions[speedQuestionIdx]) {
+          const opts = speedQuestions[speedQuestionIdx].options;
+          if (e.key === '1' && opts[0]) handleSpeedAnswer(opts[0]);
+          else if (e.key === '2' && opts[1]) handleSpeedAnswer(opts[1]);
+          else if (e.key === '3' && opts[2]) handleSpeedAnswer(opts[2]);
+          else if (e.key === '4' && opts[3]) handleSpeedAnswer(opts[3]);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameMode, isFlipped, currentIndex, deck]);
+  }, [gameMode, isFlipped, currentIndex, deck, selectedAnswer, speedQuestions, speedQuestionIdx, advanceToNextSpeedQuestion]);
 
   // --- MEMORY MATCH GAME LOGIC ---
   const initMatchGame = useCallback(() => {
+    clearAllTimers();
     const pool = [...filteredPool].sort(() => Math.random() - 0.5);
     const selectedVocabs = pool.slice(0, matchGridSize);
 
@@ -296,7 +424,7 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     setMatchTimer(0);
     setIsMatchTimerRunning(true);
     setMatchGameFinished(false);
-  }, [filteredPool, matchGridSize]);
+  }, [filteredPool, matchGridSize, clearAllTimers]);
 
   // Match Game Timer
   useEffect(() => {
@@ -310,6 +438,14 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
   }, [isMatchTimerRunning, matchGameFinished]);
 
   const handleMatchCardClick = (index: number) => {
+    // If a mismatch is currently shown and player clicks any card, immediately clear previous mismatch and proceed!
+    if (mismatchTimeoutRef.current) {
+      clearTimeout(mismatchTimeoutRef.current);
+      mismatchTimeoutRef.current = null;
+      setMatchCards(prev => prev.map(c => !c.isMatched ? { ...c, isFlipped: false } : c));
+      setSelectedMatchIndices([]);
+    }
+
     if (selectedMatchIndices.length >= 2) return;
     if (matchCards[index].isFlipped || matchCards[index].isMatched) return;
 
@@ -333,7 +469,7 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
 
       // Check if match
       if (card1.vocabId === card2.vocabId && card1.type !== card2.type) {
-        // MATCH!
+        // MATCH! Give 600ms to celebrate and hear audio
         setTimeout(() => {
           setMatchCards(prev => prev.map((c, i) => 
             i === firstIdx || i === secondIdx 
@@ -350,23 +486,25 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
             return nextCount;
           });
           speakHebrew(card1.vocab.char, `matched-success-${card1.vocab.id}`);
-        }, 400);
+        }, 600);
       } else {
-        // NO MATCH -> Flip back
-        setTimeout(() => {
+        // NO MATCH -> Give generous 2200ms to calmly read both cards before flipping back
+        mismatchTimeoutRef.current = setTimeout(() => {
           setMatchCards(prev => prev.map((c, i) => 
             i === firstIdx || i === secondIdx 
               ? { ...c, isFlipped: false }
               : c
           ));
           setSelectedMatchIndices([]);
-        }, 900);
+          mismatchTimeoutRef.current = null;
+        }, 2200);
       }
     }
   };
 
   // --- MODE 3: SPEED CHALLENGE LOGIC ---
   const initSpeedChallenge = useCallback(() => {
+    clearAllTimers();
     const shuffled = [...filteredPool].sort(() => Math.random() - 0.5);
     const questionsList = shuffled.slice(0, 10).map(v => {
       const distractors = filteredPool
@@ -393,12 +531,13 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     if (questionsList.length > 0 && autoSpeak) {
       setTimeout(() => {
         speakHebrew(questionsList[0].vocab.char, `speed-${questionsList[0].vocab.id}`);
-      }, 300);
+      }, 350);
     }
-  }, [filteredPool, autoSpeak, speakHebrew]);
+  }, [filteredPool, autoSpeak, speakHebrew, clearAllTimers]);
 
   const handleSpeedAnswer = (option: string) => {
     if (selectedAnswer !== null) return;
+    clearAllTimers();
     setSelectedAnswer(option);
 
     const currentQ = speedQuestions[speedQuestionIdx];
@@ -410,24 +549,40 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
       if (!masteredIds.includes(currentQ.vocab.id)) {
         toggleMastered(currentQ.vocab.id);
       }
+    } else {
+      // Speak term so player hears pronunciation
+      speakHebrew(currentQ.vocab.char, `speed-wrong-${currentQ.vocab.id}`);
     }
 
-    setTimeout(() => {
-      if (speedQuestionIdx + 1 < speedQuestions.length) {
-        const nextIdx = speedQuestionIdx + 1;
-        setSpeedQuestionIdx(nextIdx);
-        setSelectedAnswer(null);
-        if (autoSpeak) {
-          speakHebrew(speedQuestions[nextIdx].vocab.char, `speed-${speedQuestions[nextIdx].vocab.id}`);
-        }
-      } else {
-        setSpeedComplete(true);
+    // PACING CONTROL: If 'manual', NEVER auto-advance! The user reads at their own pace and clicks "Sledeća Reč →"
+    if (pacingMode === 'manual') {
+      return;
+    }
+
+    // Relaxed: 3800ms | Normal: 2500ms
+    const delayMs = pacingMode === 'relaxed' ? 3800 : 2500;
+    setSpeedCountdownRemaining(Math.ceil(delayMs / 1000));
+
+    const startTime = Date.now();
+    speedCountdownIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, Math.ceil((delayMs - elapsed) / 1000));
+      setSpeedCountdownRemaining(remaining);
+    }, 200);
+
+    speedTimerRef.current = setTimeout(() => {
+      if (speedCountdownIntervalRef.current) {
+        clearInterval(speedCountdownIntervalRef.current);
+        speedCountdownIntervalRef.current = null;
       }
-    }, 1100);
+      advanceToNextSpeedQuestion();
+    }, delayMs);
   };
 
   // Switch between game modes
   const handleModeChange = (mode: GameMode) => {
+    clearAllTimers();
+    setIsSlideshowActive(false);
     setGameMode(mode);
     if (mode === 'cards') initDeck();
     else if (mode === 'match') initMatchGame();
@@ -481,12 +636,60 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
             )}
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>Brzi Izazov (Kviz)</span>
+            <span>Izazov Znanja (Kviz)</span>
           </button>
         </div>
 
-        {/* Global Game Status Badges */}
-        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+        {/* Global Game Status & Tempo Badges */}
+        <div className="flex items-center gap-2.5 flex-wrap w-full md:w-auto justify-end">
+          {/* Pacing / Speed Controls */}
+          <div className={cn(
+            "flex items-center gap-1 px-2 py-1 rounded-2xl border text-xs shadow-inner",
+            isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-zinc-100 border-zinc-200"
+          )}>
+            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="text-[10px] font-bold text-zinc-400 hidden sm:inline mr-0.5">Tempo:</span>
+            <button
+              type="button"
+              onClick={() => { setPacingMode('manual'); clearAllTimers(); }}
+              className={cn(
+                "px-2.5 py-1 rounded-xl font-bold text-[11px] transition-all",
+                pacingMode === 'manual'
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              )}
+              title="Ručni tempo: Reči čekaju vaš klik pre prelaska na sledeću"
+            >
+              ✋ Ručno
+            </button>
+            <button
+              type="button"
+              onClick={() => { setPacingMode('relaxed'); clearAllTimers(); }}
+              className={cn(
+                "px-2.5 py-1 rounded-xl font-bold text-[11px] transition-all",
+                pacingMode === 'relaxed'
+                  ? "bg-amber-600 text-white shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              )}
+              title="Opušteno: 3.8 sekunde pauza uz mogućnost pauze"
+            >
+              🐢 3.8s
+            </button>
+            <button
+              type="button"
+              onClick={() => { setPacingMode('normal'); clearAllTimers(); }}
+              className={cn(
+                "px-2.5 py-1 rounded-xl font-bold text-[11px] transition-all",
+                pacingMode === 'normal'
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
+              )}
+              title="Normalno: 2.5 sekunde"
+            >
+              ⚡ 2.5s
+            </button>
+          </div>
+
           <div className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold",
             streak > 0 
@@ -547,6 +750,20 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
         {/* Deck Filters */}
         {gameMode === 'cards' && (
           <div className="flex items-center gap-2">
+            <button
+              onClick={toggleSlideshow}
+              className={cn(
+                "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5",
+                isSlideshowActive
+                  ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-sm shadow-amber-500/20"
+                  : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700" : "bg-white border-zinc-200 text-zinc-700"
+              )}
+              title={isSlideshowActive ? "Pauziraj automatsko listanje" : "Pokreni mirno automatsko listanje špila"}
+            >
+              {isSlideshowActive ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+              <span>{isSlideshowActive ? 'Pauziraj' : 'Auto-Listanje'}</span>
+            </button>
+
             <button
               onClick={() => setFlipDirection(prev => prev === 'hebrew-first' ? 'meaning-first' : 'hebrew-first')}
               className={cn(
@@ -1063,6 +1280,125 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                   );
                 })}
               </div>
+
+              {/* POST-ANSWER INSIGHT & CALM PACING CONTROLS */}
+              {selectedAnswer !== null && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    "p-5 rounded-3xl border text-left space-y-4 shadow-xl transition-all",
+                    selectedAnswer === speedQuestions[speedQuestionIdx].correctAnswer
+                      ? isDarkMode ? "bg-emerald-950/40 border-emerald-500/50" : "bg-emerald-50 border-emerald-300"
+                      : isDarkMode ? "bg-rose-950/40 border-rose-500/50" : "bg-rose-50 border-rose-300"
+                  )}
+                >
+                  {/* Status Headline */}
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      {selectedAnswer === speedQuestions[speedQuestionIdx].correctAnswer ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                          <span className="font-black text-emerald-400 text-sm">
+                            Tačno! Odlično poznavanje reči! ⭐
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                          <div>
+                            <span className="font-black text-rose-400 text-sm block">Netačno</span>
+                            <span className="text-xs text-zinc-300">
+                              Tačan odgovor: <strong className="text-emerald-400 underline">{speedQuestions[speedQuestionIdx].correctAnswer}</strong>
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => speakHebrew(speedQuestions[speedQuestionIdx].vocab.char, `speed-repeat-${speedQuestionIdx}`)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-all flex items-center gap-1.5"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" />
+                      <span>Ponovi Zvuk</span>
+                    </button>
+                  </div>
+
+                  {/* Word Breakdown & Linguistic Details */}
+                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-4xl font-sans font-black text-white" dir="rtl">
+                          {speedQuestions[speedQuestionIdx].vocab.char}
+                        </span>
+                        <div>
+                          <p className="text-xs font-mono font-bold text-emerald-400">
+                            Vuk: /{speedQuestions[speedQuestionIdx].vocab.vuk}/ ({speedQuestions[speedQuestionIdx].vocab.transliteration})
+                          </p>
+                          <p className="text-xs font-semibold text-zinc-200">
+                            {speedQuestions[speedQuestionIdx].vocab.translation} — <span className="text-zinc-400">{speedQuestions[speedQuestionIdx].vocab.english}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-3xl">{speedQuestions[speedQuestionIdx].vocab.emoji}</span>
+                    </div>
+
+                    {speedQuestions[speedQuestionIdx].vocab.root && (
+                      <div className="text-[11px] font-mono text-zinc-400 flex items-center gap-2">
+                        <span className="text-amber-400 font-bold">Koren (Shoresh):</span>
+                        <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-200">{speedQuestions[speedQuestionIdx].vocab.root}</span>
+                      </div>
+                    )}
+
+                    {speedQuestions[speedQuestionIdx].vocab.visualTip && (
+                      <div className="text-[11px] text-zinc-300 flex items-start gap-1.5 pt-1.5 border-t border-white/5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                        <span>{speedQuestions[speedQuestionIdx].vocab.visualTip}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pacing Info & Action Bar */}
+                  <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
+                    {pacingMode !== 'manual' && speedCountdownRemaining !== null ? (
+                      <div className="flex items-center gap-2.5 text-xs">
+                        <div className="flex items-center gap-1.5 text-amber-400 font-mono font-bold">
+                          <Timer className="w-4 h-4 animate-spin text-amber-400" />
+                          <span>Sledeća reč za {speedCountdownRemaining}s...</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={pauseSpeedTimer}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-all flex items-center gap-1.5 border border-zinc-700 shadow-sm"
+                        >
+                          <Pause className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Pauziraj (Prouči na miru)</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
+                        ✋ Proučite reč u svom ritmu bez žurbe
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={advanceToNextSpeedQuestion}
+                      className={cn(
+                        "px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all active:scale-95 shadow-lg",
+                        isGirlyMode 
+                          ? "bg-pink-600 hover:bg-pink-500 text-white shadow-pink-600/30" 
+                          : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30"
+                      )}
+                    >
+                      <span>Sledeća Reč</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
             </div>
           )}
 
