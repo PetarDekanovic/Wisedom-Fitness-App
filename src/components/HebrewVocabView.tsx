@@ -34,6 +34,7 @@ import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { HEBREW_VOCAB_EXPANDED, HebrewVocabItem, getHebrewQuoteForItem } from '../data/hebrewVocabData';
+import { HebrewFlashcardsGame } from './HebrewFlashcardsGame';
 
 export type { HebrewVocabItem };
 
@@ -422,8 +423,8 @@ export interface HebrewVocabViewProps {
 }
 
 export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
-  // Navigation: Dictionary, Emoji Canvas, AI Weaver, Quiz or Alphabet
-  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz' | 'alphabet'>('learn');
+  // Navigation: Dictionary, Emoji Canvas, AI Weaver, Quiz, Flashcards or Alphabet
+  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz' | 'flashcards' | 'alphabet'>('learn');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -852,8 +853,8 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     });
   }, [selectedCategory, searchQuery]);
 
-  const toggleMastered = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleMastered = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     let updated: string[];
     if (masteredIds.includes(id)) {
       updated = masteredIds.filter(mid => mid !== id);
@@ -1126,6 +1127,17 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
               <Gamepad2 className="w-3.5 h-3.5" /> Duo Kviz
             </button>
             <button
+              onClick={() => setActiveTab('flashcards')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
+                activeTab === 'flashcards'
+                  ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> Flashcards Igra 🎴
+            </button>
+            <button
               onClick={() => setActiveTab('alphabet')}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
@@ -1167,8 +1179,19 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   <p className="text-xs text-zinc-400">{getRankInfo(masteredIds.length).desc}</p>
                 </div>
               </div>
-              <div className="text-right font-mono text-xs font-bold text-blue-500">
-                Savladano {Math.round((masteredIds.length / HEBREW_VOCAB_DATA.length) * 100)}% rečnika
+              <div className="flex items-center gap-3">
+                <div className="text-right font-mono text-xs font-bold text-blue-500">
+                  Savladano {Math.round((masteredIds.length / HEBREW_VOCAB_DATA.length) * 100)}% rečnika
+                </div>
+                <button
+                  onClick={() => setActiveTab('flashcards')}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md transition-all active:scale-95 text-white",
+                    isGirlyMode ? "bg-pink-500 hover:bg-pink-400" : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20"
+                  )}
+                >
+                  <Layers className="w-3.5 h-3.5" /> Flashcards Igra 🎴
+                </button>
               </div>
             </div>
 
@@ -2289,6 +2312,28 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                 </div>
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* VISUAL FLASHCARDS GAME VIEW */}
+        {activeTab === 'flashcards' && (
+          <motion.div
+            key="flashcards-view"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="space-y-6"
+          >
+            <HebrewFlashcardsGame
+              vocabList={HEBREW_VOCAB_DATA}
+              masteredIds={masteredIds}
+              toggleMastered={toggleMastered}
+              speakHebrew={speakHebrew}
+              isPronouncing={isPronouncing}
+              isDarkMode={isDarkMode}
+              isGirlyMode={isGirlyMode}
+              onSwitchToQuiz={() => { setActiveTab('quiz'); generateQuizRound(); }}
+            />
           </motion.div>
         )}
 
