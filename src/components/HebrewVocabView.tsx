@@ -699,7 +699,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     }
   }, []);
 
-  const speakHebrewAudioFallback = (text: string, id?: string) => {
+  const speakHebrewAudioFallback = React.useCallback((text: string, id?: string) => {
     if (id) setIsPronouncing(id);
     const proxyUrl = `/api/tts-proxy?text=${encodeURIComponent(text)}&lang=he`;
     const fallbackDirectUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=he&client=tw-ob&q=${encodeURIComponent(text)}`;
@@ -732,9 +732,9 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     });
 
     setTimeout(cleanup, 3000);
-  };
+  }, []);
 
-  const speakHebrew = (text: string, id?: string) => {
+  const speakHebrew = React.useCallback((text: string, id?: string) => {
     if (id) setIsPronouncing(id);
     if (!('speechSynthesis' in window)) {
       speakHebrewAudioFallback(text, id);
@@ -791,7 +791,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       console.warn("SpeechSynthesis failed:", err);
       speakHebrewAudioFallback(text, id);
     }
-  };
+  }, [speakHebrewAudioFallback]);
 
   useEffect(() => {
     const loadProgress = async () => {

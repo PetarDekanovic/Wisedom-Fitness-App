@@ -27,7 +27,9 @@ import {
   Pause,
   Clock,
   Sliders,
-  FastForward
+  FastForward,
+  Minus,
+  Plus
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { HebrewVocabItem } from '../data/hebrewVocabData';
@@ -45,6 +47,7 @@ export interface HebrewFlashcardsGameProps {
 }
 
 export type PacingMode = 'manual' | 'relaxed' | 'normal';
+export type LoopSpeed = 'zen' | 'ultra-slow' | 'slow' | 'moderate';
 
 type GameMode = 'cards' | 'match' | 'speed';
 
@@ -107,13 +110,55 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
   const [speedScore, setSpeedScore] = useState(0);
   const [speedComplete, setSpeedComplete] = useState(false);
 
-  // --- GAME PACING CONTROLS (MAKE WORDS SERENE & PLAYABLE) ---
+  // --- GAME PACING CONTROLS (MAKE WORDS SERENE, SLOW & PLAYABLE) ---
   // 'manual': Never auto-advances, waits for player to click Next Word
-  // 'relaxed': 3.8s countdown before advancing with Pause & Skip buttons
-  // 'normal': 2.5s countdown before advancing
+  // 'relaxed': 8.0s countdown before advancing with Pause & Skip buttons
+  // 'normal': 5.0s countdown before advancing
   const [pacingMode, setPacingMode] = useState<PacingMode>('manual');
   const [speedCountdownRemaining, setSpeedCountdownRemaining] = useState<number | null>(null);
   const [isSlideshowActive, setIsSlideshowActive] = useState(false);
+  const [isLoopPaused, setIsLoopPaused] = useState(false);
+  const [loopSpeed, setLoopSpeed] = useState<LoopSpeed>('ultra-slow');
+  const [loopDurationSec, setLoopDurationSec] = useState<number>(12); // Default 12s per face (24s total per card)
+  const [loopSecondsLeft, setLoopSecondsLeft] = useState<number>(12);
+
+  // Stable refs to prevent re-render cascades & infinite re-shuffling loops
+  const speakHebrewRef = useRef(speakHebrew);
+  useEffect(() => {
+    speakHebrewRef.current = speakHebrew;
+  }, [speakHebrew]);
+
+  const toggleMasteredRef = useRef(toggleMastered);
+  useEffect(() => {
+    toggleMasteredRef.current = toggleMastered;
+  }, [toggleMastered]);
+
+  const loopDurationSecRef = useRef(loopDurationSec);
+  useEffect(() => {
+    loopDurationSecRef.current = loopDurationSec;
+  }, [loopDurationSec]);
+
+  const isLoopPausedRef = useRef(isLoopPaused);
+  useEffect(() => {
+    isLoopPausedRef.current = isLoopPaused;
+  }, [isLoopPaused]);
+
+  const deckRef = useRef(deck);
+  useEffect(() => {
+    deckRef.current = deck;
+  }, [deck]);
+
+  const currentIndexRef = useRef(currentIndex);
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  const isFlippedRef = useRef(isFlipped);
+  useEffect(() => {
+    isFlippedRef.current = isFlipped;
+  }, [isFlipped]);
+
+  const loopRemainingRef = useRef<number>(12);
 
   // Timer references for robust cleanup
   const speedTimerRef = useRef<any>(null);
@@ -157,21 +202,25 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     ];
   }, [vocabList]);
 
-  // Initialize or shuffle Deck
+  // Initialize or shuffle Deck (stable - only runs on category/filter change or explicit shuffle)
   const initDeck = useCallback(() => {
-    const shuffled = [...filteredPool].sort(() => Math.random() - 0.5);
+    let pool = [...vocabList];
+    if (selectedCategory !== 'all') {
+      pool = pool.filter(item => item.category === selectedCategory);
+    }
+    if (filterMode === 'unmastered') {
+      pool = pool.filter(item => !masteredIds.includes(item.id));
+    } else if (filterMode === 'mastered') {
+      pool = pool.filter(item => masteredIds.includes(item.id));
+    }
+    const finalPool = pool.length > 0 ? pool : vocabList;
+    const shuffled = [...finalPool].sort(() => Math.random() - 0.5);
     setDeck(shuffled);
     setCurrentIndex(0);
     setIsFlipped(false);
     setIsDeckFinished(false);
-    
-    // Auto speak first card if enabled
-    if (autoSpeak && shuffled.length > 0) {
-      setTimeout(() => {
-        speakHebrew(shuffled[0].char, `flash-${shuffled[0].id}`);
-      }, 350);
-    }
-  }, [filteredPool, autoSpeak, speakHebrew]);
+    setIsSlideshowActive(false);
+  }, [vocabList, selectedCategory, filterMode]);
 
   useEffect(() => {
     initDeck();
@@ -185,17 +234,91 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     const nextFlipped = !isFlipped;
     setIsFlipped(nextFlipped);
     
+    // Reset loop countdown on manual flip so player gets full study time
+    if (isSlideshowActive) {
+      loopRemainingRef.current = loopDurationSecRef.current;
+      setLoopSecondsLeft(loopDurationSecRef.current);
+    }
+
     if (nextFlipped && autoSpeak && currentCard) {
-      speakHebrew(currentCard.char, `flash-${currentCard.id}`);
+      speakHebrewRef.current(currentCard.char, `flash-${currentCard.id}`);
     }
   };
+
+  // Advance to next card
+  const advanceToNextCard = useCallback(() => {
+    setIsFlipped(false);
+    
+    // Reset loop countdown on manual or auto advance
+    if (isSlideshowActive) {
+      loopRemainingRef.current = loopDurationSecRef.current;
+      setLoopSecondsLeft(loopDurationSecRef.current);
+    }
+
+    setDeck(prevDeck => {
+      if (prevDeck.length === 0) return prevDeck;
+      setCurrentIndex(prevIdx => {
+        if (prevIdx + 1 < prevDeck.length) {
+          const nextIdx = prevIdx + 1;
+          if (autoSpeak && prevDeck[nextIdx]) {
+            setTimeout(() => {
+              speakHebrewRef.current(prevDeck[nextIdx].char, `flash-${prevDeck[nextIdx].id}`);
+            }, 400);
+          }
+          return nextIdx;
+        } else {
+          // If auto-loop is active, loop back to start seamlessly for continuous calm learning
+          if (isSlideshowActive) {
+            if (autoSpeak && prevDeck[0]) {
+              setTimeout(() => {
+                speakHebrewRef.current(prevDeck[0].char, `flash-${prevDeck[0].id}`);
+              }, 400);
+            }
+            return 0;
+          } else {
+            setIsDeckFinished(true);
+            setIsSlideshowActive(false);
+            return prevIdx;
+          }
+        }
+      });
+      return prevDeck;
+    });
+  }, [autoSpeak, isSlideshowActive]);
+
+  // Previous card
+  const handlePrevCard = useCallback(() => {
+    setIsFlipped(false);
+
+    if (isSlideshowActive) {
+      loopRemainingRef.current = loopDurationSecRef.current;
+      setLoopSecondsLeft(loopDurationSecRef.current);
+    }
+
+    setDeck(prevDeck => {
+      if (prevDeck.length === 0) return prevDeck;
+      setCurrentIndex(prevIdx => {
+        if (prevIdx > 0) {
+          const nextIdx = prevIdx - 1;
+          if (autoSpeak && prevDeck[nextIdx]) {
+            setTimeout(() => {
+              speakHebrewRef.current(prevDeck[nextIdx].char, `flash-${prevDeck[nextIdx].id}`);
+            }, 400);
+          }
+          return nextIdx;
+        }
+        return prevIdx;
+      });
+      return prevDeck;
+    });
+  }, [autoSpeak, isSlideshowActive]);
 
   // Mark as Mastered
   const handleMarkMastered = () => {
     if (!currentCard) return;
 
     if (!masteredIds.includes(currentCard.id)) {
-      toggleMastered(currentCard.id);
+      toggleMasteredRef.current(currentCard.id);
     }
 
     const nextStreak = streak + 1;
@@ -219,34 +342,6 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     advanceToNextCard();
   };
 
-  const advanceToNextCard = () => {
-    setIsFlipped(false);
-    if (currentIndex + 1 < deck.length) {
-      const nextIdx = currentIndex + 1;
-      setCurrentIndex(nextIdx);
-      if (autoSpeak && deck[nextIdx]) {
-        setTimeout(() => {
-          speakHebrew(deck[nextIdx].char, `flash-${deck[nextIdx].id}`);
-        }, 300);
-      }
-    } else {
-      setIsDeckFinished(true);
-    }
-  };
-
-  const handlePrevCard = () => {
-    if (currentIndex > 0) {
-      setIsFlipped(false);
-      const prevIdx = currentIndex - 1;
-      setCurrentIndex(prevIdx);
-      if (autoSpeak && deck[prevIdx]) {
-        setTimeout(() => {
-          speakHebrew(deck[prevIdx].char, `flash-${deck[prevIdx].id}`);
-        }, 300);
-      }
-    }
-  };
-
   // Timer and Slideshow Cleanup
   const clearAllTimers = useCallback(() => {
     if (speedTimerRef.current) {
@@ -262,7 +357,7 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
       mismatchTimeoutRef.current = null;
     }
     if (slideshowTimerRef.current) {
-      clearTimeout(slideshowTimerRef.current);
+      clearInterval(slideshowTimerRef.current);
       slideshowTimerRef.current = null;
     }
     setSpeedCountdownRemaining(null);
@@ -284,13 +379,13 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
       setSelectedAnswer(null);
       if (autoSpeak && speedQuestions[nextIdx]) {
         setTimeout(() => {
-          speakHebrew(speedQuestions[nextIdx].vocab.char, `speed-${speedQuestions[nextIdx].vocab.id}`);
-        }, 300);
+          speakHebrewRef.current(speedQuestions[nextIdx].vocab.char, `speed-${speedQuestions[nextIdx].vocab.id}`);
+        }, 350);
       }
     } else {
       setSpeedComplete(true);
     }
-  }, [clearAllTimers, speedQuestionIdx, speedQuestions, autoSpeak, speakHebrew]);
+  }, [clearAllTimers, speedQuestionIdx, speedQuestions, autoSpeak]);
 
   // Pause speed countdown so player can study word in calm stillness
   const pauseSpeedTimer = () => {
@@ -298,46 +393,117 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     setPacingMode('manual');
   };
 
-  // 3D Deck Auto-Slideshow (Serene Hands-Free Learning)
+  // 3D Deck Auto-Loop Duration in Seconds per Face
+  const getSideDurationSec = useCallback(() => {
+    switch (loopSpeed) {
+      case 'zen': return 16.0;        // 16s per face = 32s total per card (deep zen learning)
+      case 'ultra-slow': return 12.0; // 12s per face = 24s total per card (slow & calm)
+      case 'slow': return 8.0;        // 8s per face = 16s total per card
+      case 'moderate': return 5.0;    // 5s per face = 10s total per card
+      default: return 12.0;
+    }
+  }, [loopSpeed]);
+
+  const handleSelectLoopSpeed = (speed: LoopSpeed) => {
+    setLoopSpeed(speed);
+    let sec = 12;
+    if (speed === 'zen') sec = 16;
+    else if (speed === 'ultra-slow') sec = 12;
+    else if (speed === 'slow') sec = 8;
+    else if (speed === 'moderate') sec = 5;
+    setLoopDurationSec(sec);
+    loopRemainingRef.current = sec;
+    setLoopSecondsLeft(sec);
+  };
+
+  const handleAdjustLoopDuration = (delta: number) => {
+    const next = Math.max(4, Math.min(30, loopDurationSec + delta));
+    setLoopDurationSec(next);
+    loopRemainingRef.current = next;
+    setLoopSecondsLeft(next);
+  };
+
+  // 3D Deck Auto-Slideshow (Serene Hands-Free Learning Loop)
   const toggleSlideshow = () => {
     if (isSlideshowActive) {
       if (slideshowTimerRef.current) {
-        clearTimeout(slideshowTimerRef.current);
+        clearInterval(slideshowTimerRef.current);
         slideshowTimerRef.current = null;
       }
       setIsSlideshowActive(false);
+      setIsLoopPaused(false);
     } else {
+      setIsDeckFinished(false);
+      setIsLoopPaused(false);
+      loopRemainingRef.current = loopDurationSec;
+      setLoopSecondsLeft(loopDurationSec);
       setIsSlideshowActive(true);
     }
   };
 
+  const toggleLoopPause = () => {
+    setIsLoopPaused(prev => !prev);
+  };
+
+  // Rock-solid, calm, slow auto-loop interval
   useEffect(() => {
-    if (gameMode !== 'cards' || !isSlideshowActive || isDeckFinished) {
+    if (gameMode !== 'cards' || !isSlideshowActive) {
       if (slideshowTimerRef.current) {
-        clearTimeout(slideshowTimerRef.current);
+        clearInterval(slideshowTimerRef.current);
         slideshowTimerRef.current = null;
       }
       return;
     }
 
-    // Relaxed slideshow pacing: 4s on Hebrew face, flip to back for 4.5s, then advance
-    const flipTimer = setTimeout(() => {
-      setIsFlipped(prev => !prev);
+    loopRemainingRef.current = loopDurationSec;
+    setLoopSecondsLeft(loopDurationSec);
 
-      const advanceTimer = setTimeout(() => {
-        advanceToNextCard();
-      }, 4500);
+    slideshowTimerRef.current = setInterval(() => {
+      // If player paused to study, hold countdown still
+      if (isLoopPausedRef.current) return;
 
-      slideshowTimerRef.current = advanceTimer;
-    }, 4000);
+      loopRemainingRef.current -= 0.5;
+      const currentRemaining = Math.max(0, Math.ceil(loopRemainingRef.current));
+      setLoopSecondsLeft(currentRemaining);
 
-    slideshowTimerRef.current = flipTimer;
+      if (loopRemainingRef.current <= 0) {
+        const curDeck = deckRef.current;
+        const curIdx = currentIndexRef.current;
+        const curFlipped = isFlippedRef.current;
+
+        if (!curFlipped) {
+          // Front face -> Flip to Back face (show translations and roots)
+          setIsFlipped(true);
+          if (autoSpeak && curDeck[curIdx]) {
+            speakHebrewRef.current(curDeck[curIdx].char, `flash-${curDeck[curIdx].id}`);
+          }
+        } else {
+          // Back face -> Advance to next card smoothly
+          setIsFlipped(false);
+          setCurrentIndex(prevIdx => {
+            const nextIdx = (prevIdx + 1) % (curDeck.length || 1);
+            if (autoSpeak && curDeck[nextIdx]) {
+              setTimeout(() => {
+                speakHebrewRef.current(curDeck[nextIdx].char, `flash-${curDeck[nextIdx].id}`);
+              }, 400);
+            }
+            return nextIdx;
+          });
+        }
+
+        // Reset countdown for new face
+        loopRemainingRef.current = loopDurationSecRef.current;
+        setLoopSecondsLeft(loopDurationSecRef.current);
+      }
+    }, 500);
 
     return () => {
-      if (flipTimer) clearTimeout(flipTimer);
-      if (slideshowTimerRef.current) clearTimeout(slideshowTimerRef.current);
+      if (slideshowTimerRef.current) {
+        clearInterval(slideshowTimerRef.current);
+        slideshowTimerRef.current = null;
+      }
     };
-  }, [gameMode, isSlideshowActive, currentIndex, isDeckFinished]);
+  }, [gameMode, isSlideshowActive, loopDurationSec, autoSpeak]);
 
   // Keyboard navigation for power users
   useEffect(() => {
@@ -559,8 +725,8 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
       return;
     }
 
-    // Relaxed: 3800ms | Normal: 2500ms
-    const delayMs = pacingMode === 'relaxed' ? 3800 : 2500;
+    // Relaxed: 8000ms (8s) | Normal: 5000ms (5s)
+    const delayMs = pacingMode === 'relaxed' ? 8000 : 5000;
     setSpeedCountdownRemaining(Math.ceil(delayMs / 1000));
 
     const startTime = Date.now();
@@ -644,7 +810,7 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
         <div className="flex items-center gap-2.5 flex-wrap w-full md:w-auto justify-end">
           {/* Pacing / Speed Controls */}
           <div className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-2xl border text-xs shadow-inner",
+            "flex items-center gap-1 px-2.5 py-1 rounded-2xl border text-xs shadow-inner",
             isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-zinc-100 border-zinc-200"
           )}>
             <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -658,7 +824,7 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                   ? "bg-emerald-600 text-white shadow-sm"
                   : "text-zinc-400 hover:text-zinc-200"
               )}
-              title="Ručni tempo: Reči čekaju vaš klik pre prelaska na sledeću"
+              title="Ručni tempo (Preporučeno): Reči čekaju vaš klik na 'Sledeća Reč', 0 žurbe za mirnu igru"
             >
               ✋ Ručno
             </button>
@@ -671,9 +837,9 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                   ? "bg-amber-600 text-white shadow-sm"
                   : "text-zinc-400 hover:text-zinc-200"
               )}
-              title="Opušteno: 3.8 sekunde pauza uz mogućnost pauze"
+              title="Sporo i opušteno: 8 sekundi pauza za analizu reči"
             >
-              🐢 3.8s
+              🐢 8s Sporo
             </button>
             <button
               type="button"
@@ -684,9 +850,9 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                   ? "bg-blue-600 text-white shadow-sm"
                   : "text-zinc-400 hover:text-zinc-200"
               )}
-              title="Normalno: 2.5 sekunde"
+              title="Umereno: 5 sekundi pauza"
             >
-              ⚡ 2.5s
+              🧘 5s
             </button>
           </div>
 
@@ -747,22 +913,98 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
           ))}
         </div>
 
-        {/* Deck Filters */}
+        {/* Deck Filters & Auto-Loop Controls */}
         {gameMode === 'cards' && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Auto-Listanje Loop Toggle */}
             <button
               onClick={toggleSlideshow}
               className={cn(
-                "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5",
+                "px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 shadow-sm",
                 isSlideshowActive
-                  ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-sm shadow-amber-500/20"
+                  ? "bg-amber-500/20 border-amber-500/60 text-amber-300 shadow-amber-500/20"
                   : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700" : "bg-white border-zinc-200 text-zinc-700"
               )}
-              title={isSlideshowActive ? "Pauziraj automatsko listanje" : "Pokreni mirno automatsko listanje špila"}
+              title={isSlideshowActive ? "Zaustavi automatsko listanje" : "Pokreni miran i usporen automatski loop reči"}
             >
               {isSlideshowActive ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
-              <span>{isSlideshowActive ? 'Pauziraj' : 'Auto-Listanje'}</span>
+              <span>{isSlideshowActive ? `Auto-Loop (${loopSecondsLeft}s)` : '▶️ Pokreni Auto-Loop'}</span>
             </button>
+
+            {/* Loop Speed Controls */}
+            {isSlideshowActive && (
+              <div className={cn(
+                "flex items-center gap-1 px-2.5 py-1 rounded-xl border text-[11px] shadow-inner flex-wrap",
+                isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400" : "bg-zinc-100 border-zinc-200 text-zinc-600"
+              )}>
+                <span className="text-[10px] font-bold text-amber-400 mr-1">Brzina:</span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectLoopSpeed('zen')}
+                  className={cn(
+                    "px-2 py-0.5 rounded-lg font-bold text-[10px] transition-all",
+                    loopSpeed === 'zen' ? "bg-emerald-600 text-white shadow-sm" : "hover:text-white"
+                  )}
+                  title="Zen: 16 sekundi po strani (32s po kartici za duboko učenje)"
+                >
+                  🧘 16s (Zen)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectLoopSpeed('ultra-slow')}
+                  className={cn(
+                    "px-2 py-0.5 rounded-lg font-bold text-[10px] transition-all",
+                    loopSpeed === 'ultra-slow' ? "bg-emerald-600 text-white shadow-sm" : "hover:text-white"
+                  )}
+                  title="Vrlo sporo: 12 sekundi po strani (24s po kartici - preporučeno)"
+                >
+                  🐢 12s (Vrlo sporo)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectLoopSpeed('slow')}
+                  className={cn(
+                    "px-2 py-0.5 rounded-lg font-bold text-[10px] transition-all",
+                    loopSpeed === 'slow' ? "bg-amber-600 text-white shadow-sm" : "hover:text-white"
+                  )}
+                  title="Mirno i opušteno: 8 sekundi po strani (16s po kartici)"
+                >
+                  📖 8s (Mirno)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectLoopSpeed('moderate')}
+                  className={cn(
+                    "px-2 py-0.5 rounded-lg font-bold text-[10px] transition-all",
+                    loopSpeed === 'moderate' ? "bg-blue-600 text-white shadow-sm" : "hover:text-white"
+                  )}
+                  title="Umereno: 5 sekundi po strani (10s po kartici)"
+                >
+                  ⚡ 5s
+                </button>
+
+                {/* Fine-grain Stepper */}
+                <div className="flex items-center gap-1 ml-1.5 pl-1.5 border-l border-zinc-700/60">
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustLoopDuration(-1)}
+                    className="p-1 rounded-md hover:bg-zinc-800 text-zinc-300"
+                    title="Ubrzaj za 1s"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <span className="font-mono text-[10px] font-bold text-white px-1">{loopDurationSec}s</span>
+                  <button
+                    type="button"
+                    onClick={() => handleAdjustLoopDuration(1)}
+                    className="p-1 rounded-md hover:bg-zinc-800 text-zinc-300"
+                    title="Uspori za 1s"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             <button
               onClick={() => setFlipDirection(prev => prev === 'hebrew-first' ? 'meaning-first' : 'hebrew-first')}
@@ -815,6 +1057,83 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                 />
               </div>
 
+              {/* LIVE SLIDESHOW BANNER (WHEN LOOP IS RUNNING) */}
+              {isSlideshowActive && (
+                <div className={cn(
+                  "p-4 rounded-3xl border text-xs shadow-xl transition-all space-y-3",
+                  isLoopPaused 
+                    ? "bg-zinc-900/90 border-amber-500/40 text-amber-200" 
+                    : "bg-zinc-950/90 border-emerald-500/30 text-zinc-200"
+                )}>
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className={cn(
+                        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border",
+                        isLoopPaused 
+                          ? "bg-amber-500/20 border-amber-500/50 text-amber-400" 
+                          : "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
+                      )}>
+                        {isLoopPaused ? <Pause className="w-4 h-4" /> : <Timer className="w-4 h-4 animate-spin text-emerald-400" />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 font-bold text-sm">
+                          {isLoopPaused ? (
+                            <span className="text-amber-300">⏸️ Auto-Loop Pauziran — učite reč u miru</span>
+                          ) : (
+                            <span className="text-white">
+                              Auto-Loop (Usporen): <strong className="text-emerald-400">{isFlipped ? 'Sledeća reč' : 'Prevod i koren'}</strong> za <strong className="text-amber-400">{loopSecondsLeft}s</strong>
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-zinc-400">
+                          Tempo učenja: <strong>{loopDurationSec}s</strong> po strani ({loopDurationSec * 2}s po reči) • Mirno i bez žurbe
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={toggleLoopPause}
+                        className={cn(
+                          "px-3.5 py-1.5 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 border shadow-sm active:scale-95",
+                          isLoopPaused 
+                            ? "bg-emerald-600 border-emerald-500 text-white hover:bg-emerald-500 shadow-emerald-600/30" 
+                            : "bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/50 text-amber-300 shadow-amber-500/20"
+                        )}
+                        title={isLoopPaused ? "Nastavi automatski loop" : "Pauziraj tajmer da detaljno proučite reč"}
+                      >
+                        {isLoopPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                        <span>{isLoopPaused ? 'Nastavi Loop' : 'Pauziraj'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={toggleSlideshow}
+                        className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 font-bold text-xs text-zinc-300 hover:text-white transition-all border border-zinc-700"
+                        title="Isključi automatski loop i pređi na ručno listanje"
+                      >
+                        ✕ Isključi
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Countdown Progress Fill Bar */}
+                  <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                    <motion.div 
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        isLoopPaused ? "bg-amber-500" : isGirlyMode ? "bg-pink-500" : "bg-emerald-500"
+                      )}
+                      animate={{ 
+                        width: `${Math.max(0, Math.min(100, (loopSecondsLeft / loopDurationSec) * 100))}%` 
+                      }}
+                      transition={{ duration: 0.5, ease: 'linear' }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* 3D FLIP CARD CONTAINER */}
               <div 
                 className="w-full cursor-pointer select-none"
@@ -847,11 +1166,33 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                     }}
                   >
                     {/* Top Badges */}
-                    <div className="w-full flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        {currentCard.categoryLabel || currentCard.category.toUpperCase()}
-                      </span>
+                    <div className="w-full flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          {currentCard.categoryLabel || currentCard.category.toUpperCase()}
+                        </span>
+
+                        {isSlideshowActive && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleLoopPause();
+                            }}
+                            className={cn(
+                              "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border transition-all",
+                              isLoopPaused 
+                                ? "bg-amber-500/20 border-amber-500 text-amber-300" 
+                                : "bg-black/40 border-emerald-500/40 text-emerald-300"
+                            )}
+                            title={isLoopPaused ? "Nastavi Loop" : "Pauziraj Loop"}
+                          >
+                            {isLoopPaused ? <Play className="w-3 h-3 text-emerald-400" /> : <Pause className="w-3 h-3 text-amber-400" />}
+                            <span>{isLoopPaused ? "Pauzirano" : `${loopSecondsLeft}s`}</span>
+                          </button>
+                        )}
+                      </div>
 
                       {currentCard.root && (
                         <span className="text-xs font-mono font-bold text-zinc-400 bg-zinc-800/60 px-2.5 py-1 rounded-lg border border-zinc-700/50">
@@ -923,11 +1264,32 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                       WebkitBackfaceVisibility: 'hidden'
                     }}
                   >
-                    {/* Top Bar with Phonetics */}
-                    <div className="w-full flex items-center justify-between text-xs">
+                    {/* Top Bar with Phonetics & Loop Pause */}
+                    <div className="w-full flex items-center justify-between text-xs flex-wrap gap-2">
                       <span className="font-mono font-bold text-blue-400">
                         Vuk: /{currentCard.vuk}/
                       </span>
+
+                      {isSlideshowActive && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleLoopPause();
+                          }}
+                          className={cn(
+                            "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border transition-all",
+                            isLoopPaused 
+                              ? "bg-amber-500/20 border-amber-500 text-amber-300" 
+                              : "bg-black/40 border-blue-500/40 text-blue-300"
+                          )}
+                          title={isLoopPaused ? "Nastavi Loop" : "Pauziraj Loop"}
+                        >
+                          {isLoopPaused ? <Play className="w-3 h-3 text-emerald-400" /> : <Pause className="w-3 h-3 text-amber-400" />}
+                          <span>{isLoopPaused ? "Pauzirano" : `${loopSecondsLeft}s`}</span>
+                        </button>
+                      )}
+
                       <span className="font-mono font-bold text-zinc-400">
                         Latin: {currentCard.transliteration}
                       </span>
