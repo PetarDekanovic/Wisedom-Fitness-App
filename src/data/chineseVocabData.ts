@@ -6,10 +6,18 @@ export interface VocabItem {
   translation: string;
   english: string;
   emoji: string;
-  category: 'strofa_1' | 'refren' | 'glagoli' | 'svakodnevno' | 'filozofija' | 'zdravlje' | 'posao_tehnologija' | 'hrana' | 'vreme_brojevi' | 'emocije' | 'alphabet';
+  category: 'strofa_1' | 'refren' | 'glagoli' | 'svakodnevno' | 'filozofija' | 'zdravlje' | 'posao_tehnologija' | 'hrana' | 'vreme_brojevi' | 'emocije' | 'alphabet' | 'custom';
   categoryLabel: string;
   radical?: string;
   visualTip?: string;
+  tags?: string[];
+  quote?: {
+    text: string;
+    pinyin?: string;
+    translation?: string;
+    author?: string;
+  };
+  level?: number;
 }
 
 export const CHINESE_VOCAB_EXPANDED: VocabItem[] = [

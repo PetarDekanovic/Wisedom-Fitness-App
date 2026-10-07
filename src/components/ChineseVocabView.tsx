@@ -26,7 +26,13 @@ import {
   Plus,
   Layers,
   Sliders,
-  ChevronDown
+  ChevronDown,
+  Bot,
+  Send,
+  Loader2,
+  BookmarkPlus,
+  History,
+  Languages
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { db } from '../firebase';
@@ -36,6 +42,386 @@ import { CHINESE_VOCAB_EXPANDED, VocabItem, getChineseQuoteForItem } from '../da
 import { ChineseFlashcardsGame } from './ChineseFlashcardsGame';
 
 export type { VocabItem };
+
+export interface AiConfigWordItemChinese {
+  chinese: string;
+  chineseTraditional?: string;
+  pinyin: string;
+  vuk: string;
+  english: string;
+  serbian: string;
+  emoji: string;
+  category?: string;
+}
+
+export interface AiConfiguredChineseResult {
+  chineseWithEmojis: string;
+  chinese: string;
+  chineseTraditional?: string;
+  pinyin: string;
+  vukPhonetic: string;
+  serbian: string;
+  english: string;
+  emojis: string[];
+  words: AiConfigWordItemChinese[];
+  grammarNote?: string;
+}
+
+export interface ChineseSolidarityQuote {
+  id: string;
+  category: 'solidarity' | 'strength' | 'peace' | 'short';
+  categoryLabel: string;
+  categoryEmoji: string;
+  english: string;
+  chinese: string;
+  chineseTraditional: string;
+  chineseWithEmojis: string;
+  pinyin: string;
+  vukPhonetic: string;
+  serbian: string;
+  emojis: string[];
+  words: AiConfigWordItemChinese[];
+  grammarNote: string;
+}
+
+export const CHINESE_SOLIDARITY_QUOTES: ChineseSolidarityQuote[] = [
+  // 1. General Solidarity & Letting Them Know They Aren't Alone
+  {
+    id: 'zh-sol-1',
+    category: 'solidarity',
+    categoryLabel: 'Solidarnost & Prijateljstvo',
+    categoryEmoji: '🤝',
+    english: "Just a reminder that you have friends all over the world. We see you, we care about you, and you are never alone.",
+    chinese: "只愿提醒你，世界各地都有你的朋友。我们看见你，我们在乎你，你从来不是孤单一人。",
+    chineseTraditional: "只願提醒你，世界各地都有你的朋友。我們看見你，我們在乎你，你從來不是孤單一人。",
+    chineseWithEmojis: "只愿提醒你，世界各地都有你的朋友。我们看见你，我们在乎你，你从来不是孤单一人。🌍🤝❤️",
+    pinyin: "Zhǐ yuàn tíxǐng nǐ, shìjiè gèdì dōu yǒu nǐ de péngyǒu. Wǒmen kànjiàn nǐ, wǒmen zàihu nǐ, nǐ cónglái bùshì gūdān yīrén.",
+    vukPhonetic: "Dži jüan tihing ni, ši-đie ge-di dou jou ni de peng-jou. Vo-men kan-đien ni, vo-men caj-hu ni, ni cong-laj bu-ši gu-dan ji-žen.",
+    serbian: "Samo podsetnik da imaš prijatelje širom sveta. Vidimo te, brinemo o tebi, i nikada nisi sam.",
+    emojis: ["🌍", "🤝", "❤️"],
+    words: [
+      { chinese: "提醒", pinyin: "tíxǐng", vuk: "ti-hing", english: "remind", serbian: "podsetnik", emoji: "📝", category: "verb" },
+      { chinese: "朋友", pinyin: "péngyǒu", vuk: "peng-jou", english: "friends", serbian: "prijatelji", emoji: "🤝", category: "noun" },
+      { chinese: "世界各地", pinyin: "shìjiè gèdì", vuk: "ši-đie ge-di", english: "all over the world", serbian: "širom sveta", emoji: "🌍", category: "noun" },
+      { chinese: "在乎", pinyin: "zàihu", vuk: "caj-hu", english: "care about", serbian: "brinemo o", emoji: "❤️", category: "verb" },
+      { chinese: "孤单", pinyin: "gūdān", vuk: "gu-dan", english: "alone", serbian: "sam", emoji: "👤", category: "adjective" }
+    ],
+    grammarNote: "Fraza 'cónglái bùshì' (从来不是) znači 'nikada nisi bio' i unosi snažan ton utehe i poverenja."
+  },
+  {
+    id: 'zh-sol-2',
+    category: 'solidarity',
+    categoryLabel: 'Solidarnost & Prijateljstvo',
+    categoryEmoji: '🌐',
+    english: "No matter the distance, please know we stand with you in unwavering solidarity and love.",
+    chinese: "无论相隔多远，请知道我们以坚定不移的团结与爱同你站在一起。",
+    chineseTraditional: "無論相隔多遠，請知道我們以堅定不移的團結與愛同你站在一apply。",
+    chineseWithEmojis: "无论相隔多远，请知道我们以坚定不移的团结与爱同你站在一起。🌐💪💖",
+    pinyin: "Wúlùn xiānggé duō yuǎn, qǐng zhīdào wǒmen yǐ jiāndìng bùyí de tuánjié yǔ ài tóng nǐ zhàn zài yīqǐ.",
+    vukPhonetic: "Vu-lun sjang-ge duo jüan, ćing dži-dao vo-men ji đjen-ding bu-ji de tuan-đie jü aj tung ni džan caj ji-ći.",
+    serbian: "Bez obzira na udaljenost, molimo te znaj da stojimo uz tebe u nepokolebljivoj solidarnosti i ljubavi.",
+    emojis: ["🌐", "💪", "💖"],
+    words: [
+      { chinese: "无论", pinyin: "wúlùn", vuk: "vu-lun", english: "no matter", serbian: "bez obzira", emoji: "🌐", category: "particle" },
+      { chinese: "相隔", pinyin: "xiānggé", vuk: "sjang-ge", english: "distance / separated", serbian: "udaljenost", emoji: "📏", category: "verb" },
+      { chinese: "坚定不移", pinyin: "jiāndìng bùyí", vuk: "đjen-ding bu-ji", english: "unwavering", serbian: "nepokolebljiv", emoji: "🏔️", category: "chengyu" },
+      { chinese: "团结", pinyin: "tuánjié", vuk: "tuan-đie", english: "solidarity", serbian: "solidarnost", emoji: "💪", category: "noun" },
+      { chinese: "爱", pinyin: "ài", vuk: "aj", english: "love", serbian: "ljubav", emoji: "💖", category: "noun" }
+    ],
+    grammarNote: "Čuveni kineski idiom (成语) 'jiāndìng bùyí' (坚定不移) označava nepokolebljivost koja se ne može poljuljati."
+  },
+  {
+    id: 'zh-sol-3',
+    category: 'solidarity',
+    categoryLabel: 'Solidarnost & Prijateljstvo',
+    categoryEmoji: '👨‍👩‍👧‍👦',
+    english: "Thinking of you and your family today. People around the globe are holding you in their hearts.",
+    chinese: "今天牵挂着你与你的家人。全世界的人都把你们装在心中。",
+    chineseTraditional: "今天牽掛著你與你的家人。全世界的人都把你們裝在心中。",
+    chineseWithEmojis: "今天牵挂着你与你的家人。全世界的人都把你们装在心中。👨‍👩‍👧‍👦🌎🕊️",
+    pinyin: "Jīntiān qiānguà zhe nǐ yǔ nǐ de jiārén. Quán shìjiè de rén dōu bǎ nǐmen zhuāng zài xīnzhōng.",
+    vukPhonetic: "Đin-tjen ćjen-gua dže ni jü ni de đja-žen. Ćüan ši-đie de žen dou ba ni-men džuang caj sin-džung.",
+    serbian: "Mislimo na tebe i tvoju porodicu danas. Ljudi širom sveta vas drže u svojim srcima.",
+    emojis: ["👨‍👩‍👧‍👦", "🌎", "🕊️"],
+    words: [
+      { chinese: "今天", pinyin: "jīntiān", vuk: "đin-tjen", english: "today", serbian: "danas", emoji: "📅", category: "noun" },
+      { chinese: "牵挂", pinyin: "qiānguà", vuk: "ćjen-gua", english: "hold in heart / care", serbian: "brinuti / misliti na", emoji: "💭", category: "verb" },
+      { chinese: "家人", pinyin: "jiārén", vuk: "đja-žen", english: "family", serbian: "porodica", emoji: "👨‍👩‍👧‍👦", category: "noun" },
+      { chinese: "全世界", pinyin: "quán shìjiè", vuk: "ćüan ši-đie", english: "whole world", serbian: "ceo svet", emoji: "🌎", category: "noun" },
+      { chinese: "心中", pinyin: "xīnzhōng", vuk: "sin-džung", english: "in hearts", serbian: "u srcu", emoji: "❤️", category: "noun" }
+    ],
+    grammarNote: "Rečca 'zhe' (着) označava trajno stanje brige i posvećenosti u kineskom jeziku."
+  },
+  {
+    id: 'zh-sol-4',
+    category: 'solidarity',
+    categoryLabel: 'Solidarnost & Prijateljstvo',
+    categoryEmoji: '🫂',
+    english: "You don't have to carry the heavy days alone. We are sending you so much support and warmth from afar.",
+    chinese: "你不必独自承受沉重艰难的日子。我们从远方为你送去无数的支持与温暖。",
+    chineseTraditional: "你不必獨自承受沉重艱難的日子。我們從遠方為你送去無數的支持與溫暖。",
+    chineseWithEmojis: "你不必独自承受沉重艰难的日子。我们从远方为你送去无数的支持与温暖。🫂☀️🛡️",
+    pinyin: "Nǐ bùbì dúzì chéngshòu chénzhòng jiānnán de rìzi. Wǒmen cóng yuǎnfāng wèi nǐ sòng qù wúshù de zhīchí yǔ wēnnuǎn.",
+    vukPhonetic: "Ni bu-bi du-ci čeng-šou čen-džung đjen-nan de ži-ci. Vo-men cung jüan-fang vej ni sung ćü vu-šu de dži-či jü ven-nuan.",
+    serbian: "Ne moraš sam nositi teške dane. Šaljemo ti toliko podrške i topline iz daljine.",
+    emojis: ["🫂", "☀️", "🛡️"],
+    words: [
+      { chinese: "不必", pinyin: "bùbì", vuk: "bu-bi", english: "need not", serbian: "ne moraš", emoji: "🛡️", category: "adverb" },
+      { chinese: "独自", pinyin: "dúzì", vuk: "du-ci", english: "alone", serbian: "sam", emoji: "👤", category: "adverb" },
+      { chinese: "承受", pinyin: "chéngshòu", vuk: "čeng-šou", english: "bear / endure", serbian: "nositi / podnositi", emoji: "⚖️", category: "verb" },
+      { chinese: "远方", pinyin: "yuǎnfāng", vuk: "jüan-fang", english: "afar / distant", serbian: "iz daljine", emoji: "🌄", category: "noun" },
+      { chinese: "温暖", pinyin: "wēnnuǎn", vuk: "ven-nuan", english: "warmth", serbian: "toplina", emoji: "☀️", category: "noun" }
+    ],
+    grammarNote: "Struktura 'wèi nǐ sòng qù' (为你送去) označava radnju usmerenu na dobrobit primaoca."
+  },
+
+  // 2. Acknowledging Their Strength & Resilience
+  {
+    id: 'zh-sol-5',
+    category: 'strength',
+    categoryLabel: 'Snaga & Nesalomivost',
+    categoryEmoji: '🦁',
+    english: "The strength and resilience of the Israeli people never cease to inspire me. Sending you so much love and support.",
+    chinese: "非凡的坚韧与力量总能深深启发人心。为你送去满满的爱与支持。",
+    chineseTraditional: "非凡的堅韌與力量總能深深啟發人心。為你送去滿滿的愛與支持。",
+    chineseWithEmojis: "非凡的坚韧与力量总能深深启发人心。为你送去满满的爱与支持。🦁✨💪",
+    pinyin: "Fēifán de jiānrèn yǔ lìliàng zǒng néng shēnshēn qǐfā rénxīn. Wèi nǐ sòng qù mǎnmǎn de ài yǔ zhīchí.",
+    vukPhonetic: "Fej-fan de đjen-žen jü li-ljang cung neng šen-šen ći-fa žen-sin. Vej ni sung ćü man-man de aj jü dži-či.",
+    serbian: "Neverovatna snaga i otpornost uvek iznova inspirišu. Šaljem vam pregršt ljubavi i podrške.",
+    emojis: ["🦁", "✨", "💪"],
+    words: [
+      { chinese: "坚韧", pinyin: "jiānrèn", vuk: "đjen-žen", english: "resilience", serbian: "otpornost", emoji: "🦁", category: "noun" },
+      { chinese: "力量", pinyin: "lìliàng", vuk: "li-ljang", english: "strength", serbian: "snaga", emoji: "💪", category: "noun" },
+      { chinese: "启发", pinyin: "qǐfā", vuk: "ći-fa", english: "inspire", serbian: "inspiracija", emoji: "✨", category: "verb" },
+      { chinese: "支持", pinyin: "zhīchí", vuk: "dži-či", english: "support", serbian: "podrška", emoji: "🤝", category: "noun" }
+    ],
+    grammarNote: "Reč 'jiānrèn' (坚韧) je filozofski ideal nesalomive fleksibilnosti bambusa na jakom vetru."
+  },
+  {
+    id: 'zh-sol-6',
+    category: 'strength',
+    categoryLabel: 'Snaga & Nesalomivost',
+    categoryEmoji: '🛡️',
+    english: "Your courage in difficult times is incredible, but you shouldn't have to be strong all the time. We are standing right here with you.",
+    chinese: "在逆境中的勇气令人钦佩，但你不必时刻都保持坚强。我们就站在这里与你同行。",
+    chineseTraditional: "在逆境中的勇氣令人欽佩，但你不必時刻都保持堅強。我們就站在這裡與你同行。",
+    chineseWithEmojis: "在逆境中的勇气令人钦佩，但你不必时刻都保持坚强。我们就站在这里与你同行。🛡️🤍🤝",
+    pinyin: "Zài nìjìng zhōng de yǒngqì lìng rén qīnpèi, dàn nǐ bùbì shíkè dōu bǎochí jiānqiáng. Wǒmen jiù zhàn zài zhèlǐ yǔ nǐ tóngxíng.",
+    vukPhonetic: "Caj ni-đing džung de jung-ći ling žen ćin-pej, dan ni bu-bi ši-ke dou bao-či đjen-ćjang. Vo-men đju džan caj dže-li jü ni tung-sing.",
+    serbian: "Tvoja hrabrost u teškim trenucima je neverovatna, ali ne moraš stalno biti jak. Stojimo upravo ovde uz tebe.",
+    emojis: ["🛡️", "🤍", "🤝"],
+    words: [
+      { chinese: "逆境", pinyin: "nìjìng", vuk: "ni-đing", english: "adversity", serbian: "nedaća / teška vremena", emoji: "🧗", category: "noun" },
+      { chinese: "勇气", pinyin: "yǒngqì", vuk: "jung-ći", english: "courage", serbian: "hrabrost", emoji: "🦁", category: "noun" },
+      { chinese: "坚强", pinyin: "jiānqiáng", vuk: "đjen-ćjang", english: "strong", serbian: "snažan / čvrst", emoji: "💪", category: "adjective" },
+      { chinese: "同行", pinyin: "tóngxíng", vuk: "tung-sing", english: "walk together", serbian: "koračati zajedno", emoji: "🤝", category: "verb" }
+    ],
+    grammarNote: "Reč 'nìjìng' (逆境) označava plovidbu protiv surove struje — suprotno od lagodnih vremena."
+  },
+  {
+    id: 'zh-sol-7',
+    category: 'strength',
+    categoryLabel: 'Snaga & Nesalomivost',
+    categoryEmoji: '🔥',
+    english: "Through every challenge, your spirit shines bright. Sending you strength and a reminder that the world is cheering you on.",
+    chinese: "历经每一次挑战，你的精神都璀璨闪耀。为你传递力量，全世界都在为你喝彩。",
+    chineseTraditional: "歷經每一次挑戰，你的精神都璀璨閃耀。為你傳遞力量，全世界都在為你喝彩。",
+    chineseWithEmojis: "历经每一次挑战，你的精神都璀璨闪耀。为你传递力量，全世界都在为你喝彩。✨🔥🌟",
+    pinyin: "Lìjīng měi yī cì tiǎozhàn, nǐ de jīngshén dōu cuǐcàn shǎnyào. Wèi nǐ chuándì lìliàng, quán shìjiè dōu zài wèi nǐ hècǎi.",
+    vukPhonetic: "Li-đing mej ji ci tjao-džan, ni de đing-šen dou cuej-can šan-jao. Vej ni čuan-di li-ljang, ćüan ši-đie dou caj vej ni he-caj.",
+    serbian: "Kroz svaki izazov, tvoj duh blista. Šaljem ti snagu i podsetnik da te ceo svet bodri.",
+    emojis: ["✨", "🔥", "🌟"],
+    words: [
+      { chinese: "挑战", pinyin: "tiǎozhàn", vuk: "tjao-džan", english: "challenge", serbian: "izazov", emoji: "🧗", category: "noun" },
+      { chinese: "精神", pinyin: "jīngshén", vuk: "đing-šen", english: "spirit", serbian: "duh", emoji: "✨", category: "noun" },
+      { chinese: "闪耀", pinyin: "shǎnyào", vuk: "šan-jao", english: "shine bright", serbian: "blistati", emoji: "🌟", category: "verb" },
+      { chinese: "喝彩", pinyin: "hècǎi", vuk: "he-caj", english: "cheer on", serbian: "bodriti / aplaudirati", emoji: "👏", category: "verb" }
+    ],
+    grammarNote: "Predivni izraz 'cuǐcàn shǎnyào' (璀璨闪耀) označava sjaj dragog kamenja koji prkosi noći."
+  },
+
+  // 3. Focusing on Peace, Safety, & Hope
+  {
+    id: 'zh-sol-8',
+    category: 'peace',
+    categoryLabel: 'Mir & Nada',
+    categoryEmoji: '🕊️',
+    english: "Praying for peace, safety, and brighter days ahead for you and all of Israel.",
+    chinese: "祈愿平安、康宁与更明朗美好的日子降临在你身边。",
+    chineseTraditional: "祈願平安、康寧與更明朗美好的日子降臨在你身邊。",
+    chineseWithEmojis: "祈愿平安、康宁与更明朗美好的日子降临在你身边。🕊️🙏☀️",
+    pinyin: "Qíyuàn píng'ān, kāngníng yǔ gèng mínglǎng měihǎo de rìzi jiànglín zài nǐ shēnbiān.",
+    vukPhonetic: "Ći-jüan ping-an, kang-ning jü geng ming-lang mej-hao de ži-ci đjang-lin caj ni šen-bjien.",
+    serbian: "Molimo se za mir, sigurnost i vedrije dane pred vama.",
+    emojis: ["🕊️", "🙏", "☀️"],
+    words: [
+      { chinese: "祈愿", pinyin: "qíyuàn", vuk: "ći-jüan", english: "pray / wish", serbian: "moliti se / želeti", emoji: "🙏", category: "verb" },
+      { chinese: "平安", pinyin: "píng'ān", vuk: "ping-an", english: "peace & safety", serbian: "mir i sigurnost", emoji: "🕊️", category: "noun" },
+      { chinese: "康宁", pinyin: "kāngníng", vuk: "kang-ning", english: "health & serenity", serbian: "blagostanje i spokoj", emoji: "🌿", category: "noun" },
+      { chinese: "明朗", pinyin: "mínglǎng", vuk: "ming-lang", english: "bright / sunny", serbian: "vedar / svetao", emoji: "☀️", category: "adjective" }
+    ],
+    grammarNote: "Kineski pojam 'píng'ān' (平安) obuhvata mir spolja i spokoj iznutra."
+  },
+  {
+    id: 'zh-sol-9',
+    category: 'peace',
+    categoryLabel: 'Mir & Nada',
+    categoryEmoji: '🌿',
+    english: "Wishing you and your loved ones quiet, peaceful days. We are keeping you in our thoughts always.",
+    chinese: "愿你与挚爱之人享有静谧安宁的时光。你们永远在我们心中。",
+    chineseTraditional: "願你與摯愛之人享有靜謐安寧的時光。你們永遠在我們心中。",
+    chineseWithEmojis: "愿你与挚爱之人享有静谧安宁的时光。你们永远在我们心中。🌿🕯️🤍",
+    pinyin: "Yuàn nǐ yǔ zhì'ài zhī rén xiǎngyǒu jìngmì ānníng de shíguāng. Nǐmen yǒngyuǎn zài wǒmen xīnzhōng.",
+    vukPhonetic: "Jüan ni jü dži-aj dži žen sjang-jou đing-mi an-ning de ši-guang. Ni-men jung-jüan caj vo-men sin-džung.",
+    serbian: "Želim tebi i tvojim najmilijima mirne i tihe dane. Uvek ste u našim mislima.",
+    emojis: ["🌿", "🕯️", "🤍"],
+    words: [
+      { chinese: "挚爱", pinyin: "zhì'ài", vuk: "dži-aj", english: "beloved", serbian: "najdraži", emoji: "💖", category: "noun" },
+      { chinese: "静谧", pinyin: "jìngmì", vuk: "đing-mi", english: "quiet / tranquil", serbian: "tih i miran", emoji: "🤫", category: "adjective" },
+      { chinese: "安宁", pinyin: "ānníng", vuk: "an-ning", english: "serene / peaceful", serbian: "spokojan", emoji: "🌿", category: "noun" },
+      { chinese: "时光", pinyin: "shíguāng", vuk: "ši-guang", english: "time / days", serbian: "vreme / dani", emoji: "⏳", category: "noun" }
+    ],
+    grammarNote: "Književna reč 'zhì'ài zhī rén' (挚爱之人) označava najdraže, najbliže ljude vašeg srca."
+  },
+  {
+    id: 'zh-sol-10',
+    category: 'peace',
+    categoryLabel: 'Mir & Nada',
+    categoryEmoji: '🌍',
+    english: "May safety and peace surround you soon. Until then, know that there is a global community wishing you well.",
+    chinese: "愿平安与安宁早日环绕着你。请知道全球社区都在为你真诚祝福。",
+    chineseTraditional: "願平安與安寧早日環繞著你。請知道全球社區都在為你真誠祝福。",
+    chineseWithEmojis: "愿平安与安宁早日环绕着你。请知道全球社区都在为你真诚祝福。🕊️🛡️🌍",
+    pinyin: "Yuàn píng'ān yǔ ānníng zǎorì huánrào zhe nǐ. Qǐng zhīdào quánqiú shèqū dōu zài wèi nǐ zhēnchéng zhùfú.",
+    vukPhonetic: "Jüan ping-an jü an-ning zao-ži huan-rao dže ni. Ćing dži-dao ćüan-ćju še-ćü dou caj vej ni džen-čeng džu-fu.",
+    serbian: "Neka te mir i bezbednost uskoro obgrle. Do tada, znaj da postoji globalna zajednica koja ti želi samo dobro.",
+    emojis: ["🕊️", "🛡️", "🌍"],
+    words: [
+      { chinese: "早日", pinyin: "zǎorì", vuk: "zao-ži", english: "soon / early date", serbian: "uskoro", emoji: "🌅", category: "adverb" },
+      { chinese: "环绕", pinyin: "huánrào", vuk: "huan-rao", english: "surround / embrace", serbian: "okružiti / obgrliti", emoji: "🛡️", category: "verb" },
+      { chinese: "全球", pinyin: "quánqiú", vuk: "ćüan-ćju", english: "global", serbian: "globalni", emoji: "🌍", category: "adjective" },
+      { chinese: "祝福", pinyin: "zhùfú", vuk: "džu-fu", english: "blessings", serbian: "blagoslovi", emoji: "✨", category: "noun" }
+    ],
+    grammarNote: "Glagol 'huánrào' (环绕) opisuje zaštitnički krug bezbednosti i mira oko čoveka."
+  },
+  {
+    id: 'zh-sol-11',
+    category: 'peace',
+    categoryLabel: 'Mir & Nada',
+    categoryEmoji: '🌱',
+    english: "Holding on to hope for a peaceful future, and holding you in my heart until we get there.",
+    chinese: "抱持对和平未来的坚定希望，并在抵达那一天前将你珍藏于心。",
+    chineseTraditional: "抱持對和平未來的堅定希望，並在抵達那一天前將你珍藏於心。",
+    chineseWithEmojis: "抱持对和平未来的坚定希望，并在抵达那一天前将你珍藏于心。🌱💖🕊️",
+    pinyin: "Bàochí duì hépíng wèilái de jiāndìng xīwàng, bìng zài dǐdá nà yītiān qián jiāng nǐ zhēncáng yú xīn.",
+    vukPhonetic: "Bao-či duej he-ping vej-laj de đjen-ding si-vang, bing caj di-da na ji-tjen ćjen đjang ni džen-cang jü sin.",
+    serbian: "Držim se nade u mirnu budućnost i nosim te u srcu dok tamo ne stignemo.",
+    emojis: ["🌱", "💖", "🕊️"],
+    words: [
+      { chinese: "抱持", pinyin: "bàochí", vuk: "bao-či", english: "hold onto / cherish", serbian: "držati se nade", emoji: "🤝", category: "verb" },
+      { chinese: "未来", pinyin: "wèilái", vuk: "vej-laj", english: "future", serbian: "budućnost", emoji: "🌱", category: "noun" },
+      { chinese: "希望", pinyin: "xīwàng", vuk: "si-vang", english: "hope", serbian: "nada", emoji: "🌟", category: "noun" },
+      { chinese: "珍藏", pinyin: "zhēncáng", vuk: "džen-cang", english: "treasure in heart", serbian: "čuvati kao dragocenost", emoji: "💎", category: "verb" }
+    ],
+    grammarNote: "Reč 'zhēncáng' (珍藏) znači čuvati nešto u duši kao najveće dragoceno blago."
+  },
+
+  // 4. Short & Heartfelt
+  {
+    id: 'zh-sol-12',
+    category: 'short',
+    categoryLabel: 'Kratke & Iskrene Poruke',
+    categoryEmoji: '✨',
+    english: "Sending love, light, and unwavering support your way.",
+    chinese: "向你送去爱、光明与坚定不移的支持。",
+    chineseTraditional: "向你送去愛、光明與堅定不移的支持。",
+    chineseWithEmojis: "向你送去爱、光明与坚定不移的支持。✨💖🕯️",
+    pinyin: "Xiàng nǐ sòng qù ài, guāngmíng yǔ jiāndìng bùyí de zhīchí.",
+    vukPhonetic: "Sjang ni sung ćü aj, guang-ming jü đjen-ding bu-ji de dži-či.",
+    serbian: "Šaljem ti ljubav, svetlost i nepokolebljivu podršku.",
+    emojis: ["✨", "💖", "🕯️"],
+    words: [
+      { chinese: "光明", pinyin: "guāngmíng", vuk: "guang-ming", english: "light", serbian: "svetlost", emoji: "🕯️", category: "noun" },
+      { chinese: "支持", pinyin: "zhīchí", vuk: "dži-či", english: "support", serbian: "podrška", emoji: "🤝", category: "noun" }
+    ],
+    grammarNote: "Reč 'guāngmíng' (光明) se u istočnoj filozofiji koristi kao simbol nade i vrline."
+  },
+  {
+    id: 'zh-sol-13',
+    category: 'short',
+    categoryLabel: 'Kratke & Iskrene Poruke',
+    categoryEmoji: '💙',
+    english: "You are always in our thoughts. We stand with you.",
+    chinese: "你永远在我们的思念之中。我们与你坚定站在一起。",
+    chineseTraditional: "你永遠在我們的思念之中。我們與你堅定站在一apply。",
+    chineseWithEmojis: "你永远在我们的思念之中。我们与你坚定站在一起。🤝💭💙",
+    pinyin: "Nǐ yǒngyuǎn zài wǒmen de sīniàn zhī zhōng. Wǒmen yǔ nǐ jiāndìng zhàn zài yīqǐ.",
+    vukPhonetic: "Ni jung-jüan caj vo-men de si-njen dži džung. Vo-men jü ni đjen-ding džan caj ji-ći.",
+    serbian: "Uvek si u našim mislima. Stojimo uz tebe.",
+    emojis: ["🤝", "💭", "💙"],
+    words: [
+      { chinese: "永远", pinyin: "yǒngyuǎn", vuk: "jung-jüan", english: "always / forever", serbian: "uvek", emoji: "⏳", category: "adverb" },
+      { chinese: "思念", pinyin: "sīniàn", vuk: "si-njen", english: "thoughts", serbian: "misli / sećanje", emoji: "💭", category: "noun" },
+      { chinese: "站在一起", pinyin: "zhàn zài yīqǐ", vuk: "džan caj ji-ći", english: "stand together", serbian: "stajati zajedno", emoji: "🤝", category: "expression" }
+    ],
+    grammarNote: "Izraz 'zhàn zài yīqǐ' (站在一起) izražava nepodeljeno savezništvo i solidarnost."
+  },
+  {
+    id: 'zh-sol-14',
+    category: 'short',
+    categoryLabel: 'Kratke & Iskrene Poruke',
+    categoryEmoji: '❤️',
+    english: "Holding you in my heart. Stay safe and know you are loved.",
+    chinese: "将你珍藏在心底。请保持平安，切知你被深深关爱着。",
+    chineseTraditional: "將你珍藏在心底。請保持平安，切知你被深深關愛著。",
+    chineseWithEmojis: "将你珍藏在心底。请保持平安，切知你被深深关爱着。❤️🛡️✨",
+    pinyin: "Jiāng nǐ zhēncáng zài xīndǐ. Qǐng bǎochí píng'ān, qiè zhī nǐ bèi shēnshēn guān'ài zhe.",
+    vukPhonetic: "Đjang ni džen-cang caj sin-di. Ćing bao-či ping-an, ćie dži ni bej šen-šen guan-aj dže.",
+    serbian: "Nosim te u srcu. Čuvaj se i znaj da si voljen.",
+    emojis: ["❤️", "🛡️", "✨"],
+    words: [
+      { chinese: "心底", pinyin: "xīndǐ", vuk: "sin-di", english: "bottom of heart", serbian: "dno srca", emoji: "💖", category: "noun" },
+      { chinese: "保持", pinyin: "bǎochí", vuk: "bao-či", english: "maintain / stay", serbian: "ostati / sačuvati", emoji: "🛡️", category: "verb" },
+      { chinese: "平安", pinyin: "píng'ān", vuk: "ping-an", english: "safe / peace", serbian: "bezbedan", emoji: "🕊️", category: "noun" },
+      { chinese: "关爱", pinyin: "guān'ài", vuk: "guan-aj", english: "cared for", serbian: "voljen", emoji: "❤️", category: "verb" }
+    ],
+    grammarNote: "Kombinacija 'xīndǐ' (心底) označava najdublju i najčistiju iskrenost."
+  },
+  {
+    id: 'zh-sol-15',
+    category: 'short',
+    categoryLabel: 'Kratke & Iskrene Poruke',
+    categoryEmoji: '🫂',
+    english: "Sending a virtual hug across the miles. We are with you.",
+    chinese: "跨越千山万水为你送上一个温暖的拥抱。我们与你同在。",
+    chineseTraditional: "跨越千山萬水為你送上一個溫暖的擁抱。我們與你同在。",
+    chineseWithEmojis: "跨越千山万水为你送上一个温暖的拥抱。我们与你同在。🫂💙🌍",
+    pinyin: "Kuàyuè qiān shān wàn shuǐ wèi nǐ sòng shàng yīgè wēnnuǎn de yōngbào. Wǒmen yǔ nǐ tóng zài.",
+    vukPhonetic: "Kua-jüe ćjen šan van šuej vej ni sung šang ji-ge ven-nuan de jung-bao. Vo-men jü ni tung caj.",
+    serbian: "Šaljemo virtuelni zagrljaj preko hiljadu milja. Sa tobom smo.",
+    emojis: ["🫂", "💙", "🌍"],
+    words: [
+      { chinese: "跨越", pinyin: "kuàyuè", vuk: "kua-jüe", english: "cross over", serbian: "preći preko", emoji: "🌉", category: "verb" },
+      { chinese: "千山万水", pinyin: "qiān shān wàn shuǐ", vuk: "ćjen šan van šuej", english: "thousands of miles", serbian: "preko svih daljina", emoji: "⛰️", category: "chengyu" },
+      { chinese: "拥抱", pinyin: "yōngbào", vuk: "jung-bao", english: "hug", serbian: "zagrljaj", emoji: "🫂", category: "noun" },
+      { chinese: "同在", pinyin: "tóng zài", vuk: "tung caj", english: "with you", serbian: "sa tobom", emoji: "🤝", category: "expression" }
+    ],
+    grammarNote: "Poezija 'qiān shān wàn shuǐ' (千山万水) je bezvremeni izraz za prevazilaženje geografske distance."
+  }
+];
+
+export const CHINESE_AI_PRESET_SENTENCES = [
+  { en: "Just a reminder that you have friends all over the world. You are never alone.", emojis: "🌍🤝❤️" },
+  { en: "No matter the distance, we stand with you in unwavering solidarity and love.", emojis: "🌐💪💖" },
+  { en: "The strength and resilience of the Israeli people never cease to inspire me.", emojis: "🦁✨💪" },
+  { en: "Praying for peace, safety, and brighter days ahead for you.", emojis: "🕊️🙏☀️" },
+  { en: "You are always in our thoughts. We stand with you.", emojis: "🤝💭💙" },
+  { en: "Sending a virtual hug across the miles. We are with you.", emojis: "🫂💙🌍" },
+  { en: "Peace and wisdom are true strength.", emojis: "🕊️🧠✨" },
+  { en: "Good morning, wishing you a wonderful and peaceful day!", emojis: "☀️🌅☕" },
+  { en: "I love peace, truth and freedom.", emojis: "❤️🕊️⚖️" },
+  { en: "Never give up, keep going forward with courage!", emojis: "🚀💪🔥" }
+];
 
 export interface ChinesePinyinItem {
   id: string;
@@ -517,7 +903,165 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   const [cfgSubIdx, setCfgSubIdx] = useState(0);
   const [dndStageWords, setDndStageWords] = useState<DndWordItem[]>([]);
   const [dndFilter, setDndFilter] = useState<'all' | 'pronoun' | 'verb' | 'noun' | 'adjective' | 'connector'>('all');
-  const [configTabMode, setConfigTabMode] = useState<'dnd' | 'dropdown'>('dnd');
+  const [configTabMode, setConfigTabMode] = useState<'ai' | 'dnd' | 'dropdown'>('ai');
+
+  // AI Sentence Configurator & Translator State
+  const [aiInputSentence, setAiInputSentence] = useState('');
+  const [isAiTranslating, setIsAiTranslating] = useState(false);
+  const [aiTranslationResult, setAiTranslationResult] = useState<AiConfiguredChineseResult | null>(null);
+  const [aiTranslationError, setAiTranslationError] = useState<string | null>(null);
+  const [aiCopiedResult, setAiCopiedResult] = useState(false);
+  const [selectedSolidarityCategory, setSelectedSolidarityCategory] = useState<'all' | 'solidarity' | 'strength' | 'peace' | 'short'>('all');
+
+  // Custom User Saved Words from AI Configurator
+  const [savedCustomWords, setSavedCustomWords] = useState<VocabItem[]>(() => {
+    try {
+      const stored = localStorage.getItem('wisefit_chinese_custom_words');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const fullVocabList = useMemo(() => {
+    return [...savedCustomWords, ...VOCAB_DATA];
+  }, [savedCustomWords]);
+
+  const handleTranslateWithAi = async (overrideSentence?: string) => {
+    const textToTranslate = (overrideSentence !== undefined ? overrideSentence : aiInputSentence).trim();
+    if (!textToTranslate) {
+      setAiTranslationError('Molimo unesite englesku rečenicu za prevod.');
+      return;
+    }
+
+    setIsAiTranslating(true);
+    setAiTranslationError(null);
+
+    try {
+      const resp = await fetch('/api/ai/chinese-configurator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sentence: textToTranslate,
+          style: 'conversational, stoic & thoughtful'
+        })
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `Greška servera: ${resp.status}`);
+      }
+
+      const resJson = await resp.json();
+      if (resJson.success && resJson.data) {
+        setAiTranslationResult(resJson.data);
+      } else {
+        throw new Error('Nevažeći format odgovora od AI servisa.');
+      }
+    } catch (err: any) {
+      console.warn('AI Chinese Configurator Error:', err);
+      // Fallback: check if we have matching solidarity quote
+      const matchQuote = CHINESE_SOLIDARITY_QUOTES.find(q => 
+        q.english.toLowerCase().includes(textToTranslate.toLowerCase()) || 
+        textToTranslate.toLowerCase().includes(q.english.toLowerCase().slice(0, 20))
+      );
+      if (matchQuote) {
+        setAiTranslationResult({
+          chineseWithEmojis: matchQuote.chineseWithEmojis,
+          chinese: matchQuote.chinese,
+          chineseTraditional: matchQuote.chineseTraditional,
+          pinyin: matchQuote.pinyin,
+          vukPhonetic: matchQuote.vukPhonetic,
+          serbian: matchQuote.serbian,
+          english: matchQuote.english,
+          emojis: matchQuote.emojis,
+          words: matchQuote.words,
+          grammarNote: matchQuote.grammarNote
+        });
+      } else {
+        setAiTranslationError(err.message || 'Neuspelo prevođenje uz AI. Pokušajte ponovo.');
+      }
+    } finally {
+      setIsAiTranslating(false);
+    }
+  };
+
+  const handleCopyAiResult = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setAiCopiedResult(true);
+    setTimeout(() => setAiCopiedResult(false), 2000);
+  };
+
+  const handleSaveAllAiWords = () => {
+    if (!aiTranslationResult || !aiTranslationResult.words || aiTranslationResult.words.length === 0) return;
+    
+    const newItems: VocabItem[] = aiTranslationResult.words.map((w, idx) => ({
+      id: `zh-ai-${Date.now()}-${idx}`,
+      char: w.chinese,
+      pinyin: w.pinyin,
+      vuk: w.vuk,
+      english: w.english,
+      translation: w.serbian,
+      emoji: w.emoji || '✨',
+      category: 'custom',
+      categoryLabel: 'AI Sklop & Generisano',
+      tags: ['ai-configurator', 'custom-word', w.category || 'expression'],
+      level: 1,
+      quote: {
+        text: aiTranslationResult.chinese,
+        pinyin: aiTranslationResult.pinyin,
+        translation: aiTranslationResult.serbian,
+        author: 'WiseFit AI Configurator'
+      }
+    }));
+
+    // Filter out duplicates by character
+    const existingChars = new Set([...VOCAB_DATA.map(v => v.char), ...savedCustomWords.map(v => v.char)]);
+    const toAdd = newItems.filter(item => !existingChars.has(item.char));
+
+    if (toAdd.length === 0) {
+      alert('Sve reči iz ove rečenice se već nalaze u vašoj riznici!');
+      return;
+    }
+
+    const updated = [...savedCustomWords, ...toAdd];
+    setSavedCustomWords(updated);
+    localStorage.setItem('wisefit_chinese_custom_words', JSON.stringify(updated));
+    alert(`Uspešno dodato ${toAdd.length} novih reči u vaš rečnik i flashcards igru! 🎴✨`);
+  };
+
+  const handleSaveSingleAiWord = (word: AiConfigWordItemChinese) => {
+    const existingChars = new Set([...VOCAB_DATA.map(v => v.char), ...savedCustomWords.map(v => v.char)]);
+    if (existingChars.has(word.chinese)) {
+      alert(`Reč "${word.chinese}" se već nalazi u vašem rečniku!`);
+      return;
+    }
+
+    const newItem: VocabItem = {
+      id: `zh-ai-${Date.now()}`,
+      char: word.chinese,
+      pinyin: word.pinyin,
+      vuk: word.vuk,
+      english: word.english,
+      translation: word.serbian,
+      emoji: word.emoji || '✨',
+      category: 'custom',
+      categoryLabel: 'AI Sklop & Generisano',
+      tags: ['ai-configurator', 'custom-word', word.category || 'expression'],
+      level: 1,
+      quote: {
+        text: `${word.chinese} (${word.pinyin})`,
+        pinyin: word.pinyin,
+        translation: word.serbian,
+        author: 'WiseFit AI Configurator'
+      }
+    };
+
+    const updated = [...savedCustomWords, newItem];
+    setSavedCustomWords(updated);
+    localStorage.setItem('wisefit_chinese_custom_words', JSON.stringify(updated));
+    alert(`Reč "${word.chinese}" (${word.serbian}) je sačuvana u rečnik! 🌟`);
+  };
 
   const handleDndAddWord = (item: DndWordItem) => {
     setDndStageWords(prev => [...prev, item]);
@@ -795,8 +1339,9 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   };
 
   const filteredVocab = useMemo(() => {
-    return VOCAB_DATA.filter(item => {
-      const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+    return fullVocabList.filter(item => {
+      const matchesCategory = selectedCategory === 'all' || 
+        (selectedCategory === 'custom' ? item.tags?.includes('custom-word') : item.category === selectedCategory);
       const q = searchQuery.toLowerCase();
       const matchesSearch = searchQuery === '' || 
         item.char.toLowerCase().includes(q) ||
@@ -807,7 +1352,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
         (item.radical && item.radical.toLowerCase().includes(q));
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [fullVocabList, selectedCategory, searchQuery]);
 
   const toggleMastered = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -1118,15 +1663,15 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
               <LayoutGrid className="w-3.5 h-3.5" /> Visual Canvas
             </button>
             <button
-              onClick={() => setActiveTab('weaver')}
+              onClick={() => { setActiveTab('weaver'); setConfigTabMode('ai'); }}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
                 activeTab === 'weaver'
-                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-amber-600 text-white"
+                  ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-amber-600 text-white shadow-lg shadow-amber-600/20"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
-              <Wand2 className="w-3.5 h-3.5" /> Sklop Rečenica
+              <Bot className="w-3.5 h-3.5 text-amber-300 animate-pulse" /> 🤖 AI Konfigurator & Sklop
             </button>
             <button
               onClick={() => { setActiveTab('quiz'); generateQuizRound(); }}
@@ -1170,6 +1715,29 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             <Trophy className="w-4 h-4 text-red-500 fill-red-500 animate-pulse" />
             <span>{masteredIds.length}/{VOCAB_DATA.length}</span>
           </div>
+        </div>
+
+        {/* QUICK AI TRANSLATOR FEATURE BANNER */}
+        <div className={cn(
+          "p-3.5 rounded-2xl border flex items-center justify-between gap-3 flex-wrap shadow-md",
+          isDarkMode ? "bg-gradient-to-r from-red-950/60 via-amber-950/40 to-zinc-900 border-amber-500/40" : "bg-gradient-to-r from-red-50 via-amber-50 to-orange-50 border-amber-200"
+        )}>
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">🤖✨</span>
+            <div className="text-xs">
+              <span className="font-black text-amber-400 dark:text-amber-300">Novo: AI Konfigurator & Prevodilac sa Emodžijima!</span>
+              <p className="text-[11px] text-zinc-400">
+                Upišite englesku rečenicu i pritisnite prevod — dobijate kineske karaktere, pinyin, Vuk čitanje i prigodne emodžije.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setActiveTab('weaver'); setConfigTabMode('ai'); }}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white transition-all shadow-md flex items-center gap-1.5"
+          >
+            <Bot className="w-3.5 h-3.5 text-amber-200" />
+            <span>Otvori AI Prevodilac ⚡</span>
+          </button>
         </div>
       </div>
 
@@ -1226,7 +1794,8 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
 
               <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1">
                 {[
-                  { id: 'all', label: `Sve (${VOCAB_DATA.length})` },
+                  { id: 'all', label: `Sve (${fullVocabList.length})` },
+                  ...(savedCustomWords.length > 0 ? [{ id: 'custom', label: `🤖 Sačuvano iz AI (${savedCustomWords.length})` }] : []),
                   { id: 'strofa_1', label: ' Strofa 1' },
                   { id: 'refren', label: ' Refren' },
                   { id: 'glagoli', label: ' Glagoli' },
@@ -1460,7 +2029,20 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             </div>
 
             {/* CONFIGURATOR MODE SWITCHER TABS */}
-            <div className="flex items-center justify-center gap-2 p-1.5 rounded-2xl bg-zinc-900/80 border border-amber-500/30 max-w-md mx-auto">
+            <div className="flex items-center justify-center gap-2 p-1.5 rounded-2xl bg-zinc-900/80 border border-amber-500/30 max-w-xl mx-auto flex-wrap sm:flex-nowrap">
+              <button
+                onClick={() => setConfigTabMode('ai')}
+                className={cn(
+                  "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2",
+                  configTabMode === 'ai'
+                    ? "bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white shadow-md font-black ring-1 ring-amber-400/50"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                )}
+              >
+                <Bot className="w-4 h-4 text-amber-300 animate-pulse" />
+                <span>🤖 AI Prevodilac & Emodžiji</span>
+              </button>
+
               <button
                 onClick={() => setConfigTabMode('dnd')}
                 className={cn(
@@ -1487,6 +2069,427 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                 <span>⚡ Izbor sa Menijem</span>
               </button>
             </div>
+
+            {/* MODE 0: AI SENTENCE CONFIGURATOR & TRANSLATOR (WITH EMOJIS) */}
+            {configTabMode === 'ai' && (
+              <div className="space-y-6">
+                {/* AI HERO CARD */}
+                <div className={cn(
+                  "p-5 md:p-6 rounded-3xl border space-y-4 shadow-xl relative overflow-hidden",
+                  isDarkMode 
+                    ? "bg-gradient-to-br from-zinc-900 via-zinc-900/90 to-amber-950/20 border-amber-500/40" 
+                    : "bg-gradient-to-br from-white via-amber-50/40 to-orange-50/40 border-amber-300"
+                )}>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-inner">
+                        <Bot className="w-5 h-5 text-amber-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-base md:text-lg font-black tracking-tight flex items-center gap-2">
+                          AI Konfigurator Kineskih Rečenica
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono">
+                            普通话 + Emodžiji
+                          </span>
+                        </h3>
+                        <p className="text-xs text-zinc-400">
+                          Unesite englesku rečenicu ili kliknite preporuku — AI prevodi na kineski sa pinyinom, Vuk transkripcijom, analizom i emodžijima!
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-amber-400/90 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Gemini 3.8 Flash Lingvista</span>
+                    </div>
+                  </div>
+
+                  {/* SOLIDARITY & SUPPORT MESSAGES CAROUSEL */}
+                  <div className="space-y-2.5 pt-1">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <label className="text-xs font-mono font-bold uppercase text-amber-400 flex items-center gap-1.5">
+                        <span className="text-base">🌍</span>
+                        <span>Preporučene Poruke Solidarnosti, Nadanja & Prijateljstva:</span>
+                      </label>
+
+                      {/* Category Filter Pills */}
+                      <div className="flex flex-wrap gap-1 text-[10px] font-mono">
+                        {[
+                          { id: 'all', label: 'Sve (15)' },
+                          { id: 'solidarity', label: '🤝 Solidarnost (4)' },
+                          { id: 'strength', label: '🦁 Snaga & Otpornost (3)' },
+                          { id: 'peace', label: '🕊️ Mir & Nada (4)' },
+                          { id: 'short', label: '✨ Kratke & Tople (4)' },
+                        ].map((cat) => (
+                          <button
+                            key={`sol-cat-${cat.id}`}
+                            type="button"
+                            onClick={() => setSelectedSolidarityCategory(cat.id as any)}
+                            className={cn(
+                              "px-2.5 py-1 rounded-lg border font-bold transition-all",
+                              selectedSolidarityCategory === cat.id
+                                ? "bg-amber-600 text-white border-amber-500 shadow-sm"
+                                : "bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                            )}
+                          >
+                            {cat.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Solidarity Quote Cards Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-64 overflow-y-auto p-1 custom-scrollbar">
+                      {CHINESE_SOLIDARITY_QUOTES
+                        .filter(q => selectedSolidarityCategory === 'all' || q.category === selectedSolidarityCategory)
+                        .map((quote) => (
+                          <div
+                            key={quote.id}
+                            onClick={() => {
+                              setAiInputSentence(quote.english);
+                              handleTranslateWithAi(quote.english);
+                            }}
+                            className={cn(
+                              "p-3 rounded-2xl border text-left cursor-pointer transition-all hover:scale-[1.01] group relative flex flex-col justify-between space-y-2",
+                              isDarkMode 
+                                ? "bg-zinc-800/80 border-zinc-700/80 hover:border-amber-500/70 hover:bg-zinc-800" 
+                                : "bg-white border-amber-200 hover:border-amber-400 shadow-sm"
+                            )}
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between gap-1 text-[10px] font-mono text-amber-400">
+                                <span className="flex items-center gap-1 font-bold">
+                                  <span>{quote.categoryEmoji}</span>
+                                  <span>{quote.categoryLabel}</span>
+                                </span>
+                                <span className="text-zinc-500 group-hover:text-amber-300 transition-colors">
+                                  Klikni za Prevod ⚡
+                                </span>
+                              </div>
+                              <p className="text-xs font-semibold text-zinc-200 line-clamp-2">
+                                "{quote.english}"
+                              </p>
+                            </div>
+
+                            <div className="pt-1 border-t border-zinc-700/50 flex items-center justify-between text-[11px] text-zinc-400">
+                              <span className="font-bold text-amber-300 font-serif truncate max-w-[170px]">
+                                {quote.chinese}
+                              </span>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span className="text-sm">{quote.emojis.slice(0, 2).join('')}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  {/* Additional Quick Preset Chips */}
+                  <div className="space-y-1.5 pt-2 border-t border-zinc-800">
+                    <label className="text-[11px] font-mono font-bold uppercase text-zinc-400 flex items-center gap-1">
+                      <span>⚡ Dodatne Kratke Fraze (kliknite za trenutni prevod sa emodžijima):</span>
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {CHINESE_AI_PRESET_SENTENCES.map((preset, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setAiInputSentence(preset.en);
+                            handleTranslateWithAi(preset.en);
+                          }}
+                          className={cn(
+                            "px-2.5 py-1 rounded-xl text-xs transition-all border text-left flex items-center gap-1.5",
+                            isDarkMode 
+                              ? "bg-zinc-800/60 border-zinc-700 text-zinc-300 hover:bg-amber-950/40 hover:border-amber-500/50 hover:text-white" 
+                              : "bg-white border-zinc-300 text-zinc-700 hover:bg-amber-50"
+                          )}
+                        >
+                          <span>{preset.emojis}</span>
+                          <span className="font-medium">{preset.en}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Textarea Input & Translate Button */}
+                  <div className="space-y-3 pt-2 border-t border-zinc-800">
+                    <div className="relative">
+                      <textarea
+                        value={aiInputSentence}
+                        onChange={(e) => setAiInputSentence(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                            handleTranslateWithAi();
+                          }
+                        }}
+                        placeholder="Unesite rečenicu na engleskom (npr. 'I love learning Chinese words with wisdom, patience and joy')..."
+                        rows={3}
+                        className={cn(
+                          "w-full p-4 rounded-2xl border text-sm font-medium transition-all outline-none resize-none pr-10",
+                          isDarkMode 
+                            ? "bg-zinc-950/80 border-zinc-700 text-zinc-100 focus:border-amber-500" 
+                            : "bg-white border-zinc-300 text-zinc-900 focus:border-amber-500 shadow-inner"
+                        )}
+                      />
+                      {aiInputSentence && (
+                        <button
+                          type="button"
+                          onClick={() => setAiInputSentence('')}
+                          className="absolute top-3.5 right-3.5 p-1 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
+                          title="Obriši tekst"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-[11px] text-zinc-500 font-mono">
+                        Prečica: Ctrl/Cmd + Enter za brzi prevod
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTranslateWithAi()}
+                        disabled={isAiTranslating || !aiInputSentence.trim()}
+                        className={cn(
+                          "px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shadow-lg",
+                          isAiTranslating || !aiInputSentence.trim()
+                            ? "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700"
+                            : "bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white hover:brightness-110 shadow-amber-500/20 active:scale-95"
+                        )}
+                      >
+                        {isAiTranslating ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
+                            <span>AI Prevodi i Dodaje Emodžije...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                            <span>✨ Prevedi na Kineski uz AI (Translate)</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Error message if any */}
+                  {aiTranslationError && (
+                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium flex items-center gap-2">
+                      <XCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>{aiTranslationError}</span>
+                    </div>
+                  )}
+
+                  {/* Translation Result Display Card */}
+                  {aiTranslationResult && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn(
+                        "p-6 rounded-3xl border space-y-6 shadow-2xl relative overflow-hidden",
+                        isDarkMode 
+                          ? "bg-gradient-to-br from-zinc-950 via-zinc-900 to-amber-950/30 border-amber-500/50" 
+                          : "bg-white border-amber-300"
+                      )}
+                    >
+                      {/* Subtle decorative glow */}
+                      <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                      {/* Top Badges & Actions */}
+                      <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 border-zinc-800/80">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] font-mono font-bold uppercase bg-amber-500/20 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/30 flex items-center gap-1">
+                            <span>🇨🇳</span> Kineski Prevod sa Emodžijima
+                          </span>
+                          <span className="text-[10px] font-mono text-zinc-400 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700">
+                            普通话 (Mandarin)
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => speakChinese(aiTranslationResult.chinese)}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/30 transition-all flex items-center gap-1.5"
+                            title="Poslušaj audio izgovor cele rečenice"
+                          >
+                            <Volume2 className="w-3.5 h-3.5 text-amber-300" />
+                            <span>Slušaj</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCopyAiResult(aiTranslationResult.chineseWithEmojis)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5",
+                              aiCopiedResult
+                                ? "bg-emerald-600 text-white border-emerald-500"
+                                : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white" : "bg-zinc-100 border-zinc-300 text-zinc-700"
+                            )}
+                            title="Kopiraj kompletan odgovor sa emodžijima"
+                          >
+                            {aiCopiedResult ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{aiCopiedResult ? 'Kopirano!' : 'Kopiraj sa Emodžijima'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleSaveAllAiWords}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/30 transition-all flex items-center gap-1.5"
+                            title="Dodaj sve reči iz ovog prevoda u svoj rečnik i flashcards igru"
+                          >
+                            <BookmarkPlus className="w-3.5 h-3.5" />
+                            <span>Sačuvaj u Rečnik & Flashcards</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* BIG CHINESE DISPLAY WITH EMOJIS */}
+                      <div className="text-center py-4 px-2 space-y-2">
+                        <div className="text-2xl sm:text-3xl md:text-4xl font-black font-serif tracking-wide leading-relaxed text-amber-100 drop-shadow-sm select-all">
+                          {aiTranslationResult.chineseWithEmojis}
+                        </div>
+
+                        {/* Pronunciation & Translations */}
+                        <div className="max-w-xl mx-auto space-y-1.5 pt-2">
+                          <p className="text-xs sm:text-sm font-mono font-bold text-amber-400">
+                            🗣️ Pinyin: <span className="text-white font-serif">{aiTranslationResult.pinyin}</span>
+                          </p>
+                          {aiTranslationResult.vukPhonetic && (
+                            <p className="text-xs font-mono text-zinc-400">
+                              Vuk Transkripcija: <span className="text-zinc-300 italic">{aiTranslationResult.vukPhonetic}</span>
+                            </p>
+                          )}
+                          <p className="text-xs sm:text-sm font-medium text-emerald-300">
+                            🇷🇸 Značenje: <span className="text-white">{aiTranslationResult.serbian}</span>
+                          </p>
+                          <p className="text-xs text-zinc-400 italic">
+                            🇬🇧 Izvorni engleski: "{aiTranslationResult.english}"
+                          </p>
+                          {aiTranslationResult.chineseTraditional && aiTranslationResult.chineseTraditional !== aiTranslationResult.chinese && (
+                            <p className="text-[11px] font-mono text-zinc-500">
+                              🇹🇼 Tradicionalno pismo (繁體): <span className="text-zinc-400 font-serif">{aiTranslationResult.chineseTraditional}</span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* WORD BREAKDOWN GRID (Interactive Cards) */}
+                      {aiTranslationResult.words && aiTranslationResult.words.length > 0 && (
+                        <div className="space-y-3 border-t pt-4 border-zinc-800">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                              <Layers className="w-3.5 h-3.5 text-amber-400" />
+                              Konfiguracija Reč po Reč (Interaktivne Kartice sa Emodžijima):
+                            </h4>
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                              {aiTranslationResult.words.length} karaktera/reči
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            {aiTranslationResult.words.map((w, idx) => (
+                              <div
+                                key={idx}
+                                className={cn(
+                                  "p-3 rounded-2xl border transition-all flex flex-col justify-between space-y-2 relative group",
+                                  isDarkMode 
+                                    ? "bg-zinc-900/90 border-zinc-800 hover:border-amber-500/50" 
+                                    : "bg-zinc-50 border-zinc-200 hover:border-amber-400 shadow-sm"
+                                )}
+                              >
+                                <div className="flex items-start justify-between gap-1.5">
+                                  <span className="text-2xl p-1 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                    {w.emoji || '✨'}
+                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => speakChinese(w.chinese)}
+                                      className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-amber-600/30 transition-all"
+                                      title="Izgovori reč"
+                                    >
+                                      <Volume2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSaveSingleAiWord(w)}
+                                      className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-300 hover:bg-amber-500/20 transition-all"
+                                      title="Dodaj u moj rečnik i flashcards"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                  <div className="text-2xl font-black font-serif text-amber-200">
+                                    {w.chinese}
+                                  </div>
+                                  <div className="text-[11px] font-mono text-amber-400 font-bold">
+                                    {w.pinyin}
+                                  </div>
+                                  {w.vuk && (
+                                    <div className="text-[10px] font-mono text-zinc-400">
+                                      [{w.vuk}]
+                                    </div>
+                                  )}
+                                  <div className="text-xs text-white font-medium">
+                                    {w.serbian}
+                                  </div>
+                                  <div className="text-[10px] text-zinc-400 italic">
+                                    {w.english}
+                                  </div>
+                                </div>
+
+                                {w.category && (
+                                  <div className="pt-1 border-t border-zinc-800 text-[9px] uppercase font-mono text-zinc-500">
+                                    {w.category}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* GRAMMAR & CULTURE NOTE */}
+                      {aiTranslationResult.grammarNote && (
+                        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
+                          <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold font-mono uppercase text-amber-400 text-[10px] block">💡 Lingvistička Beleška:</span>
+                            <p className="mt-0.5">{aiTranslationResult.grammarNote}</p>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {/* USER'S SAVED AI CUSTOM WORDS COUNTER */}
+                  {savedCustomWords.length > 0 && (
+                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between flex-wrap gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <BookmarkPlus className="w-4 h-4 text-amber-400" />
+                        <span className="font-bold text-amber-300">
+                          Imate {savedCustomWords.length} sačuvanih reči iz AI konfiguratora u vašoj riznici!
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('flashcards')}
+                        className="px-3 py-1 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white transition-all shadow-sm"
+                      >
+                        Igraj Flashcards sa ovim rečima 🎴
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* MODE 1: DRAG & DROP CREATIVE STUDIO */}
             {configTabMode === 'dnd' && (
@@ -2341,7 +3344,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             className="space-y-6"
           >
             <ChineseFlashcardsGame
-              vocabList={VOCAB_DATA}
+              vocabList={fullVocabList}
               masteredIds={masteredIds}
               toggleMastered={toggleMastered}
               speakChinese={speakChinese}

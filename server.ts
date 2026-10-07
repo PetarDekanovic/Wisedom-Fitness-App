@@ -1400,6 +1400,471 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
     };
   }
 
+  // --- CHINESE AI CONFIGURATOR & TRANSLATOR WITH EMOJIS ---
+  app.post("/api/ai/chinese-configurator", async (req, res) => {
+    try {
+      const { sentence, style } = req.body;
+      if (!sentence || typeof sentence !== "string" || !sentence.trim()) {
+        return res.status(400).json({ error: "Please provide an English sentence to configure and translate into Chinese." });
+      }
+
+      const cleanInput = sentence.trim();
+      console.log(`[Chinese AI Configurator] Translating & configuring: "${cleanInput}"`);
+
+      const prompt = `You are an expert Chinese linguist, Mandarin educator, and translator (普通话 / Standard Mandarin).
+Translate the following English sentence into Simplified Chinese for language learners, and provide rich linguistic metadata.
+Crucially: append 2 to 4 delightful, contextually relevant emojis to the translation answer as requested by the user.
+
+English Input: "${cleanInput}"
+Style: ${style || "conversational, stoic & thoughtful"}
+
+Requirements:
+1. Translate into natural, beautiful Simplified Chinese characters (简体中文) suited for learners.
+2. In 'chineseWithEmojis', include the Simplified Chinese translation followed by 2 to 4 fitting emojis (e.g., 🕊️✨, 🌸🍵, ❤️💪, 🌟🤝).
+3. Provide 'pinyin': standard Pinyin with accurate tone marks (e.g., "Péngyǒu biàn tiānxià, nǐ cónglái bùshì gūdān yīrén.").
+4. Provide 'vukPhonetic': phonetic reading tailored for Serbian/Croatian speakers using Vuk Karadžić Cyrillic/Latin conventions (e.g., "Peng-jou bien tjan-sja, ni cong-laj bu-ši gu-dan ji-žen.").
+5. Provide 'serbian': accurate Serbian/Croatian translation of the sentence.
+6. Provide 'emojis': an array of 2 to 4 emojis that best represent the sentence concepts.
+7. Provide 'words' array: breaking down each Chinese word/character component in the sentence:
+   - 'chinese': Chinese character(s) in Simplified
+   - 'chineseTraditional': Chinese character(s) in Traditional
+   - 'pinyin': Pinyin with tones
+   - 'vuk': Serbian Vuk phonetic reading
+   - 'english': English meaning of the word
+   - 'serbian': Serbian meaning of the word
+   - 'emoji': 1 single fitting emoji for that specific word
+   - 'category': "noun" | "verb" | "adjective" | "pronoun" | "particle" | "measure_word" | "expression" | "chengyu"
+8. Provide 'grammarNote': a concise, enlightening 1-2 sentence tip explaining the word order (SVO / Topic-Comment), measure word (量词), particle (的/得/地/了), or Chengyu (成语) in Serbian/English.
+
+Respond STRICTLY with a valid JSON object matching this schema without markdown fences:
+{
+  "chineseWithEmojis": "...",
+  "chinese": "...",
+  "chineseTraditional": "...",
+  "pinyin": "...",
+  "vukPhonetic": "...",
+  "serbian": "...",
+  "english": "${cleanInput.replace(/"/g, '\\"')}",
+  "emojis": ["...", "..."],
+  "words": [
+    {
+      "chinese": "...",
+      "chineseTraditional": "...",
+      "pinyin": "...",
+      "vuk": "...",
+      "english": "...",
+      "serbian": "...",
+      "emoji": "...",
+      "category": "..."
+    }
+  ],
+  "grammarNote": "..."
+}`;
+
+      const config = {
+        temperature: 0.3,
+        responseMimeType: "application/json"
+      };
+
+      let resultText = "";
+      try {
+        const result = await generateWithFallback(prompt, config);
+        resultText = result.text() || "";
+      } catch (err: any) {
+        console.warn("[Chinese AI Configurator] Primary AI call warning:", err?.message);
+      }
+
+      // If AI succeeded and returned valid JSON
+      if (resultText) {
+        let cleaned = resultText.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+        try {
+          const parsed = JSON.parse(cleaned);
+          if (parsed && (parsed.chinese || parsed.chineseWithEmojis)) {
+            // Ensure emojis are present in chineseWithEmojis
+            if (!parsed.chineseWithEmojis && parsed.chinese) {
+              const emojiStr = Array.isArray(parsed.emojis) && parsed.emojis.length > 0 ? ` ${parsed.emojis.join(' ')}` : " 🌸✨";
+              parsed.chineseWithEmojis = `${parsed.chinese}${emojiStr}`;
+            }
+            return res.json({
+              success: true,
+              source: "gemini",
+              data: parsed
+            });
+          }
+        } catch (parseErr) {
+          console.warn("[Chinese AI Configurator] JSON parse fallback:", parseErr);
+        }
+      }
+
+      // Intelligent Offline Fallback Generator
+      console.log("[Chinese AI Configurator] Using intelligent linguistic fallback generator");
+      const fallbackResult = buildFallbackChineseTranslation(cleanInput);
+      return res.json({
+        success: true,
+        source: "offline-dictionary-fallback",
+        data: fallbackResult
+      });
+
+    } catch (error: any) {
+      console.error("Chinese AI Configurator error:", error);
+      res.status(500).json({ error: error.message || "Failed to configure Chinese sentence." });
+    }
+  });
+
+  // Helper for Intelligent Offline Chinese Translation & Emoji Generator
+  function buildFallbackChineseTranslation(english: string) {
+    const lower = english.toLowerCase().trim();
+
+    // Curated intelligent Chinese phrase mappings including solidarity messages & philosophy
+    const presets: Record<string, any> = {
+      "peace and wisdom": {
+        chinese: "和平与智慧是真正的力量。",
+        chineseTraditional: "和平與智慧是真正的力量。",
+        pinyin: "Hépíng yǔ zhìhuì shì zhēnzhèng de lìliàng.",
+        vuk: "He-ping jü dži-huej ši džen-dženg de li-ljang.",
+        serbian: "Mir i mudrost su istinska snaga.",
+        emojis: ["🕊️", "🧠", "✨"],
+        words: [
+          { chinese: "和平", chineseTraditional: "和平", pinyin: "hépíng", vuk: "he-ping", english: "peace", serbian: "mir", emoji: "🕊️", category: "noun" },
+          { chinese: "与", chineseTraditional: "與", pinyin: "yǔ", vuk: "jü", english: "and", serbian: "i", emoji: "🔗", category: "particle" },
+          { chinese: "智慧", chineseTraditional: "智慧", pinyin: "zhìhuì", vuk: "dži-huej", english: "wisdom", serbian: "mudrost", emoji: "🧠", category: "noun" },
+          { chinese: "是", chineseTraditional: "是", pinyin: "shì", vuk: "ši", english: "is / are", serbian: "su / jeste", emoji: "⚡", category: "verb" },
+          { chinese: "真正", chineseTraditional: "真正", pinyin: "zhēnzhèng", vuk: "džen-dženg", english: "true / real", serbian: "istinski", emoji: "💎", category: "adjective" },
+          { chinese: "力量", chineseTraditional: "力量", pinyin: "lìliàng", vuk: "li-ljang", english: "strength / power", serbian: "snaga", emoji: "💪", category: "noun" }
+        ],
+        grammarNote: "Reč 'yǔ' (与) se koristi kao elegantni formalni veznik 'i' koji povezuje imenice."
+      },
+      "good morning": {
+        chinese: "早上好，愿你拥有美好充实的一天！",
+        chineseTraditional: "早上好，願你擁有美好充實的一天！",
+        pinyin: "Zǎoshang hǎo, yuàn nǐ yōngyǒu měihǎo chōngshí de yī tiān!",
+        vuk: "Zao-šang hao, jüan ni jung-jou mej-hao čung-ši de ji tjen!",
+        serbian: "Dobro jutro, želim ti predivan i ispunjen dan!",
+        emojis: ["☀️", "🌅", "☕"],
+        words: [
+          { chinese: "早上", chineseTraditional: "早上", pinyin: "zǎoshang", vuk: "zao-šang", english: "morning", serbian: "jutro", emoji: "🌅", category: "noun" },
+          { chinese: "好", chineseTraditional: "好", pinyin: "hǎo", vuk: "hao", english: "good", serbian: "dobro", emoji: "✨", category: "adjective" },
+          { chinese: "一天", chineseTraditional: "一天", pinyin: "yī tiān", vuk: "ji tjen", english: "one day", serbian: "jedan dan", emoji: "📅", category: "noun" }
+        ],
+        grammarNote: "Pozdrav 'zǎoshang hǎo' (早上好) sastoji se od vremenske odrednice (jutro) i prideva 'hǎo' (dobro)."
+      },
+      "i love peace": {
+        chinese: "我热爱和平与内心的宁静。",
+        chineseTraditional: "我熱愛和平與內心的寧靜。",
+        pinyin: "Wǒ rè'ài hépíng yǔ nèixīn de níngjìng.",
+        vuk: "Vo re-aj he-ping jü nej-sin de ning-đing.",
+        serbian: "Ja volim mir i unutrašnje spokojstvo.",
+        emojis: ["❤️", "🕊️", "🧘"],
+        words: [
+          { chinese: "我", chineseTraditional: "我", pinyin: "wǒ", vuk: "vo", english: "I", serbian: "ja", emoji: "👤", category: "pronoun" },
+          { chinese: "热爱", chineseTraditional: "熱愛", pinyin: "rè'ài", vuk: "re-aj", english: "ardently love", serbian: "volim / gajim ljubav", emoji: "❤️", category: "verb" },
+          { chinese: "和平", chineseTraditional: "和平", pinyin: "hépíng", vuk: "he-ping", english: "peace", serbian: "mir", emoji: "🕊️", category: "noun" },
+          { chinese: "宁静", chineseTraditional: "寧靜", pinyin: "níngjìng", vuk: "ning-đing", english: "serenity", serbian: "spokoj", emoji: "🧘", category: "noun" }
+        ],
+        grammarNote: "Glagol 'rè'ài' (热爱) se u kineskom koristi za duboku i strasnu ljubav prema vrlinama ili domovini."
+      },
+      "friends all over the world": {
+        chinese: "只愿提醒你，世界各地都有你的朋友。我们看见你，我们在乎你，你从来不是孤单一人。",
+        chineseTraditional: "只願提醒你，世界各地都有你的朋友。我們看見你，我們在乎你，你從來不是孤單一人。",
+        pinyin: "Zhǐ yuàn tíxǐng nǐ, shìjiè gèdì dōu yǒu nǐ de péngyǒu. Wǒmen kànjiàn nǐ, wǒmen zàihu nǐ, nǐ cónglái bùshì gūdān yīrén.",
+        vuk: "Dži jüan tihing ni, ši-đie ge-di dou jou ni de peng-jou. Vo-men kan-đien ni, vo-men caj-hu ni, ni cong-laj bu-ši gu-dan ji-žen.",
+        serbian: "Samo podsetnik da imaš prijatelje širom sveta. Vidimo te, brinemo o tebi, i nikada nisi sam.",
+        emojis: ["🌍", "🤝", "❤️"],
+        words: [
+          { chinese: "提醒", chineseTraditional: "提醒", pinyin: "tíxǐng", vuk: "ti-hing", english: "remind", serbian: "podsetnik", emoji: "📝", category: "verb" },
+          { chinese: "世界各地", chineseTraditional: "世界各地", pinyin: "shìjiè gèdì", vuk: "ši-đie ge-di", english: "all over the world", serbian: "širom sveta", emoji: "🌍", category: "noun" },
+          { chinese: "朋友", chineseTraditional: "朋友", pinyin: "péngyǒu", vuk: "peng-jou", english: "friends", serbian: "prijatelji", emoji: "🤝", category: "noun" },
+          { chinese: "孤单", chineseTraditional: "孤單", pinyin: "gūdān", vuk: "gu-dan", english: "alone / lonely", serbian: "sam / usamljen", emoji: "❤️", category: "adjective" }
+        ],
+        grammarNote: "Fraza 'cónglái bùshì' (从来不是) znači 'nikada nisi/nije bio' i naglašava trajnu podršku."
+      },
+      "unwavering solidarity and love": {
+        chinese: "无论相隔多远，请知道我们以坚定不移的团结与爱同你站在一起。",
+        chineseTraditional: "無論相隔多遠，請知道我們以堅定不移的團結與愛同你站在一apply。",
+        pinyin: "Wúlùn xiānggé duō yuǎn, qǐng zhīdào wǒmen yǐ jiāndìng bùyí de tuánjié yǔ ài tóng nǐ zhàn zài yīqǐ.",
+        vuk: "Vu-lun sjang-ge duo jüan, ćing dži-dao vo-men ji đjen-ding bu-ji de tuan-đie jü aj tung ni džan caj ji-ći.",
+        serbian: "Bez obzira na udaljenost, molimo te znaj da stojimo uz tebe u nepokolebljivoj solidarnosti i ljubavi.",
+        emojis: ["🌐", "💪", "💖"],
+        words: [
+          { chinese: "无论", chineseTraditional: "無論", pinyin: "wúlùn", vuk: "vu-lun", english: "no matter", serbian: "bez obzira", emoji: "🌐", category: "particle" },
+          { chinese: "坚定不移", chineseTraditional: "堅定不移", pinyin: "jiāndìng bùyí", vuk: "đjen-ding bu-ji", english: "unwavering / steadfast", serbian: "nepokolebljiv", emoji: "🏔️", category: "chengyu" },
+          { chinese: "团结", chineseTraditional: "團結", pinyin: "tuánjié", vuk: "tuan-đie", english: "solidarity / unity", serbian: "solidarnost / jedinstvo", emoji: "💪", category: "noun" },
+          { chinese: "站在一起", chineseTraditional: "站在一apply", pinyin: "zhàn zài yīqǐ", vuk: "džan caj ji-ći", english: "stand together", serbian: "stajati zajedno", emoji: "🤝", category: "expression" }
+        ],
+        grammarNote: "Četvoroslovni idiom (成语) 'jiāndìng bùyí' (坚定不移) doslovno znači čvrst i nepomičan kao planina."
+      },
+      "holding you in their hearts": {
+        chinese: "今天牵挂着你与你的家人。全世界的人都把你们装在心中。",
+        chineseTraditional: "今天牽掛著你與你的家人。全世界的人都把你們裝在心中。",
+        pinyin: "Jīntiān qiānguà zhe nǐ yǔ nǐ de jiārén. Quán shìjiè de rén dōu bǎ nǐmen zhuāng zài xīnzhōng.",
+        vuk: "Đin-tjen ćjen-gua dže ni jü ni de đja-žen. Ćüan ši-đie de žen dou ba ni-men džuang caj sin-džung.",
+        serbian: "Mislimo na tebe i tvoju porodicu danas. Ljudi širom sveta vas drže u svojim srcima.",
+        emojis: ["👨‍👩‍👧‍👦", "🌎", "🕊️"],
+        words: [
+          { chinese: "牵挂", chineseTraditional: "牽掛", pinyin: "qiānguà", vuk: "ćjen-gua", english: "care / hold in thoughts", serbian: "brinuti / misliti na", emoji: "💭", category: "verb" },
+          { chinese: "家人", chineseTraditional: "家人", pinyin: "jiārén", vuk: "đja-žen", english: "family", serbian: "porodica", emoji: "👨‍👩‍👧‍👦", category: "noun" },
+          { chinese: "心中", chineseTraditional: "心中", pinyin: "xīnzhōng", vuk: "sin-džung", english: "in hearts", serbian: "u srcu", emoji: "❤️", category: "noun" }
+        ],
+        grammarNote: "Reč 'qiānguà' (牵挂) je duboko osećajna kineska reč za brižnu privrženost prema voljenim osobama."
+      },
+      "heavy days alone": {
+        chinese: "你不必独自承受沉重艰难的日子。我们从远方为你送去无数的支持与温暖。",
+        chineseTraditional: "你不必獨自承受沉重艱難的日子。我們從遠方為你送去無數的支持與溫暖。",
+        pinyin: "Nǐ bùbì dúzì chéngshòu chénzhòng jiānnán de rìzi. Wǒmen cóng yuǎnfāng wèi nǐ sòng qù wúshù de zhīchí yǔ wēnnuǎn.",
+        vuk: "Ni bu-bi du-ci čeng-šou čen-džung đjen-nan de ži-ci. Vo-men cung jüan-fang vej ni sung ćü vu-šu de dži-či jü ven-nuan.",
+        serbian: "Ne moraš sam nositi teške dane. Šaljemo ti toliko podrške i topline izdaleka.",
+        emojis: ["🫂", "☀️", "🛡️"],
+        words: [
+          { chinese: "不必", chineseTraditional: "不必", pinyin: "bùbì", vuk: "bu-bi", english: "need not", serbian: "ne moraš", emoji: "🛡️", category: "adverb" },
+          { chinese: "日子", chineseTraditional: "日子", pinyin: "rìzi", vuk: "ži-ci", english: "days", serbian: "dani", emoji: "📅", category: "noun" },
+          { chinese: "支持", chineseTraditional: "支持", pinyin: "zhīchí", vuk: "dži-či", english: "support", serbian: "podrška", emoji: "🤝", category: "noun" },
+          { chinese: "温暖", chineseTraditional: "溫暖", pinyin: "wēnnuǎn", vuk: "ven-nuan", english: "warmth", serbian: "toplina", emoji: "☀️", category: "noun" }
+        ],
+        grammarNote: "Struktura 'cóng yuǎnfāng wèi nǐ...' (从远方为你) pokazuje pravac kretanja emocija i blagostanja."
+      },
+      "resilience of the israeli people": {
+        chinese: "非凡的坚韧与力量总能深深启发人心。为你送去满满的爱与支持。",
+        chineseTraditional: "非凡的堅韌與力量總能深深啟發人心。為你送去滿滿的愛與支持。",
+        pinyin: "Fēifán de jiānrèn yǔ lìliàng zǒng néng shēnshēn qǐfā rénxīn. Wèi nǐ sòng qù mǎnmǎn de ài yǔ zhīchí.",
+        vuk: "Fej-fan de đjen-žen jü li-ljang cung neng šen-šen ći-fa žen-sin. Vej ni sung ćü man-man de aj jü dži-či.",
+        serbian: "Neverovatna snaga i otpornost uvek iznova inspirišu. Šaljemo pregršt ljubavi i podrške.",
+        emojis: ["🦁", "✨", "💪"],
+        words: [
+          { chinese: "坚韧", chineseTraditional: "堅韌", pinyin: "jiānrèn", vuk: "đjen-žen", english: "resilience", serbian: "otpornost", emoji: "🦁", category: "noun" },
+          { chinese: "力量", chineseTraditional: "力量", pinyin: "lìliàng", vuk: "li-ljang", english: "strength", serbian: "snaga", emoji: "💪", category: "noun" },
+          { chinese: "启发", chineseTraditional: "啟發", pinyin: "qǐfā", vuk: "ći-fa", english: "inspire", serbian: "inspirisati", emoji: "✨", category: "verb" }
+        ],
+        grammarNote: "Reč 'jiānrèn' (坚韧) kombinuje čvrstinu (坚) i savitljivu elastičnost (韧) koja se nikada ne lomi."
+      },
+      "standing right here with you": {
+        chinese: "在逆境中的勇气令人钦佩，但你不必时刻都保持坚强。我们就站在这里与你同行。",
+        chineseTraditional: "在逆境中的勇氣令人欽佩，但你不必時刻都保持堅強。我們就站在這裡與你同行。",
+        pinyin: "Zài nìjìng zhōng de yǒngqì lìng rén qīnpèi, dàn nǐ bùbì shíkè dōu bǎochí jiānqiáng. Wǒmen jiù zhàn zài zhèlǐ yǔ nǐ tóngxíng.",
+        vuk: "Caj ni-đing džung de jung-ći ling žen ćin-pej, dan ni bu-bi ši-ke dou bao-či đjen-ćjang. Vo-men đju džan caj dže-li jü ni tung-sing.",
+        serbian: "Tvoja hrabrost u teškim trenucima je zadivljujuća, ali ne moraš uvek biti jak. Stojimo upravo ovde uz tebe.",
+        emojis: ["🛡️", "🤍", "🤝"],
+        words: [
+          { chinese: "勇气", chineseTraditional: "勇氣", pinyin: "yǒngqì", vuk: "jung-ći", english: "courage", serbian: "hrabrost", emoji: "🦁", category: "noun" },
+          { chinese: "坚强", chineseTraditional: "堅強", pinyin: "jiānqiáng", vuk: "đjen-ćjang", english: "strong", serbian: "snažan", emoji: "💪", category: "adjective" },
+          { chinese: "同行", chineseTraditional: "同行", pinyin: "tóngxíng", vuk: "tung-sing", english: "walk together", serbian: "koračati zajedno", emoji: "🤝", category: "verb" }
+        ],
+        grammarNote: "Reč 'tóngxíng' (同行) se u kineskoj filozofiji koristi za verne saputnike na istom putu (Tao)."
+      },
+      "cheering you on": {
+        chinese: "历经每一次挑战，你的精神都璀璨闪耀。为你传递力量，全世界都在为你喝彩。",
+        chineseTraditional: "歷經每一次挑戰，你的精神都璀璨閃耀。為你傳遞力量，全世界都在為你喝彩。",
+        pinyin: "Lìjīng měi yī cì tiǎozhàn, nǐ de jīngshén dōu cuǐcàn shǎnyào. Wèi nǐ chuándì lìliàng, quán shìjiè dōu zài wèi nǐ hècǎi.",
+        vuk: "Li-đing mej ji ci tjao-džan, ni de đing-šen dou cuej-can šan-jao. Vej ni čuan-di li-ljang, ćüan ši-đie dou caj vej ni he-caj.",
+        serbian: "Kroz svaki izazov, tvoj duh blista. Šaljemo snagu i podsetnik da ceo svet navija za tebe.",
+        emojis: ["✨", "🔥", "🌟"],
+        words: [
+          { chinese: "挑战", chineseTraditional: "挑戰", pinyin: "tiǎozhàn", vuk: "tjao-džan", english: "challenge", serbian: "izazov", emoji: "🧗", category: "noun" },
+          { chinese: "精神", chineseTraditional: "精神", pinyin: "jīngshén", vuk: "đing-šen", english: "spirit", serbian: "duh", emoji: "✨", category: "noun" },
+          { chinese: "喝彩", chineseTraditional: "喝彩", pinyin: "hècǎi", vuk: "he-caj", english: "cheer on", serbian: "bodriti / navijati", emoji: "👏", category: "verb" }
+        ],
+        grammarNote: "Izraz 'hècǎi' (喝彩) znači pljeskati i glasno podržavati nečiji nesalomivi podvig."
+      },
+      "peace, safety, and brighter days": {
+        chinese: "祈愿平安、康宁与更明朗美好的日子降临在你身边。",
+        chineseTraditional: "祈願平安、康寧與更明朗美好的日子降臨在你身邊。",
+        pinyin: "Qíyuàn píng'ān, kāngníng yǔ gèng mínglǎng měihǎo de rìzi jiànglín zài nǐ shēnbiān.",
+        vuk: "Ći-jüan ping-an, kang-ning jü geng ming-lang mej-hao de ži-ci đjang-lin caj ni šen-bjien.",
+        serbian: "Molimo se za mir, sigurnost i vedrije dane pred tobom.",
+        emojis: ["🕊️", "🙏", "☀️"],
+        words: [
+          { chinese: "平安", chineseTraditional: "平安", pinyin: "píng'ān", vuk: "ping-an", english: "peace and safety", serbian: "mir i spokoj", emoji: "🕊️", category: "noun" },
+          { chinese: "祈愿", chineseTraditional: "祈願", pinyin: "qíyuàn", vuk: "ći-jüan", english: "pray / wish", serbian: "moliti se / želeti", emoji: "🙏", category: "verb" }
+        ],
+        grammarNote: "Reč 'píng'ān' (平安) obuhvata mir, bezbednost i odsustvo bilo kakve opasnosti."
+      },
+      "quiet, peaceful days": {
+        chinese: "愿你与挚爱之人享有静谧安宁的时光。你们永远在我们心中。",
+        chineseTraditional: "願你與摯愛之人享有靜謐安寧的時光。你們永遠在我們心中。",
+        pinyin: "Yuàn nǐ yǔ zhì'ài zhī rén xiǎngyǒu jìngmì ānníng de shíguāng. Nǐmen yǒngyuǎn zài wǒmen xīnzhōng.",
+        vuk: "Jüan ni jü dži-aj dži žen sjang-jou đing-mi an-ning de ši-guang. Ni-men jung-jüan caj vo-men sin-džung.",
+        serbian: "Želimo tebi i tvojim najdražima mirne i spokojne dane. Uvek ste u našim mislima.",
+        emojis: ["🌿", "🕯️", "🤍"],
+        words: [
+          { chinese: "静谧", chineseTraditional: "靜謐", pinyin: "jìngmì", vuk: "đing-mi", english: "quiet / serene", serbian: "tih i spokojan", emoji: "🤫", category: "adjective" },
+          { chinese: "时光", chineseTraditional: "時光", pinyin: "shíguāng", vuk: "ši-guang", english: "time / days", serbian: "dani / vreme", emoji: "⏳", category: "noun" }
+        ],
+        grammarNote: "Reč 'jìngmì' (静谧) prenosi najdublji poetski spokoj prirode i uma."
+      },
+      "global community wishing you well": {
+        chinese: "愿平安与安宁早日环绕着你。请知道全球社区都在为你真诚祝福。",
+        chineseTraditional: "願平安與安寧早日環繞著你。請知道全球社區都在為你真誠祝福。",
+        pinyin: "Yuàn píng'ān yǔ ānníng zǎorì huánrào zhe nǐ. Qǐng zhīdào quánqiú shèqū dōu zài wèi nǐ zhēnchéng zhùfú.",
+        vuk: "Jüan ping-an jü an-ning zao-ži huan-rao dže ni. Ćing dži-dao ćüan-ćju še-ćü dou caj vej ni džen-čeng džu-fu.",
+        serbian: "Neka te mir i sigurnost uskoro obgrle. Znaj da ti globalna zajednica želi sve najbolje.",
+        emojis: ["🕊️", "🛡️", "🌍"],
+        words: [
+          { chinese: "全球", chineseTraditional: "全球", pinyin: "quánqiú", vuk: "ćüan-ćju", english: "global", serbian: "globalni / svetski", emoji: "🌍", category: "adjective" },
+          { chinese: "祝福", chineseTraditional: "祝福", pinyin: "zhùfú", vuk: "džu-fu", english: "blessing / well-wishes", serbian: "blagoslovi / želje", emoji: "✨", category: "noun" }
+        ],
+        grammarNote: "Reč 'zhùfú' (祝福) označava iskreno slanje dobrih želja i molitve za blagostanje."
+      },
+      "peaceful future": {
+        chinese: "抱持对和平未来的坚定希望，并在抵达那一天前将你珍藏于心。",
+        chineseTraditional: "抱持對和平未來的堅定希望，並在抵達那一天前將你珍藏於心。",
+        pinyin: "Bàochí duì hépíng wèilái de jiāndìng xīwàng, bìng zài dǐdá nà yītiān qián jiāng nǐ zhēncáng yú xīn.",
+        vuk: "Bao-či duej he-ping vej-laj de đjen-ding si-vang, bing caj di-da na ji-tjen ćjen đjang ni džen-cang jü sin.",
+        serbian: "Držimo se nade u mirnu budućnost i nosimo te u srcu dok tamo ne stignemo.",
+        emojis: ["🌱", "💖", "🕊️"],
+        words: [
+          { chinese: "希望", chineseTraditional: "希望", pinyin: "xīwàng", vuk: "si-vang", english: "hope", serbian: "nada", emoji: "🌟", category: "noun" },
+          { chinese: "未来", chineseTraditional: "未來", pinyin: "wèilái", vuk: "vej-laj", english: "future", serbian: "budućnost", emoji: "🌱", category: "noun" }
+        ],
+        grammarNote: "Reč 'wèilái' (未来) doslovno znači 'ono što još nije došlo' — budućnost."
+      },
+      "unwavering support your way": {
+        chinese: "向你送去爱、光明与坚定不移的支持。",
+        chineseTraditional: "向你送去愛、光明與堅定不移的支持。",
+        pinyin: "Xiàng nǐ sòng qù ài, guāngmíng yǔ jiāndìng bùyí de zhīchí.",
+        vuk: "Sjang ni sung ćü aj, guang-ming jü đjen-ding bu-ji de dži-či.",
+        serbian: "Šaljemo ti ljubav, svetlost i nepokolebljivu podršku.",
+        emojis: ["✨", "💖", "🕯️"],
+        words: [
+          { chinese: "光明", chineseTraditional: "光明", pinyin: "guāngmíng", vuk: "guang-ming", english: "light / brightness", serbian: "svetlost", emoji: "🕯️", category: "noun" },
+          { chinese: "支持", chineseTraditional: "支持", pinyin: "zhīchí", vuk: "dži-či", english: "support", serbian: "podrška", emoji: "🤝", category: "noun" }
+        ],
+        grammarNote: "Predlog 'xiàng' (向) označava usmerenje prema primaocu: 'ka tebi'."
+      },
+      "always in our thoughts": {
+        chinese: "你永远在我们的思念之中。我们与你坚定站在一起。",
+        chineseTraditional: "你永遠在我們的思念之中。我們與你堅定站在一apply。",
+        pinyin: "Nǐ yǒngyuǎn zài wǒmen de sīniàn zhī zhōng. Wǒmen yǔ nǐ jiāndìng zhàn zài yīqǐ.",
+        vuk: "Ni jung-jüan caj vo-men de si-njen dži džung. Vo-men jü ni đjen-ding džan caj ji-ći.",
+        serbian: "Uvek si u našim mislima. Stojimo uz tebe.",
+        emojis: ["🤝", "💭", "💙"],
+        words: [
+          { chinese: "永远", chineseTraditional: "永遠", pinyin: "yǒngyuǎn", vuk: "jung-jüan", english: "always / forever", serbian: "zauvek / uvek", emoji: "⏳", category: "adverb" },
+          { chinese: "思念", chineseTraditional: "思念", pinyin: "sīniàn", vuk: "si-njen", english: "thoughts / longing", serbian: "misli / sećanje", emoji: "💭", category: "noun" }
+        ],
+        grammarNote: "Konstrukcija 'zài... zhī zhōng' (在...之中) znači 'unutar / usred nečega'."
+      },
+      "stay safe and know you are loved": {
+        chinese: "将你珍藏在心底。请保持平安，切知你被深深关爱着。",
+        chineseTraditional: "將你珍藏在心底。請保持平安，切知你被深深關愛著。",
+        pinyin: "Jiāng nǐ zhēncáng zài xīndǐ. Qǐng bǎochí píng'ān, qiè zhī nǐ bèi shēnshēn guān'ài zhe.",
+        vuk: "Đjang ni džen-cang caj sin-di. Ćing bao-či ping-an, ćie dži ni bej šen-šen guan-aj dže.",
+        serbian: "Nosi te moje srce. Ostani bezbedan i znaj da si voljen.",
+        emojis: ["❤️", "🛡️", "✨"],
+        words: [
+          { chinese: "平安", chineseTraditional: "平安", pinyin: "píng'ān", vuk: "ping-an", english: "safe", serbian: "bezbedan / miran", emoji: "🛡️", category: "adjective" },
+          { chinese: "关爱", chineseTraditional: "關愛", pinyin: "guān'ài", vuk: "guan-aj", english: "loved / cherished", serbian: "voljen / pažen", emoji: "❤️", category: "verb" }
+        ],
+        grammarNote: "Pasivna rečca 'bèi' (被) se koristi za trpno stanje: 'ti si voljen'."
+      },
+      "virtual hug across the miles": {
+        chinese: "跨越千山万水为你送上一个温暖的拥抱。我们与你同在。",
+        chineseTraditional: "跨越千山萬水為你送上一個溫暖的擁抱。我們與你同在。",
+        pinyin: "Kuàyuè qiān shān wàn shuǐ wèi nǐ sòng shàng yīgè wēnnuǎn de yōngbào. Wǒmen yǔ nǐ tóng zài.",
+        vuk: "Kua-jüe ćjen šan van šuej vej ni sung šang ji-ge ven-nuan de jung-bao. Vo-men jü ni tung caj.",
+        serbian: "Šaljemo virtuelni zagrljaj preko hiljadu milja. Sa tobom smo.",
+        emojis: ["🫂", "💙", "🌍"],
+        words: [
+          { chinese: "拥抱", chineseTraditional: "擁抱", pinyin: "yōngbào", vuk: "jung-bao", english: "hug", serbian: "zagrljaj", emoji: "🫂", category: "noun" },
+          { chinese: "同在", chineseTraditional: "同在", pinyin: "tóng zài", vuk: "tung caj", english: "be together with", serbian: "biti zajedno", emoji: "🤝", category: "expression" }
+        ],
+        grammarNote: "Poetska fraza 'qiān shān wàn shuǐ' (千山万水) znači 'preko hiljadu planina i deset hiljada reka'."
+      }
+    };
+
+    for (const [key, val] of Object.entries(presets)) {
+      if (lower.includes(key)) {
+        return {
+          chineseWithEmojis: `${val.chinese} ${val.emojis.join(' ')}`,
+          chinese: val.chinese,
+          chineseTraditional: val.chineseTraditional || val.chinese,
+          pinyin: val.pinyin,
+          vukPhonetic: val.vuk,
+          serbian: val.serbian,
+          english: english,
+          emojis: val.emojis,
+          words: val.words,
+          grammarNote: val.grammarNote
+        };
+      }
+    }
+
+    // Default intelligent word-level Chinese dictionary fallback
+    const dict: Record<string, { zh: string; trad: string; pin: string; vuk: string; srb: string; emoji: string; cat: string }> = {
+      i: { zh: "我", trad: "我", pin: "wǒ", vuk: "vo", srb: "ja", emoji: "👤", cat: "pronoun" },
+      you: { zh: "你", trad: "你", pin: "nǐ", vuk: "ni", srb: "ti", emoji: "👉", cat: "pronoun" },
+      we: { zh: "我们", trad: "我們", pin: "wǒmen", vuk: "vo-men", srb: "mi", emoji: "👥", cat: "pronoun" },
+      love: { zh: "爱", trad: "愛", pin: "ài", vuk: "aj", srb: "voleti / ljubav", emoji: "❤️", cat: "verb" },
+      peace: { zh: "和平", trad: "和平", pin: "hépíng", vuk: "he-ping", srb: "mir", emoji: "🕊️", cat: "noun" },
+      wisdom: { zh: "智慧", trad: "智慧", pin: "zhìhuì", vuk: "dži-huej", srb: "mudrost", emoji: "🧠", cat: "noun" },
+      truth: { zh: "真理", trad: "真理", pin: "zhēnlǐ", vuk: "džen-li", srb: "istina", emoji: "⚖️", cat: "noun" },
+      strength: { zh: "力量", trad: "力量", pin: "lìliàng", vuk: "li-ljang", srb: "snaga", emoji: "💪", cat: "noun" },
+      friend: { zh: "朋友", trad: "朋友", pin: "péngyǒu", vuk: "peng-jou", srb: "prijatelj", emoji: "🤝", cat: "noun" },
+      heart: { zh: "心", trad: "心", pin: "xīn", vuk: "sin", srb: "srce", emoji: "💖", cat: "noun" },
+      world: { zh: "世界", trad: "世界", pin: "shìjiè", vuk: "ši-đie", srb: "svet", emoji: "🌍", cat: "noun" },
+      life: { zh: "生命", trad: "生命", pin: "shēngmìng", vuk: "šeng-ming", srb: "život", emoji: "🌿", cat: "noun" },
+      light: { zh: "光", trad: "光", pin: "guāng", vuk: "guang", srb: "svetlost", emoji: "🕯️", cat: "noun" },
+      water: { zh: "水", trad: "水", pin: "shuǐ", vuk: "šuej", srb: "voda", emoji: "💧", cat: "noun" },
+      tea: { zh: "茶", trad: "茶", pin: "chá", vuk: "ča", srb: "čaj", emoji: "🍵", cat: "noun" },
+      mountain: { zh: "山", trad: "山", pin: "shān", vuk: "šan", srb: "planina", emoji: "⛰️", cat: "noun" },
+      learn: { zh: "学习", trad: "學習", pin: "xuéxí", vuk: "sjüe-si", srb: "učiti", emoji: "📚", cat: "verb" },
+      think: { zh: "思考", trad: "思考", pin: "sīkǎo", vuk: "si-kao", srb: "razmišljati", emoji: "🤔", cat: "verb" },
+      good: { zh: "好", trad: "好", pin: "hǎo", vuk: "hao", srb: "dobro", emoji: "✨", cat: "adjective" },
+      beautiful: { zh: "美", trad: "美", pin: "měi", vuk: "mej", srb: "lepo", emoji: "🌸", cat: "adjective" }
+    };
+
+    const wordsInInput = lower.replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
+    const matchedWords: any[] = [];
+    const emojisFound: string[] = [];
+
+    for (const w of wordsInInput) {
+      if (dict[w]) {
+        const item = dict[w];
+        matchedWords.push({
+          chinese: item.zh,
+          chineseTraditional: item.trad,
+          pinyin: item.pin,
+          vuk: item.vuk,
+          english: w,
+          serbian: item.srb,
+          emoji: item.emoji,
+          category: item.cat
+        });
+        if (!emojisFound.includes(item.emoji)) emojisFound.push(item.emoji);
+      }
+    }
+
+    if (matchedWords.length === 0) {
+      matchedWords.push(
+        { chinese: "和平", chineseTraditional: "和平", pinyin: "hépíng", vuk: "he-ping", english: "peace", serbian: "mir", emoji: "🕊️", category: "noun" },
+        { chinese: "与", chineseTraditional: "與", pinyin: "yǔ", vuk: "jü", english: "and", serbian: "i", emoji: "🔗", category: "particle" },
+        { chinese: "智慧", chineseTraditional: "智慧", pinyin: "zhìhuì", vuk: "dži-huej", english: "wisdom", serbian: "mudrost", emoji: "🧠", category: "noun" }
+      );
+      emojisFound.push("🕊️", "✨", "🧠");
+    }
+
+    if (emojisFound.length === 0) emojisFound.push("✨", "🌸");
+    if (emojisFound.length < 2) emojisFound.push("🌟");
+
+    const fullZh = matchedWords.map(m => m.chinese).join('');
+    const fullTrad = matchedWords.map(m => m.chineseTraditional || m.chinese).join('');
+    const fullPin = matchedWords.map(m => m.pinyin).join(' ');
+    const fullVuk = matchedWords.map(m => m.vuk).join(' ');
+    const fullSrb = matchedWords.map(m => m.serbian).join(' ');
+    const emojiStr = emojisFound.slice(0, 3).join(' ');
+
+    return {
+      chineseWithEmojis: `${fullZh} ${emojiStr}`,
+      chinese: fullZh,
+      chineseTraditional: fullTrad,
+      pinyin: fullPin,
+      vukPhonetic: fullVuk,
+      serbian: fullSrb,
+      english: english,
+      emojis: emojisFound.slice(0, 3),
+      words: matchedWords,
+      grammarNote: "Kineski jezik koristi redosled Subjekat + Glagol + Objekat (SVO). Reči ne menjaju oblik za padeže ili vremena."
+    };
+  }
+
   // --- LINK PREVIEW SCROLLER & META EXTRACTOR ---
   app.get("/api/link-metadata", async (req, res) => {
     const targetUrl = req.query.url as string;
