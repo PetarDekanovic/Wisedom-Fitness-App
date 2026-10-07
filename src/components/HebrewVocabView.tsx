@@ -33,7 +33,9 @@ import {
   Loader2,
   BookmarkPlus,
   History,
-  Languages
+  Languages,
+  HeartHandshake,
+  Globe
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { db } from '../firebase';
@@ -81,13 +83,348 @@ export interface AiConfiguredHebrewResult {
   grammarNote?: string;
 }
 
+export interface HebrewSolidarityQuote {
+  id: string;
+  category: 'solidarity' | 'strength' | 'peace' | 'short';
+  categoryLabel: string;
+  categoryEmoji: string;
+  english: string;
+  hebrew: string;
+  hebrewClean: string;
+  hebrewWithEmojis: string;
+  vukPhonetic: string;
+  transliteration: string;
+  serbian: string;
+  emojis: string[];
+  words: AiConfigWordItem[];
+  grammarNote: string;
+}
+
+export const HEBREW_SOLIDARITY_QUOTES: HebrewSolidarityQuote[] = [
+  // 1. General Solidarity & Letting Them Know They Aren't Alone
+  {
+    id: 'sol-1',
+    category: 'solidarity',
+    categoryLabel: 'Solidarnost & Prijateljstvo',
+    categoryEmoji: '🤝',
+    english: "Just a reminder that you have friends all over the world. We see you, we care about you, and you are never alone.",
+    hebrew: "רַק תִּזְכֹּרֶת שֶׁיֵּשׁ לָכֶם חֲבֵרִים בְּכָל הָעוֹלָם. אֲנַחְנוּ רוֹאִים אֶתְכֶם, אִכְפַּת לָנוּ מִכֶּם, וְאַתֶּם לְעוֹלָם לֹא לְבַד.",
+    hebrewClean: "רק תזכורת שיש לכם חברים בכל העולם. אנחנו רואים אתכם, אכפת לנו מכם, ואתם לעולם לא לבד.",
+    hebrewWithEmojis: "רַק תִּזְכֹּרֶת שֶׁיֵּשׁ לָכֶם חֲבֵרִים בְּכָל הָעוֹלָם. אֲנַחְנוּ רוֹאִים אֶתְכֶם, אִכְפַּת לָנוּ מִכֶּם, וְאַתֶּם לְעוֹלָם לֹא לְבַד. 🌍🤝❤️",
+    vukPhonetic: "Rak tizkoret še-ješ lahem haverim be-hol ha-olam. Anahnu roim ethem, ihpat lanu mihem, ve-atem le-olam lo levad.",
+    transliteration: "Rak tizkoret she-yesh lachem chaverim be-khol ha-olam. Anachnu ro'im etchem, ikhpat lanu mikhem, ve-atem le'olam lo levad.",
+    serbian: "Samo podsetnik da imate prijatelje širom sveta. Vidimo vas, brinemo o vama, i nikada niste sami.",
+    emojis: ["🌍", "🤝", "❤️"],
+    words: [
+      { hebrew: "תִּזְכֹּרֶת", hebrewClean: "תזכורת", transliteration: "tizkoret", vuk: "tizkoret", english: "reminder", serbian: "podsetnik", emoji: "📝", category: "noun" },
+      { hebrew: "חֲבֵרִים", hebrewClean: "חברים", transliteration: "chaverim", vuk: "haverim", english: "friends", serbian: "prijatelji", emoji: "🤝", category: "noun" },
+      { hebrew: "עוֹלָם", hebrewClean: "עולם", transliteration: "olam", vuk: "olam", english: "world", serbian: "svet", emoji: "🌍", category: "noun" },
+      { hebrew: "רוֹאִים", hebrewClean: "רואים", transliteration: "ro'im", vuk: "roim", english: "see", serbian: "vidimo", emoji: "👀", category: "verb" },
+      { hebrew: "לֹא לְבַד", hebrewClean: "לא לבד", transliteration: "lo levad", vuk: "lo levad", english: "not alone", serbian: "niste sami", emoji: "❤️", category: "expression" }
+    ],
+    grammarNote: "Reč 'chaverim' (חֲבֵרִים) potiče od drevnog korena ח-ב-ר koji označava spajanje, zajedništvo i pravo prijateljstvo."
+  },
+  {
+    id: 'sol-2',
+    category: 'solidarity',
+    categoryLabel: 'Solidarnost & Prijateljstvo',
+    categoryEmoji: '🤝',
+    english: "No matter the distance, please know we stand with you in unwavering solidarity and love.",
+    hebrew: "לֹא מְשַׁנֶּה הַמֶּרְחָק, דְּעוּ שֶׁאָנוּ עוֹמְדִים לְצִדְּכֶם בְּסוֹלִידָרִיּוּת לְלֹא עַרְעוּר וּבְאַהֲבָה.",
+    hebrewClean: "לא משנה המרחק, דעו שאנו עומדים לצדכם בסולידריות ללא ערעור ובאהבה.",
+    hebrewWithEmojis: "לֹא מְשַׁנֶּה הַמֶּרְחָק, דְּעוּ שֶׁאָנוּ עוֹמְדִים לְצִדְּכֶם בְּסוֹלִידָרִיּוּת לְלֹא עַרְעוּר וּבְאַהֲבָה. 🌐💪💖",
+    vukPhonetic: "Lo mešane ha-merhak, deu še-anu omdim le-cidhem be-solidarijut lelo arur uve-ahava.",
+    transliteration: "Lo mechangeh ha-merchak, de'u she-anu omdim le-tzidkhem be-solidariyut lelo ar'ur uve-ahavah.",
+    serbian: "Bez obzira na udaljenost, molimo vas znajte da stojimo uz vas u nepokolebljivoj solidarnosti i ljubavi.",
+    emojis: ["🌐", "💪", "💖"],
+    words: [
+      { hebrew: "מֶרְחָק", hebrewClean: "מרחק", transliteration: "merchak", vuk: "merhak", english: "distance", serbian: "udaljenost", emoji: "🌐", category: "noun" },
+      { hebrew: "עוֹמְדִים", hebrewClean: "עומדים", transliteration: "omdim", vuk: "omdim", english: "standing (with you)", serbian: "stojimo uz vas", emoji: "🤝", category: "verb" },
+      { hebrew: "סוֹלִידָרִיּוּת", hebrewClean: "סולידריות", transliteration: "solidariyut", vuk: "solidarijut", english: "solidarity", serbian: "solidarnost", emoji: "💪", category: "noun" },
+      { hebrew: "אַהֲבָה", hebrewClean: "אהבה", transliteration: "ahavah", vuk: "ahava", english: "love", serbian: "ljubav", emoji: "💖", category: "noun" }
+    ],
+    grammarNote: "Fraza 'omdim le-tzidkhem' (עוֹמְדִים לְצִדְּכֶם) doslovno znači stajati uz vaš bok, rame uz rame u teškim vremenima."
+  },
+  {
+    id: 'sol-3',
+    category: 'solidarity',
+    categoryLabel: 'Solidarnost & Prijateljstvo',
+    categoryEmoji: '🤝',
+    english: "Thinking of you and your family today. People around the globe are holding you in their hearts.",
+    hebrew: "חוֹשְׁבִים עָלֶיךָ וְעַל מִשְׁפַּחְתְּךָ הַיּוֹם. אֲנָשִׁים בְּכָל רַחֲבֵי הָעוֹלָם מַחֲזִיקִים אֶתְכֶם בְּלִבָּם.",
+    hebrewClean: "חושבים עליך ועל משפחתך היום. אנשים בכל רחבי העולם מחזיקים אתכם בלבם.",
+    hebrewWithEmojis: "חוֹשְׁבִים עָלֶיךָ וְעַל מִשְׁפַּחְתְּךָ הַיּוֹם. אֲנָשִׁים בְּכָל רַחֲבֵי הָעוֹלָם מַחֲזִיקִים אֶתְכֶם בְּלִבָּם. 👨‍👩‍👧‍👦🌎🕊️",
+    vukPhonetic: "Hošvim aleha ve-al mišpahteka ha-jom. Anašim be-hol rahavei ha-olam mahzikim ethem be-libam.",
+    transliteration: "Choshvim alekha ve-al mishpachtekha ha-yom. Anashim be-khol rachavei ha-olam machzikim etchem be-libam.",
+    serbian: "Mislimo na tebe i tvoju porodicu danas. Ljudi širom sveta vas nose u svojim srcima.",
+    emojis: ["👨‍👩‍👧‍👦", "🌎", "🕊️"],
+    words: [
+      { hebrew: "מִשְׁפָּחָה", hebrewClean: "משפחה", transliteration: "mishpacha", vuk: "mišpaha", english: "family", serbian: "porodica", emoji: "👨‍👩‍👧‍👦", category: "noun" },
+      { hebrew: "הַיּוֹם", hebrewClean: "היום", transliteration: "ha-yom", vuk: "ha-jom", english: "today", serbian: "danas", emoji: "☀️", category: "noun" },
+      { hebrew: "מַחֲזִיקִים", hebrewClean: "מחזיקים", transliteration: "machzikim", vuk: "mahzikim", english: "holding / keeping", serbian: "čuvaju / drže", emoji: "🤲", category: "verb" },
+      { hebrew: "לֵב", hebrewClean: "לב", transliteration: "lev", vuk: "lev", english: "heart", serbian: "srce", emoji: "❤️", category: "noun" }
+    ],
+    grammarNote: "Izraz 'machzikim be-libam' (מַחֲזִיקִים בְּלִבָּם) prenosi brižnost i toplinu ljudskog srca."
+  },
+  {
+    id: 'sol-4',
+    category: 'solidarity',
+    categoryLabel: 'Solidarnost & Prijateljstvo',
+    categoryEmoji: '🤝',
+    english: "You don't have to carry the heavy days alone. We are sending you so much support and warmth from afar.",
+    hebrew: "אַתֶּם לֹא צְרִיכִים לָשֵׂאת אֶת הַיָּמִים הַקָּשִׁים לְבַד. אָנוּ שׁוֹלְחִים לָכֶם תְּמִיכָה וְחֹם מֵרָחוֹק.",
+    hebrewClean: "אתם לא צריכים לשאת את הימים הקשים לבד. אנו שולחים לכם תמיכה וחם מרחוק.",
+    hebrewWithEmojis: "אַתֶּם לֹא צְרִיכִים לָשֵׂאת אֶת הַיָּמִים הַקָּשִׁים לְבַד. אָנוּ שׁוֹלְחִים לָכֶם תְּמִיכָה וְחֹם מֵרָחוֹק. 🫂☀️🛡️",
+    vukPhonetic: "Atem lo crihim laset et ha-jamim ha-kašim levad. Anu šolhim lahem tmiha ve-hom me-rahok.",
+    transliteration: "Atem lo tzrichim laset et ha-yamim ha-kashim levad. Anu sholchim lachem tmichah ve-chom me-rachok.",
+    serbian: "Ne morate sami nositi teške dane. Šaljemo vam toliko podrške i topline iz daljine.",
+    emojis: ["🫂", "☀️", "🛡️"],
+    words: [
+      { hebrew: "לָשֵׂאת", hebrewClean: "לשאת", transliteration: "laset", vuk: "laset", english: "to carry / bear", serbian: "nositi", emoji: "🎒", category: "verb" },
+      { hebrew: "קָשִׁים", hebrewClean: "קשים", transliteration: "kashim", vuk: "kašim", english: "difficult / heavy", serbian: "teški", emoji: "⛰️", category: "adjective" },
+      { hebrew: "תְּמִיכָה", hebrewClean: "תמיכה", transliteration: "tmichah", vuk: "tmiha", english: "support", serbian: "podrška", emoji: "🛡️", category: "noun" },
+      { hebrew: "חֹם", hebrewClean: "חום", transliteration: "chom", vuk: "hom", english: "warmth", serbian: "toplina", emoji: "☀️", category: "noun" }
+    ],
+    grammarNote: "Reč 'tmichah' (תְּמִיכָה) znači oslonac, temelj i ruka podrške."
+  },
+
+  // 2. Acknowledging Their Strength & Resilience
+  {
+    id: 'sol-5',
+    category: 'strength',
+    categoryLabel: 'Snaga & Otpornost',
+    categoryEmoji: '🦁',
+    english: "The strength and resilience of the Israeli people never cease to inspire me. Sending you so much love and support.",
+    hebrew: "הַכֹּחַ וְהַחֹסֶן שֶׁל עַם יִשְׂרָאֵל לְעוֹלָם אֵינָם מַפְסִיקִים לְהַשְׁרִיף בִּי הַשְׁרָאָה. שׁוֹלֵחַ לָכֶם כָּל כָּךְ הַרְבֵּה אַהֲבָה וּתְמִיכָה.",
+    hebrewClean: "הכוח והחוסן של עם ישראל לעולם אינם מפסיקים להשריף בי השראה. שולח לכם כל כך הרבה אהבה ותמיכה.",
+    hebrewWithEmojis: "הַכֹּחַ וְהַחֹסֶן שֶׁל עַם יִשְׂרָאֵל לְעוֹלָם אֵינָם מַפְסִיקִים לְהַשְׁרִיף בִּי הַשְׁרָאָה. שׁוֹלֵחַ לָכֶם כָּל כָּךְ הַרְבֵּה אַהֲבָה וּתְמִיכָה. 🦁🇮🇱💪",
+    vukPhonetic: "Ha-koah ve-ha-hosen šel am Jisrael le-olam ejnam mafsikim lehašrif bi hašra'a. Šoleah lahem kol kah harbe ahava u-tmiha.",
+    transliteration: "Ha-koach ve-ha-chosen shel am Yisrael le'olam einam mafsikim lehashrif bi hashra'ah. Shole'ach lachem kol kakh harbeh ahavah u-tmichah.",
+    serbian: "Snaga i otpornost izraelskog naroda nikada ne prestaju da me inspirišu. Šaljem vam pregršt ljubavi i podrške.",
+    emojis: ["🦁", "🇮🇱", "💪"],
+    words: [
+      { hebrew: "כֹּחַ", hebrewClean: "כוח", transliteration: "koach", vuk: "koah", english: "strength", serbian: "snaga", emoji: "💪", category: "noun" },
+      { hebrew: "חֹסֶן", hebrewClean: "חוסן", transliteration: "chosen", vuk: "hosen", english: "resilience / fortitude", serbian: "otpornost", emoji: "🦁", category: "noun" },
+      { hebrew: "עַם יִשְׂרָאֵל", hebrewClean: "עם ישראל", transliteration: "am Yisrael", vuk: "am Jisrael", english: "people of Israel", serbian: "narod Izraela", emoji: "🇮🇱", category: "noun" },
+      { hebrew: "הַשְׁרָאָה", hebrewClean: "השראה", transliteration: "hashra'ah", vuk: "hašra'a", english: "inspiration", serbian: "inspiracija", emoji: "✨", category: "noun" }
+    ],
+    grammarNote: "Reč 'chosen' (חֹסֶן) u jevrejskoj filozofiji označava unutrašnju psihološku i duhovnu nesalomivost."
+  },
+  {
+    id: 'sol-6',
+    category: 'strength',
+    categoryLabel: 'Snaga & Otpornost',
+    categoryEmoji: '🦁',
+    english: "Your courage in difficult times is incredible, but you shouldn't have to be strong all the time. We are standing right here with you.",
+    hebrew: "הָאֹמֶץ שֶׁלָּכֶם בִּזְמַנִּים קָשִׁים הוּא מַדְהִים, אַךְ אֵינְכֶם חַיָּבִים לִהְיוֹת חֲזָקִים כָּל הַזְּמַן. אָנוּ עוֹמְדִים כָּאן לְצִדְּכֶם.",
+    hebrewClean: "האומץ שלכם בזמנים קשים הוא מדהים, אך אינכם חייבים להיות חזקים כל הזמן. אנו עומדים כאן לצדכם.",
+    hebrewWithEmojis: "הָאֹמֶץ שֶׁלָּכֶם בִּזְמַנִּים קָשִׁים הוּא מַדְהִים, אַךְ אֵינְכֶם חַיָּבִים לִהְיוֹת חֲזָקִים כָּל הַזְּמַן. אָנוּ עוֹמְדִים כָּאן לְצִדְּכֶם. 🛡️🤍🤝",
+    vukPhonetic: "Ha-omec šelahem bizmanim kašim hu madhim, ah ejnhem hajavim lihjot hazakim kol ha-zman. Anu omdim kan le-cidhem.",
+    transliteration: "Ha-ometz shelakhem bizmanim kashim hu madhim, akh einkhem chayavim lihyot chazakim kol ha-zman. Anu omdim kan le-tzidkhem.",
+    serbian: "Vaša hrabrost u teškim trenucima je neverovatna, ali ne morate uvek biti jaki. Stojimo upravo ovde uz vas.",
+    emojis: ["🛡️", "🤍", "🤝"],
+    words: [
+      { hebrew: "אֹמֶץ", hebrewClean: "אומץ", transliteration: "ometz", vuk: "omec", english: "courage", serbian: "hrabrost", emoji: "🦁", category: "noun" },
+      { hebrew: "חֲזָקִים", hebrewClean: "חזקים", transliteration: "chazakim", vuk: "hazakim", english: "strong (plural)", serbian: "jaki", emoji: "💪", category: "adjective" },
+      { hebrew: "כָּאן", hebrewClean: "כאן", transliteration: "kan", vuk: "kan", english: "here", serbian: "ovde", emoji: "📍", category: "adverb" }
+    ],
+    grammarNote: "Reč 'ometz' (אֹמֶץ) je drevna vrlina hrabrosti koja se pominje u blagoslovu 'Chazak ve'ematz' (Budi jak i odvažan)."
+  },
+  {
+    id: 'sol-7',
+    category: 'strength',
+    categoryLabel: 'Snaga & Otpornost',
+    categoryEmoji: '🦁',
+    english: "Through every challenge, your spirit shines bright. Sending you strength and a reminder that the world is cheering you on.",
+    hebrew: "בְּכָל אֶתְגָּר, רוּחֲכֶם זוֹהֶרֶת בְּבֵהִירוּת. שׁוֹלֵחַ לָכֶם כֹּחַ וְתִזְכֹּרֶת שֶׁהָעוֹלָם מְעוֹדֵד אֶתְכֶם.",
+    hebrewClean: "בכל אתגר, רוחכם זוהרת בבהירות. שולח לכם כוח ותזכורת שהעולם מעודד אתכם.",
+    hebrewWithEmojis: "בְּכָל אֶתְגָּר, רוּחֲכֶם זוֹהֶרֶת בְּבֵהִירוּת. שׁוֹלֵחַ לָכֶם כֹּחַ וְתִזְכֹּרֶת שֶׁהָעוֹלָם מְעוֹדֵד אֶתְכֶם. ✨🔥🌟",
+    vukPhonetic: "Be-hol etgar, ruhakhem zoheret be-vehijrut. Šoleah lahem koah ve-tizkoret še-ha-olam me'oded ethem.",
+    transliteration: "Be-khol etgar, ruchakhem zoheret be-vehirut. Shole'ach lachem koach ve-tizkoret she-ha-olam me'oded etchem.",
+    serbian: "Kroz svaki izazov, vaš duh blista snažno. Šaljem vam snagu i podsetnik da vas ceo svet bodri.",
+    emojis: ["✨", "🔥", "🌟"],
+    words: [
+      { hebrew: "אֶתְגָּר", hebrewClean: "אתגר", transliteration: "etgar", vuk: "etgar", english: "challenge", serbian: "izazov", emoji: "🧗", category: "noun" },
+      { hebrew: "רוּחַ", hebrewClean: "רוח", transliteration: "ruach", vuk: "ruah", english: "spirit / breath", serbian: "duh", emoji: "✨", category: "noun" },
+      { hebrew: "זוֹהֶרֶת", hebrewClean: "זוהרת", transliteration: "zoheret", vuk: "zoheret", english: "shines / radiant", serbian: "blista", emoji: "🌟", category: "verb" },
+      { hebrew: "מְעוֹדֵד", hebrewClean: "מעודד", transliteration: "me'oded", vuk: "me'oded", english: "cheers on / encourages", serbian: "bodri", emoji: "📣", category: "verb" }
+    ],
+    grammarNote: "Koren זו-ה-ר (Z-H-R) znači sijati i blistati, i od njega potiče i naziv mistične knjige 'Zohar'."
+  },
+
+  // 3. Focusing on Peace, Safety, & Hope
+  {
+    id: 'sol-8',
+    category: 'peace',
+    categoryLabel: 'Mir, Bezbednost & Nada',
+    categoryEmoji: '🕊️',
+    english: "Praying for peace, safety, and brighter days ahead for you and all of Israel.",
+    hebrew: "מִתְפַּלֵּל לְשָׁלוֹם, לְבִטָּחוֹן וּלְיָמִים בְּהִירִים יוֹתֵר עֲבוּרְךָ וַעֲבוּר כָּל יִשְׂרָאֵל.",
+    hebrewClean: "מתפלל לשלום, לביטחון ולימים בהירים יותר עבורך ועבור כל ישראל.",
+    hebrewWithEmojis: "מִתְפַּלֵּל לְשָׁלוֹם, לְבִטָּחוֹן וּלְיָמִים בְּהִירִים יוֹתֵר עֲבוּרְךָ וַעֲבוּר כָּל יִשְׂרָאֵל. 🕊️🙏🇮🇱",
+    vukPhonetic: "Mitpalel le-šalom, le-vitahon u-lejamim behirim joter avurha ve-avur kol Jisrael.",
+    transliteration: "Mitpalel le-shalom, le-vitachon u-leyamim behirim yoter avurkha ve-avur kol Yisrael.",
+    serbian: "Molim se za mir, bezbednost i vedrije dane pred vama i celim Izraelom.",
+    emojis: ["🕊️", "🙏", "🇮🇱"],
+    words: [
+      { hebrew: "מִתְפַּלֵּל", hebrewClean: "מתפלל", transliteration: "mitpalel", vuk: "mitpalel", english: "praying", serbian: "molim se", emoji: "🙏", category: "verb" },
+      { hebrew: "שָׁלוֹם", hebrewClean: "שלום", transliteration: "shalom", vuk: "šalom", english: "peace", serbian: "mir", emoji: "🕊️", category: "noun" },
+      { hebrew: "בִּטָּחוֹן", hebrewClean: "ביטחון", transliteration: "bitachon", vuk: "bitahon", english: "security / safety", serbian: "bezbednost", emoji: "🛡️", category: "noun" },
+      { hebrew: "יִשְׂרָאֵל", hebrewClean: "ישראל", transliteration: "Yisrael", vuk: "Jisrael", english: "Israel", serbian: "Izrael", emoji: "🇮🇱", category: "noun" }
+    ],
+    grammarNote: "'Kol Yisrael' (כָּל יִשְׂרָאֵל) je drevni izraz zajedništva: 'Kol Yisrael arevim zeh bazeh' (Svi u Izraelu su odgovorni jedni za druge)."
+  },
+  {
+    id: 'sol-9',
+    category: 'peace',
+    categoryLabel: 'Mir, Bezbednost & Nada',
+    categoryEmoji: '🕊️',
+    english: "Wishing you and your loved ones quiet, peaceful days. We are keeping you in our thoughts always.",
+    hebrew: "מְאַחֵל לְךָ וְלִירֵיקֶיךָ יָמִים שְׁקֵטִים וּשְׁלֵוִים. אַתֶּם תָּמִיד בְּמַחְשְׁבוֹתֵינוּ.",
+    hebrewClean: "מאחל לך וליקיריך ימים שקטים ושלוים. אתם תמיד במחשבותינו.",
+    hebrewWithEmojis: "מְאַחֵל לְךָ וְלִירֵיקֶיךָ יָמִים שְׁקֵטִים וּשְׁלֵוִים. אַתֶּם תָּמִיד בְּמַחְשְׁבוֹתֵינוּ. 🌿🕯️🤍",
+    vukPhonetic: "Me'ahel leha u-li-jarejheka jamim šketim u-šlevim. Atem tamid be-mahševotejnu.",
+    transliteration: "Me'achel lekha u-li-yakeirekha yamim shketim u-shlevim. Atem tamid be-machshevoteinu.",
+    serbian: "Želim tebi i tvojim najmilijima mirne i tihe dane. Uvek ste u našim mislima.",
+    emojis: ["🌿", "🕯️", "🤍"],
+    words: [
+      { hebrew: "מְאַחֵל", hebrewClean: "מאחל", transliteration: "me'achel", vuk: "me'ahel", english: "wishing", serbian: "želim", emoji: "💌", category: "verb" },
+      { hebrew: "שְׁקֵטִים", hebrewClean: "שקטים", transliteration: "shketim", vuk: "šketim", english: "quiet", serbian: "tihi", emoji: "🤫", category: "adjective" },
+      { hebrew: "שְׁלֵוִים", hebrewClean: "שלוים", transliteration: "shlevim", vuk: "šlevim", english: "serene / tranquil", serbian: "spokojni", emoji: "🌿", category: "adjective" }
+    ],
+    grammarNote: "Pridev 'shalev' (שָׁלֵו) označava potpunu unutrašnju harmoniju i bezbrižnost."
+  },
+  {
+    id: 'sol-10',
+    category: 'peace',
+    categoryLabel: 'Mir, Bezbednost & Nada',
+    categoryEmoji: '🕊️',
+    english: "May safety and peace surround you soon. Until then, know that there is a global community wishing you well.",
+    hebrew: "שֶׁבִּטָּחוֹן וְשָׁלוֹם יַקִּיפוּ אֶתְכֶם בִּמְהֵרָה. עַד אָז, דְּעוּ שֶׁיֵּשׁ קְהִלָּה עוֹלָמִית שֶׁמְּאַחֶלֶת לָכֶם רַק טוֹב.",
+    hebrewClean: "שביטחון ושלום יקיפו אתכם במהרה. עד אז, דעו שיש קהילה עולמית שמחלת לכם רק טוב.",
+    hebrewWithEmojis: "שֶׁבִּטָּחוֹן וְשָׁלוֹם יַקִּיפוּ אֶתְכֶם בִּמְהֵרָה. עַד אָז, דְּעוּ שֶׁיֵּשׁ קְהִלָּה עוֹלָמִית שֶׁמְּאַחֶלֶת לָכֶם רַק טוֹב. 🕊️🛡️🌍",
+    vukPhonetic: "Še-bitahon ve-šalom jakifu ethem bimhera. Ad az, deu še-ješ kehila olamit še-me'ahelet lahem rak tov.",
+    transliteration: "She-bitachon ve-shalom yakifu etchem bimhera. Ad az, de'u she-yesh kehilah olamit she-me'achelet lachem rak tov.",
+    serbian: "Neka vas bezbednost i mir uskoro obgrle. Do tada, znajte da postoji globalna zajednica koja vam želi samo dobro.",
+    emojis: ["🕊️", "🛡️", "🌍"],
+    words: [
+      { hebrew: "יַקִּיפוּ", hebrewClean: "יקיפו", transliteration: "yakifu", vuk: "jakifu", english: "will surround / embrace", serbian: "obgrliti", emoji: "🫂", category: "verb" },
+      { hebrew: "בִּמְהֵרָה", hebrewClean: "במהרה", transliteration: "bimhera", vuk: "bimhera", english: "soon / swiftly", serbian: "ubrzo", emoji: "⚡", category: "adverb" },
+      { hebrew: "קְהִלָּה", hebrewClean: "קהילה", transliteration: "kehilah", vuk: "kehila", english: "community", serbian: "zajednica", emoji: "👥", category: "noun" }
+    ],
+    grammarNote: "Reč 'kehilah' (קְהִלָּה) je temelj jevrejskog koncepta bratstva, uzajamne pomoći i solidarnosti."
+  },
+  {
+    id: 'sol-11',
+    category: 'peace',
+    categoryLabel: 'Mir, Bezbednost & Nada',
+    categoryEmoji: '🕊️',
+    english: "Holding on to hope for a peaceful future, and holding you in my heart until we get there.",
+    hebrew: "נֶאֱחָז בַּתִּקְוָה לְעָתִיד שֶׁל שָׁלוֹם, וּמַחֲזִיק אֶתְכֶם בְּלִבִּי עַד שֶׁנַּגִּיעַ לְשָׁם.",
+    hebrewClean: "נאחז בתקווה לעתיד של שלום, ומחזיק אתכם בלבי עד שנגיע לשם.",
+    hebrewWithEmojis: "נֶאֱחָז בַּתִּקְוָה לְעָתִיד שֶׁל שָׁלוֹם, וּמַחֲזִיק אֶתְכֶם בְּלִבִּי עַד שֶׁנַּגִּיעַ לְשָׁם. 🌱💖🕊️",
+    vukPhonetic: "Ne'ehaz ba-tikva le-atid šel šalom, u-mahzik ethem be-libi ad še-nagi'a le-šam.",
+    transliteration: "Ne'echaz ba-tikvah le-atid shel shalom, u-machzik etchem be-libi ad she-nagi'a le-sham.",
+    serbian: "Držim se nade u mirnu budućnost i nosim vas u srcu dok tamo ne stignemo.",
+    emojis: ["🌱", "💖", "🕊️"],
+    words: [
+      { hebrew: "נֶאֱחָז", hebrewClean: "נאחז", transliteration: "ne'echaz", vuk: "ne'ehaz", english: "holding onto / clinging", serbian: "držim se", emoji: "⚓", category: "verb" },
+      { hebrew: "תִּקְוָה", hebrewClean: "תקווה", transliteration: "tikvah", vuk: "tikva", english: "hope", serbian: "nada", emoji: "🌟", category: "noun" },
+      { hebrew: "עָתִיד", hebrewClean: "עתיד", transliteration: "atid", vuk: "atid", english: "future", serbian: "budućnost", emoji: "🌱", category: "noun" }
+    ],
+    grammarNote: "Reč 'tikvah' (תִּקְוָה) je nacionalni simbol nade i himna Izraela ('Hatikvah')."
+  },
+
+  // 4. Short & Heartfelt
+  {
+    id: 'sol-12',
+    category: 'short',
+    categoryLabel: 'Kratke & Iskrene',
+    categoryEmoji: '❤️',
+    english: "Sending love, light, and unwavering support your way.",
+    hebrew: "שׁוֹלֵחַ אַהֲבָה, אוֹר וּתְמִיכָה בִּלְתִּי מְעֻרְעֶרֶת לְכִוּוּנְכֶם.",
+    hebrewClean: "שולח אהבה, אור ותמיכה בלתי מעורערת לכיוונכם.",
+    hebrewWithEmojis: "שׁוֹלֵחַ אַהֲבָה, אוֹר וּתְמִיכָה בִּלְתִּי מְעֻרְעֶרֶת לְכִוּוּנְכֶם. ✨💖🕯️",
+    vukPhonetic: "Šoleah ahava, or u-tmiha bilti me'ur'eret le-hivunhem.",
+    transliteration: "Shole'ach ahavah, or u-tmichah bilti me'ur'eret le-khivunkhem.",
+    serbian: "Šaljem vam ljubav, svetlost i nepokolebljivu podršku.",
+    emojis: ["✨", "💖", "🕯️"],
+    words: [
+      { hebrew: "אַהֲבָה", hebrewClean: "אהבה", transliteration: "ahavah", vuk: "ahava", english: "love", serbian: "ljubav", emoji: "💖", category: "noun" },
+      { hebrew: "אוֹר", hebrewClean: "אור", transliteration: "or", vuk: "or", english: "light", serbian: "svetlost", emoji: "✨", category: "noun" },
+      { hebrew: "תְּמִיכָה", hebrewClean: "תמיכה", transliteration: "tmichah", vuk: "tmiha", english: "support", serbian: "podrška", emoji: "🤝", category: "noun" }
+    ],
+    grammarNote: "Reč 'or' (אוֹר) nosi metafizičko značenje unutrašnje vedrine i svetlosti koja pobeđuje svaku tamu."
+  },
+  {
+    id: 'sol-13',
+    category: 'short',
+    categoryLabel: 'Kratke & Iskrene',
+    categoryEmoji: '❤️',
+    english: "You are always in our thoughts. We stand with you.",
+    hebrew: "אַתֶּם תָּמִיד בְּמַחְשְׁבוֹתֵינוּ. אָנוּ עוֹמְדִים לְצִדְּכֶם.",
+    hebrewClean: "אתם תמיד במחשבותינו. אנו עומדים לצדכם.",
+    hebrewWithEmojis: "אַתֶּם תָּמִיד בְּמַחְשְׁבוֹתֵינוּ. אָנוּ עוֹמְדִים לְצִדְּכֶם. 🤝💭💙",
+    vukPhonetic: "Atem tamid be-mahševotejnu. Anu omdim le-cidhem.",
+    transliteration: "Atem tamid be-machshevoteinu. Anu omdim le-tzidkhem.",
+    serbian: "Uvek ste u našim mislima. Stojimo uz vas.",
+    emojis: ["🤝", "💭", "💙"],
+    words: [
+      { hebrew: "תָּמִיד", hebrewClean: "תמיד", transliteration: "tamid", vuk: "tamid", english: "always", serbian: "uvek", emoji: "⏳", category: "adverb" },
+      { hebrew: "מַחְשָׁבוֹת", hebrewClean: "מחשבות", transliteration: "machshavot", vuk: "mahšavot", english: "thoughts", serbian: "misli", emoji: "💭", category: "noun" },
+      { hebrew: "עוֹמְדִים", hebrewClean: "עומדים", transliteration: "omdim", vuk: "omdim", english: "stand (with you)", serbian: "stojimo", emoji: "🤝", category: "verb" }
+    ],
+    grammarNote: "Koren ש-ב-ה u 'machshavot' označava duboko promišljanje i čuvanje u svesti."
+  },
+  {
+    id: 'sol-14',
+    category: 'short',
+    categoryLabel: 'Kratke & Iskrene',
+    categoryEmoji: '❤️',
+    english: "Holding you in my heart. Stay safe and know you are loved.",
+    hebrew: "מַחֲזִיק אֶתְכֶם בְּלִבִּי. הִשָּׁמְרוּ וּדְעוּ שֶׁאַתֶּם אֲהוּבִים.",
+    hebrewClean: "מחזיק אתכם בלבי. הישמרו ודעו שאתם אהובים.",
+    hebrewWithEmojis: "מַחֲזִיק אֶתְכֶם בְּלִבִּי. הִשָּׁמְרוּ וּדְעוּ שֶׁאַתֶּם אֲהוּבִים. ❤️🛡️✨",
+    vukPhonetic: "Mahzik ethem be-libi. Hišamru u-deu še-atem ahuvim.",
+    transliteration: "Machzik etchem be-libi. Hishamru u-de'u she-atem ahuvim.",
+    serbian: "Nosim vas u srcu. Čuvajte se i znajte da ste voljeni.",
+    emojis: ["❤️", "🛡️", "✨"],
+    words: [
+      { hebrew: "הִשָּׁמְרוּ", hebrewClean: "הישמרו", transliteration: "hishamru", vuk: "hišamru", english: "take care / stay safe", serbian: "čuvajte se", emoji: "🛡️", category: "verb" },
+      { hebrew: "אֲהוּבִים", hebrewClean: "אהובים", transliteration: "ahuvim", vuk: "ahuvim", english: "loved", serbian: "voljeni", emoji: "❤️", category: "adjective" }
+    ],
+    grammarNote: "'Hishamru' (הִשָּׁמְרוּ) je topao imperativ iz korena ש-מ-ר koji znači čuvati i paziti."
+  },
+  {
+    id: 'sol-15',
+    category: 'short',
+    categoryLabel: 'Kratke & Iskrene',
+    categoryEmoji: '❤️',
+    english: "Sending a virtual hug across the miles. We are with you.",
+    hebrew: "שׁוֹלֵחַ חִבּוּק חוֹצֶה גְּבוּלוֹת וּמֶרְחַקִּים. אֲנַחְנוּ אִתְּכֶם.",
+    hebrewClean: "שולח חיבוק חוצה גבולות ומרחקים. אנחנו אתכם.",
+    hebrewWithEmojis: "שׁוֹלֵחַ חִבּוּק חוֹצֶה גְּבוּלוֹת וּמֶרְחַקִּים. אֲנַחְנוּ אִתְּכֶם. 🫂💙🌍",
+    vukPhonetic: "Šoleah hibuk hoce gvulot u-merhakim. Anahnu ithem.",
+    transliteration: "Shole'ach chibuk chotzeh gvulot u-merchakim. Anachnu itkhem.",
+    serbian: "Šaljem virtuelni zagrljaj preko svih daljina. Sa vama smo.",
+    emojis: ["🫂", "💙", "🌍"],
+    words: [
+      { hebrew: "חִבּוּק", hebrewClean: "חיבוק", transliteration: "chibuk", vuk: "hibuk", english: "hug", serbian: "zagrljaj", emoji: "🫂", category: "noun" },
+      { hebrew: "אִתְּכֶם", hebrewClean: "אתכם", transliteration: "itkhem", vuk: "ithem", english: "with you", serbian: "sa vama", emoji: "🤝", category: "preposition" }
+    ],
+    grammarNote: "Reč 'chibuk' (חִבּוּק) u svakodnevnom hebrejskom prenosi toplu ljudsku prisutnost i zagrljaj podrške."
+  }
+];
+
 export const AI_PRESET_SENTENCES = [
+  { en: "Just a reminder that you have friends all over the world. We see you, we care about you, and you are never alone.", emojis: "🌍🤝❤️", sr: "Samo podsetnik da imate prijatelje širom sveta..." },
+  { en: "No matter the distance, please know we stand with you in unwavering solidarity and love.", emojis: "🌐💪💖", sr: "Stojimo uz vas u nepokolebljivoj solidarnosti i ljubavi" },
+  { en: "The strength and resilience of the Israeli people never cease to inspire me.", emojis: "🦁🇮🇱💪", sr: "Snaga i otpornost naroda Izraela nikada ne prestaju da me inspirišu" },
+  { en: "Praying for peace, safety, and brighter days ahead for you and all of Israel.", emojis: "🕊️🙏🇮🇱", sr: "Molitva za mir, bezbednost i vedrije dane za vas i ceo Izrael" },
+  { en: "Sending love, light, and unwavering support your way.", emojis: "✨💖🕯️", sr: "Šaljem ljubav, svetlost i nepokolebljivu podršku" },
+  { en: "Holding you in my heart. Stay safe and know you are loved.", emojis: "❤️🛡️✨", sr: "Nosim vas u srcu. Čuvajte se i znajte da ste voljeni" },
   { en: "Peace and wisdom are true strength", emojis: "🕊️🧠✨", sr: "Mir i mudrost su istinska snaga" },
-  { en: "Good morning, my dear friend!", emojis: "☀️☕🤝", sr: "Dobro jutro, dragi moj prijatelju!" },
-  { en: "I want to drink cold water with my friend", emojis: "💧🧊🤝", sr: "Želim da pijem hladnu vodu sa prijateljem" },
-  { en: "The soul is filled with eternal light and joy", emojis: "✨💖🕯️", sr: "Duša je ispunjena večnom svetlošću i radošću" },
-  { en: "Truth and patience protect the human heart", emojis: "⚖️🛡️❤️", sr: "Istina i strpljenje čuvaju ljudsko srce" },
-  { en: "We learn new words every single day", emojis: "📚🌱🌟", sr: "Svakog dana učimo nove reči sa radošću" }
+  { en: "Good morning, my dear friend!", emojis: "☀️☕🤝", sr: "Dobro jutro, dragi moj prijatelju!" }
 ];
 
 export const HEBREW_ALPHABET_DATA: HebrewAlphabetItem[] = [
@@ -452,6 +789,55 @@ const HEBREW_SOCIAL_PRESETS = [
     sr: 'Budi jak i hrabar!',
     en: 'Be strong and courageous!',
     badge: '⚡ Motivacija'
+  },
+  {
+    char: 'רַק תִּזְכֹּרֶת שֶׁיֵּשׁ לָכֶם חֲבֵרִים בְּכָל הָעוֹלָם 🌍🤝❤️',
+    vuk: 'Rak tizkoret še-ješ lahem haverim be-hol ha-olam...',
+    sr: 'Samo podsetnik da imate prijatelje širom sveta. Nikada niste sami.',
+    en: 'Just a reminder that you have friends all over the world. You are never alone.',
+    badge: '🌍 Solidarnost'
+  },
+  {
+    char: 'לֹא מְשַׁנֶּה הַמֶּרְחָק, אָנוּ עוֹמְדִים לְצִדְּכֶם 🌐💪💖',
+    vuk: 'Lo mešane ha-merhak, anu omdim le-cidhem be-solidarijut...',
+    sr: 'Bez obzira na udaljenost, stojimo uz vas u nepokolebljivoj solidarnosti.',
+    en: 'No matter the distance, we stand with you in unwavering solidarity and love.',
+    badge: '💖 Zajedništvo'
+  },
+  {
+    char: 'הַכֹּחַ וְהַחֹסֶן שֶׁל עַם יִשְׂרָאֵל מַשְׁרִיר בִּי הַשְׁרָאָה 🦁🇮🇱💪',
+    vuk: 'Ha-koah ve-ha-hosen šel am Jisrael...',
+    sr: 'Snaga i otpornost naroda Izraela nikada ne prestaju da me inspirišu.',
+    en: 'The strength and resilience of the Israeli people never cease to inspire me.',
+    badge: '🦁 Otpornost'
+  },
+  {
+    char: 'מִתְפַּלֵּל לְשָׁלוֹם, לְבִטָּחוֹן וּלְיָמִים בְּהִירִים 🕊️🙏🇮🇱',
+    vuk: 'Mitpalel le-šalom, le-vitahon u-lejamim behirim...',
+    sr: 'Molim se za mir, bezbednost i vedrije dane za vas i ceo Izrael.',
+    en: 'Praying for peace, safety, and brighter days ahead for you and all of Israel.',
+    badge: '🕊️ Mir'
+  },
+  {
+    char: 'אַתֶּם תָּמִיד בְּמַחְשְׁבוֹתֵינוּ. אָנוּ עוֹמְדִים לְצִדְּכֶם 🤝💭💙',
+    vuk: 'Atem tamid be-mahševotejnu. Anu omdim le-cidhem...',
+    sr: 'Uvek ste u našim mislima. Stojimo uz vas.',
+    en: 'You are always in our thoughts. We stand with you.',
+    badge: '💙 Podrška'
+  },
+  {
+    char: 'מַחֲזִיק אֶתְכֶם בְּלִבִּי. הִשָּׁמְרוּ וּדְעוּ שֶׁאַתֶּם אֲהוּבִים ❤️🛡️✨',
+    vuk: 'Mahzik ethem be-libi. Hišamru u-deu še-atem ahuvim...',
+    sr: 'Nosim vas u srcu. Čuvajte se i znajte da ste voljeni.',
+    en: 'Holding you in my heart. Stay safe and know you are loved.',
+    badge: '❤️ Ljubav'
+  },
+  {
+    char: 'שׁוֹלֵחַ חִבּוּק חוֹצֶה גְּבוּלוֹת וּמֶרְחַקִּים. אֲנַחְנוּ אִתְּכֶם 🫂💙🌍',
+    vuk: 'Šoleah hibuk hoce gvulot u-merhakim. Anahnu ithem...',
+    sr: 'Šaljem virtuelni zagrljaj preko svih daljina. Sa vama smo.',
+    en: 'Sending a virtual hug across the miles. We are with you.',
+    badge: '🫂 Zagrljaj'
   }
 ];
 
@@ -614,6 +1000,33 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       return [];
     }
   });
+
+  const [solidarityFilter, setSolidarityFilter] = useState<'all' | 'solidarity' | 'strength' | 'peace' | 'short'>('all');
+  const [copiedSolidarityId, setCopiedSolidarityId] = useState<string | null>(null);
+
+  const handleSelectSolidarityQuote = (quote: HebrewSolidarityQuote) => {
+    setAiInputSentence(quote.english);
+    setAiTranslationResult({
+      hebrewWithEmojis: quote.hebrewWithEmojis,
+      hebrew: quote.hebrew,
+      hebrewClean: quote.hebrewClean,
+      transliteration: quote.transliteration,
+      vukPhonetic: quote.vukPhonetic,
+      serbian: quote.serbian,
+      english: quote.english,
+      emojis: quote.emojis,
+      words: quote.words,
+      grammarNote: quote.grammarNote
+    });
+    setAiSavedSuccessToast(`Učitana poruka: "${quote.english.substring(0, 40)}..." ✨`);
+    setTimeout(() => setAiSavedSuccessToast(null), 2500);
+  };
+
+  const handleCopySolidarity = (textToCopy: string, id: string) => {
+    navigator.clipboard.writeText(textToCopy);
+    setCopiedSolidarityId(id);
+    setTimeout(() => setCopiedSolidarityId(null), 2000);
+  };
 
   const handleTranslateWithAi = async (customSentence?: string) => {
     const sentenceToUse = (typeof customSentence === 'string' ? customSentence : aiInputSentence).trim();
@@ -1765,10 +2178,130 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   </div>
                 </div>
 
+                {/* GLOBAL SOLIDARITY & SUPPORT QUOTES SECTION */}
+                <div className={cn(
+                  "p-5 rounded-3xl border space-y-4 shadow-lg",
+                  isDarkMode ? "bg-gradient-to-br from-blue-950/40 via-zinc-900 to-indigo-950/30 border-blue-500/40" : "bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/80 border-blue-200"
+                )}>
+                  <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 border-blue-500/20">
+                    <div className="flex items-center gap-2">
+                      <HeartHandshake className="w-5 h-5 text-blue-400 animate-pulse" />
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-blue-400 font-mono flex items-center gap-1.5">
+                          <span>🌍 Poruke Podrške, Empatije i Solidarnosti</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-bold border border-blue-500/30">
+                            15 Zvaničnih Poruka
+                          </span>
+                        </h4>
+                        <p className="text-[11px] text-zinc-400">
+                          Izaberite poruku prijateljstva i solidarnosti — kliknite za trenutnu konfiguraciju na hebrejskom sa vokalima (Nikud) i emodžijima!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Category Filter Pills */}
+                  <div className="flex flex-wrap gap-1.5 text-xs">
+                    {[
+                      { id: 'all', label: '🌐 Sve Poruke (15)' },
+                      { id: 'solidarity', label: '🤝 Solidarnost & Prijateljstvo' },
+                      { id: 'strength', label: '🦁 Snaga & Otpornost' },
+                      { id: 'peace', label: '🕊️ Mir, Bezbednost & Nada' },
+                      { id: 'short', label: '❤️ Kratke & Iskrene' }
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setSolidarityFilter(tab.id as any)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl font-bold transition-all border text-[11px]",
+                          solidarityFilter === tab.id
+                            ? "bg-blue-600 text-white border-blue-500 shadow-md font-black"
+                            : isDarkMode ? "bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:border-blue-500/50 hover:text-white" : "bg-white border-zinc-200 text-zinc-700 hover:bg-blue-50"
+                        )}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Cards Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+                    {HEBREW_SOLIDARITY_QUOTES
+                      .filter(q => solidarityFilter === 'all' || q.category === solidarityFilter)
+                      .map(quote => (
+                        <div
+                          key={quote.id}
+                          className={cn(
+                            "p-3.5 rounded-2xl border transition-all flex flex-col justify-between space-y-2.5 hover:shadow-md",
+                            isDarkMode ? "bg-zinc-900/90 border-zinc-800 hover:border-blue-500/60" : "bg-white border-zinc-200 hover:border-blue-400"
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+                              <span>{quote.categoryEmoji}</span>
+                              <span>{quote.categoryLabel}</span>
+                            </span>
+                            <span className="text-base">{quote.emojis.join(' ')}</span>
+                          </div>
+
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold text-zinc-100 leading-snug">
+                              "{quote.english}"
+                            </p>
+                            <div dir="rtl" className="text-sm font-bold font-serif text-blue-300 leading-relaxed pt-1">
+                              {quote.hebrewWithEmojis}
+                            </div>
+                            <p className="text-[11px] font-mono text-amber-400">
+                              🗣️ "{quote.vukPhonetic}"
+                            </p>
+                            <p className="text-[11px] text-emerald-400/90 font-medium">
+                              🇷🇸 {quote.serbian}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-zinc-800/80">
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => speakHebrew(quote.hebrew)}
+                                className="px-2 py-1 rounded-lg text-[11px] font-bold bg-blue-500/10 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/20 transition-all flex items-center gap-1"
+                                title="Poslušaj izgovor na hebrejskom"
+                              >
+                                <Volume2 className="w-3 h-3" />
+                                <span>Slušaj</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleCopySolidarity(quote.hebrewWithEmojis, quote.id)}
+                                className="px-2 py-1 rounded-lg text-[11px] font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-all flex items-center gap-1"
+                                title="Kopiraj hebrejski sa emodžijima"
+                              >
+                                {copiedSolidarityId === quote.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                <span>{copiedSolidarityId === quote.id ? 'Kopirano' : 'Kopiraj'}</span>
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleSelectSolidarityQuote(quote)}
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:brightness-110 shadow-sm transition-all flex items-center gap-1"
+                              title="Učitaj u AI Konfigurator za detaljan pregled reči i gramatike"
+                            >
+                              <Wand2 className="w-3 h-3 text-cyan-300" />
+                              <span>Učitaj u AI</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
                 {/* Preset Chips */}
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-mono font-bold uppercase text-zinc-400 flex items-center gap-1">
-                    <span>⚡ Brzi Primeri (kliknite za trenutni prevod sa emodžijima):</span>
+                    <span>⚡ Dodatni Brzi Primeri (kliknite za trenutni prevod sa emodžijima):</span>
                   </label>
                   <div className="flex flex-wrap gap-1.5">
                     {AI_PRESET_SENTENCES.map((preset, idx) => (

@@ -1098,6 +1098,208 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
           { hebrew: "שָׁלוֹם", hebrewClean: "שלום", transliteration: "shalom", vuk: "šalom", english: "peace", serbian: "mir", emoji: "🕊️", category: "noun" }
         ],
         grammarNote: "Glagol 'ohev' (אוהב) je u muškom rodu sadašnjeg vremena. Za ženski rod koristi se 'ohevet' (אוֹהֶבֶת)."
+      },
+      "friends all over the world": {
+        hebrew: "רַק תִּזְכֹּרֶת שֶׁיֵּשׁ לָכֶם חֲבֵרִים בְּכָל הָעוֹלָם. אֲנַחְנוּ רוֹאִים אֶתְכֶם, אִכְפַּת לָנוּ מִכֶּם, וְאַתֶּם לְעוֹלָם לֹא לְבַד.",
+        hebrewClean: "רק תזכורת שיש לכם חברים בכל העולם. אנחנו רואים אתכם, אכפת לנו מכם, ואתם לעולם לא לבד.",
+        transliteration: "Rak tizkoret she-yesh lachem chaverim be-khol ha-olam. Anachnu ro'im etchem, ikhpat lanu mikhem, ve-atem le'olam lo levad.",
+        vuk: "Rak tizkoret še-ješ lahem haverim be-hol ha-olam. Anahnu roim ethem, ihpat lanu mihem, ve-atem le-olam lo levad.",
+        serbian: "Samo podsetnik da imate prijatelje širom sveta. Vidimo vas, brinemo o vama, i nikada niste sami.",
+        emojis: ["🌍", "🤝", "❤️"],
+        words: [
+          { hebrew: "תִּזְכֹּרֶת", hebrewClean: "תזכורת", transliteration: "tizkoret", vuk: "tizkoret", english: "reminder", serbian: "podsetnik", emoji: "📝", category: "noun" },
+          { hebrew: "חֲבֵרִים", hebrewClean: "חברים", transliteration: "chaverim", vuk: "haverim", english: "friends", serbian: "prijatelji", emoji: "🤝", category: "noun" },
+          { hebrew: "עוֹלָם", hebrewClean: "עולם", transliteration: "olam", vuk: "olam", english: "world", serbian: "svet", emoji: "🌍", category: "noun" },
+          { hebrew: "לֹא לְבַד", hebrewClean: "לא לבד", transliteration: "lo levad", vuk: "lo levad", english: "not alone", serbian: "niste sami", emoji: "❤️", category: "expression" }
+        ],
+        grammarNote: "Izraz 'lo levad' (לֹא לְבַד) znači 'niste sami' i izražava duboko ljudsko zajedništvo."
+      },
+      "unwavering solidarity and love": {
+        hebrew: "לֹא מְשַׁנֶּה הַמֶּרְחָק, דְּעוּ שֶׁאָנוּ עוֹמְדִים לְצִדְּכֶם בְּסוֹלִידָרִיּוּת לְלֹא עַרְעוּר וּבְאַהֲבָה.",
+        hebrewClean: "לא משנה המרחק, דעו שאנו עומדים לצדכם בסולידריות ללא ערעור ובאהבה.",
+        transliteration: "Lo mechangeh ha-merchak, de'u she-anu omdim le-tzidkhem be-solidariyut lelo ar'ur uve-ahavah.",
+        vuk: "Lo mešane ha-merhak, deu še-anu omdim le-cidhem be-solidarijut lelo arur uve-ahava.",
+        serbian: "Bez obzira na udaljenost, molimo vas znajte da stojimo uz vas u nepokolebljivoj solidarnosti i ljubavi.",
+        emojis: ["🌐", "💪", "💖"],
+        words: [
+          { hebrew: "מֶרְחָק", hebrewClean: "מרחק", transliteration: "merchak", vuk: "merhak", english: "distance", serbian: "udaljenost", emoji: "🌐", category: "noun" },
+          { hebrew: "עוֹמְדִים", hebrewClean: "עומדים", transliteration: "omdim", vuk: "omdim", english: "standing (together)", serbian: "stojimo uz vas", emoji: "🤝", category: "verb" },
+          { hebrew: "סוֹלִידָרִיּוּת", hebrewClean: "סולידריות", transliteration: "solidariyut", vuk: "solidarijut", english: "solidarity", serbian: "solidarnost", emoji: "💪", category: "noun" },
+          { hebrew: "אַהֲבָה", hebrewClean: "אהבה", transliteration: "ahavah", vuk: "ahava", english: "love", serbian: "ljubav", emoji: "💖", category: "noun" }
+        ],
+        grammarNote: "Reč 'solidariyut' (סוֹלִידָרִיּוּת) se u modernom hebrejskom koristi za nepokolebljivu solidarnost među narodima."
+      },
+      "holding you in their hearts": {
+        hebrew: "חוֹשְׁבִים עָלֶיךָ וְעַל מִשְׁפַּחְתְּךָ הַיּוֹם. אֲנָשִׁים בְּכָל רַחֲבֵי הָעוֹלָם מַחֲזִיקִים אֶתְכֶם בְּלִבָּם.",
+        hebrewClean: "חושבים עליך ועל משפחתך היום. אנשים בכל רחבי העולם מחזיקים אתכם בלבם.",
+        transliteration: "Choshvim alekha ve-al mishpachtekha ha-yom. Anashim be-khol rachavei ha-olam machzikim etchem be-libam.",
+        vuk: "Hošvim aleha ve-al mišpahteka ha-jom. Anašim be-hol rahavei ha-olam mahzikim ethem be-libam.",
+        serbian: "Mislimo na tebe i tvoju porodicu danas. Ljudi širom planete vas nose u svojim srcima.",
+        emojis: ["👨‍👩‍👧‍👦", "🌎", "🕊️"],
+        words: [
+          { hebrew: "מִשְׁפָּחָה", hebrewClean: "משפחה", transliteration: "mishpacha", vuk: "mišpaha", english: "family", serbian: "porodica", emoji: "👨‍👩‍👧‍👦", category: "noun" },
+          { hebrew: "לֵב", hebrewClean: "לב", transliteration: "lev", vuk: "lev", english: "heart", serbian: "srce", emoji: "❤️", category: "noun" }
+        ],
+        grammarNote: "Fraza 'machzikim be-libam' (מַחֲזִיקִים בְּלִבָּם) doslovno znači 'držati u srcu'."
+      },
+      "heavy days alone": {
+        hebrew: "אַתֶּם לֹא צְרִיכִים לָשֵׂאת אֶת הַיָּמִים הַקָּשִׁים לְבַד. אָנוּ שׁוֹלְחִים לָכֶם תְּמִיכָה וְחֹם מֵרָחוֹק.",
+        hebrewClean: "אתם לא צריכים לשאת את הימים הקשים לבד. אנו שולחים לכם תמיכה וחם מרחוק.",
+        transliteration: "Atem lo tzrichim laset et ha-yamim ha-kashim levad. Anu sholchim lachem tmichah ve-chom me-rachok.",
+        vuk: "Atem lo crihim laset et ha-jamim ha-kašim levad. Anu šolhim lahem tmiha ve-hom me-rahok.",
+        serbian: "Ne morate sami nositi teške dane. Šaljemo vam toliko podrške i topline iz daljine.",
+        emojis: ["🫂", "☀️", "🛡️"],
+        words: [
+          { hebrew: "יָמִים", hebrewClean: "ימים", transliteration: "yamim", vuk: "jamim", english: "days", serbian: "dani", emoji: "📅", category: "noun" },
+          { hebrew: "תְּמִיכָה", hebrewClean: "תמיכה", transliteration: "tmichah", vuk: "tmiha", english: "support", serbian: "podrška", emoji: "🛡️", category: "noun" },
+          { hebrew: "חֹם", hebrewClean: "חום", transliteration: "chom", vuk: "hom", english: "warmth", serbian: "toplina", emoji: "☀️", category: "noun" }
+        ],
+        grammarNote: "Glagol 'laset' (לָשֵׂאת) označava nošenje tereta ili odgovornosti."
+      },
+      "resilience of the israeli people": {
+        hebrew: "הַכֹּחַ וְהַחֹסֶן שֶׁל עַם יִשְׂרָאֵל לְעוֹלָם אֵינָם מַפְסִיקִים לְהַשְׁרִיף בִּי הַשְׁרָאָה. שׁוֹלֵחַ לָכֶם כָּל כָּךְ הַרְבֵּה אַהֲבָה וּתְמִיכָה.",
+        hebrewClean: "הכוח והחוסן של עם ישראל לעולם אינם מפסיקים להשריף בי השראה. שולח לכם כל כך הרבה אהבה ותמיכה.",
+        transliteration: "Ha-koach ve-ha-chosen shel am Yisrael le'olam einam mafsikim lehashrif bi hashra'ah. Shole'ach lachem kol kakh harbeh ahavah u-tmichah.",
+        vuk: "Ha-koah ve-ha-hosen šel am Jisrael le-olam ejnam mafsikim lehašrif bi hašra'a. Šoleah lahem kol kah harbe ahava u-tmiha.",
+        serbian: "Snaga i otpornost izraelskog naroda nikada ne prestaju da me inspirišu. Šaljem vam pregršt ljubavi i podrške.",
+        emojis: ["🦁", "🇮🇱", "💪"],
+        words: [
+          { hebrew: "חֹסֶן", hebrewClean: "חוסן", transliteration: "chosen", vuk: "hosen", english: "resilience", serbian: "otpornost / nesalomivost", emoji: "🦁", category: "noun" },
+          { hebrew: "עַם יִשְׂרָאֵל", hebrewClean: "עם ישראל", transliteration: "am Yisrael", vuk: "am Jisrael", english: "people of Israel", serbian: "narod Izraela", emoji: "🇮🇱", category: "noun" },
+          { hebrew: "הַשְׁרָאָה", hebrewClean: "השראה", transliteration: "hashra'ah", vuk: "hašra'a", english: "inspiration", serbian: "inspiracija", emoji: "✨", category: "noun" }
+        ],
+        grammarNote: "Reč 'chosen' (חֹסֶן) je biblijska i moderna reč za unutrašnju psihološku i duhovnu otpornost."
+      },
+      "standing right here with you": {
+        hebrew: "הָאֹמֶץ שֶׁלָּכֶם בִּזְמַנִּים קָשִׁים הוּא מַדְהִים, אַךְ אֵינְכֶם חַיָּבִים לִהְיוֹת חֲזָקִים כָּל הַזְּמַן. אָנוּ עוֹמְדִים כָּאן לְצִדְּכֶם.",
+        hebrewClean: "האומץ שלכם בזמנים קשים הוא מדהים, אך אינכם חייבים להיות חזקים כל הזמן. אנו עומדים כאן לצדכם.",
+        transliteration: "Ha-ometz shelakhem bizmanim kashim hu madhim, akh einkhem chayavim lihyot chazakim kol ha-zman. Anu omdim kan le-tzidkhem.",
+        vuk: "Ha-omec šelahem bizmanim kašim hu madhim, ah ejnhem hajavim lihjot hazakim kol ha-zman. Anu omdim kan le-cidhem.",
+        serbian: "Vaša hrabrost u teškim trenucima je neverovatna, ali ne morate stalno biti jaki. Stojimo upravo ovde uz vas.",
+        emojis: ["🛡️", "🤍", "🤝"],
+        words: [
+          { hebrew: "אֹמֶץ", hebrewClean: "אומץ", transliteration: "ometz", vuk: "omec", english: "courage", serbian: "hrabrost", emoji: "🦁", category: "noun" },
+          { hebrew: "חֲזָקִים", hebrewClean: "חזקים", transliteration: "chazakim", vuk: "hazakim", english: "strong (plural)", serbian: "jaki", emoji: "💪", category: "adjective" }
+        ],
+        grammarNote: "Reč 'ometz' (אֹמֶץ) je vrlina hrabrosti koja se pominje i u drevnim pozdravima 'Chazak ve'ematz' (Budi jak i hrabar)."
+      },
+      "cheering you on": {
+        hebrew: "בְּכָל אֶתְגָּר, רוּחֲכֶם זוֹהֶרֶת בְּבֵהִירוּת. שׁוֹלֵחַ לָכֶם כֹּחַ וְתִזְכֹּרֶת שֶׁהָעוֹלָם מְעוֹדֵד אֶתְכֶם.",
+        hebrewClean: "בכל אתגר, רוחכם זוהרת בבהירות. שולח לכם כוח ותזכורת שהעולם מעודד אתכם.",
+        transliteration: "Be-khol etgar, ruchakhem zoheret be-vehirut. Shole'ach lachem koach ve-tizkoret she-ha-olam me'oded etchem.",
+        vuk: "Be-hol etgar, ruhakhem zoheret be-vehijrut. Šoleah lahem koah ve-tizkoret še-ha-olam me'oded ethem.",
+        serbian: "Kroz svaki izazov, vaš duh blista snažno. Šaljem vam snagu i podsetnik da vas ceo svet bodri.",
+        emojis: ["✨", "🔥", "🌟"],
+        words: [
+          { hebrew: "אֶתְגָּר", hebrewClean: "אתגר", transliteration: "etgar", vuk: "etgar", english: "challenge", serbian: "izazov", emoji: "🧗", category: "noun" },
+          { hebrew: "רוּחַ", hebrewClean: "רוח", transliteration: "ruach", vuk: "ruah", english: "spirit", serbian: "duh", emoji: "✨", category: "noun" }
+        ],
+        grammarNote: "Glagol 'me'oded' (מְעוֹדֵד) potiče od korena ע-ו-ד i znači hrabriti, ohrabrivati i bodriti."
+      },
+      "praying for peace, safety, and brighter days": {
+        hebrew: "מִתְפַּלֵּל לְשָׁלוֹם, לְבִטָּחוֹן וּלְיָמִים בְּהִירִים יוֹתֵר עֲבוּרְךָ וַעֲבוּר כָּל יִשְׂרָאֵל.",
+        hebrewClean: "מתפלל לשלום, לביטחון ולימים בהירים יותר עבורך ועבור כל ישראל.",
+        transliteration: "Mitpalel le-shalom, le-vitachon u-leyamim behirim yoter avurkha ve-avur kol Yisrael.",
+        vuk: "Mitpalel le-šalom, le-vitahon u-lejamim behirim joter avurha ve-avur kol Jisrael.",
+        serbian: "Molim se za mir, bezbednost i vedrije dane pred vama i celim Izraelom.",
+        emojis: ["🕊️", "🙏", "🇮🇱"],
+        words: [
+          { hebrew: "שָׁלוֹם", hebrewClean: "שלום", transliteration: "shalom", vuk: "šalom", english: "peace", serbian: "mir", emoji: "🕊️", category: "noun" },
+          { hebrew: "בִּטָּחוֹן", hebrewClean: "ביטחון", transliteration: "bitachon", vuk: "bitahon", english: "security / safety", serbian: "bezbednost / sigurnost", emoji: "🛡️", category: "noun" },
+          { hebrew: "יִשְׂרָאֵל", hebrewClean: "ישראל", transliteration: "Yisrael", vuk: "Jisrael", english: "Israel", serbian: "Izrael", emoji: "🇮🇱", category: "noun" }
+        ],
+        grammarNote: "Reč 'bitachon' (בִּטָּחוֹן) označava i fizičku bezbednost i duboko unutrašnje poverenje i spokoj."
+      },
+      "quiet, peaceful days": {
+        hebrew: "מְאַחֵל לְךָ וְלִירֵיקֶיךָ יָמִים שְׁקֵטִים וּשְׁלֵוִים. אַתֶּם תָּמִיד בְּמַחְשְׁבוֹתֵינוּ.",
+        hebrewClean: "מאחל לך וליקיריך ימים שקטים ושלוים. אתם תמיד במחשבותינו.",
+        transliteration: "Me'achel lekha u-li-yakeirekha yamim shketim u-shlevim. Atem tamid be-machshevoteinu.",
+        vuk: "Me'ahel leha u-li-jarejheka jamim šketim u-šlevim. Atem tamid be-mahševotejnu.",
+        serbian: "Želim tebi i tvojim najmilijima mirne i tihe dane. Uvek ste u našim mislima.",
+        emojis: ["🌿", "🕯️", "🤍"],
+        words: [
+          { hebrew: "שָׁקֵט", hebrewClean: "שקט", transliteration: "shaket", vuk: "šaket", english: "quiet / calm", serbian: "miran / tih", emoji: "🤫", category: "adjective" },
+          { hebrew: "שָׁלֵו", hebrewClean: "שלו", transliteration: "shalev", vuk: "šalev", english: "tranquil / serene", serbian: "spokojan", emoji: "🌿", category: "adjective" }
+        ],
+        grammarNote: "Pridev 'shalev' (שָׁלֵו) označava potpunu unutrašnju harmoniju i bezbrižnost."
+      },
+      "global community wishing you well": {
+        hebrew: "שֶׁבִּטָּחוֹן וְשָׁלוֹם יַקִּיפוּ אֶתְכֶם בִּמְהֵרָה. עַד אָז, דְּעוּ שֶׁיֵּשׁ קְהִלָּה עוֹלָמִית שֶׁמְּאַחֶלֶת לָכֶם רַק טוֹב.",
+        hebrewClean: "שביטחון ושלום יקיפו אתכם במהרה. עד אז, דעו שיש קהילה עולמית שמחלת לכם רק טוב.",
+        transliteration: "She-bitachon ve-shalom yakifu etchem bimhera. Ad az, de'u she-yesh kehilah olamit she-me'achelet lachem rak tov.",
+        vuk: "Še-bitahon ve-šalom jakifu ethem bimhera. Ad az, deu še-ješ kehila olamit še-me'ahelet lahem rak tov.",
+        serbian: "Neka vas bezbednost i mir uskoro obgrle. Do tada, znajte da postoji globalna zajednica koja vam želi samo dobro.",
+        emojis: ["🕊️", "🛡️", "🌍"],
+        words: [
+          { hebrew: "קְהִלָּה", hebrewClean: "קהילה", transliteration: "kehilah", vuk: "kehila", english: "community", serbian: "zajednica", emoji: "👥", category: "noun" },
+          { hebrew: "עוֹלָמִית", hebrewClean: "עולמית", transliteration: "olamit", vuk: "olamit", english: "global / world", serbian: "globalna", emoji: "🌍", category: "adjective" }
+        ],
+        grammarNote: "Reč 'kehilah' (קְהִלָּה) je srž jevrejskog koncepta solidarnosti i uzajamne podrške."
+      },
+      "peaceful future": {
+        hebrew: "נֶאֱחָז בַּתִּקְוָה לְעָתִיד שֶׁל שָׁלוֹם, וּמַחֲזִיק אֶתְכֶם בְּלִבִּי עַד שֶׁנַּגִּיעַ לְשָׁם.",
+        hebrewClean: "נאחז בתקווה לעתיד של שלום, ומחזיק אתכם בלבי עד שנגיע לשם.",
+        transliteration: "Ne'echaz ba-tikvah le-atid shel shalom, u-machzik etchem be-libi ad she-nagi'a le-sham.",
+        vuk: "Ne'ehaz ba-tikva le-atid šel šalom, u-mahzik ethem be-libi ad še-nagi'a le-šam.",
+        serbian: "Držim se nade u mirnu budućnost i nosim vas u srcu dok tamo ne stignemo.",
+        emojis: ["🌱", "💖", "🕊️"],
+        words: [
+          { hebrew: "תִּקְוָה", hebrewClean: "תקווה", transliteration: "tikvah", vuk: "tikva", english: "hope", serbian: "nada", emoji: "🌟", category: "noun" },
+          { hebrew: "עָתִיד", hebrewClean: "עתיד", transliteration: "atid", vuk: "atid", english: "future", serbian: "budućnost", emoji: "🌱", category: "noun" }
+        ],
+        grammarNote: "Reč 'tikvah' (תִּקְוָה) je nacionalni simbol nade i himna Države Izrael (Hatikvah)."
+      },
+      "unwavering support your way": {
+        hebrew: "שׁוֹלֵחַ אַהֲבָה, אוֹר וּתְמִיכָה בִּלְתִּי מְעֻרְעֶרֶת לְכִוּוּנְכֶם.",
+        hebrewClean: "שולח אהבה, אור ותמיכה בלתי מעורערת לכיוונכם.",
+        transliteration: "Shole'ach ahavah, or u-tmichah bilti me'ur'eret le-khivunkhem.",
+        vuk: "Šoleah ahava, or u-tmiha bilti me'ur'eret le-hivunhem.",
+        serbian: "Šaljem vam ljubav, svetlost i nepokolebljivu podršku.",
+        emojis: ["✨", "💖", "🕯️"],
+        words: [
+          { hebrew: "אוֹר", hebrewClean: "אור", transliteration: "or", vuk: "or", english: "light", serbian: "svetlost", emoji: "✨", category: "noun" },
+          { hebrew: "תְּמִיכָה", hebrewClean: "תמיכה", transliteration: "tmichah", vuk: "tmiha", english: "support", serbian: "podrška", emoji: "🤝", category: "noun" }
+        ],
+        grammarNote: "Reč 'or' (אוֹר) nosi metafizičko značenje nade koja razbija svaku tamu."
+      },
+      "always in our thoughts": {
+        hebrew: "אַתֶּם תָּמִיד בְּמַחְשְׁבוֹתֵינוּ. אָנוּ עוֹמְדִים לְצִדְּכֶם.",
+        hebrewClean: "אתם תמיד במחשבותינו. אנו עומדים לצדכם.",
+        transliteration: "Atem tamid be-machshevoteinu. Anu omdim le-tzidkhem.",
+        vuk: "Atem tamid be-mahševotejnu. Anu omdim le-cidhem.",
+        serbian: "Uvek ste u našim mislima. Stojimo uz vas.",
+        emojis: ["🤝", "💭", "💙"],
+        words: [
+          { hebrew: "תָּמִיד", hebrewClean: "תמיד", transliteration: "tamid", vuk: "tamid", english: "always / forever", serbian: "uvek", emoji: "⏳", category: "adverb" },
+          { hebrew: "מַחְשָׁבוֹת", hebrewClean: "מחשבות", transliteration: "machshavot", vuk: "mahšavot", english: "thoughts", serbian: "misli", emoji: "💭", category: "noun" }
+        ],
+        grammarNote: "Nastavak '-einu' (־ֵינוּ) označava prisvojnu zamenicu 'naše' (u našim mislima)."
+      },
+      "stay safe and know you are loved": {
+        hebrew: "מַחֲזִיק אֶתְכֶם בְּלִבִּי. הִשָּׁמְרוּ וּדְעוּ שֶׁאַתֶּם אֲהוּבִים.",
+        hebrewClean: "מחזיק אתכם בלבי. הישמרו ודעו שאתם אהובים.",
+        transliteration: "Machzik etchem be-libi. Hishamru u-de'u she-atem ahuvim.",
+        vuk: "Mahzik ethem be-libi. Hišamru u-deu še-atem ahuvim.",
+        serbian: "Nosim vas u srcu. Čuvajte se i znajte da ste voljeni.",
+        emojis: ["❤️", "🛡️", "✨"],
+        words: [
+          { hebrew: "הִשָּׁמְרוּ", hebrewClean: "הישמרו", transliteration: "hishamru", vuk: "hišamru", english: "stay safe / take care", serbian: "čuvajte se", emoji: "🛡️", category: "verb" },
+          { hebrew: "אֲהוּבִים", hebrewClean: "אהובים", transliteration: "ahuvim", vuk: "ahuvim", english: "loved", serbian: "voljeni", emoji: "❤️", category: "adjective" }
+        ],
+        grammarNote: "Imperativ 'hishamru' (הִשָּׁמְרוּ) je topao i brižan izraz za 'pazite se i čuvajte se'."
+      },
+      "virtual hug across the miles": {
+        hebrew: "שׁוֹלֵחַ חִבּוּק חוֹצֶה גְּבוּלוֹת וּמֶרְחַקִּים. אֲנַחְנוּ אִתְּכֶם.",
+        hebrewClean: "שולח חיבוק חוצה גבולות ומרחקים. אנחנו אתכם.",
+        transliteration: "Shole'ach chibuk chotzeh gvulot u-merchakim. Anachnu itkhem.",
+        vuk: "Šoleah hibuk hoce gvulot u-merhakim. Anahnu ithem.",
+        serbian: "Šaljem virtuelni zagrljaj preko svih daljina. Sa vama smo.",
+        emojis: ["🫂", "💙", "🌍"],
+        words: [
+          { hebrew: "חִבּוּק", hebrewClean: "חיבוק", transliteration: "chibuk", vuk: "hibuk", english: "hug", serbian: "zagrljaj", emoji: "🫂", category: "noun" },
+          { hebrew: "אִתְּכֶם", hebrewClean: "אתכם", transliteration: "itkhem", vuk: "ithem", english: "with you", serbian: "sa vama", emoji: "🤝", category: "preposition" }
+        ],
+        grammarNote: "Reč 'chibuk' (חִבּוּק) prenosi duboku bliskost i prijateljsku toplinu."
       }
     };
 
