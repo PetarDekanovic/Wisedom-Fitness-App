@@ -27,7 +27,13 @@ import {
   MoveLeft,
   MoveRight,
   Plus,
-  Sliders
+  Sliders,
+  Bot,
+  Send,
+  Loader2,
+  BookmarkPlus,
+  History,
+  Languages
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { db } from '../firebase';
@@ -50,6 +56,39 @@ export interface HebrewAlphabetItem {
   exampleTranslationEn: string;
   isFinal?: boolean;
 }
+
+export interface AiConfigWordItem {
+  hebrew: string;
+  hebrewClean?: string;
+  transliteration: string;
+  vuk: string;
+  english: string;
+  serbian: string;
+  emoji: string;
+  category?: string;
+}
+
+export interface AiConfiguredHebrewResult {
+  hebrewWithEmojis: string;
+  hebrew: string;
+  hebrewClean: string;
+  transliteration: string;
+  vukPhonetic: string;
+  serbian: string;
+  english: string;
+  emojis: string[];
+  words: AiConfigWordItem[];
+  grammarNote?: string;
+}
+
+export const AI_PRESET_SENTENCES = [
+  { en: "Peace and wisdom are true strength", emojis: "🕊️🧠✨", sr: "Mir i mudrost su istinska snaga" },
+  { en: "Good morning, my dear friend!", emojis: "☀️☕🤝", sr: "Dobro jutro, dragi moj prijatelju!" },
+  { en: "I want to drink cold water with my friend", emojis: "💧🧊🤝", sr: "Želim da pijem hladnu vodu sa prijateljem" },
+  { en: "The soul is filled with eternal light and joy", emojis: "✨💖🕯️", sr: "Duša je ispunjena večnom svetlošću i radošću" },
+  { en: "Truth and patience protect the human heart", emojis: "⚖️🛡️❤️", sr: "Istina i strpljenje čuvaju ljudsko srce" },
+  { en: "We learn new words every single day", emojis: "📚🌱🌟", sr: "Svakog dana učimo nove reči sa radošću" }
+];
 
 export const HEBREW_ALPHABET_DATA: HebrewAlphabetItem[] = [
   { id: 'he-a-1', char: 'א', name: 'Alef', vuk: 'A / Tišina (Grleni nosilac samoglasnika)', english: 'Silent / Vowel Carrier', gematria: 1, exampleWord: 'אָב (Av)', exampleTranslationSr: 'Otac', exampleTranslationEn: 'Father' },
@@ -549,7 +588,131 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
   const [hCopiedConfigSentence, setHCopiedConfigSentence] = useState(false);
   const [heDndStageWords, setHeDndStageWords] = useState<HebDndWordItem[]>([]);
   const [heDndFilter, setHeDndFilter] = useState<'all' | 'pronoun' | 'verb' | 'noun' | 'adjective' | 'connector'>('all');
-  const [heConfigTabMode, setHeConfigTabMode] = useState<'dnd' | 'dropdown'>('dnd');
+  const [heConfigTabMode, setHeConfigTabMode] = useState<'ai' | 'dnd' | 'dropdown'>('ai');
+
+  // AI-Assisted Sentence & Word Configurator State
+  const [aiInputSentence, setAiInputSentence] = useState('Peace and wisdom are true strength');
+  const [aiSelectedStyle, setAiSelectedStyle] = useState('conversational & thoughtful');
+  const [isAiTranslating, setIsAiTranslating] = useState(false);
+  const [aiTranslationResult, setAiTranslationResult] = useState<AiConfiguredHebrewResult | null>(null);
+  const [aiTranslationError, setAiTranslationError] = useState<string | null>(null);
+  const [aiCopiedResult, setAiCopiedResult] = useState(false);
+  const [aiSavedSuccessToast, setAiSavedSuccessToast] = useState<string | null>(null);
+  const [savedCustomWords, setSavedCustomWords] = useState<HebrewVocabItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('wisefit_hebrew_custom_words');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  const [aiConfigHistory, setAiConfigHistory] = useState<AiConfiguredHebrewResult[]>(() => {
+    try {
+      const saved = localStorage.getItem('wisefit_hebrew_ai_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const handleTranslateWithAi = async (customSentence?: string) => {
+    const sentenceToUse = (typeof customSentence === 'string' ? customSentence : aiInputSentence).trim();
+    if (!sentenceToUse) return;
+    setIsAiTranslating(true);
+    setAiTranslationError(null);
+    try {
+      const res = await fetch('/api/ai/hebrew-configurator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sentence: sentenceToUse,
+          style: aiSelectedStyle
+        })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Neuspešan prevod');
+      if (json.data) {
+        setAiTranslationResult(json.data);
+        // Save into history
+        setAiConfigHistory(prev => {
+          const filtered = prev.filter(item => item.english?.toLowerCase() !== json.data.english?.toLowerCase());
+          const next = [json.data, ...filtered].slice(0, 15);
+          try {
+            localStorage.setItem('wisefit_hebrew_ai_history', JSON.stringify(next));
+          } catch (e) {}
+          return next;
+        });
+      }
+    } catch (err: any) {
+      setAiTranslationError(err.message || 'Greška pri prevodu sa AI.');
+    } finally {
+      setIsAiTranslating(false);
+    }
+  };
+
+  const handleSaveAllAiWords = () => {
+    if (!aiTranslationResult || !aiTranslationResult.words) return;
+    const newItems: HebrewVocabItem[] = aiTranslationResult.words.map((w, idx) => ({
+      id: `he-ai-${Date.now()}-${idx}`,
+      char: w.hebrew,
+      transliteration: w.transliteration,
+      vuk: w.vuk,
+      translation: w.serbian,
+      english: w.english,
+      category: 'mudrost',
+      categoryLabel: 'AI Mudrost',
+      emoji: w.emoji || '✨',
+      root: w.hebrewClean || w.hebrew,
+      visualTip: `Kreirano kroz AI Prevodilac za rečenicu: "${aiTranslationResult.english}"`
+    }));
+
+    setSavedCustomWords(prev => {
+      const existingChars = new Set(prev.map(p => p.char));
+      const toAdd = newItems.filter(item => !existingChars.has(item.char));
+      const next = [...toAdd, ...prev];
+      try {
+        localStorage.setItem('wisefit_hebrew_custom_words', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    setAiSavedSuccessToast(`Uspešno sačuvano ${newItems.length} reči u Vaš rečnik i Flashcards! 🎴✨`);
+    setTimeout(() => setAiSavedSuccessToast(null), 3000);
+  };
+
+  const handleSaveSingleAiWord = (w: AiConfigWordItem) => {
+    const newItem: HebrewVocabItem = {
+      id: `he-ai-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      char: w.hebrew,
+      transliteration: w.transliteration,
+      vuk: w.vuk,
+      translation: w.serbian,
+      english: w.english,
+      category: 'mudrost',
+      categoryLabel: 'AI Mudrost',
+      emoji: w.emoji || '✨',
+      root: w.hebrewClean || w.hebrew,
+      visualTip: `Kreirano putem AI Konfiguratora: "${w.english}"`
+    };
+
+    setSavedCustomWords(prev => {
+      const filtered = prev.filter(p => p.char !== newItem.char);
+      const next = [newItem, ...filtered];
+      try {
+        localStorage.setItem('wisefit_hebrew_custom_words', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    setAiSavedSuccessToast(`Reč "${w.hebrew}" sačuvana u rečnik! ✨`);
+    setTimeout(() => setAiSavedSuccessToast(null), 2500);
+  };
+
+  const handleCopyAiResult = (textToCopy: string) => {
+    navigator.clipboard.writeText(textToCopy);
+    setAiCopiedResult(true);
+    setTimeout(() => setAiCopiedResult(false), 2000);
+  };
 
   const handleHeDndAddWord = (item: HebDndWordItem) => {
     setHeDndStageWords(prev => [...prev, item]);
@@ -838,8 +1001,22 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     }
   };
 
+  const fullVocabList = useMemo(() => {
+    if (savedCustomWords.length === 0) return HEBREW_VOCAB_DATA;
+    const seen = new Set<string>();
+    const list: HebrewVocabItem[] = [];
+    for (const item of [...savedCustomWords, ...HEBREW_VOCAB_DATA]) {
+      const k = item.char.trim();
+      if (!seen.has(k)) {
+        seen.add(k);
+        list.push(item);
+      }
+    }
+    return list;
+  }, [savedCustomWords]);
+
   const filteredVocab = useMemo(() => {
-    return HEBREW_VOCAB_DATA.filter(item => {
+    return fullVocabList.filter(item => {
       const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
       const q = searchQuery.toLowerCase();
       const matchesSearch = searchQuery === '' || 
@@ -851,7 +1028,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
         (item.root && item.root.toLowerCase().includes(q));
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [fullVocabList, selectedCategory, searchQuery]);
 
   const toggleMastered = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -1105,15 +1282,15 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
               <LayoutGrid className="w-3.5 h-3.5" /> Visual Canvas
             </button>
             <button
-              onClick={() => setActiveTab('weaver')}
+              onClick={() => { setActiveTab('weaver'); setHeConfigTabMode('ai'); }}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
                 activeTab === 'weaver'
-                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-purple-600 text-white"
+                  ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
-              <Wand2 className="w-3.5 h-3.5" /> Sklop Rečenica
+              <Bot className="w-3.5 h-3.5 text-cyan-400 animate-pulse" /> 🤖 AI Konfigurator & Sklop
             </button>
             <button
               onClick={() => { setActiveTab('quiz'); generateQuizRound(); }}
@@ -1157,6 +1334,29 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
             <Trophy className="w-4 h-4 text-blue-500 fill-blue-500 animate-pulse" />
             <span>{masteredIds.length}/{HEBREW_VOCAB_DATA.length}</span>
           </div>
+        </div>
+
+        {/* QUICK AI TRANSLATOR FEATURE BANNER */}
+        <div className={cn(
+          "p-3.5 rounded-2xl border flex items-center justify-between gap-3 flex-wrap shadow-md",
+          isDarkMode ? "bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-zinc-900 border-blue-500/40" : "bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-blue-200"
+        )}>
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">🤖✨</span>
+            <div className="text-xs">
+              <span className="font-black text-blue-400 dark:text-blue-300">Novo: AI Konfigurator & Prevodilac sa Emodžijima!</span>
+              <p className="text-[11px] text-zinc-400">
+                Upišite englesku rečenicu i pritisnite prevod — dobijate hebrejski sa vokalima i prigodnim emodžijima.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => { setActiveTab('weaver'); setHeConfigTabMode('ai'); }}
+            className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-md flex items-center gap-1.5"
+          >
+            <Bot className="w-3.5 h-3.5 text-cyan-300" />
+            <span>Otvori AI Prevodilac ⚡</span>
+          </button>
         </div>
       </div>
 
@@ -1446,7 +1646,20 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
             </div>
 
             {/* CONFIGURATOR MODE SWITCHER TABS */}
-            <div className="flex items-center justify-center gap-2 p-1.5 rounded-2xl bg-zinc-900/80 border border-blue-500/30 max-w-md mx-auto">
+            <div className="flex items-center justify-center gap-2 p-1.5 rounded-2xl bg-zinc-900/80 border border-blue-500/30 max-w-xl mx-auto flex-wrap sm:flex-nowrap">
+              <button
+                onClick={() => setHeConfigTabMode('ai')}
+                className={cn(
+                  "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2",
+                  heConfigTabMode === 'ai'
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md font-black"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                )}
+              >
+                <Bot className="w-4 h-4 text-cyan-300" />
+                <span>🤖 AI Prevodilac & Emodžiji</span>
+              </button>
+
               <button
                 onClick={() => setHeConfigTabMode('dnd')}
                 className={cn(
@@ -1473,6 +1686,382 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                 <span>⚡ Izbor sa Menijem</span>
               </button>
             </div>
+
+            {/* MODE 0: AI-ASSISTED WORD & SENTENCE CONFIGURATOR WITH EMOJIS */}
+            {heConfigTabMode === 'ai' && (
+              <div className={cn(
+                "p-6 rounded-3xl border space-y-6",
+                isDarkMode ? "bg-zinc-900/90 border-blue-500/40 shadow-xl" : "bg-gradient-to-br from-blue-50/70 to-indigo-50/70 border-blue-300 shadow-md"
+              )}>
+                {/* Header banner */}
+                <div className="flex items-center justify-between flex-wrap gap-3 border-b pb-4 border-blue-500/20">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                      <Bot className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-black tracking-tight flex items-center gap-2">
+                        <span>AI Konfigurator Reči & Prevodilac sa Emodžijima</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          ✨ Gemini 3.8 Flash
+                        </span>
+                      </h3>
+                      <p className="text-xs text-zinc-400">
+                        Unesite englesku rečenicu — AI generiše pravilan hebrejski prevod sa vokalima (Nikud), fonetikom i dodaje prigodne emodžije!
+                      </p>
+                    </div>
+                  </div>
+
+                  {aiConfigHistory.length > 0 && (
+                    <span className="text-xs font-mono text-zinc-400 flex items-center gap-1 bg-zinc-800/60 px-2.5 py-1 rounded-lg border border-zinc-700/50">
+                      <History className="w-3.5 h-3.5 text-blue-400" />
+                      Istorija: {aiConfigHistory.length}
+                    </span>
+                  )}
+                </div>
+
+                {/* Toast notification */}
+                <AnimatePresence>
+                  {aiSavedSuccessToast && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      <span>{aiSavedSuccessToast}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Style Pills */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-mono font-bold uppercase text-blue-400 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    Stil Prevoda & Tonalitet:
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'conversational & thoughtful', label: '🧘 Filozofski & Miran' },
+                      { id: 'casual & modern daily conversation', label: '💬 Svakodnevni & Govorni' },
+                      { id: 'biblical & classical wisdom', label: '📜 Drevni & Klasični' },
+                      { id: 'poetic & warm emotional', label: '🌸 Poetski & Topao' }
+                    ].map(st => (
+                      <button
+                        key={st.id}
+                        type="button"
+                        onClick={() => setAiSelectedStyle(st.id)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-bold transition-all border",
+                          aiSelectedStyle === st.id
+                            ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                            : isDarkMode ? "bg-zinc-800/80 border-zinc-700 text-zinc-300 hover:border-blue-500/40" : "bg-white border-blue-200 text-blue-900"
+                        )}
+                      >
+                        {st.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preset Chips */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-mono font-bold uppercase text-zinc-400 flex items-center gap-1">
+                    <span>⚡ Brzi Primeri (kliknite za trenutni prevod sa emodžijima):</span>
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {AI_PRESET_SENTENCES.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setAiInputSentence(preset.en);
+                          handleTranslateWithAi(preset.en);
+                        }}
+                        className={cn(
+                          "px-2.5 py-1 rounded-xl text-xs transition-all border text-left flex items-center gap-1.5",
+                          isDarkMode ? "bg-zinc-800/60 border-zinc-700 text-zinc-300 hover:bg-blue-950/40 hover:border-blue-500/50 hover:text-white" : "bg-white border-zinc-300 text-zinc-700 hover:bg-blue-50"
+                        )}
+                      >
+                        <span>{preset.emojis}</span>
+                        <span className="font-medium">{preset.en}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Textarea Input & Translate Button */}
+                <div className="space-y-3">
+                  <div className="relative">
+                    <textarea
+                      value={aiInputSentence}
+                      onChange={(e) => setAiInputSentence(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                          handleTranslateWithAi();
+                        }
+                      }}
+                      placeholder="Unesite rečenicu na engleskom (npr. 'I love learning Hebrew words with wisdom and joy')..."
+                      rows={3}
+                      className={cn(
+                        "w-full p-4 rounded-2xl border text-sm font-medium transition-all outline-none resize-none pr-10",
+                        isDarkMode ? "bg-zinc-950/80 border-zinc-700 text-zinc-100 focus:border-blue-500" : "bg-white border-zinc-300 text-zinc-900 focus:border-blue-500 shadow-inner"
+                      )}
+                    />
+                    {aiInputSentence && (
+                      <button
+                        type="button"
+                        onClick={() => setAiInputSentence('')}
+                        className="absolute top-3.5 right-3.5 p-1 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
+                        title="Obriši tekst"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-[11px] text-zinc-500 font-mono">
+                      Prečica: Ctrl/Cmd + Enter za brzi prevod
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleTranslateWithAi()}
+                      disabled={isAiTranslating || !aiInputSentence.trim()}
+                      className={cn(
+                        "px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shadow-lg",
+                        isAiTranslating || !aiInputSentence.trim()
+                          ? "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700"
+                          : "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white hover:brightness-110 shadow-blue-500/20 active:scale-95"
+                      )}
+                    >
+                      {isAiTranslating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-cyan-300" />
+                          <span>AI Prevodi i Dodaje Emodžije...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                          <span>✨ Prevedi sa AI (Translate)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Error message if any */}
+                {aiTranslationError && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium flex items-center gap-2">
+                    <XCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>{aiTranslationError}</span>
+                  </div>
+                )}
+
+                {/* Translation Result Display Card */}
+                {aiTranslationResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn(
+                      "p-6 rounded-3xl border space-y-6 shadow-2xl relative overflow-hidden",
+                      isDarkMode ? "bg-gradient-to-br from-zinc-950 via-zinc-900 to-blue-950/30 border-blue-500/50" : "bg-white border-blue-300"
+                    )}
+                  >
+                    {/* Subtle decorative glow */}
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                    {/* Top Badges & Actions */}
+                    <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 border-zinc-800/80">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-mono font-bold uppercase bg-blue-500/20 text-blue-400 px-2.5 py-1 rounded-full border border-blue-500/30 flex items-center gap-1">
+                          <span>🇮🇱</span> Hebrejski Prevod sa Emodžijima
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => speakHebrew(aiTranslationResult.hebrew)}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 transition-all flex items-center gap-1.5"
+                          title="Poslušaj izgovor"
+                        >
+                          <Volume2 className="w-3.5 h-3.5 text-cyan-300" />
+                          <span>Slušaj</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCopyAiResult(aiTranslationResult.hebrewWithEmojis)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5",
+                            aiCopiedResult
+                              ? "bg-emerald-600 text-white border-emerald-500"
+                              : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white" : "bg-zinc-100 border-zinc-300 text-zinc-700"
+                          )}
+                          title="Kopiraj kompletan odgovor sa emodžijima"
+                        >
+                          {aiCopiedResult ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{aiCopiedResult ? 'Kopirano!' : 'Kopiraj sa Emodžijima'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleSaveAllAiWords}
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/30 transition-all flex items-center gap-1.5"
+                          title="Dodaj sve reči iz ovog prevoda u svoj rečnik i flashcards igru"
+                        >
+                          <BookmarkPlus className="w-3.5 h-3.5" />
+                          <span>Sačuvaj u Rečnik</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* BIG HEBREW DISPLAY WITH EMOJIS */}
+                    <div className="text-center py-4 px-2 space-y-2">
+                      <div 
+                        dir="rtl"
+                        className="text-2xl sm:text-3xl md:text-4xl font-black font-serif tracking-wide leading-relaxed text-blue-100 drop-shadow-sm select-all"
+                      >
+                        {aiTranslationResult.hebrewWithEmojis}
+                      </div>
+
+                      {/* Pronunciation & Translations */}
+                      <div className="max-w-xl mx-auto space-y-1.5 pt-2">
+                        <p className="text-xs sm:text-sm font-mono font-bold text-amber-400">
+                          🗣️ Izgovor (Vuk): <span className="text-white font-serif">{aiTranslationResult.vukPhonetic || aiTranslationResult.transliteration}</span>
+                        </p>
+                        {aiTranslationResult.transliteration !== aiTranslationResult.vukPhonetic && (
+                          <p className="text-xs font-mono text-zinc-400">
+                            Transliteracija: <span className="text-zinc-300 italic">{aiTranslationResult.transliteration}</span>
+                          </p>
+                        )}
+                        <p className="text-xs sm:text-sm font-medium text-emerald-300">
+                          🇷🇸 Značenje: <span className="text-white">{aiTranslationResult.serbian}</span>
+                        </p>
+                        <p className="text-xs text-zinc-400 italic">
+                          🇬🇧 Izvorni engleski: "{aiTranslationResult.english}"
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* WORD BREAKDOWN GRID (Configurator Cards) */}
+                    {aiTranslationResult.words && aiTranslationResult.words.length > 0 && (
+                      <div className="space-y-3 border-t pt-4 border-zinc-800">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+                            <Layers className="w-3.5 h-3.5 text-blue-400" />
+                            Konfiguracija Reč po Reč (Interaktivne Kartice):
+                          </h4>
+                          <span className="text-[10px] text-zinc-500 font-mono">
+                            {aiTranslationResult.words.length} reči
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {aiTranslationResult.words.map((w, idx) => (
+                            <div
+                              key={idx}
+                              className={cn(
+                                "p-3 rounded-2xl border transition-all flex flex-col justify-between space-y-2 relative group",
+                                isDarkMode ? "bg-zinc-900/90 border-zinc-800 hover:border-blue-500/50" : "bg-zinc-50 border-zinc-200 hover:border-blue-400 shadow-sm"
+                              )}
+                            >
+                              <div className="flex items-start justify-between gap-1.5">
+                                <span className="text-2xl p-1 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                                  {w.emoji || '✨'}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => speakHebrew(w.hebrew)}
+                                    className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-blue-600/30 transition-all"
+                                    title="Izgovori reč"
+                                  >
+                                    <Volume2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveSingleAiWord(w)}
+                                    className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-300 hover:bg-amber-500/20 transition-all"
+                                    title="Dodaj u moj rečnik"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1">
+                                <div dir="rtl" className="text-xl font-bold font-serif text-blue-200">
+                                  {w.hebrew}
+                                </div>
+                                <div className="text-[11px] font-mono text-amber-400 font-bold">
+                                  {w.vuk || w.transliteration}
+                                </div>
+                                <div className="text-xs text-white font-medium">
+                                  {w.serbian}
+                                </div>
+                                <div className="text-[10px] text-zinc-400 italic">
+                                  {w.english}
+                                </div>
+                              </div>
+
+                              {w.category && (
+                                <div className="pt-1 border-t border-zinc-800 text-[9px] uppercase font-mono text-zinc-500">
+                                  {w.category}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* GRAMMAR NOTE */}
+                    {aiTranslationResult.grammarNote && (
+                      <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-xs text-blue-200 flex items-start gap-2.5">
+                        <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold font-mono uppercase text-blue-400 text-[10px] block">💡 Lingvistička Beleška:</span>
+                          <p className="mt-0.5 leading-relaxed">{aiTranslationResult.grammarNote}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* HISTORY DRAWER / PREVIOUS TRANSLATIONS */}
+                    {aiConfigHistory.length > 1 && (
+                      <div className="space-y-2 border-t pt-4 border-zinc-800">
+                        <span className="text-[11px] font-mono font-bold uppercase text-zinc-400 flex items-center gap-1">
+                          <History className="w-3.5 h-3.5 text-blue-400" />
+                          Prethodno Konfigurisane Rečenice:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {aiConfigHistory.slice(1, 6).map((item, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setAiInputSentence(item.english);
+                                setAiTranslationResult(item);
+                              }}
+                              className={cn(
+                                "px-3 py-1.5 rounded-xl text-xs border text-left transition-all flex items-center gap-1.5",
+                                isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-blue-500/50 hover:text-white" : "bg-white border-zinc-200 text-zinc-700"
+                              )}
+                            >
+                              <span>{item.emojis?.join('') || '✨'}</span>
+                              <span className="font-medium max-w-xs truncate">{item.english}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+            )}
 
             {/* MODE 1: DRAG & DROP CREATIVE STUDIO */}
             {heConfigTabMode === 'dnd' && (
@@ -2325,7 +2914,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
             className="space-y-6"
           >
             <HebrewFlashcardsGame
-              vocabList={HEBREW_VOCAB_DATA}
+              vocabList={fullVocabList}
               masteredIds={masteredIds}
               toggleMastered={toggleMastered}
               speakHebrew={speakHebrew}

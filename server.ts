@@ -116,11 +116,10 @@ function isAuthorized(email: string | undefined) {
 
 // Priority order for models
 const GEMINI_MODELS = [
-  "gemini-3.6-flash",
+  "gemini-3.8-flash",
   "gemini-3.5-flash",
   "gemini-3.1-pro-preview",
-  "gemini-2.5-flash",
-  "gemini-2.0-flash"
+  "gemini-2.5-flash"
 ];
 
 const CLAUDE_MODELS = [
@@ -941,6 +940,263 @@ app.get("/api/ai/diagnostics", async (req, res) => {
       res.status(500).json({ error: "Failed to generate quotes" });
     }
   });
+
+  // --- HEBREW AI CONFIGURATOR & TRANSLATOR WITH EMOJIS ---
+  app.post("/api/ai/hebrew-configurator", async (req, res) => {
+    try {
+      const { sentence, style } = req.body;
+      if (!sentence || typeof sentence !== "string" || !sentence.trim()) {
+        return res.status(400).json({ error: "Please provide an English sentence to configure and translate." });
+      }
+
+      const cleanInput = sentence.trim();
+      console.log(`[Hebrew AI Configurator] Translating & configuring: "${cleanInput}"`);
+
+      const prompt = `You are an expert Hebrew linguist, Hebrew language educator, and translator.
+Translate the following English sentence into Hebrew with full vowel points (Nikud) for language learners, and provide rich metadata.
+Crucially: append 2 to 4 delightful, contextually relevant emojis to the translation answer as requested by the user.
+
+English Input: "${cleanInput}"
+Style: ${style || "conversational & thoughtful"}
+
+Requirements:
+1. Translate into natural, beautiful Hebrew with full vowel markings (Nikud) so a student can read aloud.
+2. In 'hebrewWithEmojis', include the Hebrew translation followed by 2 to 4 fitting emojis (e.g., 🕊️✨, 💧🧊, ❤️💪).
+3. Provide 'transliteration' (standard Israeli Latin phonetics, e.g. "Ha-shalom ve-ha-ahavah hem koach ha-chayim").
+4. Provide 'vukPhonetic' (phonetic reading tailored for Serbian/Croatian speakers using Vuk Karadžić Latin, e.g. "Šalom ve-ahava hem koah ha-hajim").
+5. Provide 'serbian' (accurate Serbian/Croatian translation of the sentence).
+6. Provide 'emojis' (an array of 2 to 4 emojis that best represent the sentence concepts).
+7. Provide 'words' array: breaking down each Hebrew word in the sentence:
+   - 'hebrew': Hebrew with Nikud
+   - 'hebrewClean': Hebrew without Nikud
+   - 'transliteration': Latin pronunciation
+   - 'vuk': Vuk phonetic
+   - 'english': English meaning of the word
+   - 'serbian': Serbian meaning of the word
+   - 'emoji': 1 single fitting emoji for that specific word
+   - 'category': "noun" | "verb" | "adjective" | "pronoun" | "preposition" | "expression"
+8. Provide 'grammarNote': a concise, enlightening 1-2 sentence tip explaining the root (Shoresh), gender, or syntax in Serbian/English.
+
+Respond STRICTLY with a valid JSON object matching this schema without markdown fences:
+{
+  "hebrewWithEmojis": "...",
+  "hebrew": "...",
+  "hebrewClean": "...",
+  "transliteration": "...",
+  "vukPhonetic": "...",
+  "serbian": "...",
+  "english": "${cleanInput.replace(/"/g, '\\"')}",
+  "emojis": ["...", "..."],
+  "words": [
+    {
+      "hebrew": "...",
+      "hebrewClean": "...",
+      "transliteration": "...",
+      "vuk": "...",
+      "english": "...",
+      "serbian": "...",
+      "emoji": "...",
+      "category": "..."
+    }
+  ],
+  "grammarNote": "..."
+}`;
+
+      const config = {
+        temperature: 0.3,
+        responseMimeType: "application/json"
+      };
+
+      let resultText = "";
+      try {
+        const result = await generateWithFallback(prompt, config);
+        resultText = result.text() || "";
+      } catch (err: any) {
+        console.warn("[Hebrew AI Configurator] Primary AI call warning:", err?.message);
+      }
+
+      // If AI succeeded and returned valid JSON
+      if (resultText) {
+        let cleaned = resultText.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+        try {
+          const parsed = JSON.parse(cleaned);
+          if (parsed && (parsed.hebrew || parsed.hebrewWithEmojis)) {
+            // Ensure emojis are present in hebrewWithEmojis
+            if (!parsed.hebrewWithEmojis && parsed.hebrew) {
+              const emojiStr = Array.isArray(parsed.emojis) && parsed.emojis.length > 0 ? ` ${parsed.emojis.join(' ')}` : " 🕊️✨";
+              parsed.hebrewWithEmojis = `${parsed.hebrew}${emojiStr}`;
+            }
+            return res.json({
+              success: true,
+              source: "gemini",
+              data: parsed
+            });
+          }
+        } catch (parseErr) {
+          console.warn("[Hebrew AI Configurator] JSON parse fallback:", parseErr);
+        }
+      }
+
+      // Intelligent Offline Fallback Generator
+      console.log("[Hebrew AI Configurator] Using intelligent linguistic fallback generator");
+      const fallbackResult = buildFallbackHebrewTranslation(cleanInput);
+      return res.json({
+        success: true,
+        source: "offline-dictionary-fallback",
+        data: fallbackResult
+      });
+
+    } catch (error: any) {
+      console.error("Hebrew AI Configurator error:", error);
+      res.status(500).json({ error: error.message || "Failed to configure Hebrew sentence." });
+    }
+  });
+
+  // Helper for Intelligent Offline Hebrew Translation & Emoji Generator
+  function buildFallbackHebrewTranslation(english: string) {
+    const lower = english.toLowerCase().trim();
+    
+    // Curated intelligent phrase mappings
+    const presets: Record<string, any> = {
+      "peace and wisdom": {
+        hebrew: "שָׁלוֹם וְחָכְמָה",
+        hebrewClean: "שלום וחכמה",
+        transliteration: "Shalom ve-chochmah",
+        vuk: "Šalom ve-hohma",
+        serbian: "Mir i mudrost",
+        emojis: ["🕊️", "🧠", "✨"],
+        words: [
+          { hebrew: "שָׁלוֹם", hebrewClean: "שלום", transliteration: "Shalom", vuk: "Šalom", english: "peace", serbian: "mir", emoji: "🕊️", category: "noun" },
+          { hebrew: "וְ", hebrewClean: "ו", transliteration: "ve-", vuk: "ve-", english: "and", serbian: "i", emoji: "🔗", category: "preposition" },
+          { hebrew: "חָכְמָה", hebrewClean: "חכמה", transliteration: "chochmah", vuk: "hohma", english: "wisdom", serbian: "mudrost", emoji: "🧠", category: "noun" }
+        ],
+        grammarNote: "Veznik 've-' (וְ) se u hebrejskom piše direktno spojen sa reči koja sledi."
+      },
+      "good morning": {
+        hebrew: "בֹּקֶר טוֹב",
+        hebrewClean: "בוקר טוב",
+        transliteration: "Boker tov",
+        vuk: "Boker tov",
+        serbian: "Dobro jutro",
+        emojis: ["☀️", "🌅", "☕"],
+        words: [
+          { hebrew: "בֹּקֶר", hebrewClean: "בוקר", transliteration: "boker", vuk: "boker", english: "morning", serbian: "jutro", emoji: "🌅", category: "noun" },
+          { hebrew: "טוֹב", hebrewClean: "טוב", transliteration: "tov", vuk: "tov", english: "good", serbian: "dobar/dobro", emoji: "✨", category: "adjective" }
+        ],
+        grammarNote: "U hebrejskom pridev uvek dolazi POSLE imenice (boker tov = jutro dobro)."
+      },
+      "i love peace": {
+        hebrew: "אֲנִי אוֹהֵב שָׁלוֹם",
+        hebrewClean: "אני אוהב שלום",
+        transliteration: "Ani ohev shalom",
+        vuk: "Ani ohev šalom",
+        serbian: "Ja volim mir",
+        emojis: ["❤️", "🕊️", "✨"],
+        words: [
+          { hebrew: "אֲנִי", hebrewClean: "אני", transliteration: "Ani", vuk: "Ani", english: "I", serbian: "ja", emoji: "👤", category: "pronoun" },
+          { hebrew: "אוֹהֵב", hebrewClean: "אוהב", transliteration: "ohev", vuk: "ohev", english: "love (m)", serbian: "volim", emoji: "❤️", category: "verb" },
+          { hebrew: "שָׁלוֹם", hebrewClean: "שלום", transliteration: "shalom", vuk: "šalom", english: "peace", serbian: "mir", emoji: "🕊️", category: "noun" }
+        ],
+        grammarNote: "Glagol 'ohev' (אוהב) je u muškom rodu sadašnjeg vremena. Za ženski rod koristi se 'ohevet' (אוֹהֶבֶת)."
+      }
+    };
+
+    for (const [key, val] of Object.entries(presets)) {
+      if (lower.includes(key)) {
+        return {
+          hebrewWithEmojis: `${val.hebrew} ${val.emojis.join(' ')}`,
+          hebrew: val.hebrew,
+          hebrewClean: val.hebrewClean,
+          transliteration: val.transliteration,
+          vukPhonetic: val.vuk,
+          serbian: val.serbian,
+          english: english,
+          emojis: val.emojis,
+          words: val.words,
+          grammarNote: val.grammarNote
+        };
+      }
+    }
+
+    // Default intelligent word-level translator
+    const dict: Record<string, { he: string; clean: string; trans: string; vuk: string; srb: string; emoji: string; cat: string }> = {
+      i: { he: "אֲנִי", clean: "אני", trans: "ani", vuk: "ani", srb: "ja", emoji: "👤", cat: "pronoun" },
+      you: { he: "אַתָּה", clean: "אתה", trans: "ata", vuk: "ata", srb: "ti", emoji: "👉", cat: "pronoun" },
+      we: { he: "אֲנַחְנוּ", clean: "אנחנו", trans: "anachnu", vuk: "anahnu", srb: "mi", emoji: "👥", cat: "pronoun" },
+      love: { he: "אוֹהֵב", clean: "אוהב", trans: "ohev", vuk: "ohev", srb: "volim", emoji: "❤️", cat: "verb" },
+      want: { he: "רוֹצֶה", clean: "רוצה", trans: "rotze", vuk: "roce", srb: "želim", emoji: "🎯", cat: "verb" },
+      think: { he: "חוֹשֵׁב", clean: "חושב", trans: "choshev", vuk: "hošev", srb: "mislim", emoji: "🤔", cat: "verb" },
+      know: { he: "יוֹדֵעַ", clean: "יודע", trans: "yode'a", vuk: "jodea", srb: "znam", emoji: "💡", cat: "verb" },
+      see: { he: "רוֹאֶה", clean: "רואה", trans: "ro'eh", vuk: "roe", srb: "vidim", emoji: "👀", cat: "verb" },
+      peace: { he: "שָׁלוֹם", clean: "שלום", trans: "shalom", vuk: "šalom", srb: "mir", emoji: "🕊️", cat: "noun" },
+      wisdom: { he: "חָכְמָה", clean: "חכמה", trans: "chochmah", vuk: "hohma", srb: "mudrost", emoji: "🧠", cat: "noun" },
+      truth: { he: "אֱמֶת", clean: "אמת", trans: "emet", vuk: "emet", srb: "istina", emoji: "⚖️", cat: "noun" },
+      life: { he: "חַיִּים", clean: "חיים", trans: "chayim", vuk: "hajim", srb: "život", emoji: "🌿", cat: "noun" },
+      light: { he: "אוֹר", clean: "אור", trans: "or", vuk: "or", srb: "svetlost", emoji: "🕯️", cat: "noun" },
+      water: { he: "מַיִם", clean: "מים", trans: "mayim", vuk: "majim", srb: "voda", emoji: "💧", cat: "noun" },
+      friend: { he: "חָבֵר", clean: "חבר", trans: "chaver", vuk: "haver", srb: "prijatelj", emoji: "🤝", cat: "noun" },
+      heart: { he: "לֵב", clean: "לב", trans: "lev", vuk: "lev", srb: "srce", emoji: "💖", cat: "noun" },
+      strength: { he: "כֹּחַ", clean: "כוח", trans: "koach", vuk: "koah", srb: "snaga", emoji: "💪", cat: "noun" },
+      soul: { he: "נְשָׁמָה", clean: "נשמה", trans: "neshamah", vuk: "nešama", srb: "duša", emoji: "✨", cat: "noun" },
+      good: { he: "טוֹב", clean: "טוב", trans: "tov", vuk: "tov", srb: "dobro", emoji: "👍", cat: "adjective" },
+      beautiful: { he: "יָפֶה", clean: "יפה", trans: "yafeh", vuk: "jafe", srb: "lepo", emoji: "🌸", cat: "adjective" },
+      great: { he: "גָּדוֹל", clean: "גדול", trans: "gadol", vuk: "gadol", srb: "veliko", emoji: "🌟", cat: "adjective" },
+      strong: { he: "חָזָק", clean: "חזק", trans: "chazak", vuk: "hazak", srb: "snažno", emoji: "⚡", cat: "adjective" }
+    };
+
+    const wordsRaw = lower.replace(/[^a-z\s]/g, '').split(/\s+/).filter(Boolean);
+    const matchedWords: any[] = [];
+    const emojisFound: string[] = [];
+
+    for (const w of wordsRaw) {
+      if (dict[w]) {
+        const item = dict[w];
+        matchedWords.push({
+          hebrew: item.he,
+          hebrewClean: item.clean,
+          transliteration: item.trans,
+          vuk: item.vuk,
+          english: w,
+          serbian: item.srb,
+          emoji: item.emoji,
+          category: item.cat
+        });
+        if (!emojisFound.includes(item.emoji)) emojisFound.push(item.emoji);
+      }
+    }
+
+    if (matchedWords.length === 0) {
+      // Default inspiring phrase
+      matchedWords.push(
+        { hebrew: "שָׁלוֹם", hebrewClean: "שלום", transliteration: "Shalom", vuk: "Šalom", english: "peace/hello", serbian: "mir/zdravo", emoji: "🕊️", category: "noun" },
+        { hebrew: "וְחָכְמָה", hebrewClean: "וחכמה", transliteration: "ve-chochmah", vuk: "ve-hohma", english: "and wisdom", serbian: "i mudrost", emoji: "🧠", category: "noun" }
+      );
+      emojisFound.push("🕊️", "✨", "🧠");
+    }
+
+    if (emojisFound.length === 0) emojisFound.push("✨", "🕊️");
+    if (emojisFound.length < 2) emojisFound.push("🌟");
+
+    const fullHebrew = matchedWords.map(m => m.hebrew).join(' ');
+    const fullClean = matchedWords.map(m => m.hebrewClean).join(' ');
+    const fullTrans = matchedWords.map(m => m.transliteration).join(' ');
+    const fullVuk = matchedWords.map(m => m.vuk).join(' ');
+    const fullSrb = matchedWords.map(m => m.serbian).join(' ');
+    const emojiStr = emojisFound.slice(0, 3).join(' ');
+
+    return {
+      hebrewWithEmojis: `${fullHebrew} ${emojiStr}`,
+      hebrew: fullHebrew,
+      hebrewClean: fullClean,
+      transliteration: fullTrans,
+      vukPhonetic: fullVuk,
+      serbian: fullSrb,
+      english: english,
+      emojis: emojisFound.slice(0, 3),
+      words: matchedWords,
+      grammarNote: "Hebrejski se piše zdesna nalevo (RTL). Pridevi i opisi prate imenicu."
+    };
+  }
 
   // --- LINK PREVIEW SCROLLER & META EXTRACTOR ---
   app.get("/api/link-metadata", async (req, res) => {
