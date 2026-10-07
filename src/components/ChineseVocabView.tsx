@@ -33,6 +33,7 @@ import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { CHINESE_VOCAB_EXPANDED, VocabItem, getChineseQuoteForItem } from '../data/chineseVocabData';
+import { ChineseFlashcardsGame } from './ChineseFlashcardsGame';
 
 export type { VocabItem };
 
@@ -397,7 +398,7 @@ const SOCIAL_MEDIA_PRESETS = [
 ];
 
 export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
-  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz' | 'alphabet'>('learn');
+  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz' | 'flashcards' | 'alphabet'>('learn');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -808,8 +809,8 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     });
   }, [selectedCategory, searchQuery]);
 
-  const toggleMastered = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleMastered = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     let updated: string[];
     if (masteredIds.includes(id)) {
       updated = masteredIds.filter(mid => mid !== id);
@@ -1139,6 +1140,17 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
               <Gamepad2 className="w-3.5 h-3.5" /> Duo Kviz
             </button>
             <button
+              onClick={() => setActiveTab('flashcards')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
+                activeTab === 'flashcards'
+                  ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-red-600 text-white shadow-lg shadow-red-600/20"
+                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> Flashcards Igra 🎴
+            </button>
+            <button
               onClick={() => setActiveTab('alphabet')}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
@@ -1180,8 +1192,19 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   <p className="text-xs text-zinc-400">{getRankInfo(masteredIds.length).desc}</p>
                 </div>
               </div>
-              <div className="text-right font-mono text-xs font-bold text-red-500">
-                Savladano {Math.round((masteredIds.length / VOCAB_DATA.length) * 100)}% hanzi karaktera
+              <div className="flex items-center gap-3">
+                <div className="text-right font-mono text-xs font-bold text-red-500">
+                  Savladano {Math.round((masteredIds.length / VOCAB_DATA.length) * 100)}% hanzi karaktera
+                </div>
+                <button
+                  onClick={() => setActiveTab('flashcards')}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md transition-all active:scale-95 text-white",
+                    isGirlyMode ? "bg-pink-500 hover:bg-pink-400" : "bg-red-600 hover:bg-red-500 shadow-red-600/20"
+                  )}
+                >
+                  <Layers className="w-3.5 h-3.5" /> Flashcards Igra 🎴
+                </button>
               </div>
             </div>
 
@@ -2305,6 +2328,28 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                 </div>
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* VISUAL FLASHCARDS GAME VIEW */}
+        {activeTab === 'flashcards' && (
+          <motion.div
+            key="flashcards-view"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="space-y-6"
+          >
+            <ChineseFlashcardsGame
+              vocabList={VOCAB_DATA}
+              masteredIds={masteredIds}
+              toggleMastered={toggleMastered}
+              speakChinese={speakChinese}
+              isPronouncing={isPronouncing}
+              isDarkMode={isDarkMode}
+              isGirlyMode={isGirlyMode}
+              onSwitchToQuiz={() => { setActiveTab('quiz'); generateQuizRound(); }}
+            />
           </motion.div>
         )}
 
