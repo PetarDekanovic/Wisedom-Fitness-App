@@ -1669,82 +1669,82 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
         {/* View Mode Nav */}
         <div className="flex items-center gap-2 flex-wrap max-w-full">
           <div className={cn(
-            "p-1 rounded-xl border flex items-center gap-1 overflow-x-auto max-w-full touch-pan-x scrollbar-none pb-0.5",
+            "p-1.5 rounded-2xl border flex flex-wrap items-center gap-1.5 w-full sm:w-auto",
             isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-zinc-100 border-zinc-200"
           )}>
             <button
               onClick={() => setActiveTab('learn')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
+                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
                 activeTab === 'learn'
                   ? isGirlyMode ? "bg-pink-500 text-white" : "bg-blue-600 text-white"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
-              <BookOpen className="w-3.5 h-3.5" /> Rečnik
+              <BookOpen className="w-3.5 h-3.5 shrink-0" /> Rečnik
             </button>
             <button
               onClick={() => setActiveTab('canvas')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
+                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
                 activeTab === 'canvas'
                   ? isGirlyMode ? "bg-pink-500 text-white" : "bg-blue-600 text-white"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
-              <LayoutGrid className="w-3.5 h-3.5" /> Visual Canvas
+              <LayoutGrid className="w-3.5 h-3.5 shrink-0" /> Canvas
             </button>
             <button
               onClick={() => { setActiveTab('weaver'); setHeConfigTabMode('ai'); }}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
+                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
                 activeTab === 'weaver'
                   ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
-              <Bot className="w-3.5 h-3.5 text-cyan-400 animate-pulse" /> 🤖 AI Konfigurator & Sklop
+              <Bot className="w-3.5 h-3.5 text-cyan-400 animate-pulse shrink-0" /> 🤖 AI Prevod & Sklop
             </button>
             <button
               onClick={() => { setActiveTab('quiz'); generateQuizRound(); }}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
+                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
                 activeTab === 'quiz'
                   ? isGirlyMode ? "bg-pink-500 text-white" : "bg-blue-600 text-white"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
-              <Gamepad2 className="w-3.5 h-3.5" /> Duo Kviz
+              <Gamepad2 className="w-3.5 h-3.5 shrink-0" /> Kviz
             </button>
             <button
               onClick={() => setActiveTab('flashcards')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
+                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
                 activeTab === 'flashcards'
                   ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> Flashcards Igra 🎴
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" /> Flashcards 🎴
             </button>
             <button
               onClick={() => setActiveTab('alphabet')}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap",
+                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
                 activeTab === 'alphabet'
                   ? isGirlyMode ? "bg-pink-500 text-white" : "bg-blue-600 text-white"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
-              <span>🔤</span> Abeceda (Alef-Bet)
+              <span>🔤</span> Alef-Bet
             </button>
           </div>
 
           <div className={cn(
-            "px-3 py-1.5 rounded-xl flex items-center gap-2 border font-mono text-xs font-black",
+            "px-3 py-2 sm:py-1.5 rounded-xl flex items-center gap-2 border font-mono text-xs font-black shrink-0",
             isDarkMode ? "bg-zinc-900 border-zinc-800 text-blue-400" : "bg-blue-50 border-blue-100 text-blue-700"
           )}>
-            <Trophy className="w-4 h-4 text-blue-500 fill-blue-500 animate-pulse" />
+            <Trophy className="w-4 h-4 text-blue-500 fill-blue-500 animate-pulse shrink-0" />
             <span>{masteredIds.length}/{HEBREW_VOCAB_DATA.length}</span>
           </div>
         </div>
@@ -1765,9 +1765,9 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
           </div>
           <button
             onClick={() => { setActiveTab('weaver'); setHeConfigTabMode('ai'); }}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-md flex items-center gap-1.5"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0"
           >
-            <Bot className="w-3.5 h-3.5 text-cyan-300" />
+            <Bot className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
             <span>Otvori AI Prevodilac ⚡</span>
           </button>
         </div>
@@ -2059,44 +2059,44 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
             </div>
 
             {/* CONFIGURATOR MODE SWITCHER TABS */}
-            <div className="flex items-center justify-center gap-2 p-1.5 rounded-2xl bg-zinc-900/80 border border-blue-500/30 max-w-xl mx-auto flex-wrap sm:flex-nowrap">
+            <div className="grid grid-cols-3 gap-1 sm:gap-2 p-1.5 rounded-2xl bg-zinc-900/80 border border-blue-500/30 max-w-xl mx-auto w-full">
               <button
                 onClick={() => setHeConfigTabMode('ai')}
                 className={cn(
-                  "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2",
+                  "min-w-0 py-2.5 px-1 sm:px-3 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-center",
                   heConfigTabMode === 'ai'
                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md font-black"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-800"
                 )}
               >
-                <Bot className="w-4 h-4 text-cyan-300" />
-                <span>🤖 AI Prevodilac & Emodžiji</span>
+                <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-300 shrink-0" />
+                <span className="truncate">🤖 AI Prevod<span className="hidden sm:inline"> sa Emodžijima</span></span>
               </button>
 
               <button
                 onClick={() => setHeConfigTabMode('dnd')}
                 className={cn(
-                  "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2",
+                  "min-w-0 py-2.5 px-1 sm:px-3 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-center",
                   heConfigTabMode === 'dnd'
                     ? "bg-blue-600 text-white shadow-md font-black"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-800"
                 )}
               >
-                <GripVertical className="w-4 h-4" />
-                <span>🎨 Drag & Drop Studio</span>
+                <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="truncate">🎨 Drag & Drop<span className="hidden sm:inline"> Studio</span></span>
               </button>
 
               <button
                 onClick={() => setHeConfigTabMode('dropdown')}
                 className={cn(
-                  "flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2",
+                  "min-w-0 py-2.5 px-1 sm:px-3 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-center",
                   heConfigTabMode === 'dropdown'
                     ? "bg-blue-600 text-white shadow-md font-black"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-800"
                 )}
               >
-                <Sliders className="w-4 h-4" />
-                <span>⚡ Izbor sa Menijem</span>
+                <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="truncate">⚡ Meni<span className="hidden sm:inline"> Izbor</span></span>
               </button>
             </div>
 
@@ -2260,25 +2260,25 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                             </p>
                           </div>
 
-                          <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-zinc-800/80">
-                            <div className="flex items-center gap-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800/80">
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <button
                                 type="button"
                                 onClick={() => speakHebrew(quote.hebrew)}
-                                className="px-2 py-1 rounded-lg text-[11px] font-bold bg-blue-500/10 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/20 transition-all flex items-center gap-1"
+                                className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-blue-500/10 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/20 transition-all flex items-center gap-1"
                                 title="Poslušaj izgovor na hebrejskom"
                               >
-                                <Volume2 className="w-3 h-3" />
+                                <Volume2 className="w-3.5 h-3.5" />
                                 <span>Slušaj</span>
                               </button>
 
                               <button
                                 type="button"
                                 onClick={() => handleCopySolidarity(quote.hebrewWithEmojis, quote.id)}
-                                className="px-2 py-1 rounded-lg text-[11px] font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-all flex items-center gap-1"
+                                className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 transition-all flex items-center gap-1"
                                 title="Kopiraj hebrejski sa emodžijima"
                               >
-                                {copiedSolidarityId === quote.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                {copiedSolidarityId === quote.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                                 <span>{copiedSolidarityId === quote.id ? 'Kopirano' : 'Kopiraj'}</span>
                               </button>
                             </div>
@@ -2286,10 +2286,10 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                             <button
                               type="button"
                               onClick={() => handleSelectSolidarityQuote(quote)}
-                              className="px-2.5 py-1 rounded-lg text-[11px] font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:brightness-110 shadow-sm transition-all flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-xl text-[11px] font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:brightness-110 shadow-sm transition-all flex items-center justify-center gap-1 shrink-0"
                               title="Učitaj u AI Konfigurator za detaljan pregled reči i gramatike"
                             >
-                              <Wand2 className="w-3 h-3 text-cyan-300" />
+                              <Wand2 className="w-3.5 h-3.5 text-cyan-300" />
                               <span>Učitaj u AI</span>
                             </button>
                           </div>
@@ -2364,7 +2364,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                       onClick={() => handleTranslateWithAi()}
                       disabled={isAiTranslating || !aiInputSentence.trim()}
                       className={cn(
-                        "px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 shadow-lg",
+                        "w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-lg",
                         isAiTranslating || !aiInputSentence.trim()
                           ? "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700"
                           : "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white hover:brightness-110 shadow-blue-500/20 active:scale-95"
@@ -2399,7 +2399,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={cn(
-                      "p-6 rounded-3xl border space-y-6 shadow-2xl relative overflow-hidden",
+                      "p-4 sm:p-6 rounded-3xl border space-y-5 sm:space-y-6 shadow-2xl relative overflow-hidden",
                       isDarkMode ? "bg-gradient-to-br from-zinc-950 via-zinc-900 to-blue-950/30 border-blue-500/50" : "bg-white border-blue-300"
                     )}
                   >
@@ -2407,47 +2407,48 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                     <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
                     {/* Top Badges & Actions */}
-                    <div className="flex items-center justify-between flex-wrap gap-2 border-b pb-3 border-zinc-800/80">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3.5 border-zinc-800/80">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-[11px] font-mono font-bold uppercase bg-blue-500/20 text-blue-400 px-2.5 py-1 rounded-full border border-blue-500/30 flex items-center gap-1">
                           <span>🇮🇱</span> Hebrejski Prevod sa Emodžijima
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      {/* Mobile-Friendly Grid: 3 Equal Buttons on Mobile, Flex on Desktop */}
+                      <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
                         <button
                           type="button"
                           onClick={() => speakHebrew(aiTranslationResult.hebrew)}
-                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 transition-all flex items-center gap-1.5"
+                          className="min-w-0 px-2 sm:px-3 py-2.5 sm:py-1.5 rounded-xl text-xs font-bold bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-center"
                           title="Poslušaj izgovor"
                         >
-                          <Volume2 className="w-3.5 h-3.5 text-cyan-300" />
-                          <span>Slušaj</span>
+                          <Volume2 className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
+                          <span className="truncate">Slušaj</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => handleCopyAiResult(aiTranslationResult.hebrewWithEmojis)}
                           className={cn(
-                            "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5",
+                            "min-w-0 px-2 sm:px-3 py-2.5 sm:py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-center",
                             aiCopiedResult
                               ? "bg-emerald-600 text-white border-emerald-500"
                               : isDarkMode ? "bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white" : "bg-zinc-100 border-zinc-300 text-zinc-700"
                           )}
                           title="Kopiraj kompletan odgovor sa emodžijima"
                         >
-                          {aiCopiedResult ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{aiCopiedResult ? 'Kopirano!' : 'Kopiraj sa Emodžijima'}</span>
+                          {aiCopiedResult ? <Check className="w-3.5 h-3.5 shrink-0 text-emerald-300" /> : <Copy className="w-3.5 h-3.5 shrink-0" />}
+                          <span className="truncate">{aiCopiedResult ? 'Kopirano' : 'Kopiraj'}</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={handleSaveAllAiWords}
-                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/30 transition-all flex items-center gap-1.5"
+                          className="min-w-0 px-2 sm:px-3 py-2.5 sm:py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/30 transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-center"
                           title="Dodaj sve reči iz ovog prevoda u svoj rečnik i flashcards igru"
                         >
-                          <BookmarkPlus className="w-3.5 h-3.5" />
-                          <span>Sačuvaj u Rečnik</span>
+                          <BookmarkPlus className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">Sačuvaj</span>
                         </button>
                       </div>
                     </div>

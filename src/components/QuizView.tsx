@@ -146,15 +146,15 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, isGirlyMode, use
   return (
     <div className="max-w-4xl mx-auto space-y-6 px-4 py-8">
       {/* Tab Switcher */}
-      <div className="flex justify-center">
+      <div className="flex justify-center w-full">
         <div className={cn(
-          "flex p-1 rounded-2xl border border-zinc-500/10 shadow-sm",
+          "grid grid-cols-3 sm:flex p-1 rounded-2xl border border-zinc-500/10 shadow-sm w-full sm:w-auto max-w-lg gap-1",
           isDarkMode ? "bg-zinc-900/40" : "bg-zinc-100/80"
         )}>
           <button
             onClick={() => setActiveMode('chinese')}
             className={cn(
-              "px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
+              "py-2.5 px-2 sm:px-5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 sm:gap-2 min-w-0 text-center",
               activeMode === 'chinese'
                 ? isGirlyMode 
                   ? "bg-pink-500 text-white shadow-md"
@@ -162,12 +162,13 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, isGirlyMode, use
                 : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
             )}
           >
-            <Languages className="w-4 h-4" /> 🏮 Kineski Jezik
+            <Languages className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="truncate">🏮 Kineski<span className="hidden sm:inline"> Jezik</span></span>
           </button>
           <button
             onClick={() => setActiveMode('hebrew')}
             className={cn(
-              "px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
+              "py-2.5 px-2 sm:px-5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 sm:gap-2 min-w-0 text-center",
               activeMode === 'hebrew'
                 ? isGirlyMode 
                   ? "bg-pink-500 text-white shadow-md"
@@ -175,12 +176,13 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, isGirlyMode, use
                 : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
             )}
           >
-            <BookMarked className="w-4 h-4" /> 🕎 Hebrejski Jezik
+            <BookMarked className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="truncate">🕎 Hebrejski<span className="hidden sm:inline"> Jezik</span></span>
           </button>
           <button
             onClick={() => setActiveMode('trivia')}
             className={cn(
-              "px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2",
+              "py-2.5 px-2 sm:px-5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 sm:gap-2 min-w-0 text-center",
               activeMode === 'trivia'
                 ? isGirlyMode 
                   ? "bg-pink-500 text-white shadow-md"
@@ -188,7 +190,8 @@ export const QuizView: React.FC<QuizViewProps> = ({ isDarkMode, isGirlyMode, use
                 : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
             )}
           >
-            <Brain className="w-4 h-4" /> 🧠 Filozofski Kviz
+            <Brain className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="truncate">🧠 Kviz<span className="hidden sm:inline"> Filozofija</span></span>
           </button>
         </div>
       </div>

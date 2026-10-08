@@ -1346,33 +1346,33 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
               </div>
 
               {/* ACTION BUTTONS (Still Learning vs Mastered) */}
-              <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4 pt-2">
                 <button
                   type="button"
                   onClick={handleNeedReview}
                   className={cn(
-                    "py-3.5 px-4 rounded-2xl border flex items-center justify-center gap-2 font-black text-sm transition-all active:scale-95 shadow-lg",
+                    "py-3 sm:py-3.5 px-2 sm:px-4 rounded-2xl border flex items-center justify-center gap-1.5 sm:gap-2 font-black text-xs sm:text-sm transition-all active:scale-95 shadow-lg min-w-0 text-center",
                     isDarkMode 
                       ? "bg-rose-950/30 border-rose-800/40 text-rose-300 hover:bg-rose-900/40 shadow-rose-950/20" 
                       : "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100"
                   )}
                 >
-                  <XCircle className="w-5 h-5 text-rose-500" />
-                  <span>Još Učim ⏳ (Ponavljam)</span>
+                  <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500 shrink-0" />
+                  <span className="truncate">Još Učim ⏳<span className="hidden sm:inline"> (Ponavljam)</span></span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleMarkMastered}
                   className={cn(
-                    "py-3.5 px-4 rounded-2xl border flex items-center justify-center gap-2 font-black text-sm transition-all active:scale-95 shadow-lg",
+                    "py-3 sm:py-3.5 px-2 sm:px-4 rounded-2xl border flex items-center justify-center gap-1.5 sm:gap-2 font-black text-xs sm:text-sm transition-all active:scale-95 shadow-lg min-w-0 text-center",
                     isGirlyMode 
                       ? "bg-pink-600 border-pink-400 text-white shadow-pink-600/30" 
                       : "bg-red-600 border-red-400 text-white shadow-red-600/30 hover:bg-red-500"
                   )}
                 >
-                  <CheckCircle2 className="w-5 h-5 text-white" />
-                  <span>Znam! / Savladano ✨</span>
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0" />
+                  <span className="truncate">Znam! ✨<span className="hidden sm:inline"> / Savladano</span></span>
                 </button>
               </div>
 
@@ -1381,12 +1381,12 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                 <button
                   onClick={handlePrevCard}
                   disabled={currentIndex === 0}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-zinc-800/50 disabled:opacity-30 disabled:pointer-events-none transition-all"
+                  className="flex items-center gap-1 px-3 py-2 sm:py-1.5 rounded-xl hover:bg-zinc-800/50 disabled:opacity-30 disabled:pointer-events-none transition-all shrink-0"
                 >
                   <ChevronLeft className="w-4 h-4" /> Prethodna
                 </button>
 
-                <div className="flex items-center gap-4 text-[11px] font-mono">
+                <div className="hidden sm:flex items-center gap-4 text-[11px] font-mono">
                   <span>[Razmak]: Okreni</span>
                   <span>[1]: Ponavljaj</span>
                   <span>[2]: Savladano</span>
@@ -1394,7 +1394,7 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
 
                 <button
                   onClick={advanceToNextCard}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-zinc-800/50 transition-all text-red-400 font-bold"
+                  className="flex items-center gap-1 px-3 py-2 sm:py-1.5 rounded-xl hover:bg-zinc-800/50 transition-all text-red-400 font-bold shrink-0"
                 >
                   Sledeća <ChevronRight className="w-4 h-4" />
                 </button>
