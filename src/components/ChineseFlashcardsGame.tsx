@@ -34,6 +34,15 @@ import {
 import { cn } from '../lib/utils';
 import type { VocabItem } from '../data/chineseVocabData';
 import { getChineseQuoteForItem } from '../data/chineseVocabData';
+import { 
+  PandaScholarAvatar, 
+  LittleDragonMascot, 
+  PagodaTempleIllustration, 
+  TeaBambooIllustration, 
+  LotusIllustration, 
+  CartoonCardBack, 
+  CartoonVictoryIllustration 
+} from './ChineseCartoonAssets';
 
 export interface ChineseFlashcardsGameProps {
   vocabList: VocabItem[];
@@ -62,6 +71,21 @@ interface MatchCard {
   isFlipped: boolean;
   isMatched: boolean;
 }
+ 
+const getCategoryCartoonIllustration = (category?: string, size = 46) => {
+  switch (category) {
+    case 'filozofija':
+      return <LotusIllustration size={size} />;
+    case 'svakodnevno':
+    case 'hrana':
+      return <TeaBambooIllustration size={size} />;
+    case 'strofa_1':
+    case 'refren':
+      return <PagodaTempleIllustration size={size} />;
+    default:
+      return <LittleDragonMascot size={size} />;
+  }
+};
 
 export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
   vocabList,
@@ -762,44 +786,47 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
           : "bg-white border-zinc-200 shadow-zinc-100"
       )}>
         {/* Game Mode Pills */}
-        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
           <button
+            type="button"
             onClick={() => handleModeChange('cards')}
             className={cn(
-              "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2",
+              "px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 text-center w-full",
               gameMode === 'cards'
                 ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/25" : "bg-red-600 text-white shadow-lg shadow-red-600/25"
                 : isDarkMode ? "bg-zinc-900 text-zinc-400 hover:text-white" : "bg-zinc-100 text-zinc-600 hover:text-zinc-900"
             )}
           >
-            <Layers className="w-4 h-4" />
-            <span>3D Vizuelne Kartice (Hanzi)</span>
+            <Layers className="w-4 h-4 shrink-0" />
+            <span className="truncate">3D Kartice (Hanzi)</span>
           </button>
 
           <button
+            type="button"
             onClick={() => handleModeChange('match')}
             className={cn(
-              "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2",
+              "px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 text-center w-full",
               gameMode === 'match'
                 ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/25" : "bg-blue-600 text-white shadow-lg shadow-blue-600/25"
                 : isDarkMode ? "bg-zinc-900 text-zinc-400 hover:text-white" : "bg-zinc-100 text-zinc-600 hover:text-zinc-900"
             )}
           >
-            <Gamepad2 className="w-4 h-4" />
-            <span>Spoji Parove (Memory)</span>
+            <Gamepad2 className="w-4 h-4 shrink-0" />
+            <span className="truncate">Spoji Parove (Memory)</span>
           </button>
 
           <button
+            type="button"
             onClick={() => handleModeChange('speed')}
             className={cn(
-              "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2",
+              "px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 text-center w-full",
               gameMode === 'speed'
                 ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/25" : "bg-amber-600 text-white shadow-lg shadow-amber-600/25"
                 : isDarkMode ? "bg-zinc-900 text-zinc-400 hover:text-white" : "bg-zinc-100 text-zinc-600 hover:text-zinc-900"
             )}
           >
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>Izazov Znanja (Kviz)</span>
+            <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+            <span className="truncate">Izazov Znanja (Kviz)</span>
           </button>
         </div>
 
@@ -886,10 +913,43 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
         </div>
       </div>
 
+      {/* BAO BAO THE PANDA SCHOLAR MASCOT COMPANION */}
+      <div className={cn(
+        "p-3.5 sm:p-4 rounded-3xl border flex items-center gap-3 sm:gap-4 transition-all shadow-lg relative overflow-hidden",
+        isDarkMode 
+          ? "bg-gradient-to-r from-zinc-900 via-amber-950/20 to-zinc-900 border-amber-500/30" 
+          : "bg-gradient-to-r from-amber-50 via-orange-50/60 to-white border-amber-200"
+      )}>
+        <PandaScholarAvatar 
+          mood={streak >= 5 ? 'cheering' : isDeckFinished ? 'victory' : pacingMode === 'relaxed' ? 'zen' : 'studying'} 
+          size={56} 
+          className="shrink-0 drop-shadow-md"
+        />
+        <div className="space-y-0.5 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-black text-amber-400 font-mono flex items-center gap-1">
+              <span>🐼 Bao Bao (熊猫学者)</span>
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+              {streak >= 5 ? 'Vatreni Niz 🔥' : gameMode === 'cards' ? '3D Hanzi Trening' : gameMode === 'match' ? 'Memory Zmaj 🎴' : 'Brzi Izazov ⚡'}
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm font-medium text-zinc-200">
+            {streak >= 5 
+              ? `🔥 Neverovatan niz od ${streak}! Tvoj um je fokusiran i bistar, nastavi tako!` 
+              : gameMode === 'cards'
+                ? "Klikni na karticu da je okreneš, ili poslušaj autentičan izgovor uz Vuk fonetiku."
+                : gameMode === 'match'
+                  ? "Pronađi parove: spoji kineski hanzi karakter sa odgovarajućim prevodom!"
+                  : "Izaberi tačan prevod i sakupi maksimalan broj bodova u kvizu!"}
+          </p>
+        </div>
+      </div>
+
       {/* CATEGORY & FILTER TOOLBAR */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 w-full sm:w-auto">
           {categoriesWithCounts.map(cat => (
             <button
               key={cat.id}
@@ -898,7 +958,7 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                 if (gameMode === 'cards') initDeck();
               }}
               className={cn(
-                "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap",
+                "px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap min-w-fit",
                 selectedCategory === cat.id
                   ? isGirlyMode ? "bg-pink-500 text-white shadow-md shadow-pink-500/20" : "bg-red-600 text-white shadow-md shadow-red-600/20"
                   : isDarkMode ? "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200" : "bg-zinc-100 border border-zinc-200 text-zinc-600 hover:text-zinc-900"
@@ -1198,10 +1258,21 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                       )}
                     </div>
 
-                    {/* Central Chinese Character with Emoji */}
-                    <div className="my-auto space-y-4">
-                      <div className="text-5xl animate-bounce mb-2">
-                        {currentCard.emoji}
+                    {/* Central Chinese Character with Cartoon Art & Emoji */}
+                    <div className="my-auto space-y-3">
+                      <div className="flex items-center justify-center gap-3">
+                        {currentCard.category === 'filozofija' || currentCard.category === 'strofa_1' || currentCard.category === 'refren' ? (
+                          <PagodaTempleIllustration size={46} className="drop-shadow-md" />
+                        ) : currentCard.category === 'svakodnevno' || currentCard.category === 'hrana' ? (
+                          <TeaBambooIllustration size={46} className="drop-shadow-md" />
+                        ) : currentCard.category === 'zdravlje' || currentCard.category === 'emocije' ? (
+                          <LotusIllustration size={46} className="drop-shadow-md" />
+                        ) : (
+                          <PandaScholarAvatar mood={streak >= 3 ? 'cheering' : 'studying'} size={46} />
+                        )}
+                        <span className="text-4xl animate-bounce">
+                          {currentCard.emoji}
+                        </span>
                       </div>
 
                       <h2 className="text-6xl sm:text-7xl font-black tracking-wide font-sans text-white drop-shadow-md select-text">
@@ -1291,7 +1362,10 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
 
                     {/* Meaning Content */}
                     <div className="my-auto space-y-3 w-full">
-                      <div className="text-4xl mb-1">{currentCard.emoji}</div>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <span className="text-4xl">{currentCard.emoji}</span>
+                        <LittleDragonMascot size={42} className="drop-shadow-md" />
+                      </div>
                       
                       <h3 className="text-2xl sm:text-3xl font-black text-white">
                         {currentCard.translation}
@@ -1412,44 +1486,49 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                 isDarkMode ? "bg-zinc-950 border-red-500/30" : "bg-white border-red-200"
               )}
             >
-              <div className="text-6xl animate-bounce">🏆</div>
-              <h3 className="text-3xl font-black text-white">Špil je uspešno završen!</h3>
-              <p className="text-sm text-zinc-400 max-w-md mx-auto">
+              <CartoonVictoryIllustration className="my-2" />
+              <h3 className="text-2xl sm:text-3xl font-black text-white">Špil je uspešno završen!</h3>
+              <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto">
                 Svi hanzi karakteri u ovoj sesiji su pregledani. Vaše znanje kineskog vokabulara je podignuto na novi nivo!
               </p>
 
-              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto font-mono text-center">
-                <div className="p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <span className="text-xs text-zinc-500 block">Pregledano</span>
-                  <span className="text-lg font-black text-white">{sessionReviewed}</span>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-md mx-auto font-mono text-center">
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
+                  <span className="text-[11px] sm:text-xs text-zinc-500 block">Pregledano</span>
+                  <span className="text-base sm:text-lg font-black text-white">{sessionReviewed}</span>
                 </div>
-                <div className="p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <span className="text-xs text-zinc-500 block">Najveći Niz</span>
-                  <span className="text-lg font-black text-amber-400">🔥 {highestStreak}</span>
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
+                  <span className="text-[11px] sm:text-xs text-zinc-500 block">Najveći Niz</span>
+                  <span className="text-base sm:text-lg font-black text-amber-400">🔥 {highestStreak}</span>
                 </div>
-                <div className="p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <span className="text-xs text-zinc-500 block">Savladano</span>
-                  <span className="text-lg font-black text-emerald-400">⭐ {masteredIds.length}</span>
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
+                  <span className="text-[11px] sm:text-xs text-zinc-500 block">Savladano</span>
+                  <span className="text-base sm:text-lg font-black text-emerald-400">⭐ {masteredIds.length}</span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-center gap-4 pt-4">
+              {/* Mobile-Friendly Buttons: flex-col on mobile, flex-row on desktop */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-4 w-full max-w-md mx-auto">
                 <button
+                  type="button"
                   onClick={initDeck}
                   className={cn(
-                    "px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 text-white shadow-xl transition-all active:scale-95",
+                    "w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 text-white shadow-xl transition-all active:scale-95 text-center",
                     isGirlyMode ? "bg-pink-600 hover:bg-pink-500" : "bg-red-600 hover:bg-red-500"
                   )}
                 >
-                  <RotateCw className="w-4 h-4" /> Igraj Ponovo (Promešaj Špil)
+                  <RotateCw className="w-4 h-4 shrink-0" />
+                  <span>Igraj Ponovo (Promešaj Špil)</span>
                 </button>
 
                 {onSwitchToQuiz && (
                   <button
+                    type="button"
                     onClick={onSwitchToQuiz}
-                    className="px-6 py-3 rounded-2xl font-black text-sm bg-blue-600 hover:bg-blue-500 text-white shadow-xl transition-all active:scale-95 flex items-center gap-2"
+                    className="w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-xs sm:text-sm bg-blue-600 hover:bg-blue-500 text-white shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-center"
                   >
-                    <Gamepad2 className="w-4 h-4" /> Pokreni Duo Kviz
+                    <Gamepad2 className="w-4 h-4 shrink-0" />
+                    <span>Pokreni Duo Kviz</span>
                   </button>
                 )}
               </div>
@@ -1530,10 +1609,10 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                       </span>
                     </>
                   ) : (
-                    <div className="m-auto flex flex-col items-center gap-2">
-                      <HelpCircle className="w-8 h-8 text-zinc-600 animate-pulse" />
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500">
-                        Klikni Karticu
+                    <div className="m-auto flex flex-col items-center justify-center gap-1.5 p-1">
+                      <CartoonCardBack size={60} className="hover:rotate-1 transition-transform" />
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-amber-400/80">
+                        Otkrij 🎴
                       </span>
                     </div>
                   )}
@@ -1546,22 +1625,24 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className={cn(
-                "p-8 rounded-3xl border text-center space-y-5 shadow-2xl",
+                "p-6 sm:p-8 rounded-3xl border text-center space-y-5 shadow-2xl",
                 isDarkMode ? "bg-zinc-950 border-blue-500/40" : "bg-white border-blue-200"
               )}
             >
-              <div className="text-6xl animate-bounce">🎉</div>
-              <h3 className="text-3xl font-black text-white">Sjajno vizuelno pamćenje!</h3>
-              <p className="text-sm text-zinc-400">
+              <CartoonVictoryIllustration className="my-2" />
+              <h3 className="text-2xl sm:text-3xl font-black text-white">Sjajno vizuelno pamćenje!</h3>
+              <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto">
                 Pronašli ste svih {matchGridSize} parova za samo {matchMoves} poteza u {matchTimer} sekundi.
               </p>
 
-              <div className="flex items-center justify-center gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2 w-full max-w-xs mx-auto">
                 <button
+                  type="button"
                   onClick={initMatchGame}
-                  className="px-6 py-3 rounded-2xl font-black text-sm bg-red-600 hover:bg-red-500 text-white shadow-xl transition-all active:scale-95 flex items-center gap-2"
+                  className="w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-xs sm:text-sm bg-red-600 hover:bg-red-500 text-white shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-center"
                 >
-                  <RotateCw className="w-4 h-4" /> Igraj Novo Kolo
+                  <RotateCw className="w-4 h-4 shrink-0" />
+                  <span>Igraj Novo Kolo</span>
                 </button>
               </div>
             </motion.div>
@@ -1764,22 +1845,24 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className={cn(
-                "p-8 rounded-3xl border text-center space-y-5 shadow-2xl",
+                "p-6 sm:p-8 rounded-3xl border text-center space-y-5 shadow-2xl",
                 isDarkMode ? "bg-zinc-950 border-amber-500/40" : "bg-white border-amber-200"
               )}
             >
-              <div className="text-6xl animate-bounce">⚡</div>
-              <h3 className="text-3xl font-black text-white">Izazov završen!</h3>
-              <p className="text-sm text-zinc-400">
-                Osvojili ste <strong className="text-amber-400">{speedScore}</strong> bodova od maksimalnih {speedQuestions.length * 10}!
+              <CartoonVictoryIllustration className="my-2" />
+              <h3 className="text-2xl sm:text-3xl font-black text-white">Izazov završen!</h3>
+              <p className="text-xs sm:text-sm text-zinc-400 max-w-md mx-auto">
+                Osvojili ste <strong className="text-amber-400 font-bold">{speedScore}</strong> bodova od maksimalnih {speedQuestions.length * 10}!
               </p>
 
-              <div className="flex items-center justify-center gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2 w-full max-w-xs mx-auto">
                 <button
+                  type="button"
                   onClick={initSpeedChallenge}
-                  className="px-6 py-3 rounded-2xl font-black text-sm bg-amber-600 hover:bg-amber-500 text-white shadow-xl transition-all active:scale-95 flex items-center gap-2"
+                  className="w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-xs sm:text-sm bg-amber-600 hover:bg-amber-500 text-white shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-center"
                 >
-                  <RotateCw className="w-4 h-4" /> Igraj Ponovo
+                  <RotateCw className="w-4 h-4 shrink-0" />
+                  <span>Igraj Ponovo</span>
                 </button>
               </div>
             </motion.div>
