@@ -66,7 +66,10 @@ export interface AiConfiguredChineseResult {
   emojis: string[];
   words: AiConfigWordItemChinese[];
   grammarNote?: string;
+  source?: 'claude' | 'gemini' | 'ai' | 'offline-dictionary' | 'offline-dictionary-fallback';
+  model?: string;
 }
+
 
 export interface ChineseSolidarityQuote {
   id: string;
@@ -908,6 +911,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
 
   // AI Sentence Configurator & Translator State
   const [aiInputSentence, setAiInputSentence] = useState('');
+  const [aiEngine, setAiEngine] = useState<'auto' | 'claude' | 'gemini' | 'offline'>('auto');
   const [isAiTranslating, setIsAiTranslating] = useState(false);
   const [aiTranslationResult, setAiTranslationResult] = useState<AiConfiguredChineseResult | null>(null);
   const [aiTranslationError, setAiTranslationError] = useState<string | null>(null);
@@ -928,13 +932,14 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     return [...savedCustomWords, ...VOCAB_DATA];
   }, [savedCustomWords]);
 
-  const handleTranslateWithAi = async (overrideSentence?: string) => {
+  const handleTranslateWithAi = async (overrideSentence?: string, overrideEngine?: 'auto' | 'claude' | 'gemini' | 'offline') => {
     const textToTranslate = (overrideSentence !== undefined ? overrideSentence : aiInputSentence).trim();
     if (!textToTranslate) {
-      setAiTranslationError('Molimo unesite englesku rečenicu za prevod.');
+      setAiTranslationError('Molimo unesite englesku rečenicu ili reč za prevod.');
       return;
     }
 
+    const currentEngine = overrideEngine || aiEngine;
     setIsAiTranslating(true);
     setAiTranslationError(null);
 
@@ -944,7 +949,8 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sentence: textToTranslate,
-          style: 'conversational, stoic & thoughtful'
+          style: 'conversational, stoic & thoughtful',
+          engine: currentEngine
         })
       });
 
@@ -955,7 +961,11 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
 
       const resJson = await resp.json();
       if (resJson.success && resJson.data) {
-        setAiTranslationResult(resJson.data);
+        setAiTranslationResult({
+          ...resJson.data,
+          source: resJson.source,
+          model: resJson.model
+        });
       } else {
         throw new Error('Nevažeći format odgovora od AI servisa.');
       }
@@ -963,8 +973,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
       console.warn('AI Chinese Configurator Error:', err);
       // Resilient Fallback: check matching solidarity quote or use high-precision linguistic engine
       const matchQuote = CHINESE_SOLIDARITY_QUOTES.find(q => 
-        q.english.toLowerCase().includes(textToTranslate.toLowerCase()) || 
-        textToTranslate.toLowerCase().includes(q.english.toLowerCase().slice(0, 20))
+        q.english.toLowerCase() === textToTranslate.toLowerCase()
       );
       if (matchQuote) {
         setAiTranslationResult({
@@ -977,11 +986,16 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
           english: matchQuote.english,
           emojis: matchQuote.emojis,
           words: matchQuote.words,
-          grammarNote: matchQuote.grammarNote
+          grammarNote: matchQuote.grammarNote,
+          source: 'offline-dictionary'
         });
       } else {
         const localResult = buildLinguisticChineseTranslation(textToTranslate);
-        setAiTranslationResult(localResult as any);
+        setAiTranslationResult({
+          ...(localResult as any),
+          source: 'offline-dictionary-fallback',
+          model: 'local-lexicon'
+        });
       }
     } finally {
       setIsAiTranslating(false);
@@ -2081,148 +2095,62 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             {/* MODE 0: AI SENTENCE CONFIGURATOR & TRANSLATOR (WITH EMOJIS) */}
             {configTabMode === 'ai' && (
               <div className="space-y-6">
-                {/* AI HERO CARD */}
+                {/* 1. TOP PROMINENT AI TRANSLATOR & INPUT FIELD (AT THE VERY TOP) */}
                 <div className={cn(
                   "p-5 md:p-6 rounded-3xl border space-y-4 shadow-xl relative overflow-hidden",
                   isDarkMode 
-                    ? "bg-gradient-to-br from-zinc-900 via-zinc-900/90 to-amber-950/20 border-amber-500/40" 
-                    : "bg-gradient-to-br from-white via-amber-50/40 to-orange-50/40 border-amber-300"
+                    ? "bg-gradient-to-br from-zinc-900 via-zinc-900/95 to-amber-950/25 border-amber-500/50 shadow-amber-500/5" 
+                    : "bg-gradient-to-br from-white via-amber-50/50 to-orange-50/40 border-amber-300 shadow-amber-500/10"
                 )}>
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-inner">
-                        <Bot className="w-5 h-5 text-amber-400" />
+                  {/* Header with Title and Model/Engine Selector */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b pb-3.5 border-zinc-800/80">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/20">
+                        <Bot className="w-5 h-5 text-white" />
                       </div>
                       <div>
                         <h3 className="text-base md:text-lg font-black tracking-tight flex items-center gap-2">
-                          AI Konfigurator Kineskih Rečenica
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono">
+                          AI Konfigurator & Prevodilac Kineskih Rečenica
+                          <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono">
                             普通话 + Emodžiji
                           </span>
                         </h3>
                         <p className="text-xs text-zinc-400">
-                          Unesite englesku rečenicu ili kliknite preporuku — AI prevodi na kineski sa pinyinom, Vuk transkripcijom, analizom i emodžijima!
+                          Unesite reč ili rečenicu — AI prevodi na mandarinski uz pinyin sa tonovima, Vuk transkripciju, emodžije i analizu!
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-amber-400/90 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Gemini 3.8 Flash Lingvista</span>
-                    </div>
-                  </div>
-
-                  {/* SOLIDARITY & SUPPORT MESSAGES CAROUSEL */}
-                  <div className="space-y-2.5 pt-1">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <label className="text-xs font-mono font-bold uppercase text-amber-400 flex items-center gap-1.5">
-                        <span className="text-base">🌍</span>
-                        <span>Preporučene Poruke Solidarnosti, Nadanja & Prijateljstva:</span>
-                      </label>
-
-                      {/* Category Filter Pills */}
-                      <div className="flex flex-wrap gap-1 text-[10px] font-mono">
-                        {[
-                          { id: 'all', label: 'Sve (15)' },
-                          { id: 'solidarity', label: '🤝 Solidarnost (4)' },
-                          { id: 'strength', label: '🦁 Snaga & Otpornost (3)' },
-                          { id: 'peace', label: '🕊️ Mir & Nada (4)' },
-                          { id: 'short', label: '✨ Kratke & Tople (4)' },
-                        ].map((cat) => (
-                          <button
-                            key={`sol-cat-${cat.id}`}
-                            type="button"
-                            onClick={() => setSelectedSolidarityCategory(cat.id as any)}
-                            className={cn(
-                              "px-2.5 py-1 rounded-lg border font-bold transition-all",
-                              selectedSolidarityCategory === cat.id
-                                ? "bg-amber-600 text-white border-amber-500 shadow-sm"
-                                : "bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:text-zinc-200"
-                            )}
-                          >
-                            {cat.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Solidarity Quote Cards Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-64 overflow-y-auto p-1 custom-scrollbar">
-                      {CHINESE_SOLIDARITY_QUOTES
-                        .filter(q => selectedSolidarityCategory === 'all' || q.category === selectedSolidarityCategory)
-                        .map((quote) => (
-                          <div
-                            key={quote.id}
-                            onClick={() => {
-                              setAiInputSentence(quote.english);
-                              handleTranslateWithAi(quote.english);
-                            }}
-                            className={cn(
-                              "p-3 rounded-2xl border text-left cursor-pointer transition-all hover:scale-[1.01] group relative flex flex-col justify-between space-y-2",
-                              isDarkMode 
-                                ? "bg-zinc-800/80 border-zinc-700/80 hover:border-amber-500/70 hover:bg-zinc-800" 
-                                : "bg-white border-amber-200 hover:border-amber-400 shadow-sm"
-                            )}
-                          >
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between gap-1 text-[10px] font-mono text-amber-400">
-                                <span className="flex items-center gap-1 font-bold">
-                                  <span>{quote.categoryEmoji}</span>
-                                  <span>{quote.categoryLabel}</span>
-                                </span>
-                                <span className="text-zinc-500 group-hover:text-amber-300 transition-colors">
-                                  Klikni za Prevod ⚡
-                                </span>
-                              </div>
-                              <p className="text-xs font-semibold text-zinc-200 line-clamp-2">
-                                "{quote.english}"
-                              </p>
-                            </div>
-
-                            <div className="pt-1 border-t border-zinc-700/50 flex items-center justify-between text-[11px] text-zinc-400">
-                              <span className="font-bold text-amber-300 font-serif truncate max-w-[170px]">
-                                {quote.chinese}
-                              </span>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <span className="text-sm">{quote.emojis.slice(0, 2).join('')}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-
-                  {/* Additional Quick Preset Chips */}
-                  <div className="space-y-1.5 pt-2 border-t border-zinc-800">
-                    <label className="text-[11px] font-mono font-bold uppercase text-zinc-400 flex items-center gap-1">
-                      <span>⚡ Dodatne Kratke Fraze (kliknite za trenutni prevod sa emodžijima):</span>
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {CHINESE_AI_PRESET_SENTENCES.map((preset, idx) => (
+                    {/* AI Engine Selector Pills */}
+                    <div className="flex items-center gap-1 p-1 rounded-2xl bg-zinc-950/70 border border-zinc-800 self-start md:self-auto overflow-x-auto max-w-full">
+                      {[
+                        { id: 'auto', label: '🤖 Auto (Pametan Izbor)', desc: 'Claude & Gemini hibrid' },
+                        { id: 'claude', label: '⚡ Claude AI', desc: 'Anthropic Haiku & Sonnet' },
+                        { id: 'gemini', label: '✨ Gemini AI', desc: 'Google Gemini Flash' },
+                        { id: 'offline', label: '📖 Rečnik (Instant)', desc: 'Brzi lokalni lingvista' },
+                      ].map((eng) => (
                         <button
-                          key={idx}
+                          key={eng.id}
                           type="button"
-                          onClick={() => {
-                            setAiInputSentence(preset.en);
-                            handleTranslateWithAi(preset.en);
-                          }}
+                          onClick={() => setAiEngine(eng.id as any)}
                           className={cn(
-                            "px-2.5 py-1 rounded-xl text-xs transition-all border text-left flex items-center gap-1.5",
-                            isDarkMode 
-                              ? "bg-zinc-800/60 border-zinc-700 text-zinc-300 hover:bg-amber-950/40 hover:border-amber-500/50 hover:text-white" 
-                              : "bg-white border-zinc-300 text-zinc-700 hover:bg-amber-50"
+                            "px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap flex items-center gap-1",
+                            aiEngine === eng.id
+                              ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md scale-100"
+                              : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                           )}
+                          title={eng.desc}
                         >
-                          <span>{preset.emojis}</span>
-                          <span className="font-medium">{preset.en}</span>
+                          {eng.label}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Textarea Input & Translate Button */}
-                  <div className="space-y-3 pt-2 border-t border-zinc-800">
-                    <div className="relative">
+                  {/* VISUALLY ELEVATED TEXT INPUT FIELD */}
+                  <div className="space-y-3">
+                    <div className="relative group">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500/30 via-orange-500/20 to-amber-500/30 rounded-2xl blur opacity-75 group-focus-within:opacity-100 transition duration-300 pointer-events-none" />
                       <textarea
                         value={aiInputSentence}
                         onChange={(e) => setAiInputSentence(e.target.value)}
@@ -2231,20 +2159,20 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                             handleTranslateWithAi();
                           }
                         }}
-                        placeholder="Unesite rečenicu na engleskom (npr. 'I love learning Chinese words with wisdom, patience and joy')..."
+                        placeholder="Unesite reč ili rečenicu na engleskom ili srpskom (npr. 'wind', 'The wind brings quiet wisdom', 'mir i mudrost')..."
                         rows={3}
                         className={cn(
-                          "w-full p-4 rounded-2xl border text-sm font-medium transition-all outline-none resize-none pr-10",
+                          "relative w-full p-4 rounded-2xl border text-sm sm:text-base font-medium transition-all outline-none resize-none pr-10",
                           isDarkMode 
-                            ? "bg-zinc-950/80 border-zinc-700 text-zinc-100 focus:border-amber-500" 
-                            : "bg-white border-zinc-300 text-zinc-900 focus:border-amber-500 shadow-inner"
+                            ? "bg-zinc-950/90 border-amber-500/30 text-zinc-100 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 placeholder:text-zinc-500" 
+                            : "bg-white border-amber-300 text-zinc-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 shadow-inner placeholder:text-zinc-400"
                         )}
                       />
                       {aiInputSentence && (
                         <button
                           type="button"
                           onClick={() => setAiInputSentence('')}
-                          className="absolute top-3.5 right-3.5 p-1 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-all"
+                          className="absolute top-3.5 right-3.5 p-1.5 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all z-10"
                           title="Obriši tekst"
                         >
                           <X className="w-4 h-4" />
@@ -2252,70 +2180,128 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="text-[11px] text-zinc-500 font-mono">
-                        Prečica: Ctrl/Cmd + Enter za brzi prevod
-                      </span>
+                    <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
+                      <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-mono">
+                        <span className="hidden sm:inline">💡 Prečica: <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-amber-300 font-bold border border-zinc-700">Ctrl/Cmd + Enter</kbd> za instant prevod</span>
+                        <span className="text-zinc-500">|</span>
+                        <span>{aiInputSentence.length} znakova</span>
+                      </div>
 
                       <button
                         type="button"
                         onClick={() => handleTranslateWithAi()}
                         disabled={isAiTranslating || !aiInputSentence.trim()}
                         className={cn(
-                          "w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-lg",
+                          "w-full sm:w-auto px-6 py-3 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg",
                           isAiTranslating || !aiInputSentence.trim()
                             ? "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700"
-                            : "bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white hover:brightness-110 shadow-amber-500/20 active:scale-95"
+                            : "bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white hover:brightness-110 shadow-amber-500/25 active:scale-95"
                         )}
                       >
                         {isAiTranslating ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
-                            <span>AI Prevodi i Dodaje Emodžije...</span>
+                            <span>AI Prevodi i Analizira...</span>
                           </>
                         ) : (
                           <>
                             <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                            <span>✨ Prevedi na Kineski uz AI (Translate)</span>
+                            <span>✨ Prevedi na Kineski ({aiEngine === 'claude' ? 'Claude' : aiEngine === 'gemini' ? 'Gemini' : aiEngine === 'offline' ? 'Rečnik' : 'AI'})</span>
                           </>
                         )}
                       </button>
                     </div>
                   </div>
 
-                  {/* Error message if any */}
-                  {aiTranslationError && (
-                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium flex items-center gap-2">
-                      <XCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>{aiTranslationError}</span>
+                  {/* QUICK INSPIRATION CHIPS ROW (Fast 1-click test right under input) */}
+                  <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+                    <label className="text-[11px] font-mono font-bold uppercase text-amber-400/90 flex items-center gap-1.5">
+                      <span>⚡ Brzi Primeri za Test (kliknite za trenutni prevod sa emodžijima):</span>
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { en: "wind", label: "🌬️ wind (vetar)" },
+                        { en: "The wind brings wisdom", label: "💨 The wind brings wisdom" },
+                        { en: "water and river", label: "🌊 water & river" },
+                        { en: "peace and wisdom", label: "🕊️ peace & wisdom" },
+                        { en: "sun and light", label: "☀️ sun & light" },
+                        { en: "true friendship", label: "🤝 true friendship" },
+                        { en: "quiet mountain", label: "⛰️ quiet mountain" },
+                        { en: "nature and patience", label: "🍃 nature & patience" },
+                        { en: "joy and strength", label: "🦁 joy & strength" },
+                      ].map((item, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setAiInputSentence(item.en);
+                            handleTranslateWithAi(item.en);
+                          }}
+                          className={cn(
+                            "px-2.5 py-1 rounded-xl text-xs transition-all border text-left flex items-center gap-1.5",
+                            isDarkMode 
+                              ? "bg-zinc-800/70 border-zinc-700/80 text-zinc-300 hover:bg-amber-950/40 hover:border-amber-500/50 hover:text-white" 
+                              : "bg-white border-zinc-300 text-zinc-700 hover:bg-amber-50"
+                          )}
+                        >
+                          <span className="font-medium">{item.label}</span>
+                        </button>
+                      ))}
                     </div>
-                  )}
+                  </div>
+                </div>
 
-                  {/* Translation Result Display Card */}
-                  {aiTranslationResult && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={cn(
-                        "p-4 sm:p-6 rounded-3xl border space-y-5 sm:space-y-6 shadow-2xl relative overflow-hidden",
-                        isDarkMode 
-                          ? "bg-gradient-to-br from-zinc-950 via-zinc-900 to-amber-950/30 border-amber-500/50" 
-                          : "bg-white border-amber-300"
-                      )}
-                    >
-                      {/* Subtle decorative glow */}
-                      <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                {/* Error message if any */}
+                {aiTranslationError && (
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium flex items-center gap-2">
+                    <XCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>{aiTranslationError}</span>
+                  </div>
+                )}
 
-                      {/* Top Badges & Actions */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3.5 border-zinc-800/80">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[11px] font-mono font-bold uppercase bg-amber-500/20 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/30 flex items-center gap-1">
-                            <span>🇨🇳</span> Kineski Prevod sa Emodžijima
+                {/* Translation Result Display Card */}
+                {aiTranslationResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn(
+                      "p-4 sm:p-6 rounded-3xl border space-y-5 sm:space-y-6 shadow-2xl relative overflow-hidden",
+                      isDarkMode 
+                        ? "bg-gradient-to-br from-zinc-950 via-zinc-900 to-amber-950/30 border-amber-500/50" 
+                        : "bg-white border-amber-300"
+                    )}
+                  >
+                    {/* Subtle decorative glow */}
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                    {/* Top Badges & Actions */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3.5 border-zinc-800/80">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] font-mono font-bold uppercase bg-amber-500/20 text-amber-400 px-2.5 py-1 rounded-full border border-amber-500/30 flex items-center gap-1">
+                          <span>🇨🇳</span> Kineski Prevod sa Emodžijima
+                        </span>
+                        {aiTranslationResult.source === 'claude' && (
+                          <span className="text-[10px] font-mono text-purple-300 font-bold px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center gap-1">
+                            <span>⚡ Claude AI</span>
+                            {aiTranslationResult.model && <span className="opacity-75">({aiTranslationResult.model})</span>}
                           </span>
-                          <span className="text-[10px] font-mono text-zinc-400 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700">
-                            普通话 (Mandarin)
+                        )}
+                        {aiTranslationResult.source === 'gemini' && (
+                          <span className="text-[10px] font-mono text-cyan-300 font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center gap-1">
+                            <span>✨ Gemini AI</span>
+                            {aiTranslationResult.model && <span className="opacity-75">({aiTranslationResult.model})</span>}
                           </span>
-                        </div>
+                        )}
+                        {(aiTranslationResult.source === 'offline-dictionary' || aiTranslationResult.source === 'offline-dictionary-fallback') && (
+                          <span className="text-[10px] font-mono text-emerald-300 font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center gap-1">
+                            <span>📖 Lingvistički Rečnik (Instant)</span>
+                          </span>
+                        )}
+                        <span className="text-[10px] font-mono text-zinc-400 px-2 py-0.5 rounded-full bg-zinc-800/80 border border-zinc-700">
+                          普通话 (Mandarin)
+                        </span>
+                      </div>
+
 
                         {/* Mobile-Friendly Grid: 3 Equal Buttons on Mobile, Flex on Desktop */}
                         <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
@@ -2496,6 +2482,120 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                       </button>
                     </div>
                   )}
+
+                  {/* 3. SOLIDARITY & WISDOM ARCHIVE (Reference Library Below Result) */}
+                  <div className={cn(
+                    "p-5 md:p-6 rounded-3xl border space-y-4 shadow-lg relative overflow-hidden",
+                    isDarkMode 
+                      ? "bg-zinc-900/80 border-zinc-800" 
+                      : "bg-white border-zinc-200"
+                  )}>
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <label className="text-xs font-mono font-bold uppercase text-amber-400 flex items-center gap-1.5">
+                          <span className="text-base">🌍</span>
+                          <span>Preporučene Poruke Solidarnosti, Nadanja & Prijateljstva (Kliknite za prevod):</span>
+                        </label>
+
+                        {/* Category Filter Pills */}
+                        <div className="flex flex-wrap gap-1 text-[10px] font-mono">
+                          {[
+                            { id: 'all', label: 'Sve (15)' },
+                            { id: 'solidarity', label: '🤝 Solidarnost (4)' },
+                            { id: 'strength', label: '🦁 Snaga & Otpornost (3)' },
+                            { id: 'peace', label: '🕊️ Mir & Nada (4)' },
+                            { id: 'short', label: '✨ Kratke & Tople (4)' },
+                          ].map((cat) => (
+                            <button
+                              key={`sol-cat-${cat.id}`}
+                              type="button"
+                              onClick={() => setSelectedSolidarityCategory(cat.id as any)}
+                              className={cn(
+                                "px-2.5 py-1 rounded-lg border font-bold transition-all",
+                                selectedSolidarityCategory === cat.id
+                                  ? "bg-amber-600 text-white border-amber-500 shadow-sm"
+                                  : "bg-zinc-800/60 border-zinc-700 text-zinc-400 hover:text-zinc-200"
+                              )}
+                            >
+                              {cat.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Solidarity Quote Cards Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-64 overflow-y-auto p-1 custom-scrollbar">
+                        {CHINESE_SOLIDARITY_QUOTES
+                          .filter(q => selectedSolidarityCategory === 'all' || q.category === selectedSolidarityCategory)
+                          .map((quote) => (
+                            <div
+                              key={quote.id}
+                              onClick={() => {
+                                setAiInputSentence(quote.english);
+                                handleTranslateWithAi(quote.english);
+                              }}
+                              className={cn(
+                                "p-3 rounded-2xl border text-left cursor-pointer transition-all hover:scale-[1.01] group relative flex flex-col justify-between space-y-2",
+                                isDarkMode 
+                                  ? "bg-zinc-800/80 border-zinc-700/80 hover:border-amber-500/70 hover:bg-zinc-800" 
+                                  : "bg-white border-amber-200 hover:border-amber-400 shadow-sm"
+                              )}
+                            >
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-1 text-[10px] font-mono text-amber-400">
+                                  <span className="flex items-center gap-1 font-bold">
+                                    <span>{quote.categoryEmoji}</span>
+                                    <span>{quote.categoryLabel}</span>
+                                  </span>
+                                  <span className="text-zinc-500 group-hover:text-amber-300 transition-colors">
+                                    Prevedi ⚡
+                                  </span>
+                                </div>
+                                <p className="text-xs font-semibold text-zinc-200 line-clamp-2">
+                                  "{quote.english}"
+                                </p>
+                              </div>
+
+                              <div className="pt-1 border-t border-zinc-700/50 flex items-center justify-between text-[11px] text-zinc-400">
+                                <span className="font-bold text-amber-300 font-serif truncate max-w-[170px]">
+                                  {quote.chinese}
+                                </span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <span className="text-sm">{quote.emojis.slice(0, 2).join('')}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Additional Quick Preset Chips */}
+                    <div className="space-y-1.5 pt-2 border-t border-zinc-800">
+                      <label className="text-[11px] font-mono font-bold uppercase text-zinc-400 flex items-center gap-1">
+                        <span>⚡ Dodatne Kratke Fraze (kliknite za trenutni prevod sa emodžijima):</span>
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {CHINESE_AI_PRESET_SENTENCES.map((preset, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setAiInputSentence(preset.en);
+                              handleTranslateWithAi(preset.en);
+                            }}
+                            className={cn(
+                              "px-2.5 py-1 rounded-xl text-xs transition-all border text-left flex items-center gap-1.5",
+                              isDarkMode 
+                                ? "bg-zinc-800/60 border-zinc-700 text-zinc-300 hover:bg-amber-950/40 hover:border-amber-500/50 hover:text-white" 
+                                : "bg-white border-zinc-300 text-zinc-700 hover:bg-amber-50"
+                            )}
+                          >
+                            <span>{preset.emojis}</span>
+                            <span className="font-medium">{preset.en}</span>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

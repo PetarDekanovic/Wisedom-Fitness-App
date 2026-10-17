@@ -122,9 +122,12 @@ const GEMINI_MODELS = [
 ];
 
 const CLAUDE_MODELS = [
+  "claude-haiku-4-5-20251001",
+  "claude-sonnet-4-5-20250929",
+  "claude-haiku-5-5",
+  "claude-sonnet-5-5",
   "claude-3-5-sonnet-20241022",
-  "claude-3-5-haiku-20241022",
-  "claude-3-haiku-20240307"
+  "claude-3-5-haiku-20241022"
 ];
 
 async function startServer() {
@@ -398,11 +401,12 @@ async function startServer() {
       throw new Error("No AI API Keys configured. Please add GEMINI_API_KEY or ANTHROPIC_API_KEY to your environment variables.");
     }
 
+    const preferredEngine = config?.preferredEngine || 'auto';
     let lastError = null;
 
-    // Try Gemini First with @google/genai
-    const ai = getGenAIClient();
-    if (ai) {
+    const tryGemini = async () => {
+      const ai = getGenAIClient();
+      if (!ai) return null;
       for (const modelName of GEMINI_MODELS) {
         try {
           console.log(`[WiseFit AI] Attempting Gemini: ${modelName}`);
@@ -419,20 +423,21 @@ async function startServer() {
             }
           });
           const responseText = res.text;
-          if (responseText) return { text: () => responseText, raw: res };
+          if (responseText) return { text: () => responseText, raw: res, engine: 'gemini' as const, model: modelName };
         } catch (e: any) {
           lastError = e;
           const errStr = e.message?.toLowerCase() || "";
           console.warn(`[WiseFit AI] Gemini ${modelName} failed: ${errStr}`);
           if (errStr.includes("not found") || errStr.includes("404") || errStr.includes("not supported") || errStr.includes("403")) continue;
-          if (errStr.includes("quota") || errStr.includes("429") || errStr.includes("limit")) break; 
+          if (errStr.includes("quota") || errStr.includes("429") || errStr.includes("limit") || errStr.includes("402") || errStr.includes("prepayment") || errStr.includes("resource_exhausted")) break;
         }
       }
-    }
+      return null;
+    };
 
-    // Try Claude Fallback
-    const anthropic = getAnthropic();
-    if (anthropic) {
+    const tryClaude = async () => {
+      const anthropic = getAnthropic();
+      if (!anthropic) return null;
       for (const modelName of CLAUDE_MODELS) {
         try {
           console.log(`[WiseFit AI] Attempting Claude: ${modelName}`);
@@ -445,7 +450,7 @@ async function startServer() {
           });
           const content = msg.content[0];
           if (content.type === 'text') {
-            return { text: () => content.text, raw: msg };
+            return { text: () => content.text, raw: msg, engine: 'claude' as const, model: modelName };
           }
         } catch (e: any) {
           lastError = e;
@@ -456,6 +461,26 @@ async function startServer() {
           break; 
         }
       }
+      return null;
+    };
+
+    // Routing by preference:
+    if (preferredEngine === 'claude') {
+      const claudeRes = await tryClaude();
+      if (claudeRes) return claudeRes;
+      const geminiRes = await tryGemini();
+      if (geminiRes) return geminiRes;
+    } else if (preferredEngine === 'gemini') {
+      const geminiRes = await tryGemini();
+      if (geminiRes) return geminiRes;
+      const claudeRes = await tryClaude();
+      if (claudeRes) return claudeRes;
+    } else {
+      // Auto: Try Claude first if configured (guarantees fast, robust response), or Gemini fallback
+      const claudeRes = await tryClaude();
+      if (claudeRes) return claudeRes;
+      const geminiRes = await tryGemini();
+      if (geminiRes) return geminiRes;
     }
 
     // FINAL FAILSAFE
@@ -1402,13 +1427,24 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
   // --- CHINESE AI CONFIGURATOR & TRANSLATOR WITH EMOJIS ---
   app.post("/api/ai/chinese-configurator", async (req, res) => {
     try {
-      const { sentence, style } = req.body;
+      const { sentence, style, engine = 'auto' } = req.body;
       if (!sentence || typeof sentence !== "string" || !sentence.trim()) {
         return res.status(400).json({ error: "Please provide an English sentence to configure and translate into Chinese." });
       }
 
       const cleanInput = sentence.trim();
-      console.log(`[Chinese AI Configurator] Translating & configuring: "${cleanInput}"`);
+      console.log(`[Chinese AI Configurator] Translating & configuring: "${cleanInput}" with engine: ${engine}`);
+
+      // If user selected instant local dictionary, return immediately without network latency
+      if (engine === 'offline') {
+        const fallbackResult = buildLinguisticChineseTranslation(cleanInput);
+        return res.json({
+          success: true,
+          source: "offline-dictionary",
+          model: "local-lexicon",
+          data: fallbackResult
+        });
+      }
 
       const prompt = `You are an expert Chinese linguist, Mandarin educator, and translator (普通话 / Standard Mandarin).
 Translate the following English or Serbian/Croatian sentence into natural Simplified Chinese for language learners, and provide rich linguistic metadata.
@@ -1463,20 +1499,29 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
 
       const config = {
         temperature: 0.3,
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        preferredEngine: engine === 'gemini' ? 'gemini' : engine === 'claude' ? 'claude' : 'auto'
       };
 
       let resultText = "";
+      let usedSource: "claude" | "gemini" | "ai" = "ai";
+      let usedModel = "";
       try {
         const result = await generateWithFallback(prompt, config);
         resultText = result.text() || "";
+        usedSource = (result as any)?.engine || "ai";
+        usedModel = (result as any)?.model || "";
       } catch (err: any) {
         console.warn("[Chinese AI Configurator] Primary AI call warning:", err?.message);
       }
 
       // If AI succeeded and returned valid JSON
       if (resultText) {
-        let cleaned = resultText.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+        let cleaned = resultText.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          cleaned = jsonMatch[0];
+        }
         try {
           const parsed = JSON.parse(cleaned);
           if (parsed && (parsed.chinese || parsed.chineseWithEmojis)) {
@@ -1487,7 +1532,8 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
             }
             return res.json({
               success: true,
-              source: "gemini",
+              source: usedSource,
+              model: usedModel,
               data: parsed
             });
           }
@@ -1502,6 +1548,7 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
       return res.json({
         success: true,
         source: "offline-dictionary-fallback",
+        model: "local-lexicon",
         data: fallbackResult
       });
 

@@ -642,6 +642,73 @@ export const CHINESE_DICT: Record<string, {
   ucenik: { zh: "学生", trad: "學生", pin: "xuéshēng", vuk: "sjüe-šeng", srb: "učenik", en: "student", emoji: "🧑‍🎓", cat: "noun" },
 
   // --- NATURE, TIME & COSMOS ---
+  // Elements & Weather
+  wind: { zh: "风", trad: "風", pin: "fēng", vuk: "feng", srb: "vetar", en: "wind", emoji: "💨", cat: "noun" },
+  winds: { zh: "风", trad: "風", pin: "fēng", vuk: "feng", srb: "vetrovi", en: "winds", emoji: "💨", cat: "noun" },
+  windy: { zh: "有风", trad: "有風", pin: "yǒu fēng", vuk: "jou feng", srb: "vetrovito", en: "windy", emoji: "💨", cat: "adjective" },
+  breeze: { zh: "微风", trad: "微風", pin: "wēifēng", vuk: "vej-feng", srb: "povetarac", en: "breeze", emoji: "🍃", cat: "noun" },
+  vetar: { zh: "风", trad: "風", pin: "fēng", vuk: "feng", srb: "vetar", en: "wind", emoji: "💨", cat: "noun" },
+  vetra: { zh: "风", trad: "風", pin: "fēng", vuk: "feng", srb: "vetra", en: "wind", emoji: "💨", cat: "noun" },
+  vetru: { zh: "风", trad: "風", pin: "fēng", vuk: "feng", srb: "vetru", en: "wind", emoji: "💨", cat: "noun" },
+  vetrovi: { zh: "风", trad: "風", pin: "fēng", vuk: "feng", srb: "vetrovi", en: "winds", emoji: "💨", cat: "noun" },
+  povetarac: { zh: "微风", trad: "微風", pin: "wēifēng", vuk: "vej-feng", srb: "povetarac", en: "breeze", emoji: "🍃", cat: "noun" },
+  storm: { zh: "风暴", trad: "風暴", pin: "fēngbào", vuk: "feng-bao", srb: "oluja", en: "storm", emoji: "🌪️", cat: "noun" },
+  oluja: { zh: "风暴", trad: "風暴", pin: "fēngbào", vuk: "feng-bao", srb: "oluja", en: "storm", emoji: "🌪️", cat: "noun" },
+
+  air: { zh: "空气", trad: "空氣", pin: "kōngqì", vuk: "kung-ći", srb: "vazduh", en: "air", emoji: "🌬️", cat: "noun" },
+  vazduh: { zh: "空气", trad: "空氣", pin: "kōngqì", vuk: "kung-ći", srb: "vazduh", en: "air", emoji: "🌬️", cat: "noun" },
+  vazduha: { zh: "空气", trad: "空氣", pin: "kōngqì", vuk: "kung-ći", srb: "vazduha", en: "air (gen)", emoji: "🌬️", cat: "noun" },
+
+  fire: { zh: "火", trad: "火", pin: "huǒ", vuk: "huo", srb: "vatra", en: "fire", emoji: "🔥", cat: "noun" },
+  vatra: { zh: "火", trad: "火", pin: "huǒ", vuk: "huo", srb: "vatra", en: "fire", emoji: "🔥", cat: "noun" },
+  vatru: { zh: "火", trad: "火", pin: "huǒ", vuk: "huo", srb: "vatru", en: "fire (acc)", emoji: "🔥", cat: "noun" },
+  vatre: { zh: "火", trad: "火", pin: "huǒ", vuk: "huo", srb: "vatre", en: "fire (gen)", emoji: "🔥", cat: "noun" },
+
+  earth: { zh: "大地", trad: "大地", pin: "dàdì", vuk: "da-di", srb: "zemlja", en: "earth", emoji: "🌍", cat: "noun" },
+  zemlja: { zh: "大地", trad: "大地", pin: "dàdì", vuk: "da-di", srb: "zemlja", en: "earth / land", emoji: "🌍", cat: "noun" },
+  zemlju: { zh: "大地", trad: "大地", pin: "dàdì", vuk: "da-di", srb: "zemlju", en: "earth (acc)", emoji: "🌍", cat: "noun" },
+
+  sky: { zh: "天空", trad: "天空", pin: "tiānkōng", vuk: "tjen-kung", srb: "nebo", en: "sky", emoji: "🌌", cat: "noun" },
+  nebo: { zh: "天空", trad: "天空", pin: "tiānkōng", vuk: "tjen-kung", srb: "nebo", en: "sky", emoji: "🌌", cat: "noun" },
+  nebu: { zh: "天空", trad: "天空", pin: "tiānkōng", vuk: "tjen-kung", srb: "nebu", en: "sky (dat)", emoji: "🌌", cat: "noun" },
+
+  rain: { zh: "雨", trad: "雨", pin: "yǔ", vuk: "jü", srb: "kiša", en: "rain", emoji: "🌧️", cat: "noun" },
+  rains: { zh: "下雨", trad: "下雨", pin: "xiàyǔ", vuk: "sja-jü", srb: "pada kiša", en: "rains", emoji: "🌧️", cat: "verb" },
+  kisa: { zh: "雨", trad: "雨", pin: "yǔ", vuk: "jü", srb: "kiša", en: "rain", emoji: "🌧️", cat: "noun" },
+  kise: { zh: "雨", trad: "雨", pin: "yǔ", vuk: "jü", srb: "kiše", en: "rain (gen)", emoji: "🌧️", cat: "noun" },
+
+  snow: { zh: "雪", trad: "雪", pin: "xuě", vuk: "süe", srb: "sneg", en: "snow", emoji: "❄️", cat: "noun" },
+  sneg: { zh: "雪", trad: "雪", pin: "xuě", vuk: "süe", srb: "sneg", en: "snow", emoji: "❄️", cat: "noun" },
+  snegu: { zh: "雪", trad: "雪", pin: "xuě", vuk: "süe", srb: "snegu", en: "snow (loc)", emoji: "❄️", cat: "noun" },
+
+  cloud: { zh: "云", trad: "雲", pin: "yún", vuk: "jün", srb: "oblak", en: "cloud", emoji: "☁️", cat: "noun" },
+  clouds: { zh: "云彩", trad: "雲彩", pin: "yúncai", vuk: "jün-caj", srb: "oblaci", en: "clouds", emoji: "☁️", cat: "noun" },
+  oblak: { zh: "云", trad: "雲", pin: "yún", vuk: "jün", srb: "oblak", en: "cloud", emoji: "☁️", cat: "noun" },
+  oblaci: { zh: "云彩", trad: "雲彩", pin: "yúncai", vuk: "jün-caj", srb: "oblaci", en: "clouds", emoji: "☁️", cat: "noun" },
+
+  ice: { zh: "冰", trad: "冰", pin: "bīng", vuk: "bing", srb: "led", en: "ice", emoji: "🧊", cat: "noun" },
+  led: { zh: "冰", trad: "冰", pin: "bīng", vuk: "bing", srb: "led", en: "ice", emoji: "🧊", cat: "noun" },
+
+  thunder: { zh: "雷", trad: "雷", pin: "léi", vuk: "lej", srb: "grom", en: "thunder", emoji: "⚡", cat: "noun" },
+  grom: { zh: "雷", trad: "雷", pin: "léi", vuk: "lej", srb: "grom", en: "thunder", emoji: "⚡", cat: "noun" },
+  lightning: { zh: "闪电", trad: "閃電", pin: "shǎndiàn", vuk: "šan-đjen", srb: "munja", en: "lightning", emoji: "⚡", cat: "noun" },
+  munja: { zh: "闪电", trad: "閃電", pin: "shǎndiàn", vuk: "šan-đjen", srb: "munja", en: "lightning", emoji: "⚡", cat: "noun" },
+
+  blow: { zh: "吹", trad: "吹", pin: "chuī", vuk: "čuej", srb: "duvati", en: "blow", emoji: "💨", cat: "verb" },
+  blowing: { zh: "吹", trad: "吹", pin: "chuī", vuk: "čuej", srb: "duva", en: "blowing", emoji: "💨", cat: "verb" },
+  duva: { zh: "吹", trad: "吹", pin: "chuī", vuk: "čuej", srb: "duva", en: "blows", emoji: "💨", cat: "verb" },
+  duvati: { zh: "吹", trad: "吹", pin: "chuī", vuk: "čuej", srb: "duvati", en: "to blow", emoji: "💨", cat: "verb" },
+
+  forest: { zh: "森林", trad: "森林", pin: "sēnlín", vuk: "sen-lin", srb: "šuma", en: "forest", emoji: "🌲", cat: "noun" },
+  suma: { zh: "森林", trad: "森林", pin: "sēnlín", vuk: "sen-lin", srb: "šuma", en: "forest", emoji: "🌲", cat: "noun" },
+  grass: { zh: "草", trad: "草", pin: "cǎo", vuk: "cao", srb: "trava", en: "grass", emoji: "🌿", cat: "noun" },
+  trava: { zh: "草", trad: "草", pin: "cǎo", vuk: "cao", srb: "trava", en: "grass", emoji: "🌿", cat: "noun" },
+  leaf: { zh: "叶", trad: "葉", pin: "yè", vuk: "je", srb: "list", en: "leaf", emoji: "🍃", cat: "noun" },
+  leaves: { zh: "树叶", trad: "樹葉", pin: "shùyè", vuk: "šu-je", srb: "lišće", en: "leaves", emoji: "🍃", cat: "noun" },
+  stone: { zh: "石", trad: "石", pin: "shí", vuk: "ši", srb: "kamen", en: "stone", emoji: "🪨", cat: "noun" },
+  kamen: { zh: "石", trad: "石", pin: "shí", vuk: "ši", srb: "kamen", en: "stone", emoji: "🪨", cat: "noun" },
+
+
   sun: { zh: "太阳", trad: "太陽", pin: "tàiyáng", vuk: "taj-jang", srb: "sunce", en: "sun", emoji: "☀️", cat: "noun" },
   sunce: { zh: "太阳", trad: "太陽", pin: "tàiyáng", vuk: "taj-jang", srb: "sunce", en: "sun", emoji: "☀️", cat: "noun" },
   moon: { zh: "月亮", trad: "月亮", pin: "yuèliang", vuk: "jüe-ljang", srb: "mesec", en: "moon", emoji: "🌙", cat: "noun" },
