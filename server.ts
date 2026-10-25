@@ -18,6 +18,15 @@ import { Resvg } from "@resvg/resvg-js";
 
 dotenv.config();
 
+// Process safety: prevent unhandled exceptions/rejections from terminating the server process
+process.on("unhandledRejection", (reason, promise) => {
+  console.warn("[WiseFit Server] Unhandled Promise Rejection (safely caught):", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("[WiseFit Server] Uncaught Exception (safely caught):", error);
+});
+
 // Read Firebase applet config for Admin/Client SDK
 const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
 let firebaseConfig: any = {};
