@@ -47,8 +47,7 @@ import {
   Leaf,
   Image as ImageIcon,
   ExternalLink,
-  X,
-  Volume2
+  X
 } from 'lucide-react';
 import { 
   PagodaTempleIllustration, 
@@ -59,11 +58,10 @@ import {
 } from '../components/ChineseCartoonAssets';
 
 /**
- * Curated, high-resolution Unsplash photography assets for Chinese/Hebrew vocabulary concepts.
- * These are verified, fast-loading Unsplash CDN images with optimized query parameters.
+ * Curated, high-resolution photography assets for Chinese/Hebrew vocabulary concepts.
+ * Verified, fast-loading Unsplash CDN images with optimized query parameters.
  */
 export const CONCEPT_PHOTOS: Record<string, { url: string; title: string; photographer: string }> = {
-  // Wisdom, Mind & Heart
   'heart': {
     url: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=700&q=80',
     title: 'Serene Nature Light',
@@ -84,8 +82,6 @@ export const CONCEPT_PHOTOS: Record<string, { url: string; title: string; photog
     title: 'Stillness and Mindfulness',
     photographer: 'Unsplash'
   },
-
-  // Nature & Elements
   'mountain': {
     url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=700&q=80',
     title: 'Misty Mountain Peaks',
@@ -129,11 +125,6 @@ export const CONCEPT_PHOTOS: Record<string, { url: string; title: string; photog
   'temple': {
     url: 'https://images.unsplash.com/photo-1513415756790-2ac1db1297d0?auto=format&fit=crop&w=700&q=80',
     title: 'Ancient Pagoda Sanctuary',
-    photographer: 'Unsplash'
-  },
-  'lotus': {
-    url: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=700&q=80',
-    title: 'Pure Lotus Bloom',
     photographer: 'Unsplash'
   },
   'peace': {
@@ -230,20 +221,18 @@ export function getVisualPhotoForWord(item: {
     return CONCEPT_PHOTOS['travel'];
   }
 
-  // Universal serene Chinese heritage background
   return CONCEPT_PHOTOS['wisdom'];
 }
 
 /**
- * Maps word concepts / emojis to a guaranteed, crisp Vector SVG icon.
- * This completely avoids unicode box/tofu rendering (□) on devices with missing fonts.
+ * Maps word concepts to a fallback Vector SVG icon when NO emoji is available
+ * or when an emoji is unsupported/broken (□).
  */
 export function getVectorIconForWord(props: {
   char?: string;
   english?: string;
   translation?: string;
   category?: string;
-  emoji?: string;
   size?: number;
 }): {
   iconNode: React.ReactNode;
@@ -251,11 +240,11 @@ export function getVectorIconForWord(props: {
   accentColor: string;
   label: string;
 } {
-  const { char = '', english = '', translation = '', category = '', emoji = '', size = 32 } = props;
-  const text = `${char} ${english} ${translation} ${category} ${emoji}`.toLowerCase();
+  const { char = '', english = '', translation = '', category = '', size = 32 } = props;
+  const text = `${char} ${english} ${translation} ${category}`.toLowerCase();
 
   // 1. Heart / Mind / Love / Emotions
-  if (text.includes('heart') || text.includes('srce') || text.includes('love') || text.includes('ljubav') || text.includes('心') || text.includes('爱') || emoji === '❤️' || emoji === '💖' || emoji === '🤍') {
+  if (text.includes('heart') || text.includes('srce') || text.includes('love') || text.includes('ljubav') || text.includes('心') || text.includes('爱')) {
     return {
       iconNode: <Heart className="drop-shadow-md text-rose-400 fill-rose-500/20" size={size} />,
       gradientClass: 'from-rose-500/20 via-pink-500/10 to-red-500/20 border-rose-500/40 text-rose-400',
@@ -265,7 +254,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 2. Wisdom / Mind / Intellect
-  if (text.includes('wisdom') || text.includes('mudrost') || text.includes('mind') || text.includes('um') || text.includes('brain') || text.includes('智') || text.includes('慧') || emoji === '🧠' || emoji === '🦉' || emoji === '💡') {
+  if (text.includes('wisdom') || text.includes('mudrost') || text.includes('mind') || text.includes('um') || text.includes('brain') || text.includes('智') || text.includes('慧')) {
     return {
       iconNode: <Brain className="drop-shadow-md text-amber-300" size={size} />,
       gradientClass: 'from-amber-500/20 via-yellow-500/10 to-amber-600/20 border-amber-500/40 text-amber-300',
@@ -275,7 +264,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 3. Fire / Flame / Energy
-  if (text.includes('fire') || text.includes('vatra') || text.includes('flame') || text.includes('burn') || text.includes('goret') || text.includes('huo') || text.includes('火') || text.includes('燃') || emoji === '🔥' || emoji === '☄️' || emoji === '⚡') {
+  if (text.includes('fire') || text.includes('vatra') || text.includes('flame') || text.includes('burn') || text.includes('goret') || text.includes('huo') || text.includes('火') || text.includes('燃')) {
     return {
       iconNode: <Flame className="drop-shadow-md text-orange-400 fill-orange-500/30" size={size} />,
       gradientClass: 'from-orange-500/25 via-amber-500/15 to-red-600/25 border-orange-500/40 text-orange-400',
@@ -285,7 +274,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 4. Mountain / Earth / Stability
-  if (text.includes('mountain') || text.includes('planin') || text.includes('peak') || text.includes('vis') || text.includes('shan') || text.includes('山') || text.includes('土') || emoji === '⛰️' || emoji === '🏔️' || emoji === '🧗') {
+  if (text.includes('mountain') || text.includes('planin') || text.includes('peak') || text.includes('vis') || text.includes('shan') || text.includes('山') || text.includes('土')) {
     return {
       iconNode: <Mountain className="drop-shadow-md text-emerald-300" size={size} />,
       gradientClass: 'from-emerald-500/20 via-teal-500/10 to-slate-600/20 border-emerald-500/40 text-emerald-300',
@@ -295,7 +284,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 5. Water / River / Rain / Fluidity
-  if (text.includes('water') || text.includes('voda') || text.includes('river') || text.includes('reka') || text.includes('sea') || text.includes('more') || text.includes('shui') || text.includes('水') || text.includes('氵') || text.includes('海') || emoji === '💧' || emoji === '🌊' || emoji === '🌧️') {
+  if (text.includes('water') || text.includes('voda') || text.includes('river') || text.includes('reka') || text.includes('sea') || text.includes('more') || text.includes('shui') || text.includes('水') || text.includes('氵') || text.includes('海')) {
     return {
       iconNode: <Waves className="drop-shadow-md text-cyan-400" size={size} />,
       gradientClass: 'from-cyan-500/20 via-blue-500/10 to-teal-500/20 border-cyan-500/40 text-cyan-400',
@@ -305,7 +294,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 6. Sun / Light / Dawn
-  if (text.includes('sun') || text.includes('sunce') || text.includes('light') || text.includes('svetlost') || text.includes('dawn') || text.includes('jasn') || text.includes('ri') || text.includes('日') || text.includes('阳') || text.includes('光') || text.includes('明') || emoji === '☀️' || emoji === '🌅' || emoji === '🕯️') {
+  if (text.includes('sun') || text.includes('sunce') || text.includes('light') || text.includes('svetlost') || text.includes('dawn') || text.includes('jasn') || text.includes('ri') || text.includes('日') || text.includes('阳') || text.includes('光') || text.includes('明')) {
     return {
       iconNode: <Sunrise className="drop-shadow-md text-amber-400" size={size} />,
       gradientClass: 'from-amber-400/25 via-yellow-500/15 to-orange-500/20 border-amber-400/50 text-amber-300',
@@ -315,7 +304,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 7. Moon / Night / Stillness
-  if (text.includes('moon') || text.includes('mesec') || text.includes('night') || text.includes('noć') || text.includes('tam') || text.includes('yue') || text.includes('月') || text.includes('夜') || text.includes('静') || emoji === '🌙' || emoji === '🌌' || emoji === '🤫') {
+  if (text.includes('moon') || text.includes('mesec') || text.includes('night') || text.includes('noć') || text.includes('tam') || text.includes('yue') || text.includes('月') || text.includes('夜') || text.includes('静')) {
     return {
       iconNode: <Moon className="drop-shadow-md text-indigo-300 fill-indigo-400/20" size={size} />,
       gradientClass: 'from-indigo-500/20 via-blue-600/10 to-purple-600/20 border-indigo-500/40 text-indigo-300',
@@ -325,7 +314,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 8. Wind / Sky / Freedom
-  if (text.includes('wind') || text.includes('vetar') || text.includes('breeze') || text.includes('feng') || text.includes('风') || emoji === '💨' || emoji === '🍃') {
+  if (text.includes('wind') || text.includes('vetar') || text.includes('breeze') || text.includes('feng') || text.includes('风')) {
     return {
       iconNode: <Wind className="drop-shadow-md text-teal-300" size={size} />,
       gradientClass: 'from-teal-500/20 via-emerald-500/10 to-cyan-500/20 border-teal-500/40 text-teal-300',
@@ -335,7 +324,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 9. Tea / Bamboo / Food / Nourishment
-  if (text.includes('tea') || text.includes('čaj') || text.includes('bamboo') || text.includes('bambus') || text.includes('food') || text.includes('hrana') || text.includes('piti') || text.includes('drink') || text.includes('茶') || text.includes('竹') || emoji === '🍵' || emoji === '🎋' || emoji === '☕' || emoji === '🫖') {
+  if (text.includes('tea') || text.includes('čaj') || text.includes('bamboo') || text.includes('bambus') || text.includes('food') || text.includes('hrana') || text.includes('piti') || text.includes('drink') || text.includes('茶') || text.includes('竹')) {
     return {
       iconNode: <Coffee className="drop-shadow-md text-emerald-400" size={size} />,
       gradientClass: 'from-emerald-500/25 via-green-600/15 to-teal-600/25 border-emerald-500/40 text-emerald-300',
@@ -345,7 +334,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 10. Peace / Dove / Serenity
-  if (text.includes('peace') || text.includes('mir') || text.includes('spokoj') || text.includes('harmony') || text.includes('shalom') || text.includes('ping') || text.includes('平') || text.includes('安') || emoji === '🕊️' || emoji === '🙏' || emoji === '🪷') {
+  if (text.includes('peace') || text.includes('mir') || text.includes('spokoj') || text.includes('harmony') || text.includes('shalom') || text.includes('ping') || text.includes('平') || text.includes('安')) {
     return {
       iconNode: <Bird className="drop-shadow-md text-sky-300" size={size} />,
       gradientClass: 'from-sky-500/20 via-blue-500/10 to-indigo-500/20 border-sky-400/40 text-sky-300',
@@ -355,7 +344,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 11. Strength / Power / Warrior / Shield
-  if (text.includes('strength') || text.includes('snaga') || text.includes('power') || text.includes('courage') || text.includes('hrabrost') || text.includes('li') || text.includes('力') || text.includes('勇') || emoji === '💪' || emoji === '🛡️' || emoji === '⚔️' || emoji === '🚀') {
+  if (text.includes('strength') || text.includes('snaga') || text.includes('power') || text.includes('courage') || text.includes('hrabrost') || text.includes('li') || text.includes('力') || text.includes('勇')) {
     return {
       iconNode: <Shield className="drop-shadow-md text-red-400" size={size} />,
       gradientClass: 'from-red-500/25 via-rose-600/15 to-amber-600/25 border-red-500/40 text-red-400',
@@ -365,7 +354,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 12. Friendship / Person / Solidarity
-  if (text.includes('friend') || text.includes('prijatelj') || text.includes('brother') || text.includes('brat') || text.includes('you') || text.includes('ti') || text.includes('ren') || text.includes('人') || text.includes('亻') || text.includes('朋') || text.includes('友') || text.includes('你') || emoji === '🤝' || emoji === '🫂' || emoji === '👤' || emoji === '🫵' || emoji === '👥') {
+  if (text.includes('friend') || text.includes('prijatelj') || text.includes('brother') || text.includes('brat') || text.includes('you') || text.includes('ti') || text.includes('ren') || text.includes('人') || text.includes('亻') || text.includes('朋') || text.includes('友') || text.includes('你')) {
     return {
       iconNode: <Handshake className="drop-shadow-md text-blue-400" size={size} />,
       gradientClass: 'from-blue-500/20 via-indigo-500/10 to-cyan-500/20 border-blue-500/40 text-blue-400',
@@ -375,7 +364,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 13. Temple / Pagoda / Cultural Landmark
-  if (text.includes('temple') || text.includes('hram') || text.includes('pagoda') || text.includes('sanctuary') || text.includes('si') || text.includes('寺') || emoji === '🏯' || emoji === '🏮' || emoji === '🏛️') {
+  if (text.includes('temple') || text.includes('hram') || text.includes('pagoda') || text.includes('sanctuary') || text.includes('si') || text.includes('寺')) {
     return {
       iconNode: <Landmark className="drop-shadow-md text-amber-400" size={size} />,
       gradientClass: 'from-amber-600/20 via-red-600/10 to-yellow-600/20 border-amber-500/40 text-amber-300',
@@ -385,7 +374,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 14. Book / Scroll / Learning
-  if (text.includes('book') || text.includes('knjig') || text.includes('learn') || text.includes('učit') || text.includes('scroll') || text.includes('pismo') || text.includes('文') || text.includes('书') || emoji === '📜' || emoji === '📖' || emoji === '📚' || emoji === '🔤') {
+  if (text.includes('book') || text.includes('knjig') || text.includes('learn') || text.includes('učit') || text.includes('scroll') || text.includes('pismo') || text.includes('文') || text.includes('书')) {
     return {
       iconNode: <Scroll className="drop-shadow-md text-amber-300" size={size} />,
       gradientClass: 'from-amber-500/20 via-orange-500/10 to-yellow-500/20 border-amber-500/40 text-amber-300',
@@ -395,7 +384,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 15. Truth / Justice / Scales
-  if (text.includes('truth') || text.includes('istina') || text.includes('justice') || text.includes('pravda') || text.includes('zhen') || text.includes('真') || text.includes('emet') || emoji === '⚖️' || emoji === '💎') {
+  if (text.includes('truth') || text.includes('istina') || text.includes('justice') || text.includes('pravda') || text.includes('zhen') || text.includes('真') || text.includes('emet')) {
     return {
       iconNode: <Scale className="drop-shadow-md text-cyan-300" size={size} />,
       gradientClass: 'from-cyan-500/25 via-blue-500/15 to-indigo-500/25 border-cyan-400/50 text-cyan-300',
@@ -405,7 +394,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 16. Compass / Direction / Journey / Dao
-  if (text.includes('road') || text.includes('put') || text.includes('direction') || text.includes('smer') || text.includes('dao') || text.includes('way') || text.includes('道') || emoji === '🧭' || emoji === '📍' || emoji === '🎯') {
+  if (text.includes('road') || text.includes('put') || text.includes('direction') || text.includes('smer') || text.includes('dao') || text.includes('way') || text.includes('道')) {
     return {
       iconNode: <Compass className="drop-shadow-md text-emerald-400" size={size} />,
       gradientClass: 'from-emerald-500/20 via-teal-500/10 to-blue-500/20 border-emerald-500/40 text-emerald-400',
@@ -415,7 +404,7 @@ export function getVectorIconForWord(props: {
   }
 
   // 17. Time / Season / Cycles
-  if (text.includes('time') || text.includes('vreme') || text.includes('season') || text.includes('sat') || text.includes('uvek') || text.includes('always') || text.includes('shi') || text.includes('时') || emoji === '⏳' || emoji === '⏰') {
+  if (text.includes('time') || text.includes('vreme') || text.includes('season') || text.includes('sat') || text.includes('uvek') || text.includes('always') || text.includes('shi') || text.includes('时')) {
     return {
       iconNode: <Timer className="drop-shadow-md text-violet-300" size={size} />,
       gradientClass: 'from-violet-500/20 via-purple-500/10 to-indigo-500/20 border-violet-500/40 text-violet-300',
@@ -424,7 +413,7 @@ export function getVectorIconForWord(props: {
     };
   }
 
-  // 18. Default High-Grade Sparkle / Star Icon
+  // 18. Default Sparkles Icon
   return {
     iconNode: <Sparkles className="drop-shadow-md text-amber-400 animate-pulse" size={size} />,
     gradientClass: 'from-amber-500/20 via-red-500/10 to-yellow-500/20 border-amber-500/30 text-amber-300',
@@ -441,13 +430,14 @@ export interface WordVisualBadgeProps {
   emoji?: string;
   size?: number;
   className?: string;
-  showPhotoOption?: boolean;
 }
 
 /**
- * Single Unified Word Visual Badge:
- * Renders ONE clean, visually stunning icon (SVG vector or curated photo) without duplicates,
- * completely solving the "two icons" issue and preventing empty tofu boxes (□).
+ * WordVisualBadge:
+ * Displays the word's emoji directly (as requested by user).
+ * ONLY if there is NO emoji (or if emoji is empty or a broken tofu box '□')
+ * does it fall back to an elegant, high-contrast SVG icon.
+ * Ensures exactly ONE clean icon/visual per word with zero duplicates.
  */
 export const WordVisualBadge: React.FC<WordVisualBadgeProps> = ({
   char,
@@ -455,128 +445,42 @@ export const WordVisualBadge: React.FC<WordVisualBadgeProps> = ({
   translation,
   category,
   emoji,
-  size = 46,
-  className = '',
-  showPhotoOption = true
+  size = 32,
+  className = ''
 }) => {
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [photoLoaded, setPhotoLoaded] = useState(false);
+  // Check if emoji is valid, non-empty, and not a broken unicode tofu box
+  const hasValidEmoji = Boolean(
+    emoji && 
+    typeof emoji === 'string' && 
+    emoji.trim() !== '' && 
+    emoji !== '□' && 
+    emoji !== '' &&
+    emoji !== 'undefined' &&
+    emoji !== 'null'
+  );
 
-  const vector = getVectorIconForWord({ char, english, translation, category, emoji, size });
-  const photo = getVisualPhotoForWord({ char, english, translation, category });
+  // If emoji is present, display it directly (native, vibrant, and clean)
+  if (hasValidEmoji) {
+    return (
+      <span
+        className={`inline-flex items-center justify-center filter drop-shadow-sm select-none leading-none ${className}`}
+        style={{ fontSize: size }}
+        title={translation || english || char}
+      >
+        {emoji}
+      </span>
+    );
+  }
 
+  // Fallback: When there is NO emoji, render an SVG icon matching the word's concept
+  const vector = getVectorIconForWord({ char, english, translation, category, size });
   return (
-    <>
-      <div className={`relative inline-flex items-center justify-center group ${className}`}>
-        {/* The SINGLE Unified Icon Container */}
-        <div
-          className={`relative p-2.5 rounded-2xl bg-gradient-to-br ${vector.gradientClass} border shadow-lg transition-transform duration-300 hover:scale-105 flex items-center justify-center`}
-          style={{ width: size + 16, height: size + 16 }}
-          title={`${vector.label} • Dodirni za fotografiju`}
-        >
-          {vector.iconNode}
-
-          {/* Optional Photo Hint Button in Corner */}
-          {showPhotoOption && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowPhotoModal(true);
-              }}
-              className="absolute -bottom-1 -right-1 p-1 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400 hover:text-white hover:border-amber-400 transition-colors shadow-sm"
-              title="Prikaži inspirativnu fotografiju"
-            >
-              <ImageIcon className="w-2.5 h-2.5" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* High-Resolution Aesthetic Photography Modal */}
-      {showPhotoModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowPhotoModal(false);
-          }}
-        >
-          <div
-            className="relative max-w-md w-full bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-black text-white">{char}</span>
-                <span className="text-xs text-zinc-400">({translation || english})</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPhotoModal(false)}
-                className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Photo Viewport */}
-            <div className="relative aspect-video w-full bg-zinc-950 overflow-hidden">
-              <img
-                src={photo.url}
-                alt={photo.title}
-                onLoad={() => setPhotoLoaded(true)}
-                className={`w-full h-full object-cover transition-opacity duration-500 ${
-                  photoLoaded ? 'opacity-100' : 'opacity-0'
-                }`}
-              />
-              {!photoLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center text-zinc-600">
-                  <Sparkles className="w-6 h-6 animate-spin text-amber-500/50" />
-                </div>
-              )}
-              <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent text-left">
-                <p className="text-xs font-bold text-white drop-shadow-md">{photo.title}</p>
-                <p className="text-[10px] text-zinc-400">Izvor: {photo.photographer} (Open Creative Collection)</p>
-              </div>
-            </div>
-
-            {/* Footer with External Provider Links */}
-            <div className="p-4 bg-zinc-900/90 text-xs text-zinc-400 space-y-2 text-left">
-              <p className="text-[11px] text-zinc-300">
-                Povezane biblioteke sa besplatnim fotografijama i SVG resursima za reč:
-              </p>
-              <div className="flex items-center gap-2 flex-wrap pt-1">
-                <a
-                  href={`https://unsplash.com/s/photos/${encodeURIComponent(english || translation || char)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700 transition-colors"
-                >
-                  Unsplash <ExternalLink className="w-3 h-3 text-zinc-400" />
-                </a>
-                <a
-                  href={`https://www.pexels.com/search/${encodeURIComponent(english || translation || char)}/`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700 transition-colors"
-                >
-                  Pexels <ExternalLink className="w-3 h-3 text-zinc-400" />
-                </a>
-                <a
-                  href={`https://pixabay.com/images/search/${encodeURIComponent(english || translation || char)}/`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-medium border border-zinc-700 transition-colors"
-                >
-                  Pixabay <ExternalLink className="w-3 h-3 text-zinc-400" />
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    <span
+      className={`inline-flex items-center justify-center p-1.5 rounded-xl bg-gradient-to-br ${vector.gradientClass} border shadow-sm select-none shrink-0 ${className}`}
+      style={{ width: size + 10, height: size + 10 }}
+      title={`${vector.label} (${char})`}
+    >
+      {vector.iconNode}
+    </span>
   );
 };
