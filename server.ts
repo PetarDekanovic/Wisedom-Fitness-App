@@ -139,10 +139,16 @@ async function startServer() {
   const PORT = Number(process.env.PORT) || 3000;
   console.log(`[WiseFit] Port selected: ${PORT}`);
 
+  app.set("trust proxy", true);
   app.use(cors());
   app.use(express.json({ limit: "65mb" }));
   app.use(express.urlencoded({ limit: "65mb", extended: true }));
   console.log("[WiseFit] Core middlewares: CORS, JSON (65mb) & URLencoded (65mb) enabled.");
+
+  // Simple ping endpoint for quick health monitoring
+  app.get("/ping", (_req, res) => {
+    res.status(200).send("pong");
+  });
 
   // Ensure uploads directory exists
   const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
@@ -154,11 +160,9 @@ async function startServer() {
   // Serve uploads statically
   app.use("/uploads", express.static(UPLOADS_DIR));
 
-  // Log incoming requests for debugging production 404s
-  app.use((req, res, next) => {
-    if (req.path.startsWith('/api/')) {
-      console.log(`[REQ] ${req.method} ${req.path} | IP: ${req.ip}`);
-    }
+  // Log incoming requests for debugging production traffic
+  app.use((req, _res, next) => {
+    console.log(`[REQ] ${req.method} ${req.originalUrl} | IP: ${req.ip}`);
     next();
   });
 
@@ -3220,14 +3224,18 @@ Respond with JSON only, no markdown formatting, no code blocks.`;
   // --- STATIC SERVING ---
   if (isProd) {
     console.log(`[WiseFit] Production Mode: Serving static files from ${distPath}`);
-    app.use(express.static(distPath, { index: false }));
+    app.use(express.static(distPath));
     
     app.get("*", (req, res) => {
       const indexPath = path.join(distPath, "index.html");
+      if (!fs.existsSync(indexPath)) {
+        console.error(`[SPA Error] index.html missing at path: ${indexPath}`);
+        return res.status(404).send("WiseFit Sanctuary: Static artifact missing. Please check build logs.");
+      }
       res.sendFile(indexPath, (err) => {
-        if (err) {
+        if (err && !res.headersSent) {
           console.error(`[SPA Error] Failed to send index.html: ${err.message}`);
-          res.status(404).send("WiseFit Sanctuary: Static artifact missing. Please check build logs.");
+          res.status(500).send("WiseFit Sanctuary: Failed to serve application shell.");
         }
       });
     });
