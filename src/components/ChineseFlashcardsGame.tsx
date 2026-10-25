@@ -43,6 +43,7 @@ import {
   CartoonCardBack, 
   CartoonVictoryIllustration 
 } from './ChineseCartoonAssets';
+import { WordVisualBadge } from '../lib/wordVisualResolver';
 
 export interface ChineseFlashcardsGameProps {
   vocabList: VocabItem[];
@@ -1258,21 +1259,17 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                       )}
                     </div>
 
-                    {/* Central Chinese Character with Cartoon Art & Emoji */}
+                    {/* Central Chinese Character with Single Unified Visual Icon */}
                     <div className="my-auto space-y-3">
-                      <div className="flex items-center justify-center gap-3">
-                        {currentCard.category === 'filozofija' || currentCard.category === 'strofa_1' || currentCard.category === 'refren' ? (
-                          <PagodaTempleIllustration size={46} className="drop-shadow-md" />
-                        ) : currentCard.category === 'svakodnevno' || currentCard.category === 'hrana' ? (
-                          <TeaBambooIllustration size={46} className="drop-shadow-md" />
-                        ) : currentCard.category === 'zdravlje' || currentCard.category === 'emocije' ? (
-                          <LotusIllustration size={46} className="drop-shadow-md" />
-                        ) : (
-                          <PandaScholarAvatar mood={streak >= 3 ? 'cheering' : 'studying'} size={46} />
-                        )}
-                        <span className="text-4xl animate-bounce">
-                          {currentCard.emoji}
-                        </span>
+                      <div className="flex items-center justify-center">
+                        <WordVisualBadge
+                          char={currentCard.char}
+                          english={currentCard.english}
+                          translation={currentCard.translation}
+                          category={currentCard.category}
+                          emoji={currentCard.emoji}
+                          size={46}
+                        />
                       </div>
 
                       <h2 className="text-6xl sm:text-7xl font-black tracking-wide font-sans text-white drop-shadow-md select-text">
@@ -1362,9 +1359,15 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
 
                     {/* Meaning Content */}
                     <div className="my-auto space-y-3 w-full">
-                      <div className="flex items-center justify-center gap-2 mb-1">
-                        <span className="text-4xl">{currentCard.emoji}</span>
-                        <LittleDragonMascot size={42} className="drop-shadow-md" />
+                      <div className="flex items-center justify-center mb-1">
+                        <WordVisualBadge
+                          char={currentCard.char}
+                          english={currentCard.english}
+                          translation={currentCard.translation}
+                          category={currentCard.category}
+                          emoji={currentCard.emoji}
+                          size={40}
+                        />
                       </div>
                       
                       <h3 className="text-2xl sm:text-3xl font-black text-white">

@@ -41,6 +41,7 @@ import { User } from 'firebase/auth';
 import { CHINESE_VOCAB_EXPANDED, VocabItem, getChineseQuoteForItem } from '../data/chineseVocabData';
 import { ChineseFlashcardsGame } from './ChineseFlashcardsGame';
 import { buildLinguisticChineseTranslation } from '../lib/chineseTranslatorEngine';
+import { WordVisualBadge } from '../lib/wordVisualResolver';
 
 export type { VocabItem };
 
@@ -1872,7 +1873,15 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                     <div className="space-y-3.5">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-3xl filter drop-shadow-sm">{item.emoji}</span>
+                          <WordVisualBadge
+                            char={item.char}
+                            english={item.english}
+                            translation={item.translation}
+                            category={item.category}
+                            emoji={item.emoji}
+                            size={28}
+                            showPhotoOption={true}
+                          />
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={cn(
                               "text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md font-mono border",
@@ -2029,7 +2038,17 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                     isDarkMode ? "bg-zinc-900/60 border-zinc-800 hover:border-red-500/50" : "bg-white border-zinc-200 shadow-sm hover:border-red-300"
                   )}
                 >
-                  <span className="text-4xl my-2 filter drop-shadow-sm">{item.emoji}</span>
+                  <div className="my-2">
+                    <WordVisualBadge
+                      char={item.char}
+                      english={item.english}
+                      translation={item.translation}
+                      category={item.category}
+                      emoji={item.emoji}
+                      size={32}
+                      showPhotoOption={false}
+                    />
+                  </div>
                   <div className="space-y-0.5 w-full">
                     <p className="text-2xl font-serif font-black text-red-500">{item.char}</p>
                     <p className="text-[10px] font-mono font-bold text-amber-500">{item.pinyin}</p>

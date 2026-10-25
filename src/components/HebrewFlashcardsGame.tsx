@@ -34,6 +34,7 @@ import {
 import { cn } from '../lib/utils';
 import type { HebrewVocabItem } from '../data/hebrewVocabData';
 import { getHebrewQuoteForItem } from '../data/hebrewVocabData';
+import { WordVisualBadge } from '../lib/wordVisualResolver';
 
 export interface HebrewFlashcardsGameProps {
   vocabList: HebrewVocabItem[];
@@ -1201,10 +1202,17 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                       )}
                     </div>
 
-                    {/* Central Hebrew Word with Emoji */}
+                    {/* Central Hebrew Word with WordVisualBadge */}
                     <div className="my-auto space-y-4">
-                      <div className="text-5xl animate-bounce mb-2">
-                        {currentCard.emoji}
+                      <div className="flex items-center justify-center mb-2">
+                        <WordVisualBadge
+                          char={currentCard.char}
+                          english={currentCard.english}
+                          translation={currentCard.translation}
+                          category={currentCard.category}
+                          emoji={currentCard.emoji}
+                          size={46}
+                        />
                       </div>
 
                       <h2 
@@ -1297,7 +1305,16 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
 
                     {/* Meaning Content */}
                     <div className="my-auto space-y-3 w-full">
-                      <div className="text-4xl mb-1">{currentCard.emoji}</div>
+                      <div className="flex items-center justify-center mb-1">
+                        <WordVisualBadge
+                          char={currentCard.char}
+                          english={currentCard.english}
+                          translation={currentCard.translation}
+                          category={currentCard.category}
+                          emoji={currentCard.emoji}
+                          size={40}
+                        />
+                      </div>
                       
                       <h3 className="text-2xl sm:text-3xl font-black text-white">
                         {currentCard.translation}
