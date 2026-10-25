@@ -30,5 +30,11 @@ In your Hostinger hPanel "Environment Variables" section, add the following key 
     - Create New AI quotes (once the Gemini API Key is added).
     - Use the AI Loop feature.
 
+## 4. Hostinger 504 Gateway Time-out Resolution
+If the live site returns `504 Gateway Time-out (nginx)` or `503 Service Unavailable`:
+1. Open **Hostinger hPanel** → **Hosting Plan** → **Resources Usage** (`/order/order-usage`).
+2. Inside the banner *"Your plan has reached its resource limits"*, click **"Stop running processes"**.
+3. This terminates old/zombie Node.js processes, freeing the process limits and allowing Nginx to route traffic to the active application immediately.
+
 ---
 *Memory updated: Site is live at wisefit.fun. Current focus: Auth fix and API Key config.*

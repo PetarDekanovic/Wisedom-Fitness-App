@@ -56,3 +56,17 @@ WiseFit uses a full-stack architecture with **React (Vite)** for the frontend an
 
 *   **Frontend**: Built with Tailwind CSS and Framer Motion for a cinematic experience.
 *   **Backend**: Handles secure OAuth handshakes and proxies requests to the Google Health API to keep secrets hidden from the browser.
+
+## Hostinger Troubleshooting: 504 Gateway Time-out / 503 Outages
+
+If the live production site (`wisefit.fun`) displays a **504 Gateway Time-out (nginx)** or **503 Service Unavailable** error:
+
+### Primary Fix: "Stop running processes" in Hostinger hPanel
+Hostinger accounts enforce limits on concurrent processes and resource usage. During builds, deployments, or traffic spikes, old or zombie Node processes can saturate the account's process allocation, triggering the Hostinger alert: *"Your plan has reached its resource limits"*. When this threshold is hit, Hostinger's Nginx reverse proxy is blocked from communicating with Node.js and returns a 504 timeout.
+
+**Steps to restore the site immediately:**
+1. Log into **Hostinger hPanel**.
+2. Go to **Hosting Plan** → **Resources Usage** (or navigate to `hpanel.hostinger.com/websites/wisefit.fun/order/order-usage`).
+3. Inside the red warning box (*"Your plan has reached its resource limits"*), click the **"Stop running processes"** button.
+4. Hostinger will instantly terminate hung background worker processes, release the process table, and allow the application to boot and serve incoming requests normally.
+
