@@ -115,6 +115,63 @@ export const CHINESE_EXACT_PRESETS: Record<string, {
       { chinese: "孤单", chineseTraditional: "孤單", pinyin: "gūdān", vuk: "gu-dan", english: "lonely / alone", serbian: "usamljen / sam", emoji: "❤️", category: "adjective" }
     ],
     grammarNote: "Fraza 'cónglái bùshì' (从来不是) znači 'nikada nisi bio' i naglašava trajnu podršku."
+  },
+  "no one is more hated than the one that tells the truth": {
+    chinese: "没有人比说真话的人更招人厌烦。",
+    chineseTraditional: "沒有人比說真話的人更招人厭煩。",
+    pinyin: "Méiyǒu rén bǐ shuō zhēnhuà de rén gèng zhāo rén yànfán.",
+    vuk: "Mej-jou žen bi šuo džen-hua de žen geng džao žen jen-fan.",
+    serbian: "Niko nije više omražen od onoga koji govori istinu.",
+    emojis: ["⚖️", "🗣️", "⚡", "💡"],
+    words: [
+      { chinese: "没有人", chineseTraditional: "沒有人", pinyin: "méiyǒu rén", vuk: "mej-jou žen", english: "no one / nobody", serbian: "niko", emoji: "👤", category: "pronoun" },
+      { chinese: "比", chineseTraditional: "比", pinyin: "bǐ", vuk: "bi", english: "than / compared to", serbian: "od / nego", emoji: "⚖️", category: "particle" },
+      { chinese: "说", chineseTraditional: "說", pinyin: "shuō", vuk: "šuo", english: "speaks / tells", serbian: "govori", emoji: "🗣️", category: "verb" },
+      { chinese: "真话", chineseTraditional: "真話", pinyin: "zhēnhuà", vuk: "džen-hua", english: "the truth", serbian: "istinu", emoji: "💡", category: "noun" },
+      { chinese: "的", chineseTraditional: "的", pinyin: "de", vuk: "de", english: "that / who (rel marker)", serbian: "koji / onaj", emoji: "🔗", category: "particle" },
+      { chinese: "人", chineseTraditional: "人", pinyin: "rén", vuk: "žen", english: "person / one", serbian: "čovek / onaj", emoji: "👤", category: "noun" },
+      { chinese: "更", chineseTraditional: "更", pinyin: "gèng", vuk: "geng", english: "more / even more", serbian: "više", emoji: "📈", category: "adverb" },
+      { chinese: "招人厌烦", chineseTraditional: "招人厭煩", pinyin: "zhāo rén yànfán", vuk: "džao žen jen-fan", english: "hated / disliked", serbian: "omražen / prezren", emoji: "⚡", category: "adjective" }
+    ],
+    grammarNote: "Platonova čuvena misao: komparativna konstrukcija 'A bǐ B gèng...' (A 比 B 更...) postavlja oštru filozofsku paralelu."
+  },
+  "no one is more hated than the one who speaks the truth": {
+    chinese: "没有人比说真话的人更招人厌烦。",
+    chineseTraditional: "沒有人比說真話的人更招人厭煩。",
+    pinyin: "Méiyǒu rén bǐ shuō zhēnhuà de rén gèng zhāo rén yànfán.",
+    vuk: "Mej-jou žen bi šuo džen-hua de žen geng džao žen jen-fan.",
+    serbian: "Niko nije više omražen od onoga koji govori istinu.",
+    emojis: ["⚖️", "🗣️", "⚡", "💡"],
+    words: [
+      { chinese: "没有人", chineseTraditional: "沒有人", pinyin: "méiyǒu rén", vuk: "mej-jou žen", english: "no one / nobody", serbian: "niko", emoji: "👤", category: "pronoun" },
+      { chinese: "比", chineseTraditional: "比", pinyin: "bǐ", vuk: "bi", english: "than", serbian: "od", emoji: "⚖️", category: "particle" },
+      { chinese: "说", chineseTraditional: "說", pinyin: "shuō", vuk: "šuo", english: "tells / speaks", serbian: "govori", emoji: "🗣️", category: "verb" },
+      { chinese: "真话", chineseTraditional: "真話", pinyin: "zhēnhuà", vuk: "džen-hua", english: "truth", serbian: "istinu", emoji: "💡", category: "noun" },
+      { chinese: "的", chineseTraditional: "的", pinyin: "de", vuk: "de", english: "who / that", serbian: "koji", emoji: "🔗", category: "particle" },
+      { chinese: "人", chineseTraditional: "人", pinyin: "rén", vuk: "žen", english: "person", serbian: "čovek", emoji: "👤", category: "noun" },
+      { chinese: "更", chineseTraditional: "更", pinyin: "gèng", vuk: "geng", english: "more", serbian: "više", emoji: "📈", category: "adverb" },
+      { chinese: "招人厌烦", chineseTraditional: "招人厭煩", pinyin: "zhāo rén yànfán", vuk: "džao žen jen-fan", english: "hated", serbian: "omražen", emoji: "⚡", category: "adjective" }
+    ],
+    grammarNote: "Filozofski komparativ 'Méiyǒu rén bǐ...' (Niko nije... u poređenju sa...)."
+  },
+  "niko nije vise omrazen od onoga koji govori istinu": {
+    chinese: "没有人比说真话的人更招人厌烦。",
+    chineseTraditional: "沒有人比說真話的人更招人厭煩。",
+    pinyin: "Méiyǒu rén bǐ shuō zhēnhuà de rén gèng zhāo rén yànfán.",
+    vuk: "Mej-jou žen bi šuo džen-hua de žen geng džao žen jen-fan.",
+    serbian: "Niko nije više omražen od onoga koji govori istinu.",
+    emojis: ["⚖️", "🗣️", "⚡", "💡"],
+    words: [
+      { chinese: "没有人", chineseTraditional: "沒有人", pinyin: "méiyǒu rén", vuk: "mej-jou žen", english: "no one", serbian: "niko", emoji: "👤", category: "pronoun" },
+      { chinese: "比", chineseTraditional: "比", pinyin: "bǐ", vuk: "bi", english: "than", serbian: "od", emoji: "⚖️", category: "particle" },
+      { chinese: "说", chineseTraditional: "說", pinyin: "shuō", vuk: "šuo", english: "speaks", serbian: "govori", emoji: "🗣️", category: "verb" },
+      { chinese: "真话", chineseTraditional: "真話", pinyin: "zhēnhuà", vuk: "džen-hua", english: "truth", serbian: "istinu", emoji: "💡", category: "noun" },
+      { chinese: "的", chineseTraditional: "的", pinyin: "de", vuk: "de", english: "that", serbian: "koji", emoji: "🔗", category: "particle" },
+      { chinese: "人", chineseTraditional: "人", pinyin: "rén", vuk: "žen", english: "person", serbian: "čovek", emoji: "👤", category: "noun" },
+      { chinese: "更", chineseTraditional: "更", pinyin: "gèng", vuk: "geng", english: "more", serbian: "više", emoji: "📈", category: "adverb" },
+      { chinese: "招人厌烦", chineseTraditional: "招人厭煩", pinyin: "zhāo rén yànfán", vuk: "džao žen jen-fan", english: "hated", serbian: "omražen", emoji: "⚡", category: "adjective" }
+    ],
+    grammarNote: "Platonova mudrost o istini i osudi u društvu."
   }
 };
 
@@ -168,6 +225,11 @@ export const CHINESE_DICT: Record<string, {
   everyone: { zh: "大家", trad: "大家", pin: "dàjiā", vuk: "da-đja", srb: "svi / svako", en: "everyone", emoji: "👨‍👩‍👧‍👦", cat: "pronoun" },
   everything: { zh: "一切", trad: "一切", pin: "yīqiè", vuk: "ji-ćie", srb: "sve", en: "everything", emoji: "🌐", cat: "pronoun" },
   someone: { zh: "有人", trad: "有人", pin: "yǒurén", vuk: "jou-žen", srb: "neko", en: "someone", emoji: "👤", cat: "pronoun" },
+  nobody: { zh: "没有人", trad: "沒有人", pin: "méiyǒu rén", vuk: "mej-jou žen", srb: "niko", en: "nobody / no one", emoji: "👤", cat: "pronoun" },
+  none: { zh: "没有", trad: "沒有", pin: "méiyǒu", vuk: "mej-jou", srb: "nijedan / niko", en: "none", emoji: "❌", cat: "pronoun" },
+  nothing: { zh: "什么都没有", trad: "什麼都沒有", pin: "shénme dōu méiyǒu", vuk: "šen-me dou mej-jou", srb: "ništa", en: "nothing", emoji: "⭕", cat: "pronoun" },
+  niko: { zh: "没有人", trad: "沒有人", pin: "méiyǒu rén", vuk: "mej-jou žen", srb: "niko", en: "no one", emoji: "👤", cat: "pronoun" },
+  nista: { zh: "什么都没有", trad: "什麼都沒有", pin: "shénme dōu méiyǒu", vuk: "šen-me dou mej-jou", srb: "ništa", en: "nothing", emoji: "⭕", cat: "pronoun" },
 
   // --- SERBIAN/CROATIAN PRONOUNS ---
   ja: { zh: "我", trad: "我", pin: "wǒ", vuk: "vo", srb: "ja", en: "I", emoji: "👤", cat: "pronoun" },
@@ -326,7 +388,15 @@ export const CHINESE_DICT: Record<string, {
   speaks: { zh: "说", trad: "說", pin: "shuō", vuk: "šuo", srb: "govori", en: "speaks", emoji: "🗣️", cat: "verb" },
   say: { zh: "说", trad: "說", pin: "shuō", vuk: "šuo", srb: "reći", en: "say", emoji: "💬", cat: "verb" },
   says: { zh: "说", trad: "說", pin: "shuō", vuk: "šuo", srb: "kaže", en: "says", emoji: "💬", cat: "verb" },
+  tell: { zh: "说", trad: "說", pin: "shuō", vuk: "šuo", srb: "govoriti / reći", en: "tell", emoji: "🗣️", cat: "verb" },
+  tells: { zh: "说", trad: "說", pin: "shuō", vuk: "šuo", srb: "govori / priča", en: "tells", emoji: "🗣️", cat: "verb" },
   talk: { zh: "谈", trad: "談", pin: "tán", vuk: "tan", srb: "razgovarati", en: "talk", emoji: "💬", cat: "verb" },
+  hate: { zh: "讨厌", trad: "討厭", pin: "tǎoyàn", vuk: "tao-jen", srb: "mrzeti / ne voleti", en: "hate", emoji: "😤", cat: "verb" },
+  hates: { zh: "讨厌", trad: "討厭", pin: "tǎoyàn", vuk: "tao-jen", srb: "mrzi", en: "hates", emoji: "😤", cat: "verb" },
+  hated: { zh: "被讨厌", trad: "被討厭", pin: "bèi tǎoyàn", vuk: "bej tao-jen", srb: "omražen / nevoljen", en: "hated", emoji: "😤", cat: "adjective" },
+  than: { zh: "比", trad: "比", pin: "bǐ", vuk: "bi", srb: "nego / od", en: "than", emoji: "⚖️", cat: "particle" },
+  omrazen: { zh: "被讨厌", trad: "被討厭", pin: "bèi tǎoyàn", vuk: "bej tao-jen", srb: "omražen", en: "hated", emoji: "😤", cat: "adjective" },
+  omrazeniji: { zh: "更被讨厌", trad: "更被討厭", pin: "gèng bèi tǎoyàn", vuk: "geng bej tao-jen", srb: "omraženiji", en: "more hated", emoji: "😤", cat: "adjective" },
   govorim: { zh: "说", trad: "說", pin: "shuō", vuk: "šuo", srb: "govorim", en: "I speak", emoji: "🗣️", cat: "verb" },
   govori: { zh: "说", trad: "說", pin: "shuō", vuk: "šuo", srb: "govori", en: "speaks", emoji: "🗣️", cat: "verb" },
   govoriti: { zh: "说", trad: "說", pin: "shuō", vuk: "šuo", srb: "govoriti", en: "to speak", emoji: "🗣️", cat: "verb" },
@@ -720,7 +790,8 @@ export const CHINESE_DICT: Record<string, {
   river: { zh: "河", trad: "河", pin: "hé", vuk: "he", srb: "reka", en: "river", emoji: "🌊", cat: "noun" },
   reka: { zh: "河", trad: "河", pin: "hé", vuk: "he", srb: "reka", en: "river", emoji: "🌊", cat: "noun" },
   sea: { zh: "海", trad: "海", pin: "hǎi", vuk: "haj", srb: "more", en: "sea", emoji: "🌊", cat: "noun" },
-  more: { zh: "海", trad: "海", pin: "hǎi", vuk: "haj", srb: "more", en: "sea", emoji: "🌊", cat: "noun" },
+  more_sea: { zh: "海", trad: "海", pin: "hǎi", vuk: "haj", srb: "more (okean)", en: "sea", emoji: "🌊", cat: "noun" },
+  more: { zh: "更", trad: "更", pin: "gèng", vuk: "geng", srb: "više / još", en: "more", emoji: "📈", cat: "adverb" },
   tree: { zh: "树", trad: "樹", pin: "shù", vuk: "šu", srb: "drvo", en: "tree", emoji: "🌳", cat: "noun" },
   drvo: { zh: "树", trad: "樹", pin: "shù", vuk: "šu", srb: "drvo", en: "tree", emoji: "🌳", cat: "noun" },
   bamboo: { zh: "竹", trad: "竹", pin: "zhú", vuk: "džu", srb: "bambus", en: "bamboo", emoji: "🎋", cat: "noun" },

@@ -418,6 +418,7 @@ async function startServer() {
               temperature: config?.temperature,
               topP: config?.topP,
               topK: config?.topK,
+              maxOutputTokens: config?.maxOutputTokens || 4096,
               responseMimeType: config?.responseMimeType,
               responseSchema: config?.responseSchema
             }
@@ -443,7 +444,7 @@ async function startServer() {
           console.log(`[WiseFit AI] Attempting Claude: ${modelName}`);
           const msg = await anthropic.messages.create({
             model: modelName,
-            max_tokens: config?.maxOutputTokens || 1024,
+            max_tokens: config?.maxOutputTokens || 4096,
             system: systemInstruction,
             messages: [{ role: "user", content: prompt }],
             temperature: config?.temperature || 0.7,
@@ -559,7 +560,7 @@ async function startServer() {
           console.log(`[AI] Attempting ClaudeMessages(${modelName})`);
           const msg = await anthropic.messages.create({
             model: modelName,
-            max_tokens: config?.maxOutputTokens || 1024,
+            max_tokens: config?.maxOutputTokens || 4096,
             system: systemInstruction,
             messages: claudeMessages,
             temperature: config?.temperature || 0.7,
@@ -968,19 +969,30 @@ app.get("/api/ai/diagnostics", async (req, res) => {
   // --- HEBREW AI CONFIGURATOR & TRANSLATOR WITH EMOJIS ---
   app.post("/api/ai/hebrew-configurator", async (req, res) => {
     try {
-      const { sentence, style } = req.body;
+      const { sentence, style, engine = 'auto' } = req.body;
       if (!sentence || typeof sentence !== "string" || !sentence.trim()) {
         return res.status(400).json({ error: "Please provide an English sentence to configure and translate." });
       }
 
       const cleanInput = sentence.trim();
-      console.log(`[Hebrew AI Configurator] Translating & configuring: "${cleanInput}"`);
+      console.log(`[Hebrew AI Configurator] Translating & configuring: "${cleanInput}" with engine: ${engine}`);
+
+      // If user selected instant local dictionary, return immediately without network latency
+      if (engine === 'offline') {
+        const fallbackResult = buildFallbackHebrewTranslation(cleanInput);
+        return res.json({
+          success: true,
+          source: "offline-dictionary",
+          model: "local-lexicon",
+          data: fallbackResult
+        });
+      }
 
       const prompt = `You are an expert Hebrew linguist, Hebrew language educator, and translator.
-Translate the following English sentence into Hebrew with full vowel points (Nikud) for language learners, and provide rich metadata.
+Translate the following English or Serbian sentence into Hebrew with full vowel points (Nikud) for language learners, and provide rich metadata.
 Crucially: append 2 to 4 delightful, contextually relevant emojis to the translation answer as requested by the user.
 
-English Input: "${cleanInput}"
+Input Sentence: "${cleanInput}"
 Style: ${style || "conversational & thoughtful"}
 
 Requirements:
@@ -990,7 +1002,8 @@ Requirements:
 4. Provide 'vukPhonetic' (phonetic reading tailored for Serbian/Croatian speakers using Vuk Karadžić Latin, e.g. "Šalom ve-ahava hem koah ha-hajim").
 5. Provide 'serbian' (accurate Serbian/Croatian translation of the sentence).
 6. Provide 'emojis' (an array of 2 to 4 emojis that best represent the sentence concepts).
-7. Provide 'words' array: breaking down each Hebrew word in the sentence:
+7. CRITICAL REQUIREMENT FOR 'words' ARRAY:
+   Every single word in the Hebrew sentence MUST be broken down in the 'words' array in exact sequential order:
    - 'hebrew': Hebrew with Nikud
    - 'hebrewClean': Hebrew without Nikud
    - 'transliteration': Latin pronunciation
@@ -1028,20 +1041,30 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
 
       const config = {
         temperature: 0.3,
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        maxOutputTokens: 4096,
+        preferredEngine: engine === 'gemini' ? 'gemini' : engine === 'claude' ? 'claude' : 'auto'
       };
 
       let resultText = "";
+      let usedSource: "claude" | "gemini" | "ai" = "ai";
+      let usedModel = "";
       try {
         const result = await generateWithFallback(prompt, config);
         resultText = result.text() || "";
+        usedSource = (result as any)?.engine || "ai";
+        usedModel = (result as any)?.model || "";
       } catch (err: any) {
         console.warn("[Hebrew AI Configurator] Primary AI call warning:", err?.message);
       }
 
       // If AI succeeded and returned valid JSON
       if (resultText) {
-        let cleaned = resultText.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+        let cleaned = resultText.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          cleaned = jsonMatch[0];
+        }
         try {
           const parsed = JSON.parse(cleaned);
           if (parsed && (parsed.hebrew || parsed.hebrewWithEmojis)) {
@@ -1052,7 +1075,8 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
             }
             return res.json({
               success: true,
-              source: "gemini",
+              source: usedSource,
+              model: usedModel,
               data: parsed
             });
           }
@@ -1067,6 +1091,7 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
       return res.json({
         success: true,
         source: "offline-dictionary-fallback",
+        model: "local-lexicon",
         data: fallbackResult
       });
 
@@ -1082,6 +1107,63 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
     
     // Curated intelligent phrase mappings
     const presets: Record<string, any> = {
+      "no one is more hated than the one that tells the truth": {
+        hebrew: "אֵין אָדָם שָׂנוּא יוֹתֵר מִמִּי שֶׁדּוֹבֵר אֶת הָאֱמֶת.",
+        hebrewClean: "אין אדם שנוא יותר ממי שדובר את האמת.",
+        transliteration: "Ein adam sanu yoter mi-mi she-dover et ha-emet.",
+        vuk: "Ejn adam sanu joter mi-mi še-dover et ha-emet.",
+        serbian: "Niko nije više omražen od onoga koji govori istinu.",
+        emojis: ["⚖️", "🗣️", "⚡", "💡"],
+        words: [
+          { hebrew: "אֵין", hebrewClean: "אין", transliteration: "ein", vuk: "ejn", english: "no / there is no", serbian: "nema / niko", emoji: "❌", category: "particle" },
+          { hebrew: "אָדָם", hebrewClean: "אדם", transliteration: "adam", vuk: "adam", english: "person / one", serbian: "čovek / onaj", emoji: "👤", category: "noun" },
+          { hebrew: "שָׂנוּא", hebrewClean: "שנוא", transliteration: "sanu", vuk: "sanu", english: "hated", serbian: "omražen", emoji: "😤", category: "adjective" },
+          { hebrew: "יוֹתֵר", hebrewClean: "יותר", transliteration: "yoter", vuk: "joter", english: "more", serbian: "više", emoji: "📈", category: "adverb" },
+          { hebrew: "מִמִּי", hebrewClean: "ממי", transliteration: "mi-mi", vuk: "mi-mi", english: "than who", serbian: "od onoga", emoji: "⚖️", category: "preposition" },
+          { hebrew: "שֶׁדּוֹבֵר", hebrewClean: "שדובר", transliteration: "she-dover", vuk: "še-dover", english: "that tells / speaks", serbian: "koji govori", emoji: "🗣️", category: "verb" },
+          { hebrew: "אֶת", hebrewClean: "את", transliteration: "et", vuk: "et", english: "(marker)", serbian: "(akuzativ)", emoji: "🔗", category: "particle" },
+          { hebrew: "הָאֱמֶת", hebrewClean: "האמת", transliteration: "ha-emet", vuk: "ha-emet", english: "the truth", serbian: "istinu", emoji: "💡", category: "noun" }
+        ],
+        grammarNote: "Platonova večna mudrost: 'Ein adam sanu yoter...' koristi komparativ 'yoter' (יוֹתֵר) i veznik poređenja 'mi-' (מִ-)."
+      },
+      "no one is more hated than the one who speaks the truth": {
+        hebrew: "אֵין אָדָם שָׂנוּא יוֹתֵר מִמִּי שֶׁדּוֹבֵר אֶת הָאֱמֶת.",
+        hebrewClean: "אין אדם שנוא יותר ממי שדובר את האמת.",
+        transliteration: "Ein adam sanu yoter mi-mi she-dover et ha-emet.",
+        vuk: "Ejn adam sanu joter mi-mi še-dover et ha-emet.",
+        serbian: "Niko nije više omražen od onoga koji govori istinu.",
+        emojis: ["⚖️", "🗣️", "⚡", "💡"],
+        words: [
+          { hebrew: "אֵין", hebrewClean: "אין", transliteration: "ein", vuk: "ejn", english: "no", serbian: "nema / niko", emoji: "❌", category: "particle" },
+          { hebrew: "אָדָם", hebrewClean: "אדם", transliteration: "adam", vuk: "adam", english: "person", serbian: "čovek", emoji: "👤", category: "noun" },
+          { hebrew: "שָׂנוּא", hebrewClean: "שנוא", transliteration: "sanu", vuk: "sanu", english: "hated", serbian: "omražen", emoji: "😤", category: "adjective" },
+          { hebrew: "יוֹתֵר", hebrewClean: "יותר", transliteration: "yoter", vuk: "joter", english: "more", serbian: "više", emoji: "📈", category: "adverb" },
+          { hebrew: "מִמִּי", hebrewClean: "ממי", transliteration: "mi-mi", vuk: "mi-mi", english: "than who", serbian: "od onoga", emoji: "⚖️", category: "preposition" },
+          { hebrew: "שֶׁדּוֹבֵר", hebrewClean: "שדובר", transliteration: "she-dover", vuk: "še-dover", english: "who speaks", serbian: "koji govori", emoji: "🗣️", category: "verb" },
+          { hebrew: "אֶת", hebrewClean: "את", transliteration: "et", vuk: "et", english: "(marker)", serbian: "(akuzativ)", emoji: "🔗", category: "particle" },
+          { hebrew: "הָאֱמֶת", hebrewClean: "האמת", transliteration: "ha-emet", vuk: "ha-emet", english: "the truth", serbian: "istinu", emoji: "💡", category: "noun" }
+        ],
+        grammarNote: "Platonova večna mudrost o istini."
+      },
+      "niko nije vise omrazen od onoga koji govori istinu": {
+        hebrew: "אֵין אָדָם שָׂנוּא יוֹתֵר מִמִּי שֶׁדּוֹבֵר אֶת הָאֱמֶת.",
+        hebrewClean: "אין אדם שנוא יותר ממי שדובר את האמת.",
+        transliteration: "Ein adam sanu yoter mi-mi she-dover et ha-emet.",
+        vuk: "Ejn adam sanu joter mi-mi še-dover et ha-emet.",
+        serbian: "Niko nije više omražen od onoga koji govori istinu.",
+        emojis: ["⚖️", "🗣️", "⚡", "💡"],
+        words: [
+          { hebrew: "אֵין", hebrewClean: "אין", transliteration: "ein", vuk: "ejn", english: "no", serbian: "nema / niko", emoji: "❌", category: "particle" },
+          { hebrew: "אָדָם", hebrewClean: "אדם", transliteration: "adam", vuk: "adam", english: "person", serbian: "čovek", emoji: "👤", category: "noun" },
+          { hebrew: "שָׂנוּא", hebrewClean: "שנוא", transliteration: "sanu", vuk: "sanu", english: "hated", serbian: "omražen", emoji: "😤", category: "adjective" },
+          { hebrew: "יוֹתֵר", hebrewClean: "יותר", transliteration: "yoter", vuk: "joter", english: "more", serbian: "više", emoji: "📈", category: "adverb" },
+          { hebrew: "מִמִּי", hebrewClean: "ממי", transliteration: "mi-mi", vuk: "mi-mi", english: "than who", serbian: "od onoga", emoji: "⚖️", category: "preposition" },
+          { hebrew: "שֶׁדּוֹבֵר", hebrewClean: "שדובר", transliteration: "she-dover", vuk: "še-dover", english: "speaks", serbian: "koji govori", emoji: "🗣️", category: "verb" },
+          { hebrew: "אֶת", hebrewClean: "את", transliteration: "et", vuk: "et", english: "(marker)", serbian: "(akuzativ)", emoji: "🔗", category: "particle" },
+          { hebrew: "הָאֱמֶת", hebrewClean: "האמת", transliteration: "ha-emet", vuk: "ha-emet", english: "truth", serbian: "istinu", emoji: "💡", category: "noun" }
+        ],
+        grammarNote: "Filozofski uvid u prirodu istine i ljudske reakcije."
+      },
       "peace and wisdom": {
         hebrew: "שָׁלוֹם וְחָכְמָה",
         hebrewClean: "שלום וחכמה",
@@ -1346,20 +1428,61 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
 
     // Default intelligent word-level translator
     const dict: Record<string, { he: string; clean: string; trans: string; vuk: string; srb: string; emoji: string; cat: string }> = {
+      // Pronouns & Modifiers
       i: { he: "אֲנִי", clean: "אני", trans: "ani", vuk: "ani", srb: "ja", emoji: "👤", cat: "pronoun" },
       you: { he: "אַתָּה", clean: "אתה", trans: "ata", vuk: "ata", srb: "ti", emoji: "👉", cat: "pronoun" },
+      he: { he: "הוּא", clean: "הוא", trans: "hu", vuk: "hu", srb: "on", emoji: "👨", cat: "pronoun" },
+      she: { he: "הִיא", clean: "היא", trans: "hi", vuk: "hi", srb: "ona", emoji: "👩", cat: "pronoun" },
       we: { he: "אֲנַחְנוּ", clean: "אנחנו", trans: "anachnu", vuk: "anahnu", srb: "mi", emoji: "👥", cat: "pronoun" },
+      they: { he: "הֵם", clean: "הם", trans: "hem", vuk: "hem", srb: "oni", emoji: "👥", cat: "pronoun" },
+      no: { he: "לֹא", clean: "לא", trans: "lo", vuk: "lo", srb: "ne", emoji: "❌", cat: "particle" },
+      not: { he: "לֹא", clean: "לא", trans: "lo", vuk: "lo", srb: "ne", emoji: "❌", cat: "particle" },
+      one: { he: "אֶחָד", clean: "אחד", trans: "echad", vuk: "ehad", srb: "jedan / onaj", emoji: "1️⃣", cat: "pronoun" },
+      nobody: { he: "אַף אֶחָד", clean: "אף אחד", trans: "af echad", vuk: "af ehad", srb: "niko", emoji: "👤", cat: "pronoun" },
+      niko: { he: "אַף אֶחָד", clean: "אף אחד", trans: "af echad", vuk: "af ehad", srb: "niko", emoji: "👤", cat: "pronoun" },
+      someone: { he: "מִישֶׁהוּ", clean: "מישהו", trans: "mishehu", vuk: "mišehu", srb: "neko", emoji: "👤", cat: "pronoun" },
+      everyone: { he: "כֻּלָּם", clean: "כולם", trans: "kulam", vuk: "kulam", srb: "svi", emoji: "👥", cat: "pronoun" },
+      all: { he: "כָּל", clean: "כל", trans: "kol", vuk: "kol", srb: "sve / svaki", emoji: "🌐", cat: "adverb" },
+      more: { he: "יוֹתֵר", clean: "יותר", trans: "yoter", vuk: "joter", srb: "više", emoji: "📈", cat: "adverb" },
+      vise: { he: "יוֹתֵר", clean: "יותר", trans: "yoter", vuk: "joter", srb: "više", emoji: "📈", cat: "adverb" },
+      than: { he: "מִ-", clean: "מ", trans: "mi-", vuk: "mi-", srb: "od / nego", emoji: "⚖️", cat: "preposition" },
+      that: { he: "שֶׁ-", clean: "ש", trans: "she-", vuk: "še-", srb: "koji / da", emoji: "🔗", cat: "particle" },
+      who: { he: "מִי", clean: "מי", trans: "mi", vuk: "mi", srb: "ko / koji", emoji: "❓", cat: "pronoun" },
+      the: { he: "הַ-", clean: "ה", trans: "ha-", vuk: "ha-", srb: "(član)", emoji: "📌", cat: "particle" },
+      and: { he: "וְ-", clean: "ו", trans: "ve-", vuk: "ve-", srb: "i", emoji: "🔗", cat: "particle" },
+      is: { he: "הוּא", clean: "הוא", trans: "hu", vuk: "hu", srb: "jeste / je", emoji: "⚡", cat: "verb" },
+      are: { he: "הֵם", clean: "הם", trans: "hem", vuk: "hem", srb: "su", emoji: "⚡", cat: "verb" },
+
+      // Verbs
       love: { he: "אוֹהֵב", clean: "אוהב", trans: "ohev", vuk: "ohev", srb: "volim", emoji: "❤️", cat: "verb" },
       want: { he: "רוֹצֶה", clean: "רוצה", trans: "rotze", vuk: "roce", srb: "želim", emoji: "🎯", cat: "verb" },
       think: { he: "חוֹשֵׁב", clean: "חושב", trans: "choshev", vuk: "hošev", srb: "mislim", emoji: "🤔", cat: "verb" },
       know: { he: "יוֹדֵעַ", clean: "יודע", trans: "yode'a", vuk: "jodea", srb: "znam", emoji: "💡", cat: "verb" },
       see: { he: "רוֹאֶה", clean: "רואה", trans: "ro'eh", vuk: "roe", srb: "vidim", emoji: "👀", cat: "verb" },
+      tell: { he: "אוֹמֵר", clean: "אומר", trans: "omer", vuk: "omer", srb: "kaže", emoji: "🗣️", cat: "verb" },
+      tells: { he: "מַגִּיד", clean: "מגיד", trans: "magid", vuk: "magid", srb: "govori / priča", emoji: "🗣️", cat: "verb" },
+      speak: { he: "לְדַבֵּר", clean: "לדבר", trans: "ledaber", vuk: "ledaber", srb: "govoriti", emoji: "🗣️", cat: "verb" },
+      speaks: { he: "מְדַבֵּר", clean: "מדבר", trans: "medaber", vuk: "medaber", srb: "govori", emoji: "🗣️", cat: "verb" },
+      hate: { he: "שׂוֹנֵא", clean: "שונא", trans: "sone", vuk: "sone", srb: "mrzi", emoji: "😤", cat: "verb" },
+      hates: { he: "שׂוֹנֵא", clean: "שונא", trans: "sone", vuk: "sone", srb: "mrzi", emoji: "😤", cat: "verb" },
+      hated: { he: "שָׂנוּא", clean: "שנוא", trans: "sanu", vuk: "sanu", srb: "omražen", emoji: "😤", cat: "adjective" },
+
+      // Nouns & Virtues
       peace: { he: "שָׁלוֹם", clean: "שלום", trans: "shalom", vuk: "šalom", srb: "mir", emoji: "🕊️", cat: "noun" },
       wisdom: { he: "חָכְמָה", clean: "חכמה", trans: "chochmah", vuk: "hohma", srb: "mudrost", emoji: "🧠", cat: "noun" },
       truth: { he: "אֱמֶת", clean: "אמת", trans: "emet", vuk: "emet", srb: "istina", emoji: "⚖️", cat: "noun" },
+      istina: { he: "אֱמֶת", clean: "אמת", trans: "emet", vuk: "emet", srb: "istina", emoji: "⚖️", cat: "noun" },
       life: { he: "חַיִּים", clean: "חיים", trans: "chayim", vuk: "hajim", srb: "život", emoji: "🌿", cat: "noun" },
       light: { he: "אוֹר", clean: "אור", trans: "or", vuk: "or", srb: "svetlost", emoji: "🕯️", cat: "noun" },
       water: { he: "מַיִם", clean: "מים", trans: "mayim", vuk: "majim", srb: "voda", emoji: "💧", cat: "noun" },
+      wind: { he: "רוּחַ", clean: "רוח", trans: "ruach", vuk: "ruah", srb: "vetar", emoji: "💨", cat: "noun" },
+      winds: { he: "רוּחוֹת", clean: "רוחות", trans: "ruchot", vuk: "ruhot", srb: "vetrovi", emoji: "💨", cat: "noun" },
+      vetar: { he: "רוּחַ", clean: "רוח", trans: "ruach", vuk: "ruah", srb: "vetar", emoji: "💨", cat: "noun" },
+      sun: { he: "שֶׁמֶשׁ", clean: "שמש", trans: "shemesh", vuk: "šemeš", srb: "sunce", emoji: "☀️", cat: "noun" },
+      moon: { he: "יָרֵחַ", clean: "ירח", trans: "yare'ach", vuk: "jareah", srb: "mesec", emoji: "🌙", cat: "noun" },
+      earth: { he: "אֶרֶץ", clean: "ארץ", trans: "eretz", vuk: "erec", srb: "zemlja", emoji: "🌍", cat: "noun" },
+      fire: { he: "אֵשׁ", clean: "אש", trans: "esh", vuk: "eš", srb: "vatra", emoji: "🔥", cat: "noun" },
+      sea: { he: "יָם", clean: "ים", trans: "yam", vuk: "jam", srb: "more", emoji: "🌊", cat: "noun" },
       friend: { he: "חָבֵר", clean: "חבר", trans: "chaver", vuk: "haver", srb: "prijatelj", emoji: "🤝", cat: "noun" },
       heart: { he: "לֵב", clean: "לב", trans: "lev", vuk: "lev", srb: "srce", emoji: "💖", cat: "noun" },
       strength: { he: "כֹּחַ", clean: "כוח", trans: "koach", vuk: "koah", srb: "snaga", emoji: "💪", cat: "noun" },
@@ -1388,6 +1511,18 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
           category: item.cat
         });
         if (!emojisFound.includes(item.emoji)) emojisFound.push(item.emoji);
+      } else {
+        // Never drop unmatched words - preserve them so sentence is complete
+        matchedWords.push({
+          hebrew: w,
+          hebrewClean: w,
+          transliteration: w,
+          vuk: w,
+          english: w,
+          serbian: w,
+          emoji: "✨",
+          category: "word"
+        });
       }
     }
 
@@ -1500,6 +1635,7 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
       const config = {
         temperature: 0.3,
         responseMimeType: "application/json",
+        maxOutputTokens: 4096,
         preferredEngine: engine === 'gemini' ? 'gemini' : engine === 'claude' ? 'claude' : 'auto'
       };
 

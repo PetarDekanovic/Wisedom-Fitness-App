@@ -916,6 +916,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   const [aiTranslationResult, setAiTranslationResult] = useState<AiConfiguredChineseResult | null>(null);
   const [aiTranslationError, setAiTranslationError] = useState<string | null>(null);
   const [aiCopiedResult, setAiCopiedResult] = useState(false);
+  const [copiedWordIdx, setCopiedWordIdx] = useState<number | null>(null);
   const [selectedSolidarityCategory, setSelectedSolidarityCategory] = useState<'all' | 'solidarity' | 'strength' | 'peace' | 'short'>('all');
 
   // Custom User Saved Words from AI Configurator
@@ -1077,6 +1078,13 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     setSavedCustomWords(updated);
     localStorage.setItem('wisefit_chinese_custom_words', JSON.stringify(updated));
     alert(`Reč "${word.chinese}" (${word.serbian}) je sačuvana u rečnik! 🌟`);
+  };
+
+  const handleCopySingleWord = (word: AiConfigWordItemChinese, idx: number) => {
+    const textToCopy = `${word.chinese} [${word.pinyin}]${word.vuk ? ` (${word.vuk})` : ''} — ${word.serbian} / ${word.english} ${word.emoji || ''}`.trim();
+    navigator.clipboard.writeText(textToCopy);
+    setCopiedWordIdx(idx);
+    setTimeout(() => setCopiedWordIdx(null), 2000);
   };
 
   const handleDndAddWord = (item: DndWordItem) => {
@@ -2408,6 +2416,19 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                                       title="Izgovori reč"
                                     >
                                       <Volume2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopySingleWord(w, idx)}
+                                      className={cn(
+                                        "p-1.5 rounded-lg transition-all",
+                                        copiedWordIdx === idx
+                                          ? "text-emerald-300 bg-emerald-500/20"
+                                          : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                      )}
+                                      title="Kopiraj ovu reč u međuspremnik (clipboard)"
+                                    >
+                                      {copiedWordIdx === idx ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
                                     </button>
                                     <button
                                       type="button"
