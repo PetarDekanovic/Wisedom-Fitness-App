@@ -34,7 +34,6 @@ import {
 import { cn } from '../lib/utils';
 import type { HebrewVocabItem } from '../data/hebrewVocabData';
 import { getHebrewQuoteForItem } from '../data/hebrewVocabData';
-import { WordVisualBadge } from '../lib/wordVisualResolver';
 
 export interface HebrewFlashcardsGameProps {
   vocabList: HebrewVocabItem[];
@@ -1202,17 +1201,12 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                       )}
                     </div>
 
-                    {/* Central Hebrew Word with WordVisualBadge */}
+                    {/* Central Hebrew Word with Single Unified Visual Emoji */}
                     <div className="my-auto space-y-4">
                       <div className="flex items-center justify-center mb-2">
-                        <WordVisualBadge
-                          char={currentCard.char}
-                          english={currentCard.english}
-                          translation={currentCard.translation}
-                          category={currentCard.category}
-                          emoji={currentCard.emoji}
-                          size={46}
-                        />
+                        <span className="text-5xl animate-bounce select-none filter drop-shadow-sm" role="img" aria-label={currentCard.translation}>
+                          {currentCard.emoji || '✨'}
+                        </span>
                       </div>
 
                       <h2 
@@ -1306,14 +1300,9 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                     {/* Meaning Content */}
                     <div className="my-auto space-y-3 w-full">
                       <div className="flex items-center justify-center mb-1">
-                        <WordVisualBadge
-                          char={currentCard.char}
-                          english={currentCard.english}
-                          translation={currentCard.translation}
-                          category={currentCard.category}
-                          emoji={currentCard.emoji}
-                          size={40}
-                        />
+                        <span className="text-4xl select-none filter drop-shadow-sm" role="img" aria-label={currentCard.translation}>
+                          {currentCard.emoji || '✨'}
+                        </span>
                       </div>
                       
                       <h3 className="text-2xl sm:text-3xl font-black text-white">

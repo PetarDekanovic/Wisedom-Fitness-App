@@ -43,7 +43,6 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { HEBREW_VOCAB_EXPANDED, HebrewVocabItem, getHebrewQuoteForItem } from '../data/hebrewVocabData';
 import { HebrewFlashcardsGame } from './HebrewFlashcardsGame';
-import { WordVisualBadge } from '../lib/wordVisualResolver';
 
 export type { HebrewVocabItem };
 
@@ -1893,15 +1892,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                     <div className="space-y-3.5">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <WordVisualBadge
-                            char={item.char}
-                            english={item.english}
-                            translation={item.translation}
-                            category={item.category}
-                            emoji={item.emoji}
-                            size={28}
-                            showPhotoOption={true}
-                          />
+                          <span className="text-3xl filter drop-shadow-sm select-none">{item.emoji || '✨'}</span>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={cn(
                               "text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md font-mono border",
@@ -2058,17 +2049,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                     isDarkMode ? "bg-zinc-900/60 border-zinc-800 hover:border-blue-500/50" : "bg-white border-zinc-200 shadow-sm hover:border-blue-300"
                   )}
                 >
-                  <div className="my-2">
-                    <WordVisualBadge
-                      char={item.char}
-                      english={item.english}
-                      translation={item.translation}
-                      category={item.category}
-                      emoji={item.emoji}
-                      size={32}
-                      showPhotoOption={false}
-                    />
-                  </div>
+                  <span className="text-4xl my-2 filter drop-shadow-sm select-none">{item.emoji || '✨'}</span>
                   <div className="space-y-0.5 w-full">
                     <p className="text-lg font-bold text-blue-500">{item.char}</p>
                     <p className="text-[10px] font-mono font-bold text-emerald-500">"{item.vuk}"</p>

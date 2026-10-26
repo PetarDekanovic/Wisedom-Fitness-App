@@ -43,7 +43,6 @@ import {
   CartoonCardBack, 
   CartoonVictoryIllustration 
 } from './ChineseCartoonAssets';
-import { WordVisualBadge } from '../lib/wordVisualResolver';
 
 export interface ChineseFlashcardsGameProps {
   vocabList: VocabItem[];
@@ -1262,14 +1261,13 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                     {/* Central Chinese Character with Single Unified Visual Icon */}
                     <div className="my-auto space-y-3">
                       <div className="flex items-center justify-center">
-                        <WordVisualBadge
-                          char={currentCard.char}
-                          english={currentCard.english}
-                          translation={currentCard.translation}
-                          category={currentCard.category}
-                          emoji={currentCard.emoji}
-                          size={46}
-                        />
+                        {currentCard.emoji ? (
+                          <span className="text-5xl animate-bounce select-none filter drop-shadow-sm" role="img" aria-label={currentCard.translation}>
+                            {currentCard.emoji}
+                          </span>
+                        ) : (
+                          <PagodaTempleIllustration size={46} className="drop-shadow-md" />
+                        )}
                       </div>
 
                       <h2 className="text-6xl sm:text-7xl font-black tracking-wide font-sans text-white drop-shadow-md select-text">
@@ -1360,14 +1358,13 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                     {/* Meaning Content */}
                     <div className="my-auto space-y-3 w-full">
                       <div className="flex items-center justify-center mb-1">
-                        <WordVisualBadge
-                          char={currentCard.char}
-                          english={currentCard.english}
-                          translation={currentCard.translation}
-                          category={currentCard.category}
-                          emoji={currentCard.emoji}
-                          size={40}
-                        />
+                        {currentCard.emoji ? (
+                          <span className="text-4xl select-none filter drop-shadow-sm" role="img" aria-label={currentCard.translation}>
+                            {currentCard.emoji}
+                          </span>
+                        ) : (
+                          <LittleDragonMascot size={42} className="drop-shadow-md" />
+                        )}
                       </div>
                       
                       <h3 className="text-2xl sm:text-3xl font-black text-white">
