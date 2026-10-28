@@ -76,6 +76,8 @@ const getCategoryCartoonIllustration = (category?: string, size = 46) => {
   switch (category) {
     case 'basic_70':
       return <PandaScholarAvatar size={size} />;
+    case 'glagoli':
+      return <LittleDragonMascot size={size} />;
     case 'filozofija':
       return <LotusIllustration size={size} />;
     case 'svakodnevno':
@@ -209,22 +211,27 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
     return pool.length > 0 ? pool : vocabList;
   }, [vocabList, selectedCategory, filterMode, masteredIds]);
 
-  // Categories list with counts
-  const categoriesWithCounts = useMemo(() => {
+  // Category counts
+  const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const item of vocabList) {
       counts[item.category] = (counts[item.category] || 0) + 1;
     }
-    return [
-      { id: 'basic_70', label: '🌱 70 Osnovnih (Početnici)', count: counts['basic_70'] || 70 },
-      { id: 'all', label: 'Svi Karakteri', count: vocabList.length },
-      { id: 'glagoli', label: '⚡ 100 Glagola', count: counts['glagoli'] || 0 },
-      { id: 'svakodnevno', label: 'Svakodnevno & Pozdravi', count: counts['svakodnevno'] || 0 },
-      { id: 'filozofija', label: 'Tao & Mudrost', count: counts['filozofija'] || 0 },
-      { id: 'strofa_1', label: 'Strofa 1 (Osnove)', count: counts['strofa_1'] || 0 },
-      { id: 'refren', label: 'Refren & Poezija', count: counts['refren'] || 0 }
-    ];
+    return counts;
   }, [vocabList]);
+
+  // Categories list with counts
+  const categoriesWithCounts = useMemo(() => {
+    return [
+      { id: 'basic_70', label: '🌱 70 Osnovnih Karaktera', count: categoryCounts['basic_70'] || 70 },
+      { id: 'glagoli', label: '⚡ 100 Najvažnijih Glagola', count: categoryCounts['glagoli'] || 0 },
+      { id: 'all', label: '🎴 Svi Karakteri', count: vocabList.length },
+      { id: 'svakodnevno', label: '💬 Svakodnevno & Pozdravi', count: categoryCounts['svakodnevno'] || 0 },
+      { id: 'filozofija', label: '☯️ Tao & Mudrost', count: categoryCounts['filozofija'] || 0 },
+      { id: 'strofa_1', label: '📜 Strofa 1 (Osnove)', count: categoryCounts['strofa_1'] || 0 },
+      { id: 'refren', label: '🎋 Refren & Poezija', count: categoryCounts['refren'] || 0 }
+    ];
+  }, [vocabList, categoryCounts]);
 
   // Initialize or shuffle Deck (stable - keeps clean order for easy start, shuffles on request)
   const initDeck = useCallback((shouldShuffle = false) => {
@@ -949,6 +956,123 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
         </div>
       </div>
 
+      {/* FEATURED DECKS HERO SWITCHER */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <button
+          type="button"
+          onClick={() => setSelectedCategory('basic_70')}
+          className={cn(
+            "p-3 rounded-2xl border text-left transition-all relative overflow-hidden flex items-start gap-3 group",
+            selectedCategory === 'basic_70'
+              ? isGirlyMode
+                ? "bg-pink-950/60 border-pink-500 ring-2 ring-pink-500/50 shadow-lg"
+                : "bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/50 shadow-lg"
+              : isDarkMode ? "bg-zinc-900/80 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm"
+          )}
+        >
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 border",
+            selectedCategory === 'basic_70'
+              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+              : "bg-zinc-800/80 border-zinc-700 text-zinc-300"
+          )}>
+            🌱
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="font-bold text-[10px] text-emerald-400 font-mono uppercase tracking-wider">
+                1. Početni Špil
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                {categoryCounts['basic_70'] || 70} reči
+              </span>
+            </div>
+            <p className="font-serif font-black text-xs sm:text-sm text-zinc-100 group-hover:text-emerald-300 transition-colors">
+              70 Osnovnih Karaktera
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
+              Laki start: 大, 小, 人, 男, 女, 日, 月, 水...
+            </p>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSelectedCategory('glagoli')}
+          className={cn(
+            "p-3 rounded-2xl border text-left transition-all relative overflow-hidden flex items-start gap-3 group",
+            selectedCategory === 'glagoli'
+              ? isGirlyMode
+                ? "bg-pink-950/60 border-pink-500 ring-2 ring-pink-500/50 shadow-lg"
+                : "bg-red-950/60 border-red-500 ring-2 ring-red-500/50 shadow-lg"
+              : isDarkMode ? "bg-zinc-900/80 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm"
+          )}
+        >
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 border",
+            selectedCategory === 'glagoli'
+              ? "bg-red-500/20 border-red-500/40 text-red-300"
+              : "bg-zinc-800/80 border-zinc-700 text-zinc-300"
+          )}>
+            ⚡
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="font-bold text-[10px] text-red-400 font-mono uppercase tracking-wider">
+                2. Glagoli & Akcije
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-red-500/20 text-red-300 font-mono font-bold">
+                {categoryCounts['glagoli'] || 0} reči
+              </span>
+            </div>
+            <p className="font-serif font-black text-xs sm:text-sm text-zinc-100 group-hover:text-red-300 transition-colors">
+              100 Najvažnijih Glagola
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
+              Kineske akcije: 是, 有, 听, 说, 读, 写, 看, 吃...
+            </p>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSelectedCategory('all')}
+          className={cn(
+            "p-3 rounded-2xl border text-left transition-all relative overflow-hidden flex items-start gap-3 group",
+            selectedCategory === 'all'
+              ? isGirlyMode
+                ? "bg-pink-950/60 border-pink-500 ring-2 ring-pink-500/50 shadow-lg"
+                : "bg-amber-950/60 border-amber-500 ring-2 ring-amber-500/50 shadow-lg"
+              : isDarkMode ? "bg-zinc-900/80 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm"
+          )}
+        >
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 border",
+            selectedCategory === 'all'
+              ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+              : "bg-zinc-800/80 border-zinc-700 text-zinc-300"
+          )}>
+            🎴
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="font-bold text-[10px] text-amber-400 font-mono uppercase tracking-wider">
+                3. Celokupna Riznica
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-mono font-bold">
+                {vocabList.length} reči
+              </span>
+            </div>
+            <p className="font-serif font-black text-xs sm:text-sm text-zinc-100 group-hover:text-amber-300 transition-colors">
+              Svi Karakteri Zajedno
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
+              Osnove, glagoli, filozofija, strofe i fraze
+            </p>
+          </div>
+        </button>
+      </div>
+
       {/* CATEGORY & FILTER TOOLBAR */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         {/* Category Pills */}
@@ -958,7 +1082,6 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
               key={cat.id}
               onClick={() => {
                 setSelectedCategory(cat.id);
-                if (gameMode === 'cards') initDeck();
               }}
               className={cn(
                 "px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap min-w-fit",

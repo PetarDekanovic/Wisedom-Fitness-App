@@ -494,18 +494,7 @@ interface ChineseVocabViewProps {
   user: User | null;
 }
 
-const VOCAB_DATA: VocabItem[] = (() => {
-  const seen = new Set<string>();
-  const list: VocabItem[] = [];
-  for (const item of CHINESE_VOCAB_EXPANDED) {
-    const key = item.char.trim();
-    if (!seen.has(key)) {
-      seen.add(key);
-      list.push(item);
-    }
-  }
-  return list;
-})();
+const VOCAB_DATA: VocabItem[] = CHINESE_VOCAB_EXPANDED;
 
 const CONFIGURATOR_SUBJECTS = [
   // Personal Pronouns
