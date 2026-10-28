@@ -74,6 +74,8 @@ interface MatchCard {
  
 const getCategoryCartoonIllustration = (category?: string, size = 46) => {
   switch (category) {
+    case 'basic_70':
+      return <PandaScholarAvatar size={size} />;
     case 'filozofija':
       return <LotusIllustration size={size} />;
     case 'svakodnevno':
@@ -99,7 +101,7 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
 }) => {
   // Game Mode: 'cards' (3D flip deck), 'match' (Memory match pairs), 'speed' (Quick multiple choice)
   const [gameMode, setGameMode] = useState<GameMode>('cards');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('basic_70');
   const [filterMode, setFilterMode] = useState<'all' | 'unmastered' | 'mastered'>('all');
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [flipDirection, setFlipDirection] = useState<'chinese-first' | 'meaning-first'>('chinese-first');
@@ -214,17 +216,18 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
       counts[item.category] = (counts[item.category] || 0) + 1;
     }
     return [
+      { id: 'basic_70', label: '🌱 70 Osnovnih (Početnici)', count: counts['basic_70'] || 70 },
       { id: 'all', label: 'Svi Karakteri', count: vocabList.length },
+      { id: 'glagoli', label: '⚡ 100 Glagola', count: counts['glagoli'] || 0 },
       { id: 'svakodnevno', label: 'Svakodnevno & Pozdravi', count: counts['svakodnevno'] || 0 },
-      { id: 'glagoli', label: 'Glagoli & Akcije', count: counts['glagoli'] || 0 },
       { id: 'filozofija', label: 'Tao & Mudrost', count: counts['filozofija'] || 0 },
       { id: 'strofa_1', label: 'Strofa 1 (Osnove)', count: counts['strofa_1'] || 0 },
       { id: 'refren', label: 'Refren & Poezija', count: counts['refren'] || 0 }
     ];
   }, [vocabList]);
 
-  // Initialize or shuffle Deck (stable - only runs on category/filter change or explicit shuffle)
-  const initDeck = useCallback(() => {
+  // Initialize or shuffle Deck (stable - keeps clean order for easy start, shuffles on request)
+  const initDeck = useCallback((shouldShuffle = false) => {
     let pool = [...vocabList];
     if (selectedCategory !== 'all') {
       pool = pool.filter(item => item.category === selectedCategory);
@@ -235,8 +238,8 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
       pool = pool.filter(item => masteredIds.includes(item.id));
     }
     const finalPool = pool.length > 0 ? pool : vocabList;
-    const shuffled = [...finalPool].sort(() => Math.random() - 0.5);
-    setDeck(shuffled);
+    const deckCards = shouldShuffle ? [...finalPool].sort(() => Math.random() - 0.5) : [...finalPool];
+    setDeck(deckCards);
     setCurrentIndex(0);
     setIsFlipped(false);
     setIsDeckFinished(false);
@@ -244,7 +247,7 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
   }, [vocabList, selectedCategory, filterMode, masteredIds]);
 
   useEffect(() => {
-    initDeck();
+    initDeck(false);
   }, [initDeck]);
 
   // Current Card
@@ -1076,12 +1079,12 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
             </button>
 
             <button
-              onClick={initDeck}
+              onClick={() => initDeck(true)}
               className={cn(
                 "p-2 rounded-xl border text-xs font-bold transition-all",
                 isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" : "bg-white border-zinc-200 text-zinc-600"
               )}
-              title="Promešaj špil"
+              title="Promešaj špil (Random redosled)"
             >
               <Shuffle className="w-3.5 h-3.5" />
             </button>
@@ -1511,7 +1514,7 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-4 w-full max-w-md mx-auto">
                 <button
                   type="button"
-                  onClick={initDeck}
+                  onClick={() => initDeck(false)}
                   className={cn(
                     "w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 text-white shadow-xl transition-all active:scale-95 text-center",
                     isGirlyMode ? "bg-pink-600 hover:bg-pink-500" : "bg-red-600 hover:bg-red-500"

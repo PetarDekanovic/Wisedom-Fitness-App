@@ -1825,10 +1825,11 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
               <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1">
                 {[
                   { id: 'all', label: `Sve (${fullVocabList.length})` },
+                  { id: 'basic_70', label: '🌱 70 Osnovnih' },
+                  { id: 'glagoli', label: '⚡ 100 Glagola' },
                   ...(savedCustomWords.length > 0 ? [{ id: 'custom', label: `🤖 Sačuvano iz AI (${savedCustomWords.length})` }] : []),
                   { id: 'strofa_1', label: ' Strofa 1' },
                   { id: 'refren', label: ' Refren' },
-                  { id: 'glagoli', label: '⚡ 100 Glagola' },
                   { id: 'svakodnevno', label: ' Svakodnevno' },
                   { id: 'zdravlje', label: ' Zdravlje' },
                   { id: 'posao_tehnologija', label: ' Posao & Tehnologija' },
