@@ -29,7 +29,9 @@ import {
   Sliders,
   FastForward,
   Minus,
-  Plus
+  Plus,
+  Copy,
+  Share2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { VocabItem } from '../data/chineseVocabData';
@@ -117,6 +119,12 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
   const [sessionReviewed, setSessionReviewed] = useState(0);
   const [isDeckFinished, setIsDeckFinished] = useState(false);
 
+  // --- FLASHCARD SCORING, POINTS & REWARD ANIMATION STATE ---
+  const [flashcardScore, setFlashcardScore] = useState(0);
+  const [scoreAnimation, setScoreAnimation] = useState<{ id: number; text: string; points: number } | null>(null);
+  const [isSuccessGlow, setIsSuccessGlow] = useState(false);
+  const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
+
   // --- MODE 2: MEMORY MATCH GAME STATE ---
   const [matchCards, setMatchCards] = useState<MatchCard[]>([]);
   const [selectedMatchIndices, setSelectedMatchIndices] = useState<number[]>([]);
@@ -139,9 +147,6 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
   const [speedComplete, setSpeedComplete] = useState(false);
 
   // --- GAME PACING CONTROLS (MAKE WORDS SERENE, SLOW & PLAYABLE) ---
-  // 'manual': Never auto-advances, waits for player to click Next Word
-  // 'relaxed': 8.0s countdown before advancing with Pause & Skip buttons
-  // 'normal': 5.0s countdown before advancing
   const [pacingMode, setPacingMode] = useState<PacingMode>('manual');
   const [speedCountdownRemaining, setSpeedCountdownRemaining] = useState<number | null>(null);
   const [isSlideshowActive, setIsSlideshowActive] = useState(false);
@@ -160,6 +165,11 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
   useEffect(() => {
     toggleMasteredRef.current = toggleMastered;
   }, [toggleMastered]);
+
+  const masteredIdsRef = useRef(masteredIds);
+  useEffect(() => {
+    masteredIdsRef.current = masteredIds;
+  }, [masteredIds]);
 
   const loopDurationSecRef = useRef(loopDurationSec);
   useEffect(() => {
@@ -193,6 +203,47 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
   const speedCountdownIntervalRef = useRef<any>(null);
   const mismatchTimeoutRef = useRef<any>(null);
   const slideshowTimerRef = useRef<any>(null);
+
+  // Social Media Share / Copy Word Handler
+  const handleCopyCardSocial = useCallback((item: VocabItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const quote = getChineseQuoteForItem(item);
+    const textToCopy = `🇨🇳 Kineski Karakter: 【 ${item.char} 】
+• Pinyin: ${item.pinyin}
+• Vuk Izgovor: /${item.vuk}/
+• Značenje: ${item.translation} (${item.english})
+${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mudrost: "${quote.quote}" — ${quote.translation}\n` : ''}
+🧘 Naučeno na WiseFit Digital Sanctuary #WiseFit #Chinese #Hanzi #Mudrost`;
+
+    const markSuccess = () => {
+      setCopiedCardId(item.id);
+      setTimeout(() => setCopiedCardId(null), 2500);
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(textToCopy).then(markSuccess).catch(() => {
+        try {
+          const textarea = document.createElement('textarea');
+          textarea.value = textToCopy;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+          markSuccess();
+        } catch {}
+      });
+    } else {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = textToCopy;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        markSuccess();
+      } catch {}
+    }
+  }, []);
 
   // Filter vocabulary pool based on category and mastery
   const filteredPool = useMemo(() => {
@@ -233,16 +284,17 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
     ];
   }, [vocabList, categoryCounts]);
 
-  // Initialize or shuffle Deck (stable - keeps clean order for easy start, shuffles on request)
+  // Initialize or shuffle Deck (stable - does NOT reset when masteredIds changes!)
   const initDeck = useCallback((shouldShuffle = false) => {
     let pool = [...vocabList];
     if (selectedCategory !== 'all') {
       pool = pool.filter(item => item.category === selectedCategory);
     }
+    const currentMastered = masteredIdsRef.current;
     if (filterMode === 'unmastered') {
-      pool = pool.filter(item => !masteredIds.includes(item.id));
+      pool = pool.filter(item => !currentMastered.includes(item.id));
     } else if (filterMode === 'mastered') {
-      pool = pool.filter(item => masteredIds.includes(item.id));
+      pool = pool.filter(item => currentMastered.includes(item.id));
     }
     const finalPool = pool.length > 0 ? pool : vocabList;
     const deckCards = shouldShuffle ? [...finalPool].sort(() => Math.random() - 0.5) : [...finalPool];
@@ -251,8 +303,9 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
     setIsFlipped(false);
     setIsDeckFinished(false);
     setIsSlideshowActive(false);
-  }, [vocabList, selectedCategory, filterMode, masteredIds]);
+  }, [vocabList, selectedCategory, filterMode]);
 
+  // Only re-initialize deck when category, filter mode, or vocab list changes
   useEffect(() => {
     initDeck(false);
   }, [initDeck]);
@@ -276,7 +329,7 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
     }
   };
 
-  // Advance to next card
+  // Advance to next card smoothly (direct state increment, zero race conditions)
   const advanceToNextCard = useCallback(() => {
     setIsFlipped(false);
     
@@ -286,34 +339,32 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
       setLoopSecondsLeft(loopDurationSecRef.current);
     }
 
-    setDeck(prevDeck => {
-      if (prevDeck.length === 0) return prevDeck;
-      setCurrentIndex(prevIdx => {
-        if (prevIdx + 1 < prevDeck.length) {
-          const nextIdx = prevIdx + 1;
-          if (autoSpeak && prevDeck[nextIdx]) {
-            setTimeout(() => {
-              speakChineseRef.current(prevDeck[nextIdx].char, `flash-${prevDeck[nextIdx].id}`);
-            }, 400);
-          }
-          return nextIdx;
-        } else {
-          // If auto-loop is active, loop back to start seamlessly for continuous calm learning
-          if (isSlideshowActive) {
-            if (autoSpeak && prevDeck[0]) {
-              setTimeout(() => {
-                speakChineseRef.current(prevDeck[0].char, `flash-${prevDeck[0].id}`);
-              }, 400);
-            }
-            return 0;
-          } else {
-            setIsDeckFinished(true);
-            setIsSlideshowActive(false);
-            return prevIdx;
-          }
+    const currentDeck = deckRef.current;
+    if (currentDeck.length === 0) return;
+
+    setCurrentIndex(prevIdx => {
+      if (prevIdx + 1 < currentDeck.length) {
+        const nextIdx = prevIdx + 1;
+        if (autoSpeak && currentDeck[nextIdx]) {
+          setTimeout(() => {
+            speakChineseRef.current(currentDeck[nextIdx].char, `flash-${currentDeck[nextIdx].id}`);
+          }, 350);
         }
-      });
-      return prevDeck;
+        return nextIdx;
+      } else {
+        if (isSlideshowActive) {
+          if (autoSpeak && currentDeck[0]) {
+            setTimeout(() => {
+              speakChineseRef.current(currentDeck[0].char, `flash-${currentDeck[0].id}`);
+            }, 350);
+          }
+          return 0;
+        } else {
+          setIsDeckFinished(true);
+          setIsSlideshowActive(false);
+          return prevIdx;
+        }
+      }
     });
   }, [autoSpeak, isSlideshowActive]);
 
@@ -326,50 +377,86 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
       setLoopSecondsLeft(loopDurationSecRef.current);
     }
 
-    setDeck(prevDeck => {
-      if (prevDeck.length === 0) return prevDeck;
-      setCurrentIndex(prevIdx => {
-        if (prevIdx > 0) {
-          const nextIdx = prevIdx - 1;
-          if (autoSpeak && prevDeck[nextIdx]) {
-            setTimeout(() => {
-              speakChineseRef.current(prevDeck[nextIdx].char, `flash-${prevDeck[nextIdx].id}`);
-            }, 400);
-          }
-          return nextIdx;
+    const currentDeck = deckRef.current;
+    if (currentDeck.length === 0) return;
+
+    setCurrentIndex(prevIdx => {
+      if (prevIdx > 0) {
+        const nextIdx = prevIdx - 1;
+        if (autoSpeak && currentDeck[nextIdx]) {
+          setTimeout(() => {
+            speakChineseRef.current(currentDeck[nextIdx].char, `flash-${currentDeck[nextIdx].id}`);
+          }, 350);
         }
-        return prevIdx;
-      });
-      return prevDeck;
+        return nextIdx;
+      }
+      return prevIdx;
     });
   }, [autoSpeak, isSlideshowActive]);
 
-  // Mark as Mastered
+  // Mark as Mastered (Player knows the word -> Awards Points + Streak Bonus + Animation + Advances to next card)
   const handleMarkMastered = () => {
-    if (!currentCard) return;
+    const activeDeck = deckRef.current;
+    const activeIdx = currentIndexRef.current;
+    const card = activeDeck[activeIdx];
+    if (!card) return;
 
-    if (!masteredIds.includes(currentCard.id)) {
-      toggleMasteredRef.current(currentCard.id);
+    // Haptic feedback
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(40);
+      }
+    } catch {}
+
+    // 1. Mark as mastered in global state
+    if (!masteredIdsRef.current.includes(card.id)) {
+      toggleMasteredRef.current(card.id);
     }
 
+    // 2. Score & Streak System (+10 base XP + streak bonus)
     const nextStreak = streak + 1;
     setStreak(nextStreak);
     if (nextStreak > highestStreak) setHighestStreak(nextStreak);
     setSessionReviewed(prev => prev + 1);
 
+    const streakBonus = nextStreak > 1 ? Math.min(20, nextStreak * 2) : 0;
+    const earnedPoints = 10 + streakBonus;
+    setFlashcardScore(prev => prev + earnedPoints);
+
+    // 3. Floating points celebration animation
+    setScoreAnimation({
+      id: Date.now(),
+      text: streakBonus > 0 ? `+${earnedPoints} XP 🔥 (${nextStreak}x Niz!)` : `+${earnedPoints} XP ✨`,
+      points: earnedPoints
+    });
+    setTimeout(() => {
+      setScoreAnimation(null);
+    }, 1500);
+
+    // 4. Card glow animation
+    setIsSuccessGlow(true);
+    setTimeout(() => {
+      setIsSuccessGlow(false);
+    }, 450);
+
+    // 5. Advance smoothly to the NEXT card without resetting!
     advanceToNextCard();
   };
 
-  // Mark as Still Learning (re-queues card in current deck)
+  // Mark as Still Learning (Re-queues card to the end of deck so player reinforces it)
   const handleNeedReview = () => {
-    if (!currentCard) return;
+    const activeDeck = deckRef.current;
+    const activeIdx = currentIndexRef.current;
+    const card = activeDeck[activeIdx];
+    if (!card) return;
 
     setStreak(0);
     setSessionReviewed(prev => prev + 1);
 
-    // Push this card to the end of deck so it appears again
-    setDeck(prev => [...prev, currentCard]);
+    // Push this card to the end of deck so it appears again for reinforcement
+    setDeck(prev => [...prev, card]);
 
+    // Advance to next card smoothly
     advanceToNextCard();
   };
 
@@ -890,6 +977,30 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
             </button>
           </div>
 
+          {/* Points / XP Counter */}
+          <div className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-black transition-all relative",
+            flashcardScore > 0 
+              ? "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-md shadow-amber-500/10" 
+              : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-500" : "bg-zinc-100 border-zinc-200 text-zinc-500"
+          )}>
+            <Award className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>{flashcardScore} Bodova</span>
+            <AnimatePresence>
+              {scoreAnimation && (
+                <motion.span
+                  key={scoreAnimation.id}
+                  initial={{ opacity: 0, y: 5, scale: 0.8 }}
+                  animate={{ opacity: 1, y: -20, scale: 1.15 }}
+                  exit={{ opacity: 0, y: -30 }}
+                  className="absolute -top-3 right-0 px-2 py-0.5 rounded-full bg-emerald-500 text-white font-mono font-black text-[10px] shadow-lg pointer-events-none whitespace-nowrap z-30"
+                >
+                  {scoreAnimation.text}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+
           <div className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold",
             streak > 0 
@@ -1405,23 +1516,51 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                         Pinyin: <span className="text-red-400 font-bold">{currentCard.pinyin}</span> • Vuk: <span className="text-amber-300 font-bold">/{currentCard.vuk}/</span>
                       </p>
 
-                      {/* TTS Play Button */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          speakChinese(currentCard.char, `flash-${currentCard.id}`);
-                        }}
-                        className={cn(
-                          "mx-auto px-4 py-2 rounded-2xl flex items-center gap-2 text-xs font-bold transition-all border active:scale-95",
-                          isPronouncing === `flash-${currentCard.id}`
-                            ? "bg-red-600 text-white border-red-400 shadow-lg shadow-red-600/30 scale-105"
-                            : isDarkMode ? "bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-white hover:border-red-500/50" : "bg-white border-zinc-200 text-zinc-700 hover:border-red-500"
-                        )}
-                      >
-                        <Volume2 className={cn("w-4 h-4", isPronouncing === `flash-${currentCard.id}` && "animate-pulse")} />
-                        <span>{isPronouncing === `flash-${currentCard.id}` ? "Pusta se izgovor..." : "Poslušaj Izgovor (Mandarin TTS)"}</span>
-                      </button>
+                      {/* TTS Play & Social Copy Row */}
+                      <div className="flex items-center justify-center gap-2 flex-wrap pt-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            speakChinese(currentCard.char, `flash-${currentCard.id}`);
+                          }}
+                          className={cn(
+                            "px-3.5 py-2 rounded-2xl flex items-center gap-2 text-xs font-bold transition-all border active:scale-95 shadow-sm",
+                            isPronouncing === `flash-${currentCard.id}`
+                              ? "bg-red-600 text-white border-red-400 shadow-lg shadow-red-600/30 scale-105"
+                              : isDarkMode ? "bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-white hover:border-red-500/50" : "bg-white border-zinc-200 text-zinc-700 hover:border-red-500"
+                          )}
+                        >
+                          <Volume2 className={cn("w-4 h-4", isPronouncing === `flash-${currentCard.id}` && "animate-pulse")} />
+                          <span>{isPronouncing === `flash-${currentCard.id}` ? "Pusta se..." : "Izgovor (TTS)"}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopyCardSocial(currentCard, e)}
+                          className={cn(
+                            "px-3.5 py-2 rounded-2xl flex items-center gap-1.5 text-xs font-bold transition-all border active:scale-95 shadow-sm",
+                            copiedCardId === currentCard.id
+                              ? "bg-emerald-600 border-emerald-500 text-white shadow-emerald-600/30"
+                              : isDarkMode 
+                                ? "bg-zinc-900/90 border-zinc-700 text-amber-300 hover:border-amber-500/60 hover:text-white" 
+                                : "bg-white border-zinc-200 text-amber-800 hover:border-amber-500"
+                          )}
+                          title="Kopiraj karakter sa pinyinom i značenjem za objavu na mrežama"
+                        >
+                          {copiedCardId === currentCard.id ? (
+                            <>
+                              <Check className="w-4 h-4 text-emerald-200" />
+                              <span className="font-bold">Kopirano! ✨</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 text-amber-400" />
+                              <span>Kopiraj za Social Media 📋</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Bottom Prompt */}
@@ -1528,51 +1667,95 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                     </div>
 
                     {/* Bottom Status */}
-                    <div className="w-full flex items-center justify-between text-xs text-zinc-500 pt-3 border-t border-zinc-800/60">
+                    <div className="w-full flex items-center justify-between text-xs text-zinc-500 pt-3 border-t border-zinc-800/60 flex-wrap gap-2">
                       <span>Karakter: <strong className="text-white text-base">{currentCard.char}</strong></span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          speakChinese(currentCard.char, `flash-${currentCard.id}`);
-                        }}
-                        className="text-red-400 font-bold flex items-center gap-1 hover:underline"
-                      >
-                        <Volume2 className="w-3.5 h-3.5" /> Ponovi Zvuk
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopyCardSocial(currentCard, e)}
+                          className={cn(
+                            "font-bold flex items-center gap-1.5 transition-colors text-xs",
+                            copiedCardId === currentCard.id ? "text-emerald-400" : "text-amber-400 hover:text-amber-300"
+                          )}
+                          title="Kopiraj reč sa detaljima za društvene mreže"
+                        >
+                          {copiedCardId === currentCard.id ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span className="text-emerald-300">Kopirano!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Kopiraj Reč 📋</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            speakChinese(currentCard.char, `flash-${currentCard.id}`);
+                          }}
+                          className="text-red-400 font-bold flex items-center gap-1 hover:underline text-xs"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" /> Ponovi Zvuk
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
               </div>
 
               {/* ACTION BUTTONS (Still Learning vs Mastered) */}
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 pt-2">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4 pt-2 relative">
+                {/* Floating Score Badge on Mastered Click */}
+                <AnimatePresence>
+                  {scoreAnimation && (
+                    <motion.div
+                      key={scoreAnimation.id}
+                      initial={{ opacity: 0, y: 15, scale: 0.8 }}
+                      animate={{ opacity: 1, y: -20, scale: 1.15 }}
+                      exit={{ opacity: 0, y: -40, scale: 0.9 }}
+                      transition={{ duration: 0.7, ease: "easeOut" }}
+                      className="absolute -top-7 right-4 sm:right-8 pointer-events-none z-30 px-3.5 py-1.5 rounded-full bg-emerald-500 text-white font-mono font-black text-xs shadow-2xl shadow-emerald-500/50 border border-emerald-300 flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-4 h-4 text-yellow-200 fill-yellow-200 animate-spin" />
+                      <span>{scoreAnimation.text}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <button
                   type="button"
                   onClick={handleNeedReview}
                   className={cn(
-                    "py-3 sm:py-3.5 px-2 sm:px-4 rounded-2xl border flex items-center justify-center gap-1.5 sm:gap-2 font-black text-xs sm:text-sm transition-all active:scale-95 shadow-lg min-w-0 text-center",
+                    "py-3.5 sm:py-4 px-3 sm:px-4 rounded-2xl border flex items-center justify-center gap-2 font-black text-xs sm:text-sm transition-all active:scale-95 shadow-lg min-w-0 text-center group",
                     isDarkMode 
                       ? "bg-rose-950/30 border-rose-800/40 text-rose-300 hover:bg-rose-900/40 shadow-rose-950/20" 
                       : "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100"
                   )}
+                  title="Označi da još učiš ovu reč - ponavljamo na kraju špila"
                 >
-                  <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500 shrink-0" />
-                  <span className="truncate">Još Učim ⏳<span className="hidden sm:inline"> (Ponavljam)</span></span>
+                  <XCircle className="w-5 h-5 text-rose-500 shrink-0 group-hover:rotate-12 transition-transform" />
+                  <span className="truncate">Još Učim ⏳ <span className="hidden sm:inline">(Ponavljam)</span></span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleMarkMastered}
                   className={cn(
-                    "py-3 sm:py-3.5 px-2 sm:px-4 rounded-2xl border flex items-center justify-center gap-1.5 sm:gap-2 font-black text-xs sm:text-sm transition-all active:scale-95 shadow-lg min-w-0 text-center",
+                    "py-3.5 sm:py-4 px-3 sm:px-4 rounded-2xl border flex items-center justify-center gap-2 font-black text-xs sm:text-sm transition-all active:scale-95 shadow-xl min-w-0 text-center relative overflow-hidden group",
                     isGirlyMode 
-                      ? "bg-pink-600 border-pink-400 text-white shadow-pink-600/30" 
-                      : "bg-red-600 border-red-400 text-white shadow-red-600/30 hover:bg-red-500"
+                      ? "bg-gradient-to-r from-pink-600 to-rose-600 border-pink-400 text-white shadow-pink-600/40 hover:shadow-pink-600/60" 
+                      : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 border-emerald-400 text-white shadow-emerald-600/40 hover:shadow-emerald-600/60"
                   )}
+                  title="Znam ovu reč! Osvoji poene i pređi na sledeću karticu"
                 >
-                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0" />
-                  <span className="truncate">Znam! ✨<span className="hidden sm:inline"> / Savladano</span></span>
+                  <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <CheckCircle2 className="w-5 h-5 text-white shrink-0 group-hover:scale-125 transition-transform" />
+                  <span className="truncate font-black tracking-wide">Znam! (+10 XP) ✨</span>
                 </button>
               </div>
 
@@ -1618,17 +1801,21 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
                 Svi hanzi karakteri u ovoj sesiji su pregledani. Vaše znanje kineskog vokabulara je podignuto na novi nivo!
               </p>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-md mx-auto font-mono text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-lg mx-auto font-mono text-center">
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-zinc-900 border border-amber-500/30">
+                  <span className="text-[10px] sm:text-xs text-zinc-400 block">Osvojeno XP</span>
+                  <span className="text-base sm:text-lg font-black text-amber-400">⭐ {flashcardScore}</span>
+                </div>
                 <div className="p-2.5 sm:p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <span className="text-[11px] sm:text-xs text-zinc-500 block">Pregledano</span>
+                  <span className="text-[10px] sm:text-xs text-zinc-500 block">Pregledano</span>
                   <span className="text-base sm:text-lg font-black text-white">{sessionReviewed}</span>
                 </div>
                 <div className="p-2.5 sm:p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <span className="text-[11px] sm:text-xs text-zinc-500 block">Najveći Niz</span>
+                  <span className="text-[10px] sm:text-xs text-zinc-500 block">Najveći Niz</span>
                   <span className="text-base sm:text-lg font-black text-amber-400">🔥 {highestStreak}</span>
                 </div>
                 <div className="p-2.5 sm:p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
-                  <span className="text-[11px] sm:text-xs text-zinc-500 block">Savladano</span>
+                  <span className="text-[10px] sm:text-xs text-zinc-500 block">Savladano</span>
                   <span className="text-base sm:text-lg font-black text-emerald-400">⭐ {masteredIds.length}</span>
                 </div>
               </div>
