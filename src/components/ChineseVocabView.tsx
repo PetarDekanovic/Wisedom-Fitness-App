@@ -1152,6 +1152,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   // Quiz
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizCategory, setQuizCategory] = useState<string>('170_core');
+  const [quizDifficulty, setQuizDifficulty] = useState<'standard' | 'difficult'>('standard');
   const [quizQuestionCount, setQuizQuestionCount] = useState<number>(5);
   const [roundQuestions, setRoundQuestions] = useState<QuizQuestionItem[]>([]);
   const [questionIdx, setQuestionIdx] = useState(0);
@@ -1555,11 +1556,29 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     const selected = shuffled.slice(0, Math.min(quizQuestionCount, shuffled.length));
     
     const questionsList: QuizQuestionItem[] = selected.map(vocab => {
-      const types: ('meaning' | 'character' | 'listen' | 'pinyin')[] = ['meaning', 'character', 'listen', 'pinyin'];
-      const questionType = types[Math.floor(Math.random() * types.length)];
-      
-      const otherVocabs = fullVocabList.filter(v => v.id !== vocab.id && v.char !== vocab.char);
-      const wrongShuffled = otherVocabs.sort(() => Math.random() - 0.5).slice(0, 3);
+      let questionType: 'meaning' | 'character' | 'listen' | 'pinyin' = 'listen';
+      if (quizDifficulty !== 'difficult') {
+        const types: ('meaning' | 'character' | 'listen' | 'pinyin')[] = ['meaning', 'character', 'listen', 'pinyin'];
+        questionType = types[Math.floor(Math.random() * types.length)];
+      }
+
+      let wrongShuffled: VocabItem[] = [];
+      if (quizDifficulty === 'difficult') {
+        const otherVocabs = fullVocabList.filter(v => v.id !== vocab.id && v.char !== vocab.char && v.emoji && v.emoji !== vocab.emoji);
+        const uniqueEmojis: VocabItem[] = [];
+        const seenEmojis = new Set<string>([vocab.emoji]);
+        for (const cand of otherVocabs.sort(() => Math.random() - 0.5)) {
+          if (!seenEmojis.has(cand.emoji)) {
+            seenEmojis.add(cand.emoji);
+            uniqueEmojis.push(cand);
+            if (uniqueEmojis.length >= 3) break;
+          }
+        }
+        wrongShuffled = uniqueEmojis;
+      } else {
+        const otherVocabs = fullVocabList.filter(v => v.id !== vocab.id && v.char !== vocab.char);
+        wrongShuffled = otherVocabs.sort(() => Math.random() - 0.5).slice(0, 3);
+      }
       
       const correctOpt: QuizOptionItem = {
         vocabId: vocab.id,
@@ -1602,7 +1621,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     setQuizComplete(false);
     setQuizStarted(true);
     
-    if (questionsList[0].questionType === 'listen') {
+    if (quizDifficulty === 'difficult' || questionsList[0].questionType === 'listen') {
       setTimeout(() => speakChinese(questionsList[0].vocab.char, `quiz-${questionsList[0].vocab.id}`), 600);
     }
   };
@@ -1623,7 +1642,8 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
       const nextStreak = quizStreak + 1;
       setQuizStreak(nextStreak);
       const bonus = nextStreak >= 3 ? Math.min(nextStreak * 2, 20) : 0;
-      const ptsAdded = 10 + bonus;
+      const basePts = quizDifficulty === 'difficult' ? 15 : 10;
+      const ptsAdded = basePts + bonus;
       setScore(prev => prev + ptsAdded);
 
       setQuizScorePopup({
@@ -1654,7 +1674,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
       setQuestionIdx(nextIdx);
       setSelectedAnswer(null);
       setIsAnswered(false);
-      if (roundQuestions[nextIdx].questionType === 'listen') {
+      if (quizDifficulty === 'difficult' || roundQuestions[nextIdx].questionType === 'listen') {
         setTimeout(() => speakChinese(roundQuestions[nextIdx].vocab.char), 400);
       }
     } else {
@@ -3265,11 +3285,67 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   </p>
                 </div>
 
-                {/* QUIZ SETTINGS FILTERS */}
-                <div className="p-4 rounded-2xl bg-zinc-800/40 border border-zinc-700/50 space-y-3 text-left">
-                  <p className="text-[11px] font-mono font-bold uppercase text-amber-400">⚙️ Opcije Kviz Runde:</p>
+                {/* QUIZ SETTINGS FILTERS & DIFFICULTY MODE */}
+                <div className="p-4 rounded-2xl bg-zinc-800/40 border border-zinc-700/50 space-y-3.5 text-left">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-mono font-bold uppercase text-amber-400">⚙️ Opcije Kviz Runde:</p>
+                    <span className="text-[10px] font-mono font-bold text-zinc-400">Izaberite težinu i temu</span>
+                  </div>
+
+                  {/* DIFFICULTY MODE SELECTOR (Standard vs Difficult) */}
+                  <div className="space-y-1.5">
+                    <label className="text-zinc-400 text-[10px] uppercase font-bold flex items-center justify-between">
+                      <span>🎯 Režim Težine:</span>
+                      {quizDifficulty === 'difficult' && (
+                        <span className="text-red-400 font-mono font-bold text-[10px] animate-pulse">🔥 Audio + Pinyin ➔ 4 Ikone</span>
+                      )}
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setQuizDifficulty('standard')}
+                        className={cn(
+                          "p-3 rounded-xl border text-left transition-all space-y-1",
+                          quizDifficulty === 'standard'
+                            ? "bg-amber-500/15 border-amber-400 text-amber-200 shadow-md ring-1 ring-amber-400/40"
+                            : "bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-500"
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-white">
+                          <span>🟢 Standardni Režim</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 leading-tight">
+                          Prikazuje Hanzi karaktere, prevode, izgovor i punu edukativnu podršku.
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuizDifficulty('difficult');
+                          setQuizQuestionCount(20);
+                        }}
+                        className={cn(
+                          "p-3 rounded-xl border text-left transition-all space-y-1 relative overflow-hidden",
+                          quizDifficulty === 'difficult'
+                            ? "bg-red-500/20 border-red-500 text-red-200 shadow-md ring-1 ring-red-500/50"
+                            : "bg-zinc-900 border-zinc-700/60 text-zinc-400 hover:border-zinc-500"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 font-bold text-xs text-red-400">
+                            <span>🔥 Teški Režim (Hardcore)</span>
+                          </div>
+                          <span className="px-1.5 py-0.5 rounded bg-red-500/30 text-[9px] font-mono text-red-300 font-bold">20 Reči</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 leading-tight">
+                          Samo Audio Zvuk + Pinyin u pitanju. 4 ponuđena odgovora su SAMO IKONICE!
+                        </p>
+                      </button>
+                    </div>
+                  </div>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono pt-1 border-t border-zinc-700/40">
                     <div className="space-y-1">
                       <label className="text-zinc-400 text-[10px]">Kategorija Reči:</label>
                       <select
@@ -3290,16 +3366,16 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-zinc-400 text-[10px]">Broj Pitanja:</label>
+                      <label className="text-zinc-400 text-[10px]">Broj Pitanja po Rundi:</label>
                       <select
                         value={quizQuestionCount}
                         onChange={(e) => setQuizQuestionCount(Number(e.target.value))}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-amber-300 font-bold"
                       >
-                        <option value={5}>⚡ 5 Pitanja (Brzi Test)</option>
-                        <option value={10}>🔥 10 Pitanja (Standard)</option>
+                        <option value={20}>🔥 20 Pitanja (Preporučeno za Teški Režim)</option>
                         <option value={15}>🏆 15 Pitanja (Ekspert)</option>
-                        <option value={20}>🌟 20 Pitanja (Master)</option>
+                        <option value={10}>⚡ 10 Pitanja (Standard)</option>
+                        <option value={5}>🌱 5 Pitanja (Brzi Test)</option>
                       </select>
                     </div>
                   </div>
@@ -3397,142 +3473,260 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                 </div>
 
                 {/* Question Header */}
-                <div className="text-center space-y-3 my-4">
-                  <div className="inline-block px-3 py-1 rounded-full bg-zinc-800/80 border border-zinc-700 text-[11px] font-mono text-zinc-300">
-                    {roundQuestions[questionIdx].questionType === 'meaning' && "🤔 Koje je tačno značenje za ovaj karakter?"}
-                    {roundQuestions[questionIdx].questionType === 'character' && `🎯 Koji karakter znači: "${roundQuestions[questionIdx].vocab.translation}" (${roundQuestions[questionIdx].vocab.english})?`}
-                    {roundQuestions[questionIdx].questionType === 'listen' && "🎧 Poslušajte audio izgovor i izaberite tačan karakter:"}
-                    {roundQuestions[questionIdx].questionType === 'pinyin' && `🗣️ Koji karakter ima izgovor [${getItemPinyin(roundQuestions[questionIdx].vocab)}] / "${getItemVuk(roundQuestions[questionIdx].vocab)}"?`}
-                  </div>
+                {quizDifficulty === 'difficult' ? (
+                  <div className="text-center space-y-4 my-4">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-[11px] font-mono text-red-300 font-bold">
+                      <span>🔥 TEŠKI REŽIM: Slušaj Zvuk & Pogodi Ikonu</span>
+                    </div>
 
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-5xl filter drop-shadow">{roundQuestions[questionIdx].vocab.emoji}</span>
-                  </div>
+                    {/* Audio Pulse Visualizer */}
+                    <div className="w-20 h-20 mx-auto rounded-3xl bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center text-red-400 shadow-xl shadow-red-500/10">
+                      <Volume2 className={cn("w-10 h-10 transition-transform", isPronouncing ? "animate-pulse text-amber-400 scale-125" : "")} />
+                    </div>
 
-                  <h3 className="text-5xl font-serif font-black text-red-500 tracking-wider">
-                    {roundQuestions[questionIdx].questionType === 'character' ? '❓' : roundQuestions[questionIdx].vocab.char}
-                  </h3>
-                  
-                  <div className="flex items-center justify-center gap-3 text-xs font-mono">
-                    <span className="text-amber-500 font-bold">Pinyin: {getItemPinyin(roundQuestions[questionIdx].vocab)}</span>
-                    <span className="text-emerald-500 font-bold">Vuk: "{getItemVuk(roundQuestions[questionIdx].vocab)}"</span>
-                  </div>
-
-                  {/* Audio TTS Button on Question */}
-                  <div className="flex items-center justify-center gap-2 pt-1">
-                    <button
-                      onClick={() => speakChinese(roundQuestions[questionIdx].vocab.char, `quiz-${roundQuestions[questionIdx].vocab.id}`)}
-                      className={cn(
-                        "px-4 py-2 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-2 shadow-sm border",
-                        isPronouncing === `quiz-${roundQuestions[questionIdx].vocab.id}`
-                          ? "bg-amber-500 text-zinc-950 border-amber-300 animate-pulse"
-                          : "bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20"
-                      )}
-                    >
-                      <Volume2 className="w-4 h-4" />
-                      <span>{isPronouncing === `quiz-${roundQuestions[questionIdx].vocab.id}` ? "Pusta se..." : "Pusti Zvuk / Audio TTS"}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 4 Rich Answer Options Cards (Each with Icon, Char, Meanings, Phonetics & Audio) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {roundQuestions[questionIdx].options.map((opt, oIdx) => {
-                    const isSelected = selectedAnswer === oIdx;
-                    const isCorrect = opt.isCorrect;
-
-                    return (
+                    {/* Prominent Audio Play Button */}
+                    <div className="flex items-center justify-center gap-2">
                       <button
-                        key={oIdx}
-                        onClick={() => handleAnswerSubmit(oIdx)}
-                        disabled={isAnswered}
+                        onClick={() => speakChinese(roundQuestions[questionIdx].vocab.char, `quiz-${roundQuestions[questionIdx].vocab.id}`)}
                         className={cn(
-                          "relative w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between gap-3 group text-xs",
-                          !isAnswered && (
-                            isDarkMode 
-                              ? "bg-zinc-800/80 border-zinc-700/80 hover:border-amber-400 hover:bg-zinc-800 shadow-sm" 
-                              : "bg-zinc-50 border-zinc-200 hover:border-amber-500 hover:bg-amber-50/40 shadow-sm"
-                          ),
-                          isAnswered && isCorrect && "bg-emerald-950/70 border-emerald-500 text-white shadow-lg ring-2 ring-emerald-500/50",
-                          isAnswered && isSelected && !isCorrect && "bg-red-950/70 border-red-500 text-white shadow-lg ring-2 ring-red-500/50",
-                          isAnswered && !isSelected && !isCorrect && "opacity-60 bg-zinc-900/40 border-zinc-800"
+                          "px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all inline-flex items-center gap-2 shadow-md border",
+                          isPronouncing === `quiz-${roundQuestions[questionIdx].vocab.id}`
+                            ? "bg-amber-500 text-zinc-950 border-amber-300 animate-pulse scale-105"
+                            : "bg-red-600 text-white hover:bg-red-500 border-red-400 shadow-red-600/30"
                         )}
                       >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          {/* Key shortcut badge (1, 2, 3, 4) */}
+                        <Volume2 className="w-4 h-4" />
+                        <span>{isPronouncing === `quiz-${roundQuestions[questionIdx].vocab.id}` ? "Zvuk se reprodukuje..." : "Pusti Zvuk / Audio TTS 🔊"}</span>
+                      </button>
+                    </div>
+
+                    {/* Pinyin (and Vuk) */}
+                    <div className="flex items-center justify-center gap-3 text-xs font-mono pt-1">
+                      <span className="text-amber-400 font-black px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 shadow-sm">
+                        Pinyin: {getItemPinyin(roundQuestions[questionIdx].vocab)}
+                      </span>
+                      <span className="text-emerald-400 font-bold px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        Vuk: "{getItemVuk(roundQuestions[questionIdx].vocab)}"
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] font-mono text-zinc-400">
+                      Izaberite odgovarajuću ikonicu za ovu reč [Tasteri 1 - 4]:
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-3 my-4">
+                    <div className="inline-block px-3 py-1 rounded-full bg-zinc-800/80 border border-zinc-700 text-[11px] font-mono text-zinc-300">
+                      {roundQuestions[questionIdx].questionType === 'meaning' && "🤔 Koje je tačno značenje za ovaj karakter?"}
+                      {roundQuestions[questionIdx].questionType === 'character' && `🎯 Koji karakter znači: "${roundQuestions[questionIdx].vocab.translation}" (${roundQuestions[questionIdx].vocab.english})?`}
+                      {roundQuestions[questionIdx].questionType === 'listen' && "🎧 Poslušajte audio izgovor i izaberite tačan karakter:"}
+                      {roundQuestions[questionIdx].questionType === 'pinyin' && `🗣️ Koji karakter ima izgovor [${getItemPinyin(roundQuestions[questionIdx].vocab)}] / "${getItemVuk(roundQuestions[questionIdx].vocab)}"?`}
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-5xl filter drop-shadow">{roundQuestions[questionIdx].vocab.emoji}</span>
+                    </div>
+
+                    <h3 className="text-5xl font-serif font-black text-red-500 tracking-wider">
+                      {roundQuestions[questionIdx].questionType === 'character' ? '❓' : roundQuestions[questionIdx].vocab.char}
+                    </h3>
+                    
+                    <div className="flex items-center justify-center gap-3 text-xs font-mono">
+                      <span className="text-amber-500 font-bold">Pinyin: {getItemPinyin(roundQuestions[questionIdx].vocab)}</span>
+                      <span className="text-emerald-500 font-bold">Vuk: "{getItemVuk(roundQuestions[questionIdx].vocab)}"</span>
+                    </div>
+
+                    {/* Audio TTS Button on Question */}
+                    <div className="flex items-center justify-center gap-2 pt-1">
+                      <button
+                        onClick={() => speakChinese(roundQuestions[questionIdx].vocab.char, `quiz-${roundQuestions[questionIdx].vocab.id}`)}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-2 shadow-sm border",
+                          isPronouncing === `quiz-${roundQuestions[questionIdx].vocab.id}`
+                            ? "bg-amber-500 text-zinc-950 border-amber-300 animate-pulse"
+                            : "bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20"
+                        )}
+                      >
+                        <Volume2 className="w-4 h-4" />
+                        <span>{isPronouncing === `quiz-${roundQuestions[questionIdx].vocab.id}` ? "Pusta se..." : "Pusti Zvuk / Audio TTS"}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4 Answer Options (Difficult: ONLY ICONS in 2x2 grid | Standard: Rich cards with char + meanings) */}
+                {quizDifficulty === 'difficult' ? (
+                  <div className="grid grid-cols-2 gap-3.5 sm:gap-4 my-2">
+                    {roundQuestions[questionIdx].options.map((opt, oIdx) => {
+                      const isSelected = selectedAnswer === oIdx;
+                      const isCorrect = opt.isCorrect;
+
+                      return (
+                        <button
+                          key={oIdx}
+                          onClick={() => handleAnswerSubmit(oIdx)}
+                          disabled={isAnswered}
+                          className={cn(
+                            "relative p-6 sm:p-8 rounded-3xl border transition-all flex flex-col items-center justify-center gap-2 group text-center shadow-md",
+                            !isAnswered && (
+                              isDarkMode 
+                                ? "bg-zinc-800/80 border-zinc-700/80 hover:border-amber-400 hover:bg-zinc-750 hover:scale-[1.02] shadow-black/40" 
+                                : "bg-white border-zinc-200 hover:border-amber-500 hover:bg-amber-50/40 hover:scale-[1.02] shadow-zinc-200"
+                            ),
+                            isAnswered && isCorrect && "bg-emerald-950/80 border-emerald-500 ring-2 ring-emerald-500/60 shadow-emerald-900/40 scale-[1.02]",
+                            isAnswered && isSelected && !isCorrect && "bg-red-950/80 border-red-500 ring-2 ring-red-500/60 shadow-red-900/40",
+                            isAnswered && !isSelected && !isCorrect && "opacity-50 bg-zinc-900/40 border-zinc-800"
+                          )}
+                        >
+                          {/* Shortcut indicator number 1..4 */}
                           <span className={cn(
-                            "w-6 h-6 rounded-lg text-[10px] font-mono font-black flex items-center justify-center shrink-0 border transition-all",
+                            "absolute top-3 left-3 w-6 h-6 rounded-lg text-[10px] font-mono font-black flex items-center justify-center border",
                             isAnswered && isCorrect
                               ? "bg-emerald-500 text-white border-emerald-400"
                               : isAnswered && isSelected && !isCorrect
                               ? "bg-red-500 text-white border-red-400"
-                              : isDarkMode
-                              ? "bg-zinc-800 text-zinc-400 border-zinc-700 group-hover:border-amber-400 group-hover:text-amber-300"
-                              : "bg-zinc-100 text-zinc-600 border-zinc-300 group-hover:border-amber-500 group-hover:text-amber-600"
+                              : "bg-zinc-800 text-zinc-400 border-zinc-700"
                           )}>
                             {oIdx + 1}
                           </span>
 
-                          {/* Emoji Icon */}
-                          <span className="text-2xl shrink-0 filter drop-shadow select-none group-hover:scale-110 transition-transform">
+                          {/* Large Emoji Icon - ONLY ICONS AS ANSWERS */}
+                          <span className="text-6xl sm:text-7xl filter drop-shadow select-none group-hover:scale-110 transition-transform my-3">
                             {opt.emoji || '✨'}
                           </span>
 
-                          {/* Character Badge */}
-                          <div className={cn(
-                            "px-2 py-0.5 rounded-lg font-serif font-black text-lg shrink-0 border shadow-inner",
-                            isAnswered && isCorrect
-                              ? "bg-emerald-900/80 text-amber-200 border-emerald-400"
-                              : isDarkMode
-                              ? "bg-zinc-800 text-amber-300 border-zinc-700"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
-                          )}>
-                            {opt.char}
-                          </div>
+                          {/* Revealed Details AFTER Answer */}
+                          {isAnswered && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 5 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="mt-1 space-y-0.5 border-t border-white/10 pt-2 w-full"
+                            >
+                              <div className="font-serif font-black text-amber-300 text-lg">
+                                {opt.char}
+                              </div>
+                              <div className="text-xs font-bold text-white truncate px-1">
+                                {opt.translation}
+                              </div>
+                              <div className="text-[10px] text-zinc-400 truncate">
+                                {opt.english}
+                              </div>
+                            </motion.div>
+                          )}
 
-                          {/* Meaning & Translations */}
-                          <div className="min-w-0 flex-1">
-                            <p className={cn(
-                              "font-bold text-xs truncate",
-                              isAnswered && isCorrect ? "text-emerald-200" : isDarkMode ? "text-white group-hover:text-amber-300" : "text-zinc-900 group-hover:text-amber-600"
+                          {isAnswered && isCorrect && (
+                            <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg">
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            </div>
+                          )}
+                          {isAnswered && isSelected && !isCorrect && (
+                            <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg">
+                              <X className="w-3.5 h-3.5 stroke-[3]" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {roundQuestions[questionIdx].options.map((opt, oIdx) => {
+                      const isSelected = selectedAnswer === oIdx;
+                      const isCorrect = opt.isCorrect;
+
+                      return (
+                        <button
+                          key={oIdx}
+                          onClick={() => handleAnswerSubmit(oIdx)}
+                          disabled={isAnswered}
+                          className={cn(
+                            "relative w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between gap-3 group text-xs",
+                            !isAnswered && (
+                              isDarkMode 
+                                ? "bg-zinc-800/80 border-zinc-700/80 hover:border-amber-400 hover:bg-zinc-800 shadow-sm" 
+                                : "bg-zinc-50 border-zinc-200 hover:border-amber-500 hover:bg-amber-50/40 shadow-sm"
+                            ),
+                            isAnswered && isCorrect && "bg-emerald-950/70 border-emerald-500 text-white shadow-lg ring-2 ring-emerald-500/50",
+                            isAnswered && isSelected && !isCorrect && "bg-red-950/70 border-red-500 text-white shadow-lg ring-2 ring-red-500/50",
+                            isAnswered && !isSelected && !isCorrect && "opacity-60 bg-zinc-900/40 border-zinc-800"
+                          )}
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            {/* Key shortcut badge (1, 2, 3, 4) */}
+                            <span className={cn(
+                              "w-6 h-6 rounded-lg text-[10px] font-mono font-black flex items-center justify-center shrink-0 border transition-all",
+                              isAnswered && isCorrect
+                                ? "bg-emerald-500 text-white border-emerald-400"
+                                : isAnswered && isSelected && !isCorrect
+                                ? "bg-red-500 text-white border-red-400"
+                                : isDarkMode
+                                ? "bg-zinc-800 text-zinc-400 border-zinc-700 group-hover:border-amber-400 group-hover:text-amber-300"
+                                : "bg-zinc-100 text-zinc-600 border-zinc-300 group-hover:border-amber-500 group-hover:text-amber-600"
                             )}>
-                              {opt.translation}
-                            </p>
-                            <p className="text-[11px] text-zinc-400 truncate">
-                              {opt.english}
-                            </p>
-                            <p className="text-[10px] font-mono text-amber-400/80 mt-0.5 truncate">
-                              {opt.pinyin} • /{opt.vuk}/
-                            </p>
+                              {oIdx + 1}
+                            </span>
+
+                            {/* Emoji Icon */}
+                            <span className="text-2xl shrink-0 filter drop-shadow select-none group-hover:scale-110 transition-transform">
+                              {opt.emoji || '✨'}
+                            </span>
+
+                            {/* Character Badge */}
+                            <div className={cn(
+                              "px-2 py-0.5 rounded-lg font-serif font-black text-lg shrink-0 border shadow-inner",
+                              isAnswered && isCorrect
+                                ? "bg-emerald-900/80 text-amber-200 border-emerald-400"
+                                : isDarkMode
+                                ? "bg-zinc-800 text-amber-300 border-zinc-700"
+                                : "bg-amber-50 text-amber-700 border-amber-200"
+                            )}>
+                              {opt.char}
+                            </div>
+
+                            {/* Meaning & Translations */}
+                            <div className="min-w-0 flex-1">
+                              <p className={cn(
+                                "font-bold text-xs truncate",
+                                isAnswered && isCorrect ? "text-emerald-200" : isDarkMode ? "text-white group-hover:text-amber-300" : "text-zinc-900 group-hover:text-amber-600"
+                              )}>
+                                {opt.translation}
+                              </p>
+                              <p className="text-[11px] text-zinc-400 truncate">
+                                {opt.english}
+                              </p>
+                              <p className="text-[10px] font-mono text-amber-400/80 mt-0.5 truncate">
+                                {opt.pinyin} • /{opt.vuk}/
+                              </p>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Audio Preview on option card + Status check */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              speakChinese(opt.char, `quiz-opt-${opt.vocabId}-${oIdx}`);
-                            }}
-                            title="Poslušaj izgovor"
-                            className={cn(
-                              "p-1.5 rounded-lg transition-all border",
-                              isPronouncing === `quiz-opt-${opt.vocabId}-${oIdx}`
-                                ? "bg-amber-500 text-zinc-950 border-amber-300 animate-pulse"
-                                : "bg-zinc-800/60 hover:bg-zinc-700 text-zinc-400 hover:text-white border-zinc-700/60"
-                            )}
-                          >
-                            <Volume2 className="w-3.5 h-3.5" />
-                          </button>
+                          {/* Audio Preview on option card + Status check */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                speakChinese(opt.char, `quiz-opt-${opt.vocabId}-${oIdx}`);
+                              }}
+                              title="Poslušaj izgovor"
+                              className={cn(
+                                "p-1.5 rounded-lg transition-all border",
+                                isPronouncing === `quiz-opt-${opt.vocabId}-${oIdx}`
+                                  ? "bg-amber-500 text-zinc-950 border-amber-300 animate-pulse"
+                                  : "bg-zinc-800/60 hover:bg-zinc-700 text-zinc-400 hover:text-white border-zinc-700/60"
+                              )}
+                            >
+                              <Volume2 className="w-3.5 h-3.5" />
+                            </button>
 
-                          {isAnswered && isCorrect && <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />}
-                          {isAnswered && isSelected && !isCorrect && <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                            {isAnswered && isCorrect && <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />}
+                            {isAnswered && isSelected && !isCorrect && <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* DETAILED POST-ANSWER EXPLANATION & TRANSLATION BOTTOM CARD */}
                 {isAnswered && (
