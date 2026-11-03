@@ -145,6 +145,8 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [speedScore, setSpeedScore] = useState(0);
   const [speedComplete, setSpeedComplete] = useState(false);
+  const [speedShowHint, setSpeedShowHint] = useState(false);
+  const [speedQuestionCount, setSpeedQuestionCount] = useState<number>(30);
 
   // --- GAME PACING CONTROLS (MAKE WORDS SERENE, SLOW & PLAYABLE) ---
   const [pacingMode, setPacingMode] = useState<PacingMode>('manual');
@@ -495,6 +497,7 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
       const nextIdx = speedQuestionIdx + 1;
       setSpeedQuestionIdx(nextIdx);
       setSelectedAnswer(null);
+      setSpeedShowHint(false);
       if (autoSpeak && speedQuestions[nextIdx]) {
         setTimeout(() => {
           speakChineseRef.current(speedQuestions[nextIdx].vocab.char, `speed-${speedQuestions[nextIdx].vocab.id}`);
@@ -790,7 +793,8 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
   const initSpeedChallenge = useCallback(() => {
     clearAllTimers();
     const shuffled = [...filteredPool].sort(() => Math.random() - 0.5);
-    const questionsList = shuffled.slice(0, 10).map(v => {
+    const targetCount = Math.min(speedQuestionCount, shuffled.length);
+    const questionsList = shuffled.slice(0, targetCount).map(v => {
       const distractors = filteredPool
         .filter(other => other.id !== v.id)
         .sort(() => Math.random() - 0.5)
@@ -811,13 +815,14 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
     setSelectedAnswer(null);
     setSpeedScore(0);
     setSpeedComplete(false);
+    setSpeedShowHint(false);
 
     if (questionsList.length > 0 && autoSpeak) {
       setTimeout(() => {
         speakChinese(questionsList[0].vocab.char, `speed-${questionsList[0].vocab.id}`);
       }, 350);
     }
-  }, [filteredPool, autoSpeak, speakChinese, clearAllTimers]);
+  }, [filteredPool, speedQuestionCount, autoSpeak, speakChinese, clearAllTimers]);
 
   const handleSpeedAnswer = (option: string) => {
     if (selectedAnswer !== null) return;
@@ -1974,14 +1979,44 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
               isDarkMode ? "bg-zinc-950 border-zinc-800" : "bg-white border-zinc-200"
             )}>
               {/* Question Header */}
-              <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-                <span>Pitanje {speedQuestionIdx + 1} / {speedQuestions.length}</span>
-                <span className="font-bold text-amber-400">Bodovi: {speedScore}</span>
+              <div className="flex items-center justify-between text-xs font-mono text-zinc-400 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <span>Pitanje {speedQuestionIdx + 1} / {speedQuestions.length}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-bold">
+                    30 Pokušaja
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-amber-400">Bodovi: {speedScore}</span>
+                </div>
               </div>
 
               {/* Word Presentation */}
-              <div className="space-y-3 py-4">
-                <div className="text-5xl">{speedQuestions[speedQuestionIdx].vocab.emoji}</div>
+              <div className="space-y-3 py-3">
+                {/* Emoji Slot: Hidden by default so players cannot guess; Revealed via 'Hint' button or after answering */}
+                <div className="min-h-[3.25rem] flex items-center justify-center">
+                  {(speedShowHint || selectedAnswer !== null) ? (
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', damping: 15 }}
+                      className="text-5xl filter drop-shadow select-none"
+                    >
+                      {speedQuestions[speedQuestionIdx].vocab.emoji}
+                    </motion.div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSpeedShowHint(true)}
+                      className="px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group hover:border-amber-400 cursor-pointer"
+                      title="Kliknite na 'Hint' ako ne možete prepoznati karakter da prikažete ikonicu kao pomoć"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
+                      <span>Hint 💡</span>
+                    </button>
+                  )}
+                </div>
+
                 <h2 className="text-6xl sm:text-7xl font-black text-white tracking-wide">
                   {speedQuestions[speedQuestionIdx].vocab.char}
                 </h2>
@@ -1992,7 +2027,7 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
                 <button
                   type="button"
                   onClick={() => speakChinese(speedQuestions[speedQuestionIdx].vocab.char, `speed-prompt-${speedQuestionIdx}`)}
-                  className="mx-auto text-xs text-amber-400 font-bold flex items-center gap-1 hover:underline"
+                  className="mx-auto text-xs text-amber-400 font-bold flex items-center gap-1 hover:underline cursor-pointer"
                 >
                   <Volume2 className="w-3.5 h-3.5" /> Poslušaj Zvuk
                 </button>

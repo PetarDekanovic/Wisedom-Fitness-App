@@ -1153,7 +1153,8 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizCategory, setQuizCategory] = useState<string>('170_core');
   const [quizDifficulty, setQuizDifficulty] = useState<'standard' | 'difficult'>('standard');
-  const [quizQuestionCount, setQuizQuestionCount] = useState<number>(5);
+  const [quizQuestionCount, setQuizQuestionCount] = useState<number>(30);
+  const [quizShowHint, setQuizShowHint] = useState(false);
   const [roundQuestions, setRoundQuestions] = useState<QuizQuestionItem[]>([]);
   const [questionIdx, setQuestionIdx] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -1448,6 +1449,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     setQuizStreak(0);
     setQuizScorePopup(null);
     setQuizCopiedWordId(null);
+    setQuizShowHint(false);
 
     if (quizCategory === 'alphabet') {
       const pinyinAsVocab: VocabItem[] = [
@@ -1674,6 +1676,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
       setQuestionIdx(nextIdx);
       setSelectedAnswer(null);
       setIsAnswered(false);
+      setQuizShowHint(false);
       if (quizDifficulty === 'difficult' || roundQuestions[nextIdx].questionType === 'listen') {
         setTimeout(() => speakChinese(roundQuestions[nextIdx].vocab.char), 400);
       }
@@ -3372,10 +3375,11 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                         onChange={(e) => setQuizQuestionCount(Number(e.target.value))}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-amber-300 font-bold"
                       >
-                        <option value={20}>🔥 20 Pitanja (Preporučeno za Teški Režim)</option>
+                        <option value={30}>🔥 30 Pitanja (30 Pokušaja / Izazov)</option>
+                        <option value={20}>⚡ 20 Pitanja (Preporučeno za Teški Režim)</option>
                         <option value={15}>🏆 15 Pitanja (Ekspert)</option>
-                        <option value={10}>⚡ 10 Pitanja (Standard)</option>
-                        <option value={5}>🌱 5 Pitanja (Brzi Test)</option>
+                        <option value={10}>🌱 10 Pitanja (Standard)</option>
+                        <option value={5}>⚡ 5 Pitanja (Brzi Test)</option>
                       </select>
                     </div>
                   </div>
@@ -3523,8 +3527,28 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                       {roundQuestions[questionIdx].questionType === 'pinyin' && `🗣️ Koji karakter ima izgovor [${getItemPinyin(roundQuestions[questionIdx].vocab)}] / "${getItemVuk(roundQuestions[questionIdx].vocab)}"?`}
                     </div>
 
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-5xl filter drop-shadow">{roundQuestions[questionIdx].vocab.emoji}</span>
+                    {/* Emoji Slot: Hidden by default so players cannot guess; Revealed via 'Hint' button or after answering */}
+                    <div className="min-h-[3.25rem] flex items-center justify-center">
+                      {(quizShowHint || isAnswered) ? (
+                        <motion.div
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: 'spring', damping: 15 }}
+                          className="text-5xl filter drop-shadow select-none"
+                        >
+                          {roundQuestions[questionIdx].vocab.emoji}
+                        </motion.div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setQuizShowHint(true)}
+                          className="px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group hover:border-amber-400 cursor-pointer"
+                          title="Kliknite na 'Hint' ako ne možete prepoznati karakter da prikažete ikonicu kao pomoć"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
+                          <span>Hint 💡</span>
+                        </button>
+                      )}
                     </div>
 
                     <h3 className="text-5xl font-serif font-black text-red-500 tracking-wider">
