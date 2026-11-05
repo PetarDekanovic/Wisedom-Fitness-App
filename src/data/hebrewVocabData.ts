@@ -482,3 +482,22 @@ export function getHebrewQuoteForItem(item: HebrewVocabItem): { quote: string; t
   return defaultQuotes[idx];
 }
 
+// 70 Most Frequent / Essential Hebrew Words (Conversational Greetings, Polite Essentials, Core Verbs, Primary Nouns)
+export const HEBREW_FREQUENT_70_IDS: string[] = [
+  // Pozdravi i osnovna ljubaznost (20)
+  'h_toda', 'h_toda_raba', 'h_bevakasha', 'h_slicha', 'h_boker_tov', 'h_erev_tov',
+  'h_layla_tov', 'h_yom_tov', 'h_shalom_aleichem', 'h_lehitraot', 'h_beseder',
+  'h_hakol_tov', 'h_ken', 'h_lo', 'h_ulay', 'h_betach', 'h_lechaim',
+  'h_mazal_tov', 'h_baruch_hashem', 'h_naim_meod',
+  // Svakodnevna pitanja i fraze (10)
+  'h_ma_shlomcha', 'h_ma_nishma', 'h_ein_beaya', 'h_baruch_haba', 'h_kama_ze_oleh',
+  'h_eifo', 'h_matai', 'h_lama', 'h_mi', 'h_ma',
+  // Ključni glagoli (20)
+  'h51', 'h52', 'h53', 'h54', 'h55', 'h56', 'h57', 'h58', 'h59', 'h60',
+  'h61', 'h62', 'h63', 'h64', 'h65', 'h66', 'h67', 'h68', 'h69', 'h70',
+  // Osnovne imenice i mudri pojmovi (20)
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h7', 'h8', 'h10', 'h11', 'h12',
+  'h14', 'h21', 'h24', 'h27', 'h91', 'h92', 'h93', 'h94', 'h95', 'h96'
+];
+
+

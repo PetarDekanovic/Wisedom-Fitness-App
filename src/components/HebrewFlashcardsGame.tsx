@@ -29,11 +29,13 @@ import {
   Sliders,
   FastForward,
   Minus,
-  Plus
+  Plus,
+  Copy,
+  Share2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { HebrewVocabItem } from '../data/hebrewVocabData';
-import { getHebrewQuoteForItem } from '../data/hebrewVocabData';
+import { getHebrewQuoteForItem, HEBREW_FREQUENT_70_IDS } from '../data/hebrewVocabData';
 
 export interface HebrewFlashcardsGameProps {
   vocabList: HebrewVocabItem[];
@@ -75,7 +77,7 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
 }) => {
   // Game Mode: 'cards' (3D flip deck), 'match' (Memory match pairs), 'speed' (Quick multiple choice)
   const [gameMode, setGameMode] = useState<GameMode>('cards');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('frequent_70');
   const [filterMode, setFilterMode] = useState<'all' | 'unmastered' | 'mastered'>('all');
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [flipDirection, setFlipDirection] = useState<'hebrew-first' | 'meaning-first'>('hebrew-first');
@@ -99,7 +101,7 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
   const [matchGameFinished, setMatchGameFinished] = useState(false);
   const [matchGridSize, setMatchGridSize] = useState<6 | 8>(6); // 6 pairs (12 cards) or 8 pairs (16 cards)
 
-  // --- MODE 3: SPEED RECALL CHALLENGE STATE ---
+  // --- MODE 3: SPEED RECALL CHALLENGE STATE (IZAZOV ZNANJA) ---
   const [speedQuestionIdx, setSpeedQuestionIdx] = useState(0);
   const [speedQuestions, setSpeedQuestions] = useState<Array<{
     vocab: HebrewVocabItem;
@@ -109,6 +111,9 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [speedScore, setSpeedScore] = useState(0);
   const [speedComplete, setSpeedComplete] = useState(false);
+  const [speedShowHint, setSpeedShowHint] = useState(false);
+  const [speedQuestionCount, setSpeedQuestionCount] = useState<number>(30);
+  const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
 
   // --- GAME PACING CONTROLS (MAKE WORDS SERENE, SLOW & PLAYABLE) ---
   // 'manual': Never auto-advances, waits for player to click Next Word
@@ -166,11 +171,56 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
   const mismatchTimeoutRef = useRef<any>(null);
   const slideshowTimerRef = useRef<any>(null);
 
+  // Social Media Share / Copy Word Handler
+  const handleCopyCardSocial = useCallback((item: HebrewVocabItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const quote = getHebrewQuoteForItem(item);
+    const textToCopy = `🇮🇱 Hebrejska Reč: 【 ${item.char} 】
+• Vuk Izgovor: /${item.vuk}/
+• Transliteracija: ${item.transliteration}
+• Značenje: ${item.translation} (${item.english})
+${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• Mudrost: "${quote.quote}" — ${quote.translation}\n` : ''}
+🧘 Naučeno na WiseFit Digital Sanctuary #WiseFit #Hebrew #Ivrit #Mudrost`;
+
+    const markSuccess = () => {
+      setCopiedCardId(item.id);
+      setTimeout(() => setCopiedCardId(null), 2500);
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(textToCopy).then(markSuccess).catch(() => {
+        try {
+          const textarea = document.createElement('textarea');
+          textarea.value = textToCopy;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+          markSuccess();
+        } catch {}
+      });
+    } else {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = textToCopy;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        markSuccess();
+      } catch {}
+    }
+  }, []);
+
   // Filter vocabulary pool based on category and mastery
   const filteredPool = useMemo(() => {
     let pool = [...vocabList];
 
-    if (selectedCategory !== 'all') {
+    if (selectedCategory === 'frequent_70') {
+      const freqSet = new Set(HEBREW_FREQUENT_70_IDS);
+      pool = pool.filter(item => freqSet.has(item.id));
+      if (pool.length === 0) pool = vocabList.slice(0, 70);
+    } else if (selectedCategory !== 'all') {
       pool = pool.filter(item => item.category === selectedCategory);
     }
 
@@ -189,23 +239,29 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     for (const item of vocabList) {
       counts[item.category] = (counts[item.category] || 0) + 1;
     }
+    const freqSet = new Set(HEBREW_FREQUENT_70_IDS);
+    const freqCount = vocabList.filter(item => freqSet.has(item.id)).length;
+
     return [
-      { id: 'all', label: 'Sve Reči', count: vocabList.length },
-      { id: 'svakodnevno', label: 'Svakodnevno (Hvala & Dijalozi)', count: counts['svakodnevno'] || 0 },
-      { id: 'mudrost', label: 'Mudrost & Filozofija', count: counts['mudrost'] || 0 },
-      { id: 'glagoli', label: 'Glagoli', count: counts['glagoli'] || 0 },
-      { id: 'priroda', label: 'Priroda & Svemir', count: counts['priroda'] || 0 },
-      { id: 'emocije', label: 'Emocije & Ljubav', count: counts['emocije'] || 0 },
-      { id: 'misaoni', label: 'Misaoni & Uspeh', count: counts['misaoni'] || 0 },
-      { id: 'hrana', label: 'Hrana & Piće', count: counts['hrana'] || 0 },
-      { id: 'vreme_brojevi', label: 'Vreme & Brojevi', count: counts['vreme_brojevi'] || 0 }
+      { id: 'frequent_70', label: '⭐ 70 Najčešćih Reči (Osnove)', count: freqCount || 70 },
+      { id: 'all', label: '🎴 Celokupna Riznica (Sve Reči)', count: vocabList.length },
+      { id: 'glagoli', label: '⚡ Glagoli & Akcije', count: counts['glagoli'] || 0 },
+      { id: 'mudrost', label: '📜 Mudrost & Filozofija', count: counts['mudrost'] || 0 },
+      { id: 'svakodnevno', label: '🗣️ Svakodnevno (Pozdravi)', count: counts['svakodnevno'] || 0 },
+      { id: 'priroda', label: '🌿 Priroda & Svemir', count: counts['priroda'] || 0 },
+      { id: 'misaoni', label: '💡 Misaoni & Uspeh', count: counts['misaoni'] || 0 },
+      { id: 'emocije', label: '💖 Emocije & Ljubav', count: counts['emocije'] || 0 }
     ];
   }, [vocabList]);
 
   // Initialize or shuffle Deck (stable - only runs on category/filter change or explicit shuffle)
   const initDeck = useCallback(() => {
     let pool = [...vocabList];
-    if (selectedCategory !== 'all') {
+    if (selectedCategory === 'frequent_70') {
+      const freqSet = new Set(HEBREW_FREQUENT_70_IDS);
+      pool = pool.filter(item => freqSet.has(item.id));
+      if (pool.length === 0) pool = vocabList.slice(0, 70);
+    } else if (selectedCategory !== 'all') {
       pool = pool.filter(item => item.category === selectedCategory);
     }
     if (filterMode === 'unmastered') {
@@ -220,7 +276,7 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     setIsFlipped(false);
     setIsDeckFinished(false);
     setIsSlideshowActive(false);
-  }, [vocabList, selectedCategory, filterMode]);
+  }, [vocabList, selectedCategory, filterMode, masteredIds]);
 
   useEffect(() => {
     initDeck();
@@ -377,6 +433,7 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
       const nextIdx = speedQuestionIdx + 1;
       setSpeedQuestionIdx(nextIdx);
       setSelectedAnswer(null);
+      setSpeedShowHint(false);
       if (autoSpeak && speedQuestions[nextIdx]) {
         setTimeout(() => {
           speakHebrewRef.current(speedQuestions[nextIdx].vocab.char, `speed-${speedQuestions[nextIdx].vocab.id}`);
@@ -668,11 +725,12 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     }
   };
 
-  // --- MODE 3: SPEED CHALLENGE LOGIC ---
+  // --- MODE 3: SPEED CHALLENGE LOGIC (IZAZOV ZNANJA) ---
   const initSpeedChallenge = useCallback(() => {
     clearAllTimers();
     const shuffled = [...filteredPool].sort(() => Math.random() - 0.5);
-    const questionsList = shuffled.slice(0, 10).map(v => {
+    const targetCount = Math.min(speedQuestionCount, shuffled.length);
+    const questionsList = shuffled.slice(0, targetCount).map(v => {
       const distractors = filteredPool
         .filter(other => other.id !== v.id)
         .sort(() => Math.random() - 0.5)
@@ -693,13 +751,14 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
     setSelectedAnswer(null);
     setSpeedScore(0);
     setSpeedComplete(false);
+    setSpeedShowHint(false);
 
     if (questionsList.length > 0 && autoSpeak) {
       setTimeout(() => {
         speakHebrew(questionsList[0].vocab.char, `speed-${questionsList[0].vocab.id}`);
       }, 350);
     }
-  }, [filteredPool, autoSpeak, speakHebrew, clearAllTimers]);
+  }, [filteredPool, speedQuestionCount, autoSpeak, speakHebrew, clearAllTimers]);
 
   const handleSpeedAnswer = (option: string) => {
     if (selectedAnswer !== null) return;
@@ -887,6 +946,132 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
             {autoSpeak ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
         </div>
+      </div>
+
+      {/* FEATURED DECKS HERO SWITCHER */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedCategory('frequent_70');
+            if (gameMode === 'cards') initDeck();
+          }}
+          className={cn(
+            "p-3 rounded-2xl border text-left transition-all relative overflow-hidden flex items-start gap-3 group",
+            selectedCategory === 'frequent_70'
+              ? isGirlyMode
+                ? "bg-pink-950/60 border-pink-500 ring-2 ring-pink-500/50 shadow-lg"
+                : "bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/50 shadow-lg"
+              : isDarkMode ? "bg-zinc-900/80 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm"
+          )}
+        >
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 border",
+            selectedCategory === 'frequent_70'
+              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+              : "bg-zinc-800/80 border-zinc-700 text-zinc-300"
+          )}>
+            ⭐
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="font-bold text-[10px] text-emerald-400 font-mono uppercase tracking-wider">
+                1. Početni Špil
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                70 reči
+              </span>
+            </div>
+            <p className="font-serif font-black text-xs sm:text-sm text-zinc-100 group-hover:text-emerald-300 transition-colors">
+              70 Najčešćih Reči
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
+              Laki start: שלום, תודה, בבקשה, סליחה, בוקר טוב...
+            </p>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedCategory('glagoli');
+            if (gameMode === 'cards') initDeck();
+          }}
+          className={cn(
+            "p-3 rounded-2xl border text-left transition-all relative overflow-hidden flex items-start gap-3 group",
+            selectedCategory === 'glagoli'
+              ? isGirlyMode
+                ? "bg-pink-950/60 border-pink-500 ring-2 ring-pink-500/50 shadow-lg"
+                : "bg-blue-950/60 border-blue-500 ring-2 ring-blue-500/50 shadow-lg"
+              : isDarkMode ? "bg-zinc-900/80 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm"
+          )}
+        >
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 border",
+            selectedCategory === 'glagoli'
+              ? "bg-blue-500/20 border-blue-500/40 text-blue-300"
+              : "bg-zinc-800/80 border-zinc-700 text-zinc-300"
+          )}>
+            ⚡
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="font-bold text-[10px] text-blue-400 font-mono uppercase tracking-wider">
+                2. Glagoli & Akcije
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-mono font-bold">
+                {vocabList.filter(v => v.category === 'glagoli').length} reči
+              </span>
+            </div>
+            <p className="font-serif font-black text-xs sm:text-sm text-zinc-100 group-hover:text-blue-300 transition-colors">
+              Ključni Hebrejski Glagoli
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
+              Akcije: להיות, לעשות, ללכת, לראות, לשמוע, לדבר...
+            </p>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedCategory('all');
+            if (gameMode === 'cards') initDeck();
+          }}
+          className={cn(
+            "p-3 rounded-2xl border text-left transition-all relative overflow-hidden flex items-start gap-3 group",
+            selectedCategory === 'all'
+              ? isGirlyMode
+                ? "bg-pink-950/60 border-pink-500 ring-2 ring-pink-500/50 shadow-lg"
+                : "bg-amber-950/60 border-amber-500 ring-2 ring-amber-500/50 shadow-lg"
+              : isDarkMode ? "bg-zinc-900/80 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300 shadow-sm"
+          )}
+        >
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 border",
+            selectedCategory === 'all'
+              ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+              : "bg-zinc-800/80 border-zinc-700 text-zinc-300"
+          )}>
+            🎴
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="font-bold text-[10px] text-amber-400 font-mono uppercase tracking-wider">
+                3. Celokupna Riznica
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-mono font-bold">
+                {vocabList.length} reči
+              </span>
+            </div>
+            <p className="font-serif font-black text-xs sm:text-sm text-zinc-100 group-hover:text-amber-300 transition-colors">
+              Ceo Rečnik (Sve Reči)
+            </p>
+            <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
+              Sve reči: pozdravi, glagoli, mudrost, priroda i fraze
+            </p>
+          </div>
+        </button>
       </div>
 
       {/* CATEGORY & FILTER TOOLBAR */}
@@ -1582,42 +1767,153 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
       )}
 
       {/* ========================================================= */}
-      {/* MODE 3: SPEED CHALLENGE (BRZI IZAZOV) */}
+      {/* MODE 3: SPEED CHALLENGE (IZAZOV ZNANJA - KVIZ) */}
       {/* ========================================================= */}
       {gameMode === 'speed' && (
         <div className="max-w-2xl mx-auto space-y-6">
+          {/* Quick Category Switcher inside Izazov Znanja */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-xs font-mono font-bold text-zinc-400">Izaberi fond reči za kviz:</span>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('frequent_70');
+                  setTimeout(() => initSpeedChallenge(), 0);
+                }}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap shadow-sm",
+                  selectedCategory === 'frequent_70'
+                    ? isGirlyMode ? "bg-pink-500 text-white shadow-pink-500/20" : "bg-emerald-600 text-white shadow-emerald-600/20"
+                    : isDarkMode ? "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 border border-zinc-200 text-zinc-700"
+                )}
+              >
+                ⭐ 70 Najčešćih Reči (70)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setTimeout(() => initSpeedChallenge(), 0);
+                }}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap shadow-sm",
+                  selectedCategory === 'all'
+                    ? isGirlyMode ? "bg-pink-500 text-white shadow-pink-500/20" : "bg-amber-600 text-white shadow-amber-600/20"
+                    : isDarkMode ? "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 border border-zinc-200 text-zinc-700"
+                )}
+              >
+                🎴 Celokupna Riznica ({vocabList.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('glagoli');
+                  setTimeout(() => initSpeedChallenge(), 0);
+                }}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap shadow-sm",
+                  selectedCategory === 'glagoli'
+                    ? isGirlyMode ? "bg-pink-500 text-white shadow-pink-500/20" : "bg-blue-600 text-white shadow-blue-600/20"
+                    : isDarkMode ? "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 border border-zinc-200 text-zinc-700"
+                )}
+              >
+                ⚡ Glagoli ({vocabList.filter(v => v.category === 'glagoli').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('mudrost');
+                  setTimeout(() => initSpeedChallenge(), 0);
+                }}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap shadow-sm",
+                  selectedCategory === 'mudrost'
+                    ? isGirlyMode ? "bg-pink-500 text-white shadow-pink-500/20" : "bg-indigo-600 text-white shadow-indigo-600/20"
+                    : isDarkMode ? "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 border border-zinc-200 text-zinc-700"
+                )}
+              >
+                📜 Mudrost ({vocabList.filter(v => v.category === 'mudrost').length})
+              </button>
+            </div>
+          </div>
+
           {!speedComplete && speedQuestions.length > 0 && (
             <div className={cn(
-              "p-8 rounded-3xl border shadow-2xl space-y-6 text-center",
+              "p-6 sm:p-8 rounded-3xl border shadow-2xl space-y-6 text-center",
               isDarkMode ? "bg-zinc-950 border-zinc-800" : "bg-white border-zinc-200"
             )}>
               {/* Question Header */}
-              <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-                <span>Pitanje {speedQuestionIdx + 1} / {speedQuestions.length}</span>
-                <span className="font-bold text-amber-400">Bodovi: {speedScore}</span>
+              <div className="flex items-center justify-between text-xs font-mono text-zinc-400 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <span>Pitanje {speedQuestionIdx + 1} / {speedQuestions.length}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] font-bold">
+                    {speedQuestions.length} Pokušaja
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-amber-400">Bodovi: {speedScore}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => handleCopyCardSocial(speedQuestions[speedQuestionIdx].vocab, e)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-xl text-[11px] font-mono font-bold border transition-all flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer",
+                      copiedCardId === speedQuestions[speedQuestionIdx].vocab.id
+                        ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                        : "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
+                    )}
+                    title="Kopiraj reč i mudrost za društvene mreže"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{copiedCardId === speedQuestions[speedQuestionIdx].vocab.id ? "Kopirano! ✨" : "Kopiraj za Social Media 📋"}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Word Presentation */}
-              <div className="space-y-3 py-4">
-                <div className="text-5xl">{speedQuestions[speedQuestionIdx].vocab.emoji}</div>
-                <h2 dir="rtl" className="text-5xl sm:text-6xl font-black text-white tracking-wide">
+              <div className="space-y-3 py-3">
+                {/* Emoji Slot: Hidden by default so players cannot guess; Revealed via 'Hint' button or after answering */}
+                <div className="min-h-[3.25rem] flex items-center justify-center">
+                  {(speedShowHint || selectedAnswer !== null) ? (
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', damping: 15 }}
+                      className="text-5xl filter drop-shadow select-none"
+                    >
+                      {speedQuestions[speedQuestionIdx].vocab.emoji}
+                    </motion.div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSpeedShowHint(true)}
+                      className="px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group hover:border-amber-400 cursor-pointer"
+                      title="Kliknite na 'Hint' ako ne možete prepoznati reč da prikažete ikonicu kao pomoć"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
+                      <span>Hint 💡</span>
+                    </button>
+                  )}
+                </div>
+
+                <h2 dir="rtl" className="text-6xl sm:text-7xl font-serif font-black text-white tracking-wide">
                   {speedQuestions[speedQuestionIdx].vocab.char}
                 </h2>
-                <p className="text-xs font-mono text-zinc-400">
-                  /{speedQuestions[speedQuestionIdx].vocab.vuk}/ ({speedQuestions[speedQuestionIdx].vocab.transliteration})
+                <p className="text-xs font-mono text-zinc-300">
+                  Vuk: <span className="text-emerald-400 font-bold">/{speedQuestions[speedQuestionIdx].vocab.vuk}/</span> • Transkripcija: <span className="text-indigo-300 font-bold">{speedQuestions[speedQuestionIdx].vocab.transliteration}</span>
                 </p>
 
                 <button
                   type="button"
                   onClick={() => speakHebrew(speedQuestions[speedQuestionIdx].vocab.char, `speed-prompt-${speedQuestionIdx}`)}
-                  className="mx-auto text-xs text-amber-400 font-bold flex items-center gap-1 hover:underline"
+                  className="mx-auto text-xs text-amber-400 font-bold flex items-center gap-1 hover:underline cursor-pointer"
                 >
                   <Volume2 className="w-3.5 h-3.5" /> Poslušaj Zvuk
                 </button>
               </div>
 
-              {/* 4 Answer Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              {/* 4 Answer Options (Clean full-width vertical stack) */}
+              <div className="grid grid-cols-1 gap-2.5 pt-2 max-w-xl mx-auto w-full">
                 {speedQuestions[speedQuestionIdx].options.map((option, oIdx) => {
                   const isChosen = selectedAnswer === option;
                   const isCorrectAnswer = option === speedQuestions[speedQuestionIdx].correctAnswer;
@@ -1628,21 +1924,21 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
                       disabled={selectedAnswer !== null}
                       onClick={() => handleSpeedAnswer(option)}
                       className={cn(
-                        "p-4 rounded-2xl border text-sm font-bold text-left transition-all active:scale-95 flex items-center justify-between",
+                        "p-4 rounded-2xl border text-sm font-bold text-left transition-all active:scale-95 flex items-center justify-between w-full shadow-sm cursor-pointer",
                         selectedAnswer !== null
                           ? isCorrectAnswer
-                            ? "bg-emerald-950/60 border-emerald-500 text-emerald-300 font-black scale-102"
+                            ? "bg-emerald-950/70 border-emerald-500 text-emerald-300 font-black scale-[1.01] shadow-emerald-950/40"
                             : isChosen
-                              ? "bg-rose-950/60 border-rose-500 text-rose-300"
+                              ? "bg-rose-950/70 border-rose-500 text-rose-300"
                               : "bg-zinc-900/40 border-zinc-800 text-zinc-600 opacity-40"
                           : isDarkMode
-                            ? "bg-zinc-900 border-zinc-800 hover:border-amber-500/50 text-white"
-                            : "bg-zinc-50 border-zinc-200 hover:border-amber-500 text-zinc-900"
+                            ? "bg-zinc-900/90 border-zinc-800 hover:border-amber-500/50 hover:bg-zinc-850 text-white"
+                            : "bg-zinc-50 border-zinc-200 hover:border-amber-500 hover:bg-amber-50/50 text-zinc-900"
                       )}
                     >
-                      <span>{option}</span>
+                      <span className="text-sm font-semibold">{option}</span>
                       {selectedAnswer !== null && isCorrectAnswer && (
-                        <Check className="w-4 h-4 text-emerald-400" />
+                        <Check className="w-4 h-4 text-emerald-400 shrink-0" />
                       )}
                     </button>
                   );

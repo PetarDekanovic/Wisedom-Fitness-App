@@ -41,7 +41,7 @@ import { cn } from '../lib/utils';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { HEBREW_VOCAB_EXPANDED, HebrewVocabItem, getHebrewQuoteForItem } from '../data/hebrewVocabData';
+import { HEBREW_VOCAB_EXPANDED, HebrewVocabItem, getHebrewQuoteForItem, HEBREW_FREQUENT_70_IDS } from '../data/hebrewVocabData';
 import { HebrewFlashcardsGame } from './HebrewFlashcardsGame';
 
 export type { HebrewVocabItem };
@@ -1195,8 +1195,9 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
 
   // Game States
   const [quizStarted, setQuizStarted] = useState(false);
-  const [hQuizCategory, setHQuizCategory] = useState<string>('all');
-  const [hQuizQuestionCount, setHQuizQuestionCount] = useState<number>(5);
+  const [hQuizCategory, setHQuizCategory] = useState<string>('frequent_70');
+  const [hQuizQuestionCount, setHQuizQuestionCount] = useState<number>(30);
+  const [hQuizShowHint, setHQuizShowHint] = useState(false);
   const [roundQuestions, setRoundQuestions] = useState<{
     vocab: HebrewVocabItem;
     options: string[];
@@ -1525,6 +1526,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       setQuestionIdx(0);
       setSelectedAnswer(null);
       setIsAnswered(false);
+      setHQuizShowHint(false);
       setLives(3);
       setScore(0);
       setQuizComplete(false);
@@ -1535,10 +1537,14 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       return;
     }
 
-    let pool = [...HEBREW_VOCAB_DATA];
-    if (hQuizCategory !== 'all') {
+    let pool = [...fullVocabList];
+    if (hQuizCategory === 'frequent_70') {
+      const freqSet = new Set(HEBREW_FREQUENT_70_IDS);
+      pool = pool.filter(v => freqSet.has(v.id));
+      if (pool.length === 0) pool = fullVocabList.slice(0, 70);
+    } else if (hQuizCategory !== 'all') {
       pool = pool.filter(v => (v.category as string) === hQuizCategory || (hQuizCategory === 'noun' && ((v.category as string) === 'imenice' || !['glagoli', 'pridevi'].includes(v.category as string))));
-      if (pool.length < 5) pool = [...HEBREW_VOCAB_DATA];
+      if (pool.length < 5) pool = [...fullVocabList];
     }
     const shuffled = pool.sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, Math.min(hQuizQuestionCount, shuffled.length));
@@ -1547,7 +1553,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       const types: ('meaning' | 'vuk' | 'character' | 'listen')[] = ['meaning', 'vuk', 'character', 'listen'];
       const questionType = types[Math.floor(Math.random() * types.length)];
       
-      const otherVocabs = HEBREW_VOCAB_DATA.filter(v => v.id !== vocab.id);
+      const otherVocabs = fullVocabList.filter(v => v.id !== vocab.id);
       const wrongShuffled = otherVocabs.sort(() => Math.random() - 0.5).slice(0, 3);
       
       let correctAnswer = '';
@@ -1577,6 +1583,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     setQuestionIdx(0);
     setSelectedAnswer(null);
     setIsAnswered(false);
+    setHQuizShowHint(false);
     setLives(3);
     setScore(0);
     setQuizComplete(false);
@@ -1622,6 +1629,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       setQuestionIdx(nextIdx);
       setSelectedAnswer(null);
       setIsAnswered(false);
+      setHQuizShowHint(false);
       if (roundQuestions[nextIdx].questionType === 'listen') {
         setTimeout(() => speakHebrew(roundQuestions[nextIdx].vocab.char), 400);
       }
@@ -3264,12 +3272,12 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                         onChange={(e) => setHQuizCategory(e.target.value)}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-blue-300 font-bold"
                       >
-                        <option value="all">🌐 Sve Reči & Imenice ({HEBREW_VOCAB_DATA.length})</option>
-                        <option value="alphabet">🔤 Hebrejska Abeceda (Alef-Bet - 27 Slova & Gematrija)</option>
-                        <option value="imenice">📦 Imenice & Objekti</option>
+                        <option value="frequent_70">⭐ 70 Najčešćih Reči (Početni Špil / Osnove & Pozdravi)</option>
+                        <option value="all">🎴 Celokupna Riznica (Sve Reči: {fullVocabList.length})</option>
                         <option value="glagoli">⚡ Glagoli & Akcije</option>
-                        <option value="pridevi">✨ Pridevi & Opisi</option>
-                        <option value="zamenice">👤 Zamenice & Subjekti</option>
+                        <option value="mudrost">📜 Mudrost & Filozofija</option>
+                        <option value="svakodnevno">🗣️ Svakodnevno (Razgovori & Pozdravi)</option>
+                        <option value="alphabet">🔤 Hebrejska Abeceda (Alef-Bet - 27 Slova & Gematrija)</option>
                       </select>
                     </div>
 
@@ -3280,9 +3288,11 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                         onChange={(e) => setHQuizQuestionCount(Number(e.target.value))}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-blue-300 font-bold"
                       >
-                        <option value={5}>⚡ 5 Pitanja (Brzi Test)</option>
-                        <option value={10}>🔥 10 Pitanja (Standard)</option>
+                        <option value={30}>🔥 30 Pitanja (30 Pokušaja / Izazov Znanja)</option>
+                        <option value={20}>⚡ 20 Pitanja (Preporučeno)</option>
                         <option value={15}>🏆 15 Pitanja (Ekspert)</option>
+                        <option value={10}>🌱 10 Pitanja (Standard)</option>
+                        <option value={5}>⚡ 5 Pitanja (Brzi Test)</option>
                       </select>
                     </div>
                   </div>
@@ -3295,7 +3305,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   </div>
                   <div className={cn("p-3 rounded-2xl border", isDarkMode ? "bg-zinc-800/40 border-zinc-700/50" : "bg-zinc-50 border-zinc-200")}>
                     <p className="text-[10px] text-zinc-400">Savladano</p>
-                    <p className="text-base font-black text-emerald-400">{masteredIds.length}/{HEBREW_VOCAB_DATA.length}</p>
+                    <p className="text-base font-black text-emerald-400">{masteredIds.length}/{fullVocabList.length}</p>
                   </div>
                   <div className={cn("p-3 rounded-2xl border", isDarkMode ? "bg-zinc-800/40 border-zinc-700/50" : "bg-zinc-50 border-zinc-200")}>
                     <p className="text-[10px] text-zinc-400">Životi</p>
@@ -3305,7 +3315,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
 
                 <button
                   onClick={generateQuizRound}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-wider bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 cursor-pointer"
                 >
                   Započni Kviz Rundu 🚀
                 </button>
@@ -3322,8 +3332,11 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   <div className="flex items-center gap-1 text-red-500">
                     {'❤️'.repeat(lives)}
                   </div>
-                  <div className="text-blue-500">
-                    Pitanje {questionIdx + 1} / {roundQuestions.length}
+                  <div className="text-blue-500 flex items-center gap-2">
+                    <span>Pitanje {questionIdx + 1} / {roundQuestions.length}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] font-bold">
+                      {roundQuestions.length} Pokušaja
+                    </span>
                   </div>
                   <div className="text-emerald-500">
                     Poeni: {score}
@@ -3332,7 +3345,29 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
 
                 {/* Question */}
                 <div className="text-center space-y-3 my-4">
-                  <span className="text-5xl">{roundQuestions[questionIdx].vocab.emoji}</span>
+                  {/* Emoji Slot: Hidden by default so players cannot guess; Revealed via 'Hint' button or after answering */}
+                  <div className="min-h-[3.25rem] flex items-center justify-center">
+                    {(hQuizShowHint || isAnswered) ? (
+                      <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: 'spring', damping: 15 }}
+                        className="text-5xl filter drop-shadow select-none"
+                      >
+                        {roundQuestions[questionIdx].vocab.emoji}
+                      </motion.div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setHQuizShowHint(true)}
+                        className="px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group hover:border-amber-400 cursor-pointer"
+                        title="Kliknite na 'Hint' ako ne možete prepoznati reč da prikažete ikonicu kao pomoć"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400 group-hover:rotate-12 transition-transform" />
+                        <span>Hint 💡</span>
+                      </button>
+                    )}
+                  </div>
                   <h3 className="text-4xl font-serif font-black text-blue-400" dir="rtl">
                     {roundQuestions[questionIdx].vocab.char}
                   </h3>
