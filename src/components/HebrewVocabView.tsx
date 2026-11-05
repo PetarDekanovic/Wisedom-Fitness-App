@@ -11,6 +11,7 @@ import {
   XCircle, 
   Search, 
   Copy, 
+  Share2,
   Check,
   Zap,
   LayoutGrid,
@@ -3328,7 +3329,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                 isDarkMode ? "bg-zinc-900/80 border-zinc-800" : "bg-white border-zinc-200 shadow-md"
               )}>
                 {/* Status Bar */}
-                <div className="flex items-center justify-between font-mono text-xs font-black border-b pb-4 border-zinc-800/30">
+                <div className="flex items-center justify-between font-mono text-xs font-black border-b pb-4 border-zinc-800/30 flex-wrap gap-2">
                   <div className="flex items-center gap-1 text-red-500">
                     {'❤️'.repeat(lives)}
                   </div>
@@ -3338,8 +3339,24 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                       {roundQuestions.length} Pokušaja
                     </span>
                   </div>
-                  <div className="text-emerald-500">
-                    Poeni: {score}
+                  <div className="flex items-center gap-3">
+                    <div className="text-emerald-500">
+                      Poeni: {score}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopy(roundQuestions[questionIdx].vocab, e)}
+                      title="Kopiraj ovu reč i mudrost za društvene mreže"
+                      className={cn(
+                        "px-2.5 py-1 rounded-xl text-[11px] font-mono font-bold border transition-all flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer",
+                        copiedId === roundQuestions[questionIdx].vocab.id
+                          ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
+                          : "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
+                      )}
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>{copiedId === roundQuestions[questionIdx].vocab.id ? "Kopirano! ✨" : "Kopiraj za Social Media 📋"}</span>
+                    </button>
                   </div>
                 </div>
 
