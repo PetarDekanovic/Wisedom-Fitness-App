@@ -3330,8 +3330,8 @@ function AppContent() {
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
   const [chineseBGM, setChineseBGM] = useState<string | null>(null);
   const [focusTrack, setFocusTrack] = useState('https://www.youtube.com/embed/TBPE_2Z3-Y8?list=RDTBPE_2Z3-Y8');
-  const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0?loop=1&playlist=MQKg_O5X1e0');
-  const [chineseTrack, setChineseTrack] = useState('https://www.youtube.com/embed/6hv-iZQQ25Q?loop=1&playlist=6hv-iZQQ25Q');
+  const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0');
+  const [chineseTrack, setChineseTrack] = useState('https://www.youtube.com/embed/1hs9RGW88HE?autoplay=1&loop=1&playlist=1hs9RGW88HE');
   const [ecuadorTrack, setEcuadorTrack] = useState('https://www.youtube.com/embed/cNfwUnOIihA?list=PL0uIx_Noeipc9A_fJYo5OqxA8_RcE3uQk');
   const [gta4Track, setGta4Track] = useState('https://www.youtube.com/embed/CKOWaWpUVT0?list=RDCKOWaWpUVT0');
   const [tiestoActive, setTiestoActive] = useState(false);
@@ -6932,6 +6932,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                         setChineseBGM(chineseBGM === 'techno' ? null : 'techno');
                       } else {
                         setActiveSoundscape('techno');
+                        setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0');
                       }
                     }}
                     className={cn(
@@ -6941,8 +6942,8 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                         : (isDarkMode ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:bg-zinc-800" : "bg-zinc-50 border-zinc-100 text-zinc-500 hover:bg-zinc-100")
                     )}
                   >
-                    <Activity className="w-3 h-3" />
-                    Digital Jazz / Techno
+                    <Flame className="w-3 h-3 text-purple-400" />
+                    Phonk Music
                   </button>
                   <button
                     onClick={() => {
@@ -7025,7 +7026,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                         setChineseBGM(null);
                       } else {
                         setActiveSoundscape('learn-chinese');
-                        setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q');
+                        setChineseTrack('https://www.youtube.com/embed/1hs9RGW88HE?autoplay=1&loop=1&playlist=1hs9RGW88HE');
                       }
                     }}
                     className={cn(
@@ -7100,21 +7101,32 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                   <div className="bg-zinc-950 rounded-xl overflow-hidden border border-zinc-800/50">
                                     <div className="bg-zinc-900/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
                                       <button 
+                                        onClick={() => setChineseTrack('https://www.youtube.com/embed/1hs9RGW88HE?autoplay=1&loop=1&playlist=1hs9RGW88HE')}
+                                        className={cn(
+                                          "whitespace-nowrap px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
+                                          chineseTrack.includes('1hs9RGW88HE')
+                                            ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
+                                            : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+                                        )}
+                                      >
+                                        🇨🇳 Learn Chinese Masterclass
+                                      </button>
+                                      <button 
                                         onClick={() => setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q')}
                                         className={cn(
-                                          "whitespace-nowrap px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
+                                          "whitespace-nowrap px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
                                           chineseTrack.includes('6hv-iZQQ25Q')
                                             ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
                                             : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
                                         )}
                                       >
-                                        🇨🇳 Learn Chinese Lesson
+                                        🇨🇳 Foundation Lesson
                                       </button>
                                     </div>
                                     <iframe
                                       key={chineseTrack}
                                       width="100%"
-                                      height="160"
+                                      height="180"
                                       src={`${chineseTrack}${chineseTrack.includes('?') ? '&' : '?'}autoplay=1&mute=0&controls=1`}
                                       title="Chinese Lesson"
                                       frameBorder="0"
@@ -7145,7 +7157,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                         { id: 'focus', label: 'Focus Mode', icon: Volume2, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
                                         { id: 'ecuador', label: 'Ecuador', icon: Music, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
                                         { id: 'jazz', label: 'Smooth Jazz', icon: Music, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
-                                        { id: 'techno', label: 'Digital Jazz', icon: Activity, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+                                        { id: 'techno', label: 'Phonk Music', icon: Flame, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
                                         { id: 'classical', label: 'Classical', icon: Scroll, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
                                         { id: 'gta4', label: 'GTA 4', icon: Activity, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' }
                                       ].map((bgm) => (
@@ -7214,40 +7226,37 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                   {activeSoundscape === 'techno' && (
                                     <div className="bg-zinc-950/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
                                       <button 
-                                        onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                                        className="whitespace-nowrap px-2 py-1 rounded bg-purple-500/10 text-purple-400 text-[10px] font-black uppercase tracking-widest border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
-                                      >
-                                        SLAY!
-                                      </button>
-                                      <button 
                                         onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                                        className="whitespace-nowrap px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
+                                        className={cn(
+                                          "whitespace-nowrap px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
+                                          technoTrack.includes('MQKg_O5X1e0')
+                                            ? "bg-purple-500/20 text-purple-400 border-purple-500/40"
+                                            : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+                                        )}
                                       >
-                                        ETERNXLKZ RADIO
+                                        🏎️ ETERNXKLZ - SLAY! (Phonk Radio)
                                       </button>
                                       <button 
                                         onClick={() => setTechnoTrack('https://www.youtube.com/embed/fW_0N37-J10?autoplay=1&loop=1&playlist=fW_0N37-J10')}
-                                        className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                                        className={cn(
+                                          "whitespace-nowrap px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
+                                          technoTrack.includes('fW_0N37-J10')
+                                            ? "bg-purple-500/20 text-purple-400 border-purple-500/40"
+                                            : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+                                        )}
                                       >
-                                        BROKEN
+                                        🔥 BROKEN (Phonk)
                                       </button>
                                       <button 
                                         onClick={() => setTechnoTrack('https://www.youtube.com/embed/GZonvFvV5Wc?autoplay=1&loop=1&playlist=GZonvFvV5Wc')}
-                                        className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
+                                        className={cn(
+                                          "whitespace-nowrap px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
+                                          technoTrack.includes('GZonvFvV5Wc')
+                                            ? "bg-purple-500/20 text-purple-400 border-purple-500/40"
+                                            : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+                                        )}
                                       >
-                                        ENEMIES
-                                      </button>
-                                      <button 
-                                        onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                                        className="whitespace-nowrap px-2 py-1 rounded bg-teal-500/20 text-teal-400 text-[10px] font-black uppercase tracking-widest border border-teal-500/30 hover:bg-teal-500/30 transition-colors"
-                                      >
-                                        TRAP MIX
-                                      </button>
-                                      <button 
-                                        onClick={() => setTechnoTrack('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDEMyEayXoX3bI9_KAnv5QpOnA&autoplay=1&loop=1&playlist=MQKg_O5X1e0')}
-                                        className="whitespace-nowrap px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-700 transition-colors"
-                                      >
-                                        ETERNXLKZ MIX
+                                        ⚡ ENEMIES (Drift Phonk)
                                       </button>
                                     </div>
                                   )}
