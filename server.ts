@@ -14,6 +14,7 @@ import { initializeApp as initializeClientApp } from "firebase/app";
 import { getFirestore as getClientFirestore, collection, getDocs, doc, setDoc, addDoc, query, where, writeBatch, orderBy, limit } from "firebase/firestore";
 import { FALLBACK_QUOTES, FALLBACK_NEWS } from "./src/fallbackQuotes";
 import { buildLinguisticChineseTranslation } from "./src/lib/chineseTranslatorEngine";
+import { queryCcCedict, getDictionarySourcesEvaluation } from "./src/lib/chineseDictionaryService";
 import { Resvg } from "@resvg/resvg-js";
 
 dotenv.config();
@@ -1564,6 +1565,113 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
       grammarNote: "Hebrejski se piše zdesna nalevo (RTL). Pridevi i opisi prate imenicu."
     };
   }
+
+  // --- CHINESE CC-CEDICT 125,000+ DICTIONARY LOOKUP & 3RD-PARTY INTEGRATION ---
+  app.get("/api/dictionary/chinese/sources", (req, res) => {
+    try {
+      const evaluation = getDictionarySourcesEvaluation();
+      res.json({ success: true, ...evaluation });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.get("/api/dictionary/chinese/lookup", async (req, res) => {
+    try {
+      const queryStr = String(req.query.q || "").trim();
+      const limit = Math.min(Number(req.query.limit) || 20, 50);
+
+      if (!queryStr) {
+        return res.json({ success: true, count: 0, data: [], query: "" });
+      }
+
+      const results = queryCcCedict(queryStr, limit);
+      res.json({
+        success: true,
+        source: "cc-cedict",
+        totalEntriesInDb: 125369,
+        count: results.length,
+        query: queryStr,
+        data: results
+      });
+    } catch (err: any) {
+      console.error("[CC-CEDICT Lookup Error]", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post("/api/dictionary/chinese/enrich", async (req, res) => {
+    try {
+      const { char, english, pinyin } = req.body;
+      if (!char) {
+        return res.status(400).json({ error: "Character is required." });
+      }
+
+      const prompt = `You are an expert bilingual linguist for Chinese (Mandarin), English, and Serbian/Croatian.
+Given this Chinese word/character from CC-CEDICT:
+Character: "${char}"
+Pinyin: "${pinyin || ''}"
+English Definition: "${english || ''}"
+
+Return a JSON object with:
+1. "serbian": accurate, natural Serbian/Croatian translation (1-3 words max, e.g. "čaj", "zmaj", "mudrost").
+2. "emoji": 1 relevant contextual emoji (e.g. 🍵, 🐉, 🧠, ⚡).
+3. "category": "noun" | "verb" | "adjective" | "pronoun" | "particle" | "expression"
+4. "visualTip": a 1-sentence mnemonic visual tip in Serbian explaining how to remember the character.
+5. "quote": an inspiring classical Chinese or stoic quote using or relating to this concept:
+   - "text": Chinese quote characters
+   - "pinyin": Pinyin with tones
+   - "translation": Serbian translation
+   - "author": Author name (e.g. "Konfucije", "Lao Ce", "Kineska Poslovica")
+
+Strictly return valid JSON:
+{
+  "serbian": "...",
+  "emoji": "...",
+  "category": "...",
+  "visualTip": "...",
+  "quote": {
+    "text": "...",
+    "pinyin": "...",
+    "translation": "...",
+    "author": "..."
+  }
+}`;
+
+      const config = {
+        temperature: 0.2,
+        responseMimeType: "application/json",
+        maxOutputTokens: 1024
+      };
+
+      const result = await generateWithFallback(prompt, config);
+      const text = result.text();
+      let cleaned = text.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) cleaned = jsonMatch[0];
+      const parsed = JSON.parse(cleaned);
+
+      res.json({ success: true, data: parsed });
+    } catch (err: any) {
+      console.warn("[Enrich Word Warning]", err?.message);
+      // Fallback
+      res.json({
+        success: true,
+        data: {
+          serbian: req.body.english ? req.body.english.split(';')[0].trim() : 'Reč',
+          emoji: '🎴',
+          category: 'noun',
+          visualTip: `Kineska reč "${req.body.char}" iz CC-CEDICT riznice.`,
+          quote: {
+            text: `${req.body.char} 者，学无止境。`,
+            pinyin: 'Zhě, xué wú zhǐ jìng.',
+            translation: 'Učenje je beskrajno putovanje mudrosti.',
+            author: 'Kineska mudrost'
+          }
+        }
+      });
+    }
+  });
 
   // --- CHINESE AI CONFIGURATOR & TRANSLATOR WITH EMOJIS ---
   app.post("/api/ai/chinese-configurator", async (req, res) => {

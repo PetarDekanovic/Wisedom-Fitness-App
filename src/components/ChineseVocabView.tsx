@@ -41,6 +41,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { CHINESE_VOCAB_EXPANDED, VocabItem, getChineseQuoteForItem } from '../data/chineseVocabData';
 import { ChineseFlashcardsGame } from './ChineseFlashcardsGame';
+import { ChineseDictExplorerModal } from './ChineseDictExplorerModal';
 import { buildLinguisticChineseTranslation } from '../lib/chineseTranslatorEngine';
 
 export type { VocabItem };
@@ -943,6 +944,29 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     return [...savedCustomWords, ...VOCAB_DATA];
   }, [savedCustomWords]);
 
+  // CC-CEDICT 125,000+ Dictionary Explorer & 3rd Party API State
+  const [isDictExplorerOpen, setIsDictExplorerOpen] = useState(false);
+  const [dictExplorerInitialQuery, setDictExplorerInitialQuery] = useState('');
+  const [dictToast, setDictToast] = useState<string | null>(null);
+
+  const existingCharactersSet = useMemo(() => {
+    return new Set(fullVocabList.map(v => v.char));
+  }, [fullVocabList]);
+
+  const handleWordAddedFromDict = (newWord: VocabItem) => {
+    setSavedCustomWords(prev => {
+      const existing = new Set(prev.map(p => p.char));
+      if (existing.has(newWord.char)) return prev;
+      const updated = [newWord, ...prev];
+      try {
+        localStorage.setItem('wisefit_chinese_custom_words', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setDictToast(`Reč "${newWord.char}" (${newWord.pinyin}) je dodata na vrh rečnika i u Kviz! 🎴✨`);
+    setTimeout(() => setDictToast(null), 3500);
+  };
+
   const handleTranslateWithAi = async (overrideSentence?: string, overrideEngine?: 'auto' | 'claude' | 'gemini' | 'offline') => {
     const textToTranslate = (overrideSentence !== undefined ? overrideSentence : aiInputSentence).trim();
     if (!textToTranslate) {
@@ -1047,20 +1071,23 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     const toAdd = newItems.filter(item => !existingChars.has(item.char));
 
     if (toAdd.length === 0) {
-      alert('Sve reči iz ove rečenice se već nalaze u vašoj riznici!');
+      setDictToast('Sve reči iz ove rečenice se već nalaze u vašoj riznici!');
+      setTimeout(() => setDictToast(null), 2500);
       return;
     }
 
-    const updated = [...savedCustomWords, ...toAdd];
+    const updated = [...toAdd, ...savedCustomWords];
     setSavedCustomWords(updated);
     localStorage.setItem('wisefit_chinese_custom_words', JSON.stringify(updated));
-    alert(`Uspešno dodato ${toAdd.length} novih reči u vaš rečnik i flashcards igru! 🎴✨`);
+    setDictToast(`Uspešno dodato ${toAdd.length} novih reči u vaš rečnik i flashcards igru! 🎴✨`);
+    setTimeout(() => setDictToast(null), 3000);
   };
 
   const handleSaveSingleAiWord = (word: AiConfigWordItemChinese) => {
     const existingChars = new Set([...VOCAB_DATA.map(v => v.char), ...savedCustomWords.map(v => v.char)]);
     if (existingChars.has(word.chinese)) {
-      alert(`Reč "${word.chinese}" se već nalazi u vašem rečniku!`);
+      setDictToast(`Reč "${word.chinese}" se već nalazi u vašem rečniku!`);
+      setTimeout(() => setDictToast(null), 2500);
       return;
     }
 
@@ -1084,10 +1111,11 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
       }
     };
 
-    const updated = [...savedCustomWords, newItem];
+    const updated = [newItem, ...savedCustomWords];
     setSavedCustomWords(updated);
     localStorage.setItem('wisefit_chinese_custom_words', JSON.stringify(updated));
-    alert(`Reč "${word.chinese}" (${word.serbian}) je sačuvana u rečnik! 🌟`);
+    setDictToast(`Reč "${word.chinese}" (${word.serbian}) je sačuvana u rečnik! 🌟`);
+    setTimeout(() => setDictToast(null), 3000);
   };
 
   const handleCopySingleWord = (word: AiConfigWordItemChinese, idx: number) => {
@@ -1918,18 +1946,38 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
 
             {/* Filter controls */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="relative w-full md:w-72">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-                <input
-                  type="text"
-                  placeholder="Pretraži karaktere, pinyin, radikal ili prevod..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+              <div className="flex items-center gap-2.5 w-full md:w-auto">
+                <div className="relative flex-1 md:w-72">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <input
+                    type="text"
+                    placeholder="Pretraži karaktere, pinyin, radikal ili prevod..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={cn(
+                      "w-full pl-10 pr-4 py-2 rounded-xl text-xs font-medium border outline-none transition-all",
+                      isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-100 focus:border-red-500" : "bg-white border-zinc-200 text-zinc-900 focus:border-red-500"
+                    )}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDictExplorerInitialQuery(searchQuery || '');
+                    setIsDictExplorerOpen(true);
+                  }}
                   className={cn(
-                    "w-full pl-10 pr-4 py-2 rounded-xl text-xs font-medium border outline-none transition-all",
-                    isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-100 focus:border-red-500" : "bg-white border-zinc-200 text-zinc-900 focus:border-red-500"
+                    "px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 border shadow-md cursor-pointer active:scale-95 text-white whitespace-nowrap",
+                    isGirlyMode
+                      ? "bg-pink-500 hover:bg-pink-400 border-pink-400"
+                      : "bg-red-600 hover:bg-red-500 border-red-500 shadow-red-600/20"
                   )}
-                />
+                  title="Otvori bazu od 125,369 CC-CEDICT reči i pretraži bilo koji pojam"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>+ CC-CEDICT (125k)</span>
+                </button>
               </div>
 
               <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1">
@@ -1937,7 +1985,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                   { id: 'all', label: `Sve (${fullVocabList.length})` },
                   { id: 'basic_70', label: '🌱 70 Osnovnih' },
                   { id: 'glagoli', label: '⚡ 100 Glagola' },
-                  ...(savedCustomWords.length > 0 ? [{ id: 'custom', label: `🤖 Sačuvano iz AI (${savedCustomWords.length})` }] : []),
+                  ...(savedCustomWords.length > 0 ? [{ id: 'custom', label: `🤖 Sačuvano (${savedCustomWords.length})` }] : []),
                   { id: 'strofa_1', label: ' Strofa 1' },
                   { id: 'refren', label: ' Refren' },
                   { id: 'svakodnevno', label: ' Svakodnevno' },
@@ -1963,6 +2011,35 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                 ))}
               </div>
             </div>
+
+            {filteredVocab.length === 0 && (
+              <div className={cn(
+                "p-8 rounded-3xl border text-center space-y-4 my-4",
+                isDarkMode ? "bg-zinc-900/60 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+              )}>
+                <BookOpen className="w-10 h-10 text-zinc-500 mx-auto" />
+                <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-white">Nema pronađenih reči za "{searchQuery}" u trenutnom prikazu</h4>
+                  <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                    Pretražite kompletnu integrisanu bazu od 125,369 CC-CEDICT unosa i jednim klikom dodajte pojam u svoj rečnik i kviz.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDictExplorerInitialQuery(searchQuery);
+                    setIsDictExplorerOpen(true);
+                  }}
+                  className={cn(
+                    "px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all inline-flex items-center gap-2 shadow-lg cursor-pointer active:scale-95",
+                    isGirlyMode ? "bg-pink-500 hover:bg-pink-400" : "bg-red-600 hover:bg-red-500 shadow-red-600/30"
+                  )}
+                >
+                  <Search className="w-4 h-4" />
+                  <span>Pretraži "{searchQuery}" u CC-CEDICT (125,369 Reči) 🚀</span>
+                </button>
+              </div>
+            )}
 
             {/* Grid of Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
@@ -4458,6 +4535,26 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
           </div>
         )}
       </AnimatePresence>
+
+      {/* CC-CEDICT 125,000+ Word Explorer & 3rd-Party API Modal */}
+      <ChineseDictExplorerModal
+        isOpen={isDictExplorerOpen}
+        onClose={() => setIsDictExplorerOpen(false)}
+        onWordAdded={handleWordAddedFromDict}
+        existingChars={existingCharactersSet}
+        isDarkMode={isDarkMode}
+        isGirlyMode={isGirlyMode}
+        speakChinese={speakChinese}
+        initialQuery={dictExplorerInitialQuery}
+      />
+
+      {/* Non-blocking Toast Notification */}
+      {dictToast && (
+        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-emerald-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-emerald-400 animate-in fade-in slide-in-from-bottom-2">
+          <CheckCircle className="w-4 h-4 text-white shrink-0" />
+          <span>{dictToast}</span>
+        </div>
+      )}
     </div>
   );
 };
