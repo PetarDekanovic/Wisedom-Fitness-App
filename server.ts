@@ -1585,7 +1585,7 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
         return res.json({ success: true, count: 0, data: [], query: "" });
       }
 
-      const results = queryCcCedict(queryStr, limit);
+      const results = await queryCcCedict(queryStr, limit);
       res.json({
         success: true,
         source: "cc-cedict",

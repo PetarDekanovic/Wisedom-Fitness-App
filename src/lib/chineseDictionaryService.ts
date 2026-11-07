@@ -1,4 +1,16 @@
-import cedict from 'cc-cedict';
+let cedictInstance: any = null;
+
+export async function getCedictInstance(): Promise<any> {
+  if (!cedictInstance) {
+    try {
+      const mod = await import('cc-cedict');
+      cedictInstance = mod.default || mod;
+    } catch (err) {
+      console.warn('[CC-CEDICT Dynamic Import Warning]', err);
+    }
+  }
+  return cedictInstance;
+}
 
 export interface CcCedictWordEntry {
   id: string;
@@ -204,8 +216,11 @@ function guessCategory(defs: string[]): CcCedictWordEntry['category'] {
  * - English reverse search (with exact match priority)
  * - Pinyin search
  */
-export function queryCcCedict(queryStr: string, maxResults: number = 20): CcCedictWordEntry[] {
+export async function queryCcCedict(queryStr: string, maxResults: number = 20): Promise<CcCedictWordEntry[]> {
   if (!queryStr || !queryStr.trim()) return [];
+  const cedict = await getCedictInstance();
+  if (!cedict) return [];
+
   const cleanQ = queryStr.trim();
   const isChineseChar = /[\u4e00-\u9fa5]/.test(cleanQ);
 
