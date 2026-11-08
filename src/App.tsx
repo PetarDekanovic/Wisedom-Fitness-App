@@ -3331,7 +3331,7 @@ function AppContent() {
   const [chineseBGM, setChineseBGM] = useState<string | null>(null);
   const [focusTrack, setFocusTrack] = useState('https://www.youtube.com/embed/TBPE_2Z3-Y8?list=RDTBPE_2Z3-Y8');
   const [technoTrack, setTechnoTrack] = useState('https://www.youtube.com/embed/MQKg_O5X1e0?list=RDMQKg_O5X1e0&autoplay=1&loop=1&playlist=MQKg_O5X1e0');
-  const [chineseTrack, setChineseTrack] = useState('https://www.youtube.com/embed/1hs9RGW88HE?autoplay=1&loop=1&playlist=1hs9RGW88HE');
+  const [chineseTrack, setChineseTrack] = useState('https://www.youtube.com/embed/cKI_qYxPwZ0?autoplay=1&loop=1&playlist=cKI_qYxPwZ0');
   const [ecuadorTrack, setEcuadorTrack] = useState('https://www.youtube.com/embed/cNfwUnOIihA?list=PL0uIx_Noeipc9A_fJYo5OqxA8_RcE3uQk');
   const [gta4Track, setGta4Track] = useState('https://www.youtube.com/embed/CKOWaWpUVT0?list=RDCKOWaWpUVT0');
   const [tiestoActive, setTiestoActive] = useState(false);
@@ -7026,7 +7026,9 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                         setChineseBGM(null);
                       } else {
                         setActiveSoundscape('learn-chinese');
-                        setChineseTrack('https://www.youtube.com/embed/1hs9RGW88HE?autoplay=1&loop=1&playlist=1hs9RGW88HE');
+                        if (!chineseTrack) {
+                          setChineseTrack('https://www.youtube.com/embed/cKI_qYxPwZ0?autoplay=1&loop=1&playlist=cKI_qYxPwZ0');
+                        }
                       }
                     }}
                     className={cn(
@@ -7101,6 +7103,17 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                   <div className="bg-zinc-950 rounded-xl overflow-hidden border border-zinc-800/50">
                                     <div className="bg-zinc-900/90 p-2 border-b border-zinc-800/50 flex gap-2 overflow-x-auto no-scrollbar">
                                       <button 
+                                        onClick={() => setChineseTrack('https://www.youtube.com/embed/cKI_qYxPwZ0?autoplay=1&loop=1&playlist=cKI_qYxPwZ0')}
+                                        className={cn(
+                                          "whitespace-nowrap px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
+                                          chineseTrack.includes('cKI_qYxPwZ0')
+                                            ? "bg-rose-500/20 text-rose-400 border-rose-500/40"
+                                            : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
+                                        )}
+                                      >
+                                        🇨🇳 500 Essential Vocab (1 Hr)
+                                      </button>
+                                      <button 
                                         onClick={() => setChineseTrack('https://www.youtube.com/embed/1hs9RGW88HE?autoplay=1&loop=1&playlist=1hs9RGW88HE')}
                                         className={cn(
                                           "whitespace-nowrap px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest border transition-colors",
@@ -7109,7 +7122,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                                             : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"
                                         )}
                                       >
-                                        🇨🇳 Learn Chinese Masterclass
+                                        🇨🇳 Masterclass
                                       </button>
                                       <button 
                                         onClick={() => setChineseTrack('https://www.youtube.com/embed/6hv-iZQQ25Q?autoplay=1&loop=1&playlist=6hv-iZQQ25Q')}
