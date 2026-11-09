@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Volume2, 
   Volume1, 
-  Play, 
-  Square, 
   Copy, 
   Check, 
   Search, 
@@ -13,16 +11,17 @@ import {
   Eye, 
   EyeOff, 
   Languages, 
-  Share2, 
   BookOpen, 
-  ChevronRight, 
   Maximize2, 
   X, 
   RotateCcw,
-  Sliders,
-  HelpCircle,
   Layers,
-  ArrowRight
+  ArrowRight,
+  ExternalLink,
+  MessageSquare,
+  HelpCircle,
+  Hash,
+  Bookmark
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { 
@@ -32,26 +31,40 @@ import {
   RealLifeSentence,
   TOTAL_REAL_LIFE_WORDS
 } from '../data/chineseRealLifeClustersData';
+import { ChineseDictExplorerModal } from './ChineseDictExplorerModal';
 
 interface ChineseRealLifeExamplesProps {
   isDarkMode?: boolean;
+  isGirlyMode?: boolean;
+  onOpenDictionary?: (query?: string) => void;
 }
 
-export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = ({ isDarkMode = true }) => {
+export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = ({ 
+  isDarkMode = true,
+  isGirlyMode = false,
+  onOpenDictionary
+}) => {
   // State
   const [selectedClusterId, setSelectedClusterId] = useState<string>('c1-r1');
   const [chartFilter, setChartFilter] = useState<'all' | 'chart1' | 'chart2'>('all');
+  const [wordFilterType, setWordFilterType] = useState<'all' | 'core' | 'compounds'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isPronouncingId, setIsPronouncingId] = useState<string | null>(null);
   const [showPinyin, setShowPinyin] = useState(true);
+  const [showVuk, setShowVuk] = useState(false);
   const [showSerbian, setShowSerbian] = useState(true);
   const [showEnglish, setShowEnglish] = useState(true);
+  const [showWordBreakdown, setShowWordBreakdown] = useState(false);
   const [isSlowAudio, setIsSlowAudio] = useState(false);
   const [testYourselfMode, setTestYourselfMode] = useState(false);
   const [revealedSentenceIds, setRevealedSentenceIds] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [modalChartImage, setModalChartImage] = useState<string | null>(null);
   const [activeWordFilter, setActiveWordFilter] = useState<string | null>(null);
+
+  // Embedded dictionary modal state
+  const [dictModalOpen, setDictModalOpen] = useState(false);
+  const [dictModalQuery, setDictModalQuery] = useState('');
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -67,7 +80,18 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
     return REAL_LIFE_CLUSTERS.find(c => c.id === selectedClusterId) || REAL_LIFE_CLUSTERS[0];
   }, [selectedClusterId]);
 
-  // Global search filtering across characters and sentences
+  // Active cluster words filtered by tab (All, Core Roots, Frequent Compounds)
+  const displayedClusterWords = useMemo(() => {
+    if (wordFilterType === 'core') {
+      return activeCluster.words.filter(w => w.isCoreChar);
+    }
+    if (wordFilterType === 'compounds') {
+      return activeCluster.words.filter(w => !w.isCoreChar);
+    }
+    return activeCluster.words;
+  }, [activeCluster, wordFilterType]);
+
+  // Global search filtering across all 440 words and 80+ sentences
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return null;
     const q = searchQuery.trim().toLowerCase();
@@ -81,8 +105,10 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
           w.char.includes(q) ||
           (w.charTraditional && w.charTraditional.includes(q)) ||
           w.pinyin.toLowerCase().includes(q) ||
+          w.vuk.toLowerCase().includes(q) ||
           w.english.toLowerCase().includes(q) ||
-          w.serbian.toLowerCase().includes(q)
+          w.serbian.toLowerCase().includes(q) ||
+          w.exampleUse.toLowerCase().includes(q)
         ) {
           matchedWords.push({ cluster, word: w });
         }
@@ -91,7 +117,9 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
       for (const s of cluster.sentences) {
         if (
           s.chinese.includes(q) ||
+          (s.chineseTraditional && s.chineseTraditional.includes(q)) ||
           s.pinyin.toLowerCase().includes(q) ||
+          s.vuk.toLowerCase().includes(q) ||
           s.english.toLowerCase().includes(q) ||
           s.serbian.toLowerCase().includes(q) ||
           s.targetWords.some(tw => tw.includes(q))
@@ -200,11 +228,32 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
     });
   };
 
+  // Open dictionary lookup
+  const handleOpenDict = (query: string) => {
+    if (onOpenDictionary) {
+      onOpenDictionary(query);
+    } else {
+      setDictModalQuery(query);
+      setDictModalOpen(true);
+    }
+  };
+
   // Filter sentences by clicked word if active
   const filteredSentences = useMemo(() => {
     if (!activeWordFilter) return activeCluster.sentences;
     return activeCluster.sentences.filter(s => s.targetWords.includes(activeWordFilter));
   }, [activeCluster, activeWordFilter]);
+
+  // Set of existing characters for dict modal
+  const existingCharsSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of REAL_LIFE_CLUSTERS) {
+      for (const w of c.words) {
+        set.add(w.char);
+      }
+    }
+    return set;
+  }, []);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
@@ -225,19 +274,35 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
               <Sparkles className="w-3.5 h-3.5 animate-pulse" />
               Real Life Examples • Životni Primeri
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5">
-              <span>200 Core Characters in 20 Clusters</span>
-              <span className="text-xs px-2 py-0.5 rounded-md font-medium border bg-amber-500/10 text-amber-400 border-amber-500/20">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex flex-wrap items-center gap-2.5">
+              <span>440 Native Words & Phrases in 20 Clusters</span>
+              <span className="text-xs px-2.5 py-1 rounded-md font-bold border bg-amber-500/15 text-amber-400 border-amber-500/30">
+                22 Words / Cluster
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-md font-medium border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                 100% TTS Audio
               </span>
             </h1>
-            <p className={cn("text-xs sm:text-sm max-w-2xl leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
-              Master all 200 essential characters arranged in intuitive 10-word thematic clusters. Examine the authentic infographic charts, learn character meanings, and absorb natural real-life sentences with interactive pronunciation.
+            <p className={cn("text-xs sm:text-sm max-w-3xl leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+              Learn natural conversational Chinese using curated word clusters. Each cluster pairs the <strong>10 foundational chart roots</strong> with <strong>12 high-frequency conversational compounds</strong> used by native speakers daily. Look up any entry in the 125,000+ CC-CEDICT dictionary and listen to authentic dialogue sentences with full translations.
             </p>
           </div>
 
-          {/* Quick Chart View Buttons */}
+          {/* Quick Chart & Dict Action Buttons */}
           <div className="flex flex-wrap sm:flex-nowrap gap-2.5 w-full md:w-auto">
+            <button
+              onClick={() => handleOpenDict('')}
+              className={cn(
+                "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all border shadow-sm active:scale-95",
+                isDarkMode 
+                  ? "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300" 
+                  : "bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800"
+              )}
+              title="Search CC-CEDICT 125,000+ words"
+            >
+              <BookOpen className="w-4 h-4 text-amber-400" />
+              <span>CC-CEDICT Dict (125k)</span>
+            </button>
             <button
               onClick={() => setModalChartImage('/assets/aistudio/image_1536d14f.png')}
               className={cn(
@@ -261,7 +326,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
               )}
             >
               <ImageIcon className="w-4 h-4 text-emerald-500" />
-              <span>Chart 2 (100 Actions)</span>
+              <span>Chart 2 (100 Verbs)</span>
               <Maximize2 className="w-3 h-3 opacity-60 ml-0.5" />
             </button>
           </div>
@@ -276,7 +341,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by Hanzi, Pinyin, English or Serbian (e.g., 茶, cha, tea, čaj, 森林)..."
+              placeholder="Search across all 440 words & 80+ sentences (e.g., 多少, cha, tea, čaj, 森林, kupovina)..."
               className={cn(
                 "w-full pl-10 pr-9 py-2 rounded-xl text-xs font-medium transition-all outline-none border",
                 isDarkMode 
@@ -310,6 +375,35 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
               Pinyin {showPinyin ? 'On' : 'Off'}
             </button>
 
+            {/* Vuk Transliteration Toggle */}
+            <button
+              onClick={() => setShowVuk(!showVuk)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider text-[10px] border transition-all active:scale-95",
+                showVuk 
+                  ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-400" 
+                  : (isDarkMode ? "bg-zinc-800/60 border-zinc-700 text-zinc-400" : "bg-zinc-100 border-zinc-200 text-zinc-600")
+              )}
+              title="Show Serbian Vuk phonetic transliteration (e.g., dà xiǎo -> da sjao)"
+            >
+              <span>Vuk</span> {showVuk ? 'On' : 'Off'}
+            </button>
+
+            {/* Word Breakdown Toggle */}
+            <button
+              onClick={() => setShowWordBreakdown(!showWordBreakdown)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold uppercase tracking-wider text-[10px] border transition-all active:scale-95",
+                showWordBreakdown 
+                  ? "bg-purple-500/15 border-purple-500/30 text-purple-400" 
+                  : (isDarkMode ? "bg-zinc-800/60 border-zinc-700 text-zinc-400" : "bg-zinc-100 border-zinc-200 text-zinc-600")
+              )}
+              title="Show individual token word analysis in dialogue sentences"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              Breakdown {showWordBreakdown ? 'On' : 'Off'}
+            </button>
+
             {/* Slow Audio Toggle */}
             <button
               onClick={() => setIsSlowAudio(!isSlowAudio)}
@@ -321,7 +415,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
               )}
             >
               {isSlowAudio ? <Volume1 className="w-3.5 h-3.5 text-amber-400" /> : <Volume2 className="w-3.5 h-3.5" />}
-              {isSlowAudio ? '0.75x Slow Speed' : '1.0x Normal Speed'}
+              {isSlowAudio ? '0.75x Slow' : '1.0x Normal'}
             </button>
 
             {/* Test Yourself Practice Mode */}
@@ -362,8 +456,8 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
           {/* Matched Words */}
           {searchResults.matchedWords.length > 0 && (
             <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Matching Characters</span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Matching Words & Compounds</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {searchResults.matchedWords.map(({ cluster, word }) => {
                   const pId = `search-word-${word.char}`;
                   const isPlaying = isPronouncingId === pId;
@@ -371,29 +465,59 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                     <div
                       key={pId}
                       className={cn(
-                        "p-3 rounded-2xl border transition-all relative flex flex-col justify-between group",
+                        "p-3.5 rounded-2xl border transition-all relative flex flex-col justify-between group",
                         isDarkMode ? "bg-zinc-900/60 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300"
                       )}
                     >
                       <div className="flex items-start justify-between">
-                        <span className="text-2xl font-black text-rose-500">{word.char}</span>
-                        <button
-                          onClick={() => playAudio(word.char, pId)}
-                          className={cn(
-                            "p-1.5 rounded-full transition-all",
-                            isPlaying ? "bg-rose-500 text-white animate-pulse" : "bg-zinc-800/80 text-zinc-300 hover:text-white"
+                        <div>
+                          <span className={cn(
+                            "font-serif font-black",
+                            word.char.length > 2 ? "text-xl text-rose-400" : "text-2xl sm:text-3xl text-rose-500"
+                          )}>
+                            {word.char}
+                          </span>
+                          {word.isCoreChar ? (
+                            <span className="ml-1.5 text-[9px] px-1.5 py-0.2 rounded font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              Core Root
+                            </span>
+                          ) : (
+                            <span className="ml-1.5 text-[9px] px-1.5 py-0.2 rounded font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              Compound
+                            </span>
                           )}
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                        </button>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleOpenDict(word.char)}
+                            className="p-1.5 rounded-full bg-zinc-800/80 text-zinc-400 hover:text-amber-400 transition-colors"
+                            title="Look up in CC-CEDICT"
+                          >
+                            <BookOpen className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => playAudio(word.char, pId)}
+                            className={cn(
+                              "p-1.5 rounded-full transition-all",
+                              isPlaying ? "bg-rose-500 text-white animate-pulse" : "bg-zinc-800/80 text-zinc-300 hover:text-white"
+                            )}
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
+
                       <div className="mt-2 space-y-0.5">
                         <p className="text-xs font-bold text-amber-400">{word.pinyin}</p>
+                        {showVuk && <p className="text-[10px] text-cyan-400 font-mono">[{word.vuk}]</p>}
                         <p className="text-[11px] font-medium text-zinc-300 truncate">{word.english}</p>
-                        <p className="text-[10px] text-zinc-500 truncate">{word.serbian}</p>
+                        <p className="text-[10px] text-zinc-400 truncate">{word.serbian}</p>
+                        <p className="text-[10px] text-zinc-500 italic truncate mt-1">Ex: {word.exampleUse}</p>
                       </div>
+
                       <div className="mt-2 pt-2 border-t border-zinc-800/50 flex justify-between items-center text-[9px] text-zinc-500">
-                        <span>{cluster.title}</span>
+                        <span>{cluster.emoji} {cluster.title}</span>
                         <button
                           onClick={() => {
                             setSelectedClusterId(cluster.id);
@@ -450,8 +574,9 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                         </button>
                       </div>
                     </div>
-                    <p className="text-base font-bold text-zinc-100">{sentence.chinese}</p>
+                    <p className="text-lg font-black text-zinc-100">{sentence.chinese}</p>
                     <p className="text-xs text-amber-400 font-medium">{sentence.pinyin}</p>
+                    {showVuk && <p className="text-xs text-cyan-400 font-mono">[{sentence.vuk}]</p>}
                     <p className="text-xs text-zinc-300">{sentence.english}</p>
                     <p className="text-xs text-zinc-400 italic">{sentence.serbian}</p>
                   </div>
@@ -467,9 +592,9 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
           <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3 gap-3 overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-1.5">
               {[
-                { id: 'all', label: 'All 20 Clusters', count: 20 },
-                { id: 'chart1', label: 'Chart 1: Foundation (Rows 1–10)', count: 10 },
-                { id: 'chart2', label: 'Chart 2: Actions & Nature (Rows 11–20)', count: 10 }
+                { id: 'all', label: 'All 20 Clusters (440 Words)', count: 20 },
+                { id: 'chart1', label: 'Chart 1: Foundation (Rows 1–10 • 220 Words)', count: 10 },
+                { id: 'chart2', label: 'Chart 2: Actions & Nature (Rows 11–20 • 220 Words)', count: 10 }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -487,7 +612,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
             </div>
 
             <span className="text-[11px] font-medium text-zinc-500 hidden sm:inline-block">
-              {displayedClusters.length} of {REAL_LIFE_CLUSTERS.length} clusters available
+              {displayedClusters.length} clusters • 440 total words
             </span>
           </div>
 
@@ -525,8 +650,8 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                           {cluster.title}
                         </h3>
                       </div>
-                      <p className="text-[10px] text-zinc-500 truncate max-w-[120px]">
-                        {cluster.titleSerbian}
+                      <p className="text-[10px] text-zinc-500 truncate max-w-[130px]">
+                        {cluster.titleSerbian} • 22 reči
                       </p>
                     </div>
                   </button>
@@ -551,7 +676,9 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                     <span className="text-xs font-black uppercase tracking-wider text-rose-500">
                       Chart {activeCluster.chartId} • Row {activeCluster.rowNumber}
                     </span>
-                    <span className="text-[11px] text-zinc-500">• 10 Target Characters</span>
+                    <span className="text-[11px] text-zinc-500">
+                      • {activeCluster.words.length} Vocabulary Items (10 Roots + 12 Native Compounds)
+                    </span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-black text-zinc-100 flex items-center gap-2">
                     <span>{activeCluster.title}</span>
@@ -561,97 +688,174 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                 </div>
               </div>
 
-              {/* View Chart Row in Original Image button */}
-              <button
-                onClick={() => setModalChartImage(activeCluster.chartImage)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95",
-                  isDarkMode ? "bg-zinc-800 text-zinc-200 border-zinc-700 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-700 border-zinc-200 hover:bg-zinc-200"
-                )}
-              >
-                <ImageIcon className="w-3.5 h-3.5 text-rose-500" />
-                <span>View Full Chart {activeCluster.chartId} Image</span>
-              </button>
+              {/* Action Buttons: Full Image & Dictionary */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => handleOpenDict(activeCluster.words[0]?.char || '')}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95",
+                    isDarkMode ? "bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20" : "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                  )}
+                  title="Search CC-CEDICT for this cluster"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Explore in CC-CEDICT</span>
+                </button>
+                <button
+                  onClick={() => setModalChartImage(activeCluster.chartImage)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95",
+                    isDarkMode ? "bg-zinc-800 text-zinc-200 border-zinc-700 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-700 border-zinc-200 hover:bg-zinc-200"
+                  )}
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-rose-500" />
+                  <span>View Chart {activeCluster.chartId} Row</span>
+                </button>
+              </div>
             </div>
 
-            {/* 10-WORD VISUAL STRIP (Mimicking the Infographic Rows!) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-rose-500" />
-                  Cluster Word Grid (Click to pronounce & filter sentences)
-                </span>
+            {/* EXPANDED WORD FILTER TABS: All 22 vs 10 Roots vs 12 Compounds */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-950/40 p-2.5 rounded-2xl border border-zinc-800/60">
+              <div className="flex items-center gap-1.5">
+                {[
+                  { id: 'all', label: `All 22 Words & Compounds`, count: activeCluster.words.length },
+                  { id: 'core', label: `10 Chart Roots 🖼️`, count: 10 },
+                  { id: 'compounds', label: `12 Daily Compounds 💬`, count: 12 }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setWordFilterType(tab.id as any)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-xs font-bold transition-all border",
+                      wordFilterType === tab.id
+                        ? "bg-rose-500 text-white border-rose-600 shadow-sm"
+                        : "bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
                 {activeWordFilter && (
                   <button
                     onClick={() => setActiveWordFilter(null)}
-                    className="text-rose-400 hover:underline flex items-center gap-1 text-[11px]"
+                    className="text-rose-400 hover:underline flex items-center gap-1 text-[11px] font-bold"
                   >
                     <span>Clear Filter ({activeWordFilter})</span>
                     <X className="w-3 h-3" />
                   </button>
                 )}
+                <span className="text-[11px] text-zinc-500">
+                  Click any card to pronounce & filter sentences
+                </span>
               </div>
+            </div>
 
-              {/* Character Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
-                {activeCluster.words.map((word, idx) => {
-                  const wordAudioId = `word-${activeCluster.id}-${idx}-${word.char}`;
-                  const isPlaying = isPronouncingId === wordAudioId;
-                  const isFiltered = activeWordFilter === word.char;
+            {/* WORD GRID: Displaying words with badges, pinyin, Vuk, English, Serbian and example usage */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
+              {displayedClusterWords.map((word, idx) => {
+                const wordAudioId = `word-${activeCluster.id}-${idx}-${word.char}`;
+                const isPlaying = isPronouncingId === wordAudioId;
+                const isFiltered = activeWordFilter === word.char;
 
-                  return (
-                    <div
-                      key={word.char}
-                      onClick={() => {
-                        playAudio(word.char, wordAudioId);
-                        setActiveWordFilter(activeWordFilter === word.char ? null : word.char);
-                      }}
-                      className={cn(
-                        "p-3 rounded-2xl border text-center cursor-pointer transition-all relative flex flex-col justify-between group active:scale-95 select-none",
-                        isFiltered
-                          ? "bg-rose-500/20 border-rose-500 shadow-lg ring-2 ring-rose-500/40"
-                          : (isDarkMode 
-                              ? "bg-zinc-950/70 border-zinc-800/90 hover:border-zinc-700 hover:bg-zinc-900" 
-                              : "bg-zinc-50 border-zinc-200 hover:border-zinc-300 hover:bg-white")
-                      )}
-                    >
-                      {/* Pinyin on top */}
+                return (
+                  <div
+                    key={word.char}
+                    onClick={() => {
+                      playAudio(word.char, wordAudioId);
+                      setActiveWordFilter(activeWordFilter === word.char ? null : word.char);
+                    }}
+                    className={cn(
+                      "p-3 rounded-2xl border text-center cursor-pointer transition-all relative flex flex-col justify-between group active:scale-95 select-none",
+                      isFiltered
+                        ? "bg-rose-500/20 border-rose-500 shadow-lg ring-2 ring-rose-500/40"
+                        : (isDarkMode 
+                            ? "bg-zinc-950/70 border-zinc-800/90 hover:border-zinc-700 hover:bg-zinc-900" 
+                            : "bg-zinc-50 border-zinc-200 hover:border-zinc-300 hover:bg-white")
+                    )}
+                  >
+                    {/* Top Row: Type Badge & Dictionary Link */}
+                    <div className="flex items-center justify-between gap-1 mb-1">
                       <span className={cn(
-                        "text-[11px] font-bold",
+                        "text-[9px] font-bold px-1.5 py-0.2 rounded uppercase",
+                        word.isCoreChar 
+                          ? "bg-amber-500/15 text-amber-400 border border-amber-500/20" 
+                          : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                      )}>
+                        {word.isCoreChar ? 'Root 🖼️' : 'Native 💬'}
+                      </span>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDict(word.char);
+                        }}
+                        className="p-1 rounded bg-zinc-800/80 text-zinc-400 hover:text-amber-400 hover:bg-zinc-700 transition-colors"
+                        title="Look up in CC-CEDICT"
+                      >
+                        <BookOpen className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+
+                    {/* Pinyin on top */}
+                    {showPinyin && (
+                      <span className={cn(
+                        "text-[11px] font-bold tracking-tight",
                         isFiltered ? "text-rose-400" : "text-amber-400"
                       )}>
                         {word.pinyin}
                       </span>
+                    )}
 
-                      {/* Hanzi Big Character */}
+                    {/* Vuk Transliteration */}
+                    {showVuk && (
+                      <span className="text-[10px] text-cyan-400 font-mono tracking-tight">
+                        [{word.vuk}]
+                      </span>
+                    )}
+
+                    {/* Hanzi Big Character or Compound */}
+                    <div className="my-1.5 flex items-center justify-center min-h-[44px]">
                       <span className={cn(
-                        "text-3xl my-1.5 font-black font-serif transition-transform group-hover:scale-110",
+                        "font-black font-serif transition-transform group-hover:scale-105",
+                        word.char.length > 2 
+                          ? "text-xl leading-tight" 
+                          : word.char.length === 2 
+                            ? "text-2xl sm:text-3xl" 
+                            : "text-3xl sm:text-4xl",
                         isFiltered ? "text-rose-400" : (isDarkMode ? "text-zinc-100" : "text-zinc-900")
                       )}>
                         {word.char}
                       </span>
-
-                      {/* English & Serbian Meaning */}
-                      <div className="space-y-0.5 pt-1 border-t border-zinc-800/40">
-                        <p className="text-[10px] font-bold text-zinc-300 truncate" title={word.english}>
-                          {word.english}
-                        </p>
-                        <p className="text-[9px] text-zinc-500 truncate" title={word.serbian}>
-                          {word.serbian}
-                        </p>
-                      </div>
-
-                      {/* Speaker Badge */}
-                      <div className={cn(
-                        "absolute top-1 right-1 p-1 rounded-full transition-opacity opacity-0 group-hover:opacity-100",
-                        isPlaying ? "opacity-100 bg-rose-500 text-white animate-pulse" : "bg-zinc-800 text-zinc-400"
-                      )}>
-                        <Volume2 className="w-2.5 h-2.5" />
-                      </div>
                     </div>
-                  );
-                })}
-              </div>
+
+                    {/* English & Serbian Meaning */}
+                    <div className="space-y-0.5 pt-1.5 border-t border-zinc-800/40 text-left">
+                      <p className="text-[11px] font-bold text-zinc-200 truncate" title={word.english}>
+                        🇬🇧 {word.english}
+                      </p>
+                      <p className="text-[10px] text-zinc-400 truncate" title={word.serbian}>
+                        🇷🇸 {word.serbian}
+                      </p>
+                      {word.exampleUse && (
+                        <p className="text-[9px] text-zinc-500 italic truncate pt-0.5" title={word.exampleUse}>
+                          Ex: {word.exampleUse}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Speaker Badge */}
+                    <div className={cn(
+                      "absolute top-1 right-8 p-1 rounded-full transition-opacity opacity-0 group-hover:opacity-100",
+                      isPlaying ? "opacity-100 bg-rose-500 text-white animate-pulse" : "bg-zinc-800 text-zinc-400"
+                    )}>
+                      <Volume2 className="w-2.5 h-2.5" />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* REAL-LIFE SENTENCES SECTION */}
@@ -660,10 +864,10 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-zinc-100 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-rose-500" />
-                    <span>Real-Life Sentences with Cluster Words</span>
+                    <span>Real-Life Dialogue Sentences with Cluster Words</span>
                   </h3>
                   <p className="text-xs text-zinc-400">
-                    Natural everyday expressions constructed from these characters. Listen, shadow-read, and absorb the syntax.
+                    Authentic conversational expressions constructed from these characters and compounds. Listen to TTS, shadow-read, and examine word breakdown.
                   </p>
                 </div>
 
@@ -701,13 +905,13 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                           </span>
                           
                           {/* Target words badges */}
-                          <div className="flex items-center gap-1">
+                          <div className="flex flex-wrap items-center gap-1">
                             <span className="text-[10px] text-zinc-500">Words used:</span>
                             {sentence.targetWords.map(tw => (
                               <button
                                 key={tw}
                                 onClick={() => playAudio(tw, `badge-${tw}`)}
-                                className="px-1.5 py-0.5 rounded text-[10px] font-black bg-zinc-800/80 text-amber-400 hover:bg-rose-500 hover:text-white transition-colors"
+                                className="px-2 py-0.5 rounded text-[10px] font-black bg-zinc-800/80 text-amber-400 hover:bg-rose-500 hover:text-white transition-colors"
                               >
                                 {tw}
                               </button>
@@ -771,11 +975,39 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                         </p>
                       </div>
 
-                      {/* Accented Pinyin */}
+                      {/* Accented Pinyin & Vuk */}
                       {showPinyin && (
                         <p className="text-xs sm:text-sm font-bold text-amber-400 tracking-wide">
                           {sentence.pinyin}
                         </p>
+                      )}
+
+                      {showVuk && (
+                        <p className="text-xs text-cyan-400 font-mono tracking-wide">
+                          [{sentence.vuk}]
+                        </p>
+                      )}
+
+                      {/* Word Breakdown Tokens (Optional Interactive Mode) */}
+                      {showWordBreakdown && sentence.tokens && sentence.tokens.length > 0 && (
+                        <div className="p-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-wrap gap-1.5">
+                          {sentence.tokens.map((tok, tIdx) => (
+                            <div
+                              key={tIdx}
+                              onClick={() => playAudio(tok.word, `tok-${sentence.id}-${tIdx}`)}
+                              className={cn(
+                                "px-2 py-1 rounded-lg border text-left cursor-pointer transition-all hover:border-amber-400",
+                                tok.isTarget 
+                                  ? "bg-amber-500/10 border-amber-500/30 text-amber-300" 
+                                  : "bg-zinc-800/50 border-zinc-700/60 text-zinc-300"
+                              )}
+                            >
+                              <p className="text-xs font-black font-serif">{tok.word}</p>
+                              <p className="text-[9px] text-amber-400 font-semibold">{tok.pinyin}</p>
+                              <p className="text-[9px] text-zinc-400 truncate max-w-[80px]">{tok.english}</p>
+                            </div>
+                          ))}
+                        </div>
                       )}
 
                       {/* Serbian & English Translations (With Practice Mode Blur/Reveal) */}
@@ -826,6 +1058,18 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
           </div>
         </div>
       )}
+
+      {/* EMBEDDED CC-CEDICT DICTIONARY MODAL */}
+      <ChineseDictExplorerModal
+        isOpen={dictModalOpen}
+        onClose={() => setDictModalOpen(false)}
+        onWordAdded={() => {}}
+        existingChars={existingCharsSet}
+        isDarkMode={isDarkMode}
+        isGirlyMode={isGirlyMode}
+        speakChinese={(text) => playAudio(text, 'dict-speak')}
+        initialQuery={dictModalQuery}
+      />
 
       {/* FULLSCREEN / MODAL ORIGINAL CHART VIEWER */}
       <AnimatePresence>
