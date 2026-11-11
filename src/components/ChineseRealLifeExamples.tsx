@@ -14,21 +14,19 @@ import {
   BookOpen, 
   Maximize2, 
   X, 
-  RotateCcw,
-  Layers,
-  ArrowRight,
-  ExternalLink,
-  MessageSquare,
+  Layers, 
+  Compass,
+  Lightbulb,
+  Scroll,
   HelpCircle,
-  Hash,
-  Bookmark
+  Quote
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { 
   REAL_LIFE_CLUSTERS, 
   RealLifeCluster, 
   RealLifeWordItem, 
-  RealLifeSentence,
+  RealLifeIdiomOrProverb,
   TOTAL_REAL_LIFE_WORDS
 } from '../data/chineseRealLifeClustersData';
 import { ChineseDictExplorerModal } from './ChineseDictExplorerModal';
@@ -80,7 +78,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
     return REAL_LIFE_CLUSTERS.find(c => c.id === selectedClusterId) || REAL_LIFE_CLUSTERS[0];
   }, [selectedClusterId]);
 
-  // Active cluster words filtered by tab (All, Core Roots, Frequent Compounds)
+  // Active cluster words filtered by tab (All 42, 10 Roots, 32 Compounds)
   const displayedClusterWords = useMemo(() => {
     if (wordFilterType === 'core') {
       return activeCluster.words.filter(w => w.isCoreChar);
@@ -91,13 +89,13 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
     return activeCluster.words;
   }, [activeCluster, wordFilterType]);
 
-  // Global search filtering across all 440 words and 80+ sentences
+  // Global search filtering across all 840 words and 60+ idioms/proverbs
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return null;
     const q = searchQuery.trim().toLowerCase();
 
     const matchedWords: { cluster: RealLifeCluster; word: RealLifeWordItem }[] = [];
-    const matchedSentences: { cluster: RealLifeCluster; sentence: RealLifeSentence }[] = [];
+    const matchedSentences: { cluster: RealLifeCluster; sentence: RealLifeIdiomOrProverb }[] = [];
 
     for (const cluster of REAL_LIFE_CLUSTERS) {
       for (const w of cluster.words) {
@@ -122,6 +120,8 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
           s.vuk.toLowerCase().includes(q) ||
           s.english.toLowerCase().includes(q) ||
           s.serbian.toLowerCase().includes(q) ||
+          s.serbianEquivalent.toLowerCase().includes(q) ||
+          s.philosophicalContext.toLowerCase().includes(q) ||
           s.targetWords.some(tw => tw.includes(q))
         ) {
           matchedSentences.push({ cluster, sentence: s });
@@ -241,7 +241,9 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
   // Filter sentences by clicked word if active
   const filteredSentences = useMemo(() => {
     if (!activeWordFilter) return activeCluster.sentences;
-    return activeCluster.sentences.filter(s => s.targetWords.includes(activeWordFilter));
+    return activeCluster.sentences.filter(s => 
+      s.targetWords.includes(activeWordFilter) || s.chinese.includes(activeWordFilter)
+    );
   }, [activeCluster, activeWordFilter]);
 
   // Set of existing characters for dict modal
@@ -272,19 +274,19 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-500/10 text-rose-500 border border-rose-500/20">
               <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              Real Life Examples • Životni Primeri
+              Real Life Examples • Životni Primeri & Mudrost
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex flex-wrap items-center gap-2.5">
-              <span>440 Native Words & Phrases in 20 Clusters</span>
+              <span>840 Native Words & Proverbs in 20 Clusters</span>
               <span className="text-xs px-2.5 py-1 rounded-md font-bold border bg-amber-500/15 text-amber-400 border-amber-500/30">
-                22 Words / Cluster
+                ~90% Everyday Coverage
               </span>
               <span className="text-xs px-2 py-0.5 rounded-md font-medium border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                100% TTS Audio
+                成语 / 谚语 (Idioms & Proverbs)
               </span>
             </h1>
             <p className={cn("text-xs sm:text-sm max-w-3xl leading-relaxed", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
-              Learn natural conversational Chinese using curated word clusters. Each cluster pairs the <strong>10 foundational chart roots</strong> with <strong>12 high-frequency conversational compounds</strong> used by native speakers daily. Look up any entry in the 125,000+ CC-CEDICT dictionary and listen to authentic dialogue sentences with full translations.
+              Cover ~90% of everyday spoken Mandarin with <strong>840 high-frequency words</strong> (42 per cluster: 10 infographic chart roots + 32 daily conversational essentials). In place of mundane sentences, immerse yourself in <strong>authentic Chinese Idioms (成语 Chéngyǔ)</strong> and <strong>Classical Proverbs (谚语 Yànyǔ)</strong> with philosophical context, Serbian folk equivalents, and full audio pronunciation.
             </p>
           </div>
 
@@ -341,7 +343,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search across all 440 words & 80+ sentences (e.g., 多少, cha, tea, čaj, 森林, kupovina)..."
+              placeholder="Search all 840 words & proverbs (e.g., 千里之行, 水滴石穿, 多少, kupovina, Laozi)..."
               className={cn(
                 "w-full pl-10 pr-9 py-2 rounded-xl text-xs font-medium transition-all outline-none border",
                 isDarkMode 
@@ -384,7 +386,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                   ? "bg-cyan-500/15 border-cyan-500/30 text-cyan-400" 
                   : (isDarkMode ? "bg-zinc-800/60 border-zinc-700 text-zinc-400" : "bg-zinc-100 border-zinc-200 text-zinc-600")
               )}
-              title="Show Serbian Vuk phonetic transliteration (e.g., dà xiǎo -> da sjao)"
+              title="Show Serbian Vuk phonetic transliteration"
             >
               <span>Vuk</span> {showVuk ? 'On' : 'Off'}
             </button>
@@ -398,7 +400,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                   ? "bg-purple-500/15 border-purple-500/30 text-purple-400" 
                   : (isDarkMode ? "bg-zinc-800/60 border-zinc-700 text-zinc-400" : "bg-zinc-100 border-zinc-200 text-zinc-600")
               )}
-              title="Show individual token word analysis in dialogue sentences"
+              title="Show individual token analysis in idioms & proverbs"
             >
               <Layers className="w-3.5 h-3.5" />
               Breakdown {showWordBreakdown ? 'On' : 'Off'}
@@ -443,7 +445,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-400">
-              Found {searchResults.matchedWords.length} Words & {searchResults.matchedSentences.length} Sentences matching "{searchQuery}"
+              Found {searchResults.matchedWords.length} Words & {searchResults.matchedSentences.length} Idioms/Proverbs matching "{searchQuery}"
             </h2>
             <button
               onClick={() => setSearchQuery('')}
@@ -483,7 +485,12 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                             </span>
                           ) : (
                             <span className="ml-1.5 text-[9px] px-1.5 py-0.2 rounded font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              Compound
+                              Daily
+                            </span>
+                          )}
+                          {word.frequencyRank && (
+                            <span className="ml-1 text-[8px] px-1 py-0.2 rounded font-mono bg-zinc-800 text-zinc-400">
+                              {word.frequencyRank}
                             </span>
                           )}
                         </div>
@@ -535,50 +542,53 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
             </div>
           )}
 
-          {/* Matched Sentences */}
+          {/* Matched Sentences / Proverbs */}
           {searchResults.matchedSentences.length > 0 && (
             <div className="space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Matching Real-Life Sentences</span>
-              <div className="space-y-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Matching Idioms & Proverbs</span>
+              <div className="space-y-4">
                 {searchResults.matchedSentences.map(({ cluster, sentence }) => (
                   <div
                     key={`search-s-${sentence.id}`}
                     className={cn(
-                      "p-4 rounded-2xl border transition-all space-y-2",
+                      "p-5 rounded-2xl border transition-all space-y-3",
                       isDarkMode ? "bg-zinc-900/70 border-zinc-800" : "bg-white border-zinc-200"
                     )}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/20">
-                        {cluster.emoji} {cluster.title} • {sentence.context}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => playAudio(sentence.chinese, `search-audio-${sentence.id}`)}
-                          className={cn(
-                            "flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border transition-all",
-                            isPronouncingId === `search-audio-${sentence.id}`
-                              ? "bg-rose-500 text-white border-rose-600 animate-pulse"
-                              : "bg-zinc-800 text-zinc-200 border-zinc-700 hover:bg-zinc-700"
-                          )}
-                        >
-                          <Volume2 className="w-3.5 h-3.5" />
-                          <span>Listen</span>
-                        </button>
-                        <button
-                          onClick={() => handleCopy(`${sentence.chinese}\n${sentence.pinyin}\n${sentence.english}\n${sentence.serbian}`, `search-copy-${sentence.id}`)}
-                          className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-                          title="Copy"
-                        >
-                          {copiedId === `search-copy-${sentence.id}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/20">
+                          {sentence.typeLabel}
+                        </span>
+                        <span className="text-[10px] text-zinc-500">{cluster.emoji} {cluster.title} • {sentence.context}</span>
                       </div>
+                      <button
+                        onClick={() => playAudio(sentence.chinese, `search-audio-${sentence.id}`)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                        <span>Listen</span>
+                      </button>
                     </div>
-                    <p className="text-lg font-black text-zinc-100">{sentence.chinese}</p>
-                    <p className="text-xs text-amber-400 font-medium">{sentence.pinyin}</p>
+
+                    <p className="text-xl sm:text-2xl font-black font-serif text-zinc-100">{sentence.chinese}</p>
+                    <p className="text-xs text-amber-400 font-bold">{sentence.pinyin}</p>
                     {showVuk && <p className="text-xs text-cyan-400 font-mono">[{sentence.vuk}]</p>}
-                    <p className="text-xs text-zinc-300">{sentence.english}</p>
-                    <p className="text-xs text-zinc-400 italic">{sentence.serbian}</p>
+                    
+                    {sentence.serbianEquivalent && (
+                      <p className="text-xs text-amber-300 font-bold bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
+                        🇷🇸 Naš ekvivalent: "{sentence.serbianEquivalent}"
+                      </p>
+                    )}
+                    <p className="text-xs text-zinc-300">🇬🇧 {sentence.english}</p>
+                    <p className="text-xs text-zinc-400 italic">🇷🇸 {sentence.serbian}</p>
+
+                    {sentence.philosophicalContext && (
+                      <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 text-xs text-zinc-400">
+                        <span className="font-bold text-amber-400">💡 Mudrost & Kontekst: </span>
+                        {sentence.philosophicalContext}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -592,9 +602,9 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
           <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3 gap-3 overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-1.5">
               {[
-                { id: 'all', label: 'All 20 Clusters (440 Words)', count: 20 },
-                { id: 'chart1', label: 'Chart 1: Foundation (Rows 1–10 • 220 Words)', count: 10 },
-                { id: 'chart2', label: 'Chart 2: Actions & Nature (Rows 11–20 • 220 Words)', count: 10 }
+                { id: 'all', label: 'All 20 Clusters (840 Words)', count: 20 },
+                { id: 'chart1', label: 'Chart 1: Foundation (Rows 1–10 • 420 Words)', count: 10 },
+                { id: 'chart2', label: 'Chart 2: Verbs & Nature (Rows 11–20 • 420 Words)', count: 10 }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -612,7 +622,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
             </div>
 
             <span className="text-[11px] font-medium text-zinc-500 hidden sm:inline-block">
-              {displayedClusters.length} clusters • 440 total words
+              {displayedClusters.length} clusters • 840 words • 60+ Idioms (成语)
             </span>
           </div>
 
@@ -651,7 +661,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                         </h3>
                       </div>
                       <p className="text-[10px] text-zinc-500 truncate max-w-[130px]">
-                        {cluster.titleSerbian} • 22 reči
+                        {cluster.titleSerbian} • 42 reči
                       </p>
                     </div>
                   </button>
@@ -677,7 +687,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                       Chart {activeCluster.chartId} • Row {activeCluster.rowNumber}
                     </span>
                     <span className="text-[11px] text-zinc-500">
-                      • {activeCluster.words.length} Vocabulary Items (10 Roots + 12 Native Compounds)
+                      • {activeCluster.words.length} Vocabulary Items (10 Roots + 32 High-Frequency Everyday Words)
                     </span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-black text-zinc-100 flex items-center gap-2">
@@ -714,13 +724,13 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
               </div>
             </div>
 
-            {/* EXPANDED WORD FILTER TABS: All 22 vs 10 Roots vs 12 Compounds */}
+            {/* EXPANDED WORD FILTER TABS: All 42 vs 10 Roots vs 32 Compounds */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-950/40 p-2.5 rounded-2xl border border-zinc-800/60">
               <div className="flex items-center gap-1.5">
                 {[
-                  { id: 'all', label: `All 22 Words & Compounds`, count: activeCluster.words.length },
+                  { id: 'all', label: `All 42 Words (~90% Coverage)`, count: activeCluster.words.length },
                   { id: 'core', label: `10 Chart Roots 🖼️`, count: 10 },
-                  { id: 'compounds', label: `12 Daily Compounds 💬`, count: 12 }
+                  { id: 'compounds', label: `32 Daily Essentials 💬`, count: 32 }
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -748,13 +758,13 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                   </button>
                 )}
                 <span className="text-[11px] text-zinc-500">
-                  Click any card to pronounce & filter sentences
+                  Click any card to pronounce & filter proverbs
                 </span>
               </div>
             </div>
 
             {/* WORD GRID: Displaying words with badges, pinyin, Vuk, English, Serbian and example usage */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
               {displayedClusterWords.map((word, idx) => {
                 const wordAudioId = `word-${activeCluster.id}-${idx}-${word.char}`;
                 const isPlaying = isPronouncingId === wordAudioId;
@@ -784,15 +794,21 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                           ? "bg-amber-500/15 text-amber-400 border border-amber-500/20" 
                           : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
                       )}>
-                        {word.isCoreChar ? 'Root 🖼️' : 'Native 💬'}
+                        {word.isCoreChar ? 'Root 🖼️' : 'Daily 💬'}
                       </span>
+
+                      {word.frequencyRank && (
+                        <span className="text-[8px] font-mono text-zinc-500">
+                          {word.frequencyRank}
+                        </span>
+                      )}
 
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOpenDict(word.char);
                         }}
-                        className="p-1 rounded bg-zinc-800/80 text-zinc-400 hover:text-amber-400 hover:bg-zinc-700 transition-colors"
+                        className="p-1 rounded bg-zinc-800/80 text-zinc-400 hover:text-amber-400 hover:bg-zinc-700 transition-colors ml-auto"
                         title="Look up in CC-CEDICT"
                       >
                         <BookOpen className="w-2.5 h-2.5" />
@@ -858,28 +874,28 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
               })}
             </div>
 
-            {/* REAL-LIFE SENTENCES SECTION */}
+            {/* CHINESE IDIOMS (CHENGYU) & CLASSICAL PROVERBS (YANYU) SECTION */}
             <div className="space-y-4 pt-4 border-t border-zinc-800/60">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h3 className="text-base sm:text-lg font-black text-zinc-100 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-rose-500" />
-                    <span>Real-Life Dialogue Sentences with Cluster Words</span>
+                    <Scroll className="w-4 h-4 text-amber-400" />
+                    <span>Classical Chinese Idioms & Proverbs (成语与古训 • Čengji i Izreke)</span>
                   </h3>
                   <p className="text-xs text-zinc-400">
-                    Authentic conversational expressions constructed from these characters and compounds. Listen to TTS, shadow-read, and examine word breakdown.
+                    Profound philosophical idioms, Daoist axioms, and ancient proverbs incorporating these cluster characters. Complete with Serbian folk equivalents and Stoic wisdom.
                   </p>
                 </div>
 
                 {testYourselfMode && (
                   <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1.5">
                     <EyeOff className="w-3.5 h-3.5" />
-                    Click "Reveal Meaning" to check yourself!
+                    Practice Mode: Click "Reveal Wisdom" to check yourself!
                   </span>
                 )}
               </div>
 
-              {/* Sentences List */}
+              {/* Proverbs List */}
               <div className="space-y-4">
                 {filteredSentences.map((sentence, sIdx) => {
                   const sAudioId = `s-audio-${sentence.id}`;
@@ -893,30 +909,21 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: sIdx * 0.08 }}
                       className={cn(
-                        "p-5 rounded-2xl border transition-all space-y-3 relative overflow-hidden",
-                        isDarkMode ? "bg-zinc-950/60 border-zinc-800 hover:border-zinc-700/80" : "bg-zinc-50/80 border-zinc-200 hover:border-zinc-300"
+                        "p-5 rounded-3xl border transition-all space-y-3 relative overflow-hidden",
+                        isDarkMode ? "bg-zinc-950/70 border-zinc-800 hover:border-zinc-700/80 shadow-lg" : "bg-zinc-50/90 border-zinc-200 hover:border-zinc-300 shadow-md"
                       )}
                     >
-                      {/* Context & Target words chips */}
-                      <div className="flex flex-wrap items-center justify-between gap-2">
+                      {/* Top Header: Idiom Type, Context & Actions */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/40 pb-2.5">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                            {sentence.context}
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                            <Quote className="w-3 h-3 text-amber-400" />
+                            {sentence.typeLabel}
                           </span>
                           
-                          {/* Target words badges */}
-                          <div className="flex flex-wrap items-center gap-1">
-                            <span className="text-[10px] text-zinc-500">Words used:</span>
-                            {sentence.targetWords.map(tw => (
-                              <button
-                                key={tw}
-                                onClick={() => playAudio(tw, `badge-${tw}`)}
-                                className="px-2 py-0.5 rounded text-[10px] font-black bg-zinc-800/80 text-amber-400 hover:bg-rose-500 hover:text-white transition-colors"
-                              >
-                                {tw}
-                              </button>
-                            ))}
-                          </div>
+                          <span className="text-[10px] text-zinc-400 font-medium px-2 py-0.5 rounded-md bg-zinc-800/60 border border-zinc-700/50">
+                            {sentence.context}
+                          </span>
                         </div>
 
                         {/* Top-right action controls */}
@@ -947,17 +954,17 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                             <span className="text-[10px] font-bold">0.75x</span>
                           </button>
 
-                          {/* Copy sentence button */}
+                          {/* Copy proverb button */}
                           <button
                             onClick={() => handleCopy(
-                              `${sentence.chinese}\n${sentence.pinyin}\n${sentence.english}\n${sentence.serbian}`,
+                              `${sentence.chinese}\n${sentence.pinyin}\n${sentence.english}\n${sentence.serbianEquivalent}\n${sentence.philosophicalContext}`,
                               `copy-${sentence.id}`
                             )}
                             className={cn(
                               "p-1.5 rounded-xl border transition-all active:scale-95",
                               isDarkMode ? "bg-zinc-800 text-zinc-400 hover:text-zinc-200 border-zinc-700" : "bg-white text-zinc-500 hover:text-zinc-800 border-zinc-200"
                             )}
-                            title="Copy full sentence with translation to clipboard"
+                            title="Copy full proverb with translation to clipboard"
                           >
                             {copiedId === `copy-${sentence.id}` ? (
                               <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -968,16 +975,16 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                         </div>
                       </div>
 
-                      {/* Main Hanzi Sentence */}
+                      {/* Main Hanzi Idiom / Proverb Display */}
                       <div className="py-1">
-                        <p className="text-xl sm:text-2xl font-black font-serif leading-relaxed tracking-wide text-zinc-100">
+                        <p className="text-2xl sm:text-3xl font-black font-serif leading-relaxed tracking-wide text-zinc-100">
                           {sentence.chinese}
                         </p>
                       </div>
 
                       {/* Accented Pinyin & Vuk */}
                       {showPinyin && (
-                        <p className="text-xs sm:text-sm font-bold text-amber-400 tracking-wide">
+                        <p className="text-xs sm:text-sm font-bold text-amber-400 tracking-wide font-mono">
                           {sentence.pinyin}
                         </p>
                       )}
@@ -985,6 +992,14 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                       {showVuk && (
                         <p className="text-xs text-cyan-400 font-mono tracking-wide">
                           [{sentence.vuk}]
+                        </p>
+                      )}
+
+                      {/* Literal Breakdown if provided */}
+                      {sentence.literalEnglish && (
+                        <p className="text-[11px] text-zinc-400 italic">
+                          <span className="font-semibold text-zinc-500">Bukvalno: </span>
+                          "{sentence.literalEnglish}"
                         </p>
                       )}
 
@@ -1004,39 +1019,67 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                             >
                               <p className="text-xs font-black font-serif">{tok.word}</p>
                               <p className="text-[9px] text-amber-400 font-semibold">{tok.pinyin}</p>
-                              <p className="text-[9px] text-zinc-400 truncate max-w-[80px]">{tok.english}</p>
+                              <p className="text-[9px] text-zinc-400 truncate max-w-[90px]">{tok.english}</p>
                             </div>
                           ))}
                         </div>
                       )}
 
-                      {/* Serbian & English Translations (With Practice Mode Blur/Reveal) */}
-                      <div className="pt-2 border-t border-zinc-800/40 space-y-1">
+                      {/* Serbian Folk Equivalent & Wisdom (With Practice Mode Blur/Reveal) */}
+                      <div className="pt-2 border-t border-zinc-800/40 space-y-2">
                         {testYourselfMode && !isRevealed ? (
-                          <div className="py-2 flex items-center justify-between">
+                          <div className="py-3 flex items-center justify-between bg-zinc-900/50 p-3 rounded-2xl border border-zinc-800">
                             <span className="text-xs text-zinc-500 italic">
-                              Translations hidden for practice. Try to understand the Chinese sentence first!
+                              Idiom translations and philosophical context hidden for practice. Try to understand the characters first!
                             </span>
                             <button
                               onClick={() => toggleSentenceReveal(sentence.id)}
-                              className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all shadow-sm"
                             >
                               <Eye className="w-3.5 h-3.5" />
-                              <span>Reveal Meaning</span>
+                              <span>Reveal Wisdom</span>
                             </button>
                           </div>
                         ) : (
                           <>
+                            {/* Highlighted Serbian Folk Proverb Equivalent */}
+                            {sentence.serbianEquivalent && (
+                              <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-transparent border border-amber-500/30 flex items-center gap-2">
+                                <span className="text-base">🇷🇸</span>
+                                <div>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Naš narodni ekvivalent:</span>
+                                  <p className="text-xs sm:text-sm font-black text-amber-200">
+                                    "{sentence.serbianEquivalent}"
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
                             {showEnglish && (
                               <p className="text-xs sm:text-sm font-medium text-zinc-200">
                                 🇬🇧 {sentence.english}
                               </p>
                             )}
+
                             {showSerbian && (
-                              <p className="text-xs sm:text-sm text-zinc-400 italic">
+                              <p className="text-xs sm:text-sm text-zinc-300">
                                 🇷🇸 {sentence.serbian}
                               </p>
                             )}
+
+                            {/* Deep Philosophical / Stoic Insight Card */}
+                            {sentence.philosophicalContext && (
+                              <div className="p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 text-xs text-zinc-400 space-y-1">
+                                <div className="flex items-center gap-1.5 text-amber-400 font-bold text-[11px]">
+                                  <Lightbulb className="w-3.5 h-3.5" />
+                                  <span>Mudrost & Stoički Kontekst:</span>
+                                </div>
+                                <p className="leading-relaxed text-zinc-300 text-[11px]">
+                                  {sentence.philosophicalContext}
+                                </p>
+                              </div>
+                            )}
+
                             {testYourselfMode && isRevealed && (
                               <div className="pt-1">
                                 <button
@@ -1108,12 +1151,12 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
 
               {/* Modal Footer */}
               <div className="p-3 bg-zinc-900/80 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
-                <span>Tip: Look at each row, then explore the interactive clusters and real-life sentences below.</span>
+                <span>Tip: Examine the chart row, then master the 42 words and authentic idioms below.</span>
                 <button
                   onClick={() => setModalChartImage(null)}
                   className="px-3.5 py-1.5 rounded-xl font-bold bg-rose-500 text-white hover:bg-rose-600 transition-colors"
                 >
-                  Close & Study Clusters
+                  Close & Explore
                 </button>
               </div>
             </motion.div>

@@ -1,0 +1,270 @@
+// CHART 1 DATA GENERATOR (Clusters 1 to 10)
+// High-frequency vocabulary (42 words/cluster) & authentic Chinese Idioms (成语 / 谚语)
+
+module.exports = [
+  // ==========================================
+  // CLUSTER 1: SCALE & NUMBERS (大, 小, 一, 二, 三, 十, 百, 千, 多, 不)
+  // ==========================================
+  {
+    id: 'c1-r1',
+    chartId: 1,
+    rowNumber: 1,
+    title: 'Scale & Numbers',
+    titleSerbian: 'Veličina i Brojevi',
+    emoji: '🔢',
+    chartImage: '/assets/aistudio/image_1536d14f.png',
+    description: 'Foundational scale, quantities, numbers, and core negations that form the basis of counting and comparison.',
+    words: [
+      { char: '大', pinyin: 'dà', vuk: 'da', english: 'big / great', serbian: 'veliko / sjajno', exampleUse: '大人 (odrasla osoba)', isCoreChar: true, category: 'adjective', frequencyRank: 'Top 50' },
+      { char: '小', pinyin: 'xiǎo', vuk: 'sjao', english: 'small / little', serbian: 'malo', exampleUse: '小心 (pažljivo)', isCoreChar: true, category: 'adjective', frequencyRank: 'Top 50' },
+      { char: '一', pinyin: 'yī', vuk: 'ji', english: 'one', serbian: 'jedan', exampleUse: '一共 (ukupno)', isCoreChar: true, category: 'number', frequencyRank: 'Top 10' },
+      { char: '二', pinyin: 'èr', vuk: 'er', english: 'two', serbian: 'dva', exampleUse: '二十 (dvadeset)', isCoreChar: true, category: 'number', frequencyRank: 'Top 30' },
+      { char: '三', pinyin: 'sān', vuk: 'san', english: 'three', serbian: 'tri', exampleUse: '三个 (tri komada)', isCoreChar: true, category: 'number', frequencyRank: 'Top 30' },
+      { char: '十', pinyin: 'shí', vuk: 'ši', english: 'ten', serbian: 'deset', exampleUse: '十分 (veoma/deset delova)', isCoreChar: true, category: 'number', frequencyRank: 'Top 40' },
+      { char: '百', pinyin: 'bǎi', vuk: 'baj', english: 'hundred', serbian: 'sto', exampleUse: '一百 (sto)', isCoreChar: true, category: 'number', frequencyRank: 'Top 100' },
+      { char: '千', pinyin: 'qiān', vuk: 'ćjen', english: 'thousand', serbian: 'hiljada', exampleUse: '千万 (obavezno/milioni)', isCoreChar: true, category: 'number', frequencyRank: 'Top 150' },
+      { char: '多', pinyin: 'duō', vuk: 'duo', english: 'much / many', serbian: 'mnogo', exampleUse: '多少 (koliko)', isCoreChar: true, category: 'adjective', frequencyRank: 'Top 50' },
+      { char: '不', pinyin: 'bù', vuk: 'bu', english: 'not / no', serbian: 'ne', exampleUse: '不是 (nije)', isCoreChar: true, category: 'phrase', frequencyRank: 'Top 5' },
+      { char: '多少', pinyin: 'duōshao', vuk: 'duo-šao', english: 'how much / how many', serbian: 'koliko', exampleUse: '多少钱？ (koliko košta?)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 80' },
+      { char: '一共', pinyin: 'yīgòng', vuk: 'ji-gung', english: 'altogether / in total', serbian: 'ukupno / sve zajedno', exampleUse: '一共一百块 (ukupno 100 yuana)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 120' },
+      { char: '一起', pinyin: 'yīqǐ', vuk: 'ji-ći', english: 'together', serbian: 'zajedno', exampleUse: '我们一起 (mi zajedno)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 60' },
+      { char: '非常', pinyin: 'fēicháng', vuk: 'fej-čang', english: 'very / exceptionally', serbian: 'veoma / izuzetno', exampleUse: '非常大 (izuzetno veliko)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 100' },
+      { char: '许多', pinyin: 'xǔduō', vuk: 'sü-duo', english: 'many / a lot of', serbian: 'mnogo / brojni', exampleUse: '许多人 (mnogo ljudi)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 140' },
+      { char: '第一', pinyin: 'dì-yī', vuk: 'di-ji', english: 'first / number one', serbian: 'prvi', exampleUse: '第一步 (prvi korak)', isCoreChar: false, category: 'number', frequencyRank: 'Top 90' },
+      { char: '一半', pinyin: 'yībàn', vuk: 'ji-ban', english: 'half', serbian: 'polovina', exampleUse: '分一半 (podeliti na pola)', isCoreChar: false, category: 'number', frequencyRank: 'Top 180' },
+      { char: '很大', pinyin: 'hěn dà', vuk: 'hen da', english: 'very big / large', serbian: 'veoma veliko', exampleUse: '地方很大 (mesto je prostrano)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 50' },
+      { char: '不错', pinyin: 'bùcuò', vuk: 'bu-cuo', english: 'not bad / pretty good', serbian: 'nije loše / sasvim dobro', exampleUse: '味道不错 (ukus je odličan)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 110' },
+      { char: '不仅', pinyin: 'bùjǐn', vuk: 'bu-đjin', english: 'not only', serbian: 'ne samo', exampleUse: '不仅如此 (ne samo to)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 200' },
+      { char: '不会', pinyin: 'bù huì', vuk: 'bu huej', english: 'cannot / will not', serbian: 'neće / ne ume', exampleUse: '我不会 (ja ne umem)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 60' },
+      { char: '大概', pinyin: 'dàgài', vuk: 'da-gaj', english: 'roughly / approximately', serbian: 'otprilike / verovatno', exampleUse: '大概十个 (otprilike deset)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 160' },
+      { char: '全部', pinyin: 'quánbù', vuk: 'ćüan-bu', english: 'all / whole / entirely', serbian: 'sve / u celosti', exampleUse: '全部完成 (sve završeno)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 180' },
+      { char: '少数', pinyin: 'shǎoshù', vuk: 'šao-šu', english: 'small number / minority', serbian: 'manjina / mali broj', exampleUse: '少数人 (mali broj ljudi)', isCoreChar: false, category: 'number', frequencyRank: 'Top 250' },
+      { char: '差不多', pinyin: 'chàbuduō', vuk: 'ča-bu-duo', english: 'almost / about the same', serbian: 'skoro / tu negde', exampleUse: '差不多好了 (skoro gotovo)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 130' },
+      { char: '不多', pinyin: 'bù duō', vuk: 'bu duo', english: 'not much / few', serbian: 'malo / nije mnogo', exampleUse: '时间不多 (malo je vremena)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 90' },
+      { char: '千万', pinyin: 'qiānwàn', vuk: 'ćjen-van', english: 'by all means / millions', serbian: 'obavezno / ni po koju cenu', exampleUse: '千万小心 (obavezno pazi)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 210' },
+      { char: '百分之', pinyin: 'bǎifēnzhī', vuk: 'baj-fen-dž', english: 'percent', serbian: 'procenat', exampleUse: '百分之百 (sto posto)', isCoreChar: false, category: 'number', frequencyRank: 'Top 190' },
+      { char: '增加', pinyin: 'zēngjiā', vuk: 'ceng-đja', english: 'increase / add', serbian: 'povećati / uvećati', exampleUse: '数量增加 (količina se uvećava)', isCoreChar: false, category: 'verb', frequencyRank: 'Top 220' },
+      { char: '减少', pinyin: 'jiǎnshǎo', vuk: 'đjen-šao', english: 'decrease / reduce', serbian: 'smanjiti', exampleUse: '减少压力 (smanjiti stres)', isCoreChar: false, category: 'verb', frequencyRank: 'Top 240' },
+      { char: '另外', pinyin: 'lìngwài', vuk: 'ling-vaj', english: 'in addition / besides', serbian: 'pored toga / još i', exampleUse: '另外一个 (još jedan)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 170' },
+      { char: '两个', pinyin: 'liǎng ge', vuk: 'ljang ge', english: 'two items / a couple', serbian: 'dva komada', exampleUse: '两个人 (dvoje ljudi)', isCoreChar: false, category: 'number', frequencyRank: 'Top 40' },
+      { char: '一下', pinyin: 'yīxià', vuk: 'ji-sja', english: 'a bit / once', serbian: 'na trenutak / malo', exampleUse: '看一眼 (baci pogled)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 70' },
+      { char: '一定', pinyin: 'yīdìng', vuk: 'ji-ding', english: 'definitely / must', serbian: 'sigurno / bez sumnje', exampleUse: '一定要来 (obavezno dođi)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 85' },
+      { char: '不大', pinyin: 'bù dà', vuk: 'bu da', english: 'not big', serbian: 'nije veliko', exampleUse: '问题不大 (nije veliki problem)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 100' },
+      { char: '不用', pinyin: 'bùyòng', vuk: 'bu-jung', english: 'no need / not necessary', serbian: 'nema potrebe / ne treba', exampleUse: '不用担心 (ne brini)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 95' },
+      { char: '稍微', pinyin: 'shāowēi', vuk: 'šao-vej', english: 'slightly / a little', serbian: 'malo / mrvicu', exampleUse: '稍微休息 (kratko odmoriti)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 220' },
+      { char: '巨大', pinyin: 'jùdà', vuk: 'đjü-da', english: 'huge / gigantic', serbian: 'ogroman / kolosalan', exampleUse: '巨大进步 (ogroman napredak)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 280' },
+      { char: '微小', pinyin: 'wēixiǎo', vuk: 'vej-sjao', english: 'tiny / minute', serbian: 'sićušan / mikroskopski', exampleUse: '微小的变化 (sićušna promena)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 350' },
+      { char: '相当', pinyin: 'xiāngdāng', vuk: 'sjang-dang', english: 'quite / considerably', serbian: 'prilično / u znatnoj meri', exampleUse: '相当好 (prilično dobro)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 210' },
+      { char: '多数', pinyin: 'duōshù', vuk: 'duo-šu', english: 'majority / most', serbian: 'većina', exampleUse: '多数人 (većina ljudi)', isCoreChar: false, category: 'number', frequencyRank: 'Top 230' },
+      { char: '万一', pinyin: 'wànyī', vuk: 'van-ji', english: 'just in case / if by any chance', serbian: 'za svaki slučaj / ako se desi', exampleUse: '以防万一 (za svaki slučaj)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 310' }
+    ],
+    sentences: [
+      {
+        id: 'idm-1-1',
+        type: 'proverb',
+        typeLabel: '古训 / 哲理名言 (Daoist Classic)',
+        chinese: '千里之行，始于足下。',
+        pinyin: 'Qiān lǐ zhī xíng, shǐ yú zú xià.',
+        vuk: 'Ćjen li dž sing, ši ji cu sja.',
+        literalEnglish: 'A journey of a thousand li begins right beneath your feet.',
+        english: 'A journey of a thousand miles begins with a single step.',
+        serbianEquivalent: 'Svaki veliki put počinje prvim korakom. / Zrno po zrno pogača.',
+        serbian: 'Putovanje od hiljadu milja počinje jednim jedinim korakom ispod tvojih stopala.',
+        philosophicalContext: 'Iz Lao Ceovog Tao Te Đinga. Podseća nas da se nijedan kolosalni uspeh ne postiže preko noći, već disciplinovanim, malim dnevnim radnjama.',
+        targetWords: ['千', '一', '行', '足', '下'],
+        context: 'Laozi Daoism • Discipline & Endurance',
+        tokens: [
+          { word: '千里', pinyin: 'qiān lǐ', english: 'thousand miles', serbian: 'hiljadu milja', isTarget: true },
+          { word: '之', pinyin: 'zhī', english: 'of', serbian: 'od' },
+          { word: '行', pinyin: 'xíng', english: 'journey/walk', serbian: 'putovanje', isTarget: true },
+          { word: '，', pinyin: ',', english: ',', serbian: ',' },
+          { word: '始于', pinyin: 'shǐ yú', english: 'begins at', serbian: 'počinje na' },
+          { word: '足下', pinyin: 'zú xià', english: 'beneath feet', serbian: 'ispod stopala', isTarget: true }
+        ]
+      },
+      {
+        id: 'idm-1-2',
+        type: 'chengyu',
+        typeLabel: '成语 (Ancient Idiom)',
+        chinese: '百闻不如一见。',
+        pinyin: 'Bǎi wén bù rú yī jiàn.',
+        vuk: 'Baj ven bu ru ji đjen.',
+        literalEnglish: 'Hearing a hundred times is not as good as seeing once.',
+        english: 'Seeing is believing / One look is worth a hundred reports.',
+        serbianEquivalent: 'Bolje jednom videti nego sto puta čuti.',
+        serbian: 'Čuti stotinu puta ne vredi koliko videti sopstvenim očima.',
+        philosophicalContext: 'Iz Knjige Hana (Han Shu). Empirijski uvid ima neuporedivo veću težinu od neproverenih priča i glasina.',
+        targetWords: ['百', '闻', '不', '一', '见'],
+        context: 'Empirical Truth • Stoic Clarity',
+        tokens: [
+          { word: '百闻', pinyin: 'bǎi wén', english: 'hear 100 times', serbian: 'stotinu puta čuti', isTarget: true },
+          { word: '不如', pinyin: 'bù rú', english: 'not equal to', serbian: 'ne vredi kao', isTarget: true },
+          { word: '一见', pinyin: 'yī jiàn', english: 'see once', serbian: 'jednom videti', isTarget: true }
+        ]
+      },
+      {
+        id: 'idm-1-3',
+        type: 'chengyu',
+        typeLabel: '成语 (Laozi Philosophy)',
+        chinese: '大智若愚，大巧若拙。',
+        pinyin: 'Dà zhì ruò yú, dà qiǎo ruò zhuō.',
+        vuk: 'Da dži ruo ji, da ćjao ruo džuo.',
+        literalEnglish: 'Great wisdom appears like foolishness, supreme skill looks clumsy.',
+        english: 'Great wisdom often masks itself as simplicity.',
+        serbianEquivalent: 'Ko mnogo zna, malo govori. / Mudra glava ne hvali se sama.',
+        serbian: 'Najviša mudrost često izgleda kao jednostavnost ili naivnost, a vrhunsko majstorstvo kao skromnost.',
+        philosophicalContext: 'Izvorni stoički stav: pravi majstor nema potrebu da se dokazuje galamom pred drugima. Suština prevazilazi formu.',
+        targetWords: ['大', '小', '智'],
+        context: 'Humility & Mastery • Skromnost i Majstorstvo',
+        tokens: [
+          { word: '大智', pinyin: 'dà zhì', english: 'great wisdom', serbian: 'velika mudrost', isTarget: true },
+          { word: '若愚', pinyin: 'ruò yú', english: 'like foolishness', serbian: 'kao naivnost' },
+          { word: '大巧', pinyin: 'dà qiǎo', english: 'supreme skill', serbian: 'vrhunsko majstorstvo', isTarget: true },
+          { word: '若拙', pinyin: 'ruò zhuō', english: 'looks clumsy', serbian: 'izgleda skromno' }
+        ]
+      },
+      {
+        id: 'idm-1-4',
+        type: 'chengyu',
+        typeLabel: '成语 (Popular Proverb)',
+        chinese: '一石二鸟。',
+        pinyin: 'Yī shí èr niǎo.',
+        vuk: 'Ji ši er njao.',
+        literalEnglish: 'One stone, two birds.',
+        english: 'Kill two birds with one stone.',
+        serbianEquivalent: 'Ubiti dve muve jednim udarcem.',
+        serbian: 'Jednim kamenom oboriti dve ptice; postići dva korisna cilja jednom jedinom akcijom.',
+        philosophicalContext: 'Strateški princip efikasnosti: fokusirati energiju na tačku gde jedna akcija donosi višestruki napredak.',
+        targetWords: ['一', '二', '鸟', '石'],
+        context: 'Strategic Efficiency • Fokus i Efikasnost',
+        tokens: [
+          { word: '一石', pinyin: 'yī shí', english: 'one stone', serbian: 'jedan kamen', isTarget: true },
+          { word: '二鸟', pinyin: 'èr niǎo', english: 'two birds', serbian: 'dve ptice', isTarget: true }
+        ]
+      }
+    ]
+  },
+
+  // ==========================================
+  // CLUSTER 2: PEOPLE & ROLES (人, 夫, 子, 男, 女, 王, 主, 我, 你, 他)
+  // ==========================================
+  {
+    id: 'c1-r2',
+    chartId: 1,
+    rowNumber: 2,
+    title: 'People & Society',
+    titleSerbian: 'Ljudi, Uloge i Društvo',
+    emoji: '👥',
+    chartImage: '/assets/aistudio/image_1536d14f.png',
+    description: 'Human relationships, social roles, identity pronouns, and family titles that structure daily society.',
+    words: [
+      { char: '人', pinyin: 'rén', vuk: 'žen', english: 'person / human', serbian: 'čovek / osoba', exampleUse: '人们 (ljudi)', isCoreChar: true, category: 'noun', frequencyRank: 'Top 10' },
+      { char: '夫', pinyin: 'fū', vuk: 'fu', english: 'husband / man', serbian: 'muž / čovek', exampleUse: '丈夫 (suprug)', isCoreChar: true, category: 'noun', frequencyRank: 'Top 150' },
+      { char: '子', pinyin: 'zǐ', vuk: 'ce', english: 'child / son', serbian: 'dete / sin', exampleUse: '孩子 (dete)', isCoreChar: true, category: 'noun', frequencyRank: 'Top 30' },
+      { char: '男', pinyin: 'nán', vuk: 'nan', english: 'male / man', serbian: 'muškarac', exampleUse: '男人 (muškarac)', isCoreChar: true, category: 'noun', frequencyRank: 'Top 100' },
+      { char: '女', pinyin: 'nǚ', vuk: 'ni', english: 'female / woman', serbian: 'žena', exampleUse: '女人 (žena)', isCoreChar: true, category: 'noun', frequencyRank: 'Top 80' },
+      { char: '王', pinyin: 'wáng', vuk: 'vang', english: 'king / monarch', serbian: 'kralj / vladar', exampleUse: '国王 (kralj)', isCoreChar: true, category: 'noun', frequencyRank: 'Top 120' },
+      { char: '主', pinyin: 'zhǔ', vuk: 'džu', english: 'master / host', serbian: 'gospodar / vlasnik', exampleUse: '主要 (glavni/osnovni)', isCoreChar: true, category: 'noun', frequencyRank: 'Top 70' },
+      { char: '我', pinyin: 'wǒ', vuk: 'vo', english: 'I / me', serbian: 'ja / mene', exampleUse: '我们 (mi)', isCoreChar: true, category: 'phrase', frequencyRank: 'Top 5' },
+      { char: '你', pinyin: 'nǐ', vuk: 'ni', english: 'you', serbian: 'ti', exampleUse: '你好 (zdravo)', isCoreChar: true, category: 'phrase', frequencyRank: 'Top 8' },
+      { char: '他', pinyin: 'tā', vuk: 'ta', english: 'he / him', serbian: 'on / njega', exampleUse: '他们 (oni)', isCoreChar: true, category: 'phrase', frequencyRank: 'Top 10' },
+      { char: '我们', pinyin: 'wǒmen', vuk: 'vo-men', english: 'we / us', serbian: 'mi / nas', exampleUse: '我们一起 (mi zajedno)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 15' },
+      { char: '他们', pinyin: 'tāmen', vuk: 'ta-men', english: 'they / them', serbian: 'oni / njih', exampleUse: '他们来了 (oni su stigli)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 25' },
+      { char: '别人', pinyin: 'biéren', vuk: 'bje-žen', english: 'others / other people', serbian: 'drugi / ostali ljudi', exampleUse: '尊重别人 (poštovati druge)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 90' },
+      { char: '大家', pinyin: 'dàjiā', vuk: 'da-đja', english: 'everyone / all', serbian: 'svi / svako', exampleUse: '大家好 (zdravo svima)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 65' },
+      { char: '自己', pinyin: 'zìjǐ', vuk: 'ce-đji', english: 'oneself / self', serbian: 'sebe / sopstveni', exampleUse: '相信自己 (veruj u sebe)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 45' },
+      { char: '男人', pinyin: 'nánrén', vuk: 'nan-žen', english: 'man / men', serbian: 'muškarac', exampleUse: '成熟的男人 (zreo muškarac)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 110' },
+      { char: '女人', pinyin: 'nǚrén', vuk: 'ni-žen', english: 'woman / women', serbian: 'žena', exampleUse: '聪明的女人 (pametna žena)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 110' },
+      { char: '孩子', pinyin: 'háizi', vuk: 'haj-ce', english: 'child / children', serbian: 'dete / deca', exampleUse: '小孩子 (malo dete)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 75' },
+      { char: '朋友', pinyin: 'péngyou', vuk: 'peng-jou', english: 'friend', serbian: 'prijatelj', exampleUse: '好朋友 (dobar prijatelj)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 55' },
+      { char: '主人', pinyin: 'zhǔrén', vuk: 'džu-žen', english: 'host / master / owner', serbian: 'domaćin / vlasnik', exampleUse: '房子的主人 (vlasnik kuće)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 160' },
+      { char: '主要', pinyin: 'zhǔyào', vuk: 'džu-jao', english: 'main / primary', serbian: 'glavni / primarni', exampleUse: '主要原因 (glavni razlog)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 85' },
+      { char: '丈夫', pinyin: 'zhàngfu', vuk: 'džang-fu', english: 'husband', serbian: 'suprug / muž', exampleUse: '她的丈夫 (njen muž)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 130' },
+      { char: '妻子', pinyin: 'qīzi', vuk: 'ći-ce', english: 'wife', serbian: 'supruga / žena', exampleUse: '我的妻子 (moja žena)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 135' },
+      { char: '儿子', pinyin: 'érzi', vuk: 'er-ce', english: 'son', serbian: 'sin', exampleUse: '他的儿子 (njegov sin)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 120' },
+      { char: '女儿', pinyin: 'nǚ\'ér', vuk: 'ni-er', english: 'daughter', serbian: 'ćerka', exampleUse: '可爱的女儿 (slatka ćerka)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 125' },
+      { char: '父母', pinyin: 'fùmǔ', vuk: 'fu-mu', english: 'parents', serbian: 'roditelji', exampleUse: '孝敬父母 (poštovati roditelje)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 140' },
+      { char: '每个人', pinyin: 'měi gè rén', vuk: 'mej ge žen', english: 'everyone / each person', serbian: 'svaka osoba / svako', exampleUse: '每个人都有梦想', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 95' },
+      { char: '主动', pinyin: 'zhǔdòng', vuk: 'džu-dung', english: 'proactive / initiative', serbian: 'proaktivan / inicijativa', exampleUse: '主动学习 (učiti sa inicijativom)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 240' },
+      { char: '王国', pinyin: 'wángguó', vuk: 'vang-guo', english: 'kingdom / realm', serbian: 'kraljevstvo / domen', exampleUse: '精神王国 (duhovno carstvo)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 380' },
+      { char: '谁的', pinyin: 'shéi de', vuk: 'šej de', english: 'whose', serbian: 'čiji', exampleUse: '这是谁的书？ (čija je knjiga?)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 150' },
+      { char: '互相', pinyin: 'hùxiāng', vuk: 'hu-sjang', english: 'mutually / each other', serbian: 'uzajamno / jedno drugo', exampleUse: '互相帮助 (međusobno pomagati)', isCoreChar: false, category: 'phrase', frequencyRank: 'Top 190' },
+      { char: '关系', pinyin: 'guānxì', vuk: 'guan-si', english: 'relationship / connection', serbian: 'odnos / veza', exampleUse: '人际关系 (međuljudski odnosi)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 115' },
+      { char: '责任', pinyin: 'zérèn', vuk: 'ce-žen', english: 'responsibility / duty', serbian: 'odgovornost / dužnost', exampleUse: '承担责任 (preuzeti odgovornost)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 210' },
+      { char: '帮助', pinyin: 'bāngzhù', vuk: 'bang-džu', english: 'help / assist', serbian: 'pomoć / pomagati', exampleUse: '需要帮助 (potrebna pomoć)', isCoreChar: false, category: 'verb', frequencyRank: 'Top 95' },
+      { char: '信任', pinyin: 'xìnrèn', vuk: 'sin-žen', english: 'trust / confidence', serbian: 'poverenje / verovati', exampleUse: '建立信任 (izgraditi poverenje)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 260' },
+      { char: '青年', pinyin: 'qīngnián', vuk: 'ćing-njen', english: 'youth / young person', serbian: 'mladost / omladina', exampleUse: '有为青年 (sposoban mladić)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 290' },
+      { char: '老人', pinyin: 'lǎorén', vuk: 'lao-žen', english: 'elderly person / elder', serbian: 'starija osoba / starac', exampleUse: '关爱老人 (briga o starima)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 180' },
+      { char: '领导', pinyin: 'lǐngdǎo', vuk: 'ling-dao', english: 'leader / lead', serbian: 'vođa / lider / voditi', exampleUse: '团队领导 (vođa tima)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 220' },
+      { char: '角色', pinyin: 'juésè', vuk: 'đjüe-se', english: 'role / character', serbian: 'uloga / funkcija', exampleUse: '重要角色 (važna uloga)', isCoreChar: false, category: 'noun', frequencyRank: 'Top 270' },
+      { char: '团结', pinyin: 'tuánjié', vuk: 'tuan-đje', english: 'unite / solidarity', serbian: 'ujediniti se / solidarnost', exampleUse: '团结一致 (ujedinjeni kao jedan)', isCoreChar: false, category: 'verb', frequencyRank: 'Top 310' },
+      { char: '独立', pinyin: 'dúlì', vuk: 'du-li', english: 'independent', serbian: 'nezavisan / samostalan', exampleUse: '独立思考 (samostalno razmišljanje)', isCoreChar: false, category: 'adjective', frequencyRank: 'Top 280' },
+      { char: '尊重', pinyin: 'zūnzhòng', vuk: 'cun-džung', english: 'respect / esteem', serbian: 'poštovati / uvažavati', exampleUse: '相互尊重 (međusobno poštovanje)', isCoreChar: false, category: 'verb', frequencyRank: 'Top 200' }
+    ],
+    sentences: [
+      {
+        id: 'idm-2-1',
+        type: 'proverb',
+        typeLabel: '孔子名言 (Analects of Confucius)',
+        chinese: '三人行，必有我师焉。',
+        pinyin: 'Sān rén xíng, bì yǒu wǒ shī yān.',
+        vuk: 'San žen sing, bi jou vo ši jen.',
+        literalEnglish: 'When three people walk together, there must be one who is my teacher.',
+        english: 'In a group of three walking, there is always someone I can learn from.',
+        serbianEquivalent: 'Od svakog se ima šta naučiti. / Niko se nije naučen rodio.',
+        serbian: 'Gde god trojica idu zajedno, uvek je među njima neko ko može biti moj učitelj.',
+        philosophicalContext: 'Konfučijansko učenje o trajnoj skromnosti: posmatraj vrline drugih da ih usvojiš, a njihove mane da ih kod sebe ispraviš.',
+        targetWords: ['三', '人', '行', '我'],
+        context: 'Confucian Humility • Učenje od svakoga',
+        tokens: [
+          { word: '三人', pinyin: 'sān rén', english: 'three people', serbian: 'troje ljudi', isTarget: true },
+          { word: '行', pinyin: 'xíng', english: 'walk/travel', serbian: 'hodati', isTarget: true },
+          { word: '，', pinyin: ',', english: ',', serbian: ',' },
+          { word: '必有', pinyin: 'bì yǒu', english: 'must have', serbian: 'mora biti', isTarget: true },
+          { word: '我师', pinyin: 'wǒ shī', english: 'my teacher', serbian: 'moj učitelj', isTarget: true }
+        ]
+      },
+      {
+        id: 'idm-2-2',
+        type: 'proverb',
+        typeLabel: '兵法名言 (Sun Tzu Art of War)',
+        chinese: '知彼知己，百战不殆。',
+        pinyin: 'Zhī bǐ zhī jǐ, bǎi zhàn bù dài.',
+        vuk: 'Dži bi dži đji, baj džan bu daj.',
+        literalEnglish: 'Know the other, know yourself; in a hundred battles never in peril.',
+        english: 'Know yourself and know your enemy, and you will never be defeated.',
+        serbianEquivalent: 'Ko sebe zna, celim svetom vlada. / Upoznaj sebe pre nego što kreneš u bitku.',
+        serbian: 'Upoznaj neprijatelja i upoznaj sebe, i u stotinu bitaka nikada nećeš biti u opasnosti.',
+        philosophicalContext: 'Sun Cuov temelj strategije. Pobeda počinje od samosvesti i trezvenog razumevanja okruženja, a ne od slepe agresije.',
+        targetWords: ['知', '己', '百', '不'],
+        context: 'Sun Tzu Strategy • Samopoznavanje',
+        tokens: [
+          { word: '知彼', pinyin: 'zhī bǐ', english: 'know the other', serbian: 'upoznaj drugog' },
+          { word: '知己', pinyin: 'zhī jǐ', english: 'know oneself', serbian: 'upoznaj sebe', isTarget: true },
+          { word: '，', pinyin: ',', english: ',', serbian: ',' },
+          { word: '百战', pinyin: 'bǎi zhàn', english: '100 battles', serbian: 'sto bitaka', isTarget: true },
+          { word: '不殆', pinyin: 'bù dài', english: 'never in danger', serbian: 'bez opasnosti', isTarget: true }
+        ]
+      },
+      {
+        id: 'idm-2-3',
+        type: 'chengyu',
+        typeLabel: '成语 (Historical Unity)',
+        chinese: '同舟共济。',
+        pinyin: 'Tóng zhōu gòng jì.',
+        vuk: 'Tung džou gung đji.',
+        literalEnglish: 'Crossing the river together in the exact same boat.',
+        english: 'In the same boat / Pull together through stormy seas.',
+        serbianEquivalent: 'Složna braća kuću grade. / Svi smo u istom čamcu.',
+        serbian: 'U istom čamcu zajedno preći uzburkanu reku; udružiti snage pred zajedničkom olujom.',
+        philosophicalContext: 'Iz Sun Cuovog zapisa o tome kako vojnici u istoj nevolji zaboravljaju nesuglasice i rade složno kao desna i leva ruka.',
+        targetWords: ['共', '舟', '济'],
+        context: 'Solidarity & Comradeship • Zajedništvo',
+        tokens: [
+          { word: '同舟', pinyin: 'tóng zhōu', english: 'same boat', serbian: 'isti čamac' },
+          { word: '共济', pinyin: 'gòng jì', english: 'cross together', serbian: 'zajedno preći', isTarget: true }
+        ]
+      }
+    ]
+  }
+];
