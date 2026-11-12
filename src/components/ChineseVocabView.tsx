@@ -44,6 +44,7 @@ import { ChineseFlashcardsGame } from './ChineseFlashcardsGame';
 import { ChineseDictExplorerModal } from './ChineseDictExplorerModal';
 import { buildLinguisticChineseTranslation } from '../lib/chineseTranslatorEngine';
 import { ChineseRealLifeExamples } from './ChineseRealLifeExamples';
+import { ChineseAiTutorAlice } from './ChineseAiTutorAlice';
 
 export type { VocabItem };
 
@@ -800,7 +801,7 @@ const SOCIAL_MEDIA_PRESETS = [
 ];
 
 export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
-  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz' | 'flashcards' | 'alphabet' | 'real-life'>('learn');
+  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz' | 'flashcards' | 'alphabet' | 'real-life' | 'tutor'>('learn');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -1887,6 +1888,22 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             >
               <Sparkles className="w-3.5 h-3.5 text-rose-400 animate-pulse shrink-0" /> <span className="truncate font-black">Real Life Primeri</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('tutor')}
+              className={cn(
+                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 w-full md:w-auto text-center relative",
+                activeTab === 'tutor'
+                  ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/25 ring-2 ring-pink-400" : "bg-amber-600 text-white shadow-lg shadow-amber-600/25 ring-2 ring-amber-400"
+                  : isDarkMode ? "text-amber-400 hover:text-amber-300 hover:bg-zinc-800/80" : "text-amber-700 hover:bg-amber-100/80"
+              )}
+            >
+              <div className="w-4 h-4 rounded-full overflow-hidden border border-white/50 shrink-0">
+                <img src="/assets/aistudio/image_9f8b00ad.png" alt="Alice" className="w-full h-full object-cover" />
+              </div>
+              <span className="truncate font-black">AI Tutor Alice 👩🏻‍🏫</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping absolute -top-0.5 -right-0.5" />
+            </button>
           </div>
 
           <div className={cn(
@@ -1898,34 +1915,41 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
           </div>
         </div>
 
-        {/* QUICK AI TRANSLATOR FEATURE BANNER */}
+        {/* QUICK AI FEATURES BANNER */}
         <div className={cn(
           "p-3.5 rounded-2xl border flex items-center justify-between gap-3 flex-wrap shadow-md",
           isDarkMode ? "bg-gradient-to-r from-red-950/60 via-amber-950/40 to-zinc-900 border-amber-500/40" : "bg-gradient-to-r from-red-50 via-amber-50 to-orange-50 border-amber-200"
         )}>
-          <div className="flex items-center gap-2.5">
-            <span className="text-xl shrink-0">🤖✨</span>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-amber-500 shrink-0 shadow">
+              <img src="/assets/aistudio/image_9f8b00ad.png" alt="Alice" className="w-full h-full object-cover" />
+            </div>
             <div className="text-xs">
-              <span className="font-black text-amber-400 dark:text-amber-300">Novo: AI Konfigurator & Prevodilac sa Emodžijima!</span>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-amber-400 dark:text-amber-300">Upoznajte Alice (爱丽丝老师) — Tvoj AI Mentor za Kineski!</span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Novo</span>
+              </div>
               <p className="text-[11px] text-zinc-400">
-                Upišite englesku rečenicu i pritisnite prevod — dobijate kineske karaktere, pinyin, Vuk čitanje i prigodne emodžije.
+                Pita te pitanja, nudi gotove rečenice sa prevodom, i svaku reč možeš kliknuti za izgovor i značenje.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
-              onClick={() => setActiveTab('real-life')}
-              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0"
+              onClick={() => setActiveTab('tutor')}
+              className={cn(
+                "flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0",
+                isGirlyMode ? "bg-pink-600 hover:bg-pink-500 text-white shadow-pink-500/20" : "bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/20"
+              )}
             >
-              <Sparkles className="w-3.5 h-3.5 text-rose-200 shrink-0" />
-              <span>Real Life Primeri (200 Reči) 🖼️</span>
+              <span>👩🏻‍🏫 Razgovaraj sa Alice</span>
             </button>
             <button
-              onClick={() => { setActiveTab('weaver'); setConfigTabMode('ai'); }}
-              className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0"
+              onClick={() => setActiveTab('real-life')}
+              className="flex-1 sm:flex-initial px-3 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0"
             >
-              <Bot className="w-3.5 h-3.5 text-amber-200 shrink-0" />
-              <span>AI Prevodilac ⚡</span>
+              <Sparkles className="w-3.5 h-3.5 text-rose-200 shrink-0" />
+              <span>Real Life Primeri 🖼️</span>
             </button>
           </div>
         </div>
@@ -4411,6 +4435,25 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             exit={{ opacity: 0, y: -15 }}
           >
             <ChineseRealLifeExamples isDarkMode={isDarkMode} />
+          </motion.div>
+        )}
+
+        {/* AI TUTOR ALICE VIEW (Talkpal inspired with word-by-word tokens & pre-built replies) */}
+        {activeTab === 'tutor' && (
+          <motion.div
+            key="tutor"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+          >
+            <ChineseAiTutorAlice
+              isDarkMode={isDarkMode}
+              isGirlyMode={isGirlyMode}
+              onOpenDictionary={(term) => {
+                setDictExplorerInitialQuery(term);
+                setIsDictExplorerOpen(true);
+              }}
+            />
           </motion.div>
         )}
       </AnimatePresence>

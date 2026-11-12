@@ -1808,6 +1808,186 @@ Respond STRICTLY with a valid JSON object matching this schema without markdown 
     }
   });
 
+  // --- CHINESE AI TUTOR ALICE (爱丽丝老师) CONVERSATIONAL ENDPOINT ---
+  app.post("/api/ai/chinese-tutor", async (req, res) => {
+    try {
+      const { message, scenarioId, history = [] } = req.body;
+      const cleanMessage = (message || "你好！").trim();
+      console.log(`[Chinese AI Tutor Alice] Processing message: "${cleanMessage}" in scenario: ${scenarioId}`);
+
+      const recentHistoryPrompt = Array.isArray(history) && history.length > 0
+        ? history.slice(-4).map((h: any) => `${h.sender === 'alice' ? 'Alice (Tutor)' : 'Student'}: ${h.text}`).join('\n')
+        : "Conversation starting.";
+
+      const prompt = `You are Alice (爱丽丝老师), a warm, cultured, highly articulate AI Mandarin tutor teaching Chinese to a Serbian/European student.
+You speak Standard Mandarin (普通话), encourage your student, and teach step-by-step.
+The student just said or replied: "${cleanMessage}"
+Recent context:
+${recentHistoryPrompt}
+
+Your task:
+1. Formulate Alice's next turn in the conversation:
+   - 'chinese': natural, encouraging Simplified Chinese sentence (1-2 sentences max, clear and suitable for language learners).
+   - 'pinyin': standard Pinyin with tone marks.
+   - 'vuk': Vuk phonetic transliteration tailored for Serbian/Croatian speakers.
+   - 'english': English translation.
+   - 'serbian': Serbian translation.
+   - 'words': sequential word-by-word token array covering EVERY character/word in Alice's Chinese sentence:
+     * 'chinese': token
+     * 'pinyin': pinyin with tone mark
+     * 'vuk': Vuk transliteration
+     * 'english': English meaning
+     * 'serbian': Serbian meaning
+     * 'category': 'noun' | 'verb' | 'adjective' | 'pronoun' | 'particle' | 'number' | 'direction' | 'phrase' | 'idiom'
+2. Provide 'suggestedReplies': 2 to 3 pre-built sentence options the student can choose from to answer Alice:
+   Each suggestion must have:
+   - 'id': unique id string (e.g. "sug-1")
+   - 'chinese': Chinese sentence
+   - 'pinyin': Pinyin with tones
+   - 'vuk': Vuk phonetic reading
+   - 'english': English translation
+   - 'serbian': Serbian translation
+   - 'tag': 'positive' | 'detailed' | 'polite' | 'curious' | 'stoic'
+   - 'tagLabel': Short Serbian label (e.g., "Učtivo", "Pozitivno", "Detaljno", "Znatiželjno")
+   - 'words': sequential word-by-word token array for the suggested sentence!
+3. Provide 'feedback':
+   - 'pronunciationTip': specific tip about tone changes (e.g. third tone sandhi, neutral tones, initials like zh/ch/sh or j/q/x) in Serbian.
+   - 'grammarAdvice': clear grammar point explanation in Serbian.
+   - 'culturalNote': short cultural insight into Chinese customs or philosophical nuances.
+
+Respond STRICTLY with a valid JSON object matching this schema without markdown fences:
+{
+  "reply": {
+    "id": "alice-${Date.now()}",
+    "sender": "alice",
+    "chinese": "...",
+    "pinyin": "...",
+    "vuk": "...",
+    "english": "...",
+    "serbian": "...",
+    "words": [
+      {
+        "chinese": "...",
+        "pinyin": "...",
+        "vuk": "...",
+        "english": "...",
+        "serbian": "...",
+        "category": "noun"
+      }
+    ],
+    "suggestedReplies": [
+      {
+        "id": "sug-1",
+        "chinese": "...",
+        "pinyin": "...",
+        "vuk": "...",
+        "english": "...",
+        "serbian": "...",
+        "tag": "polite",
+        "tagLabel": "Učtivo",
+        "words": [
+          {
+            "chinese": "...",
+            "pinyin": "...",
+            "vuk": "...",
+            "english": "...",
+            "serbian": "...",
+            "category": "verb"
+          }
+        ]
+      }
+    ],
+    "feedback": {
+      "pronunciationTip": "...",
+      "grammarAdvice": "...",
+      "culturalNote": "..."
+    }
+  }
+}`;
+
+      const config = {
+        temperature: 0.35,
+        responseMimeType: "application/json",
+        maxOutputTokens: 4096,
+        preferredEngine: 'auto'
+      };
+
+      let resultText = "";
+      try {
+        const result = await generateWithFallback(prompt, config);
+        resultText = result.text() || "";
+      } catch (err: any) {
+        console.warn("[Chinese AI Tutor Alice] AI call warning:", err?.message);
+      }
+
+      if (resultText) {
+        let cleaned = resultText.replace(/^```json/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
+        const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+        if (jsonMatch) cleaned = jsonMatch[0];
+        try {
+          const parsed = JSON.parse(cleaned);
+          if (parsed && (parsed.reply || parsed.chinese)) {
+            const finalReply = parsed.reply || parsed;
+            if (!finalReply.sender) finalReply.sender = 'alice';
+            if (!finalReply.id) finalReply.id = `alice-${Date.now()}`;
+            return res.json({ success: true, reply: finalReply });
+          }
+        } catch (e) {
+          console.warn("[Chinese AI Tutor Alice] JSON parse error:", e);
+        }
+      }
+
+      // Contextual fallback response
+      return res.json({
+        success: true,
+        reply: {
+          id: `alice-${Date.now()}`,
+          sender: "alice",
+          chinese: "太好了！你对中文的热情让我很感动，我们继续探讨下一个话题吧。",
+          pinyin: "Tài hǎo le! Nǐ duì zhōngwén de rèqíng ràng wǒ hěn gǎndòng, wǒmen jìxù tàntǎo xià yí gè huàtí ba.",
+          vuk: "Taj hao le! Ni duej džong-ven de že-ćhing rang vo hen gan-dong, vo-men đi-sju tan-tao sja ji ge hua-ti ba.",
+          english: "Wonderful! Your passion for Chinese touches me greatly, let us continue to explore the next topic.",
+          serbian: "Predivno! Tvoj entuzijazam za kineski me zaista raduje, hajde da nastavimo ka sledećoj temi.",
+          words: [
+            { chinese: "太好了", pinyin: "tài hǎo le", vuk: "taj hao le", english: "wonderful", serbian: "predivno", category: "phrase" },
+            { chinese: "你", pinyin: "nǐ", vuk: "ni", english: "you", serbian: "ti", category: "pronoun" },
+            { chinese: "对", pinyin: "duì", vuk: "duej", english: "towards", serbian: "prema", category: "particle" },
+            { chinese: "中文", pinyin: "zhōngwén", vuk: "džong-ven", english: "Chinese language", serbian: "kineski jezik", category: "noun" },
+            { chinese: "热情", pinyin: "rèqíng", vuk: "že-ćhing", english: "passion/enthusiasm", serbian: "strast/entuzijazam", category: "noun" },
+            { chinese: "感动", pinyin: "gǎndòng", vuk: "gan-dong", english: "touched/moved", serbian: "dirnut", category: "verb" },
+            { chinese: "继续", pinyin: "jìxù", vuk: "đi-sju", english: "continue", serbian: "nastaviti", category: "verb" }
+          ],
+          suggestedReplies: [
+            {
+              id: "sug-fb-1",
+              chinese: "请问老师，下一个话题是什么？",
+              pinyin: "Qǐngwèn lǎoshī, xià yí gè huàtí shì shénme?",
+              vuk: "Ćhing-ven lao-ši, sja ji ge hua-ti ši šen-me?",
+              english: "May I ask teacher, what is the next topic?",
+              serbian: "Mogu li da pitam profesorko, šta je sledeća tema?",
+              tag: "curious",
+              tagLabel: "Znatiželjno",
+              words: [
+                { chinese: "请问", pinyin: "qǐngwèn", vuk: "ćhing-ven", english: "may I ask", serbian: "mogu li pitati", category: "verb" },
+                { chinese: "老师", pinyin: "lǎoshī", vuk: "lao-ši", english: "teacher", serbian: "profesorka", category: "noun" },
+                { chinese: "话题", pinyin: "huàtí", vuk: "hua-ti", english: "topic", serbian: "tema", category: "noun" },
+                { chinese: "什么", pinyin: "shénme", vuk: "šen-me", english: "what", serbian: "šta", category: "pronoun" }
+              ]
+            }
+          ],
+          feedback: {
+            pronunciationTip: "Obrati pažnju na prelaz tonova: 'hěn gǎndòng' (treći ton se pretvara u drugi ton kada sledeći ton takođe ima treći ton).",
+            grammarAdvice: "Korišćenje partikule 'ba' (吧) na kraju rečenice omekšava ton i predlaže zajedničku akciju ('hajde da...').",
+            culturalNote: "Kineski mentori visoko cene iskren trud i postojanost (恒心 - héngxīn) više od same brzine savladavanja."
+          }
+        }
+      });
+    } catch (error: any) {
+      console.error("[Chinese AI Tutor Alice] Error:", error);
+      res.status(500).json({ error: error.message || "Failed to process AI tutor turn." });
+    }
+  });
+
   // --- LINK PREVIEW SCROLLER & META EXTRACTOR ---
   app.get("/api/link-metadata", async (req, res) => {
     const targetUrl = req.query.url as string;
