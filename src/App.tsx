@@ -10728,15 +10728,15 @@ Keep your response structured, insightful, clear, and grounded in psychological 
       {/* Bottom Navigation */}
       {!isYogaSessionActive && (
         <nav className={cn(
-          "fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t py-3 pb-8 transition-colors duration-500 overflow-x-auto no-scrollbar",
+          "fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl border-t py-2 pb-6 transition-colors duration-500 overflow-x-auto no-scrollbar",
           isGirlyMode ? "bg-white/90 border-pink-100 shadow-[0_-8px_32px_rgba(244,63,94,0.1)]" :
           isDarkMode ? "bg-zinc-950/90 border-zinc-800/50" : "bg-white/90 border-zinc-200 shadow-lg"
         )}>
-        <div className="flex items-center justify-start min-w-max px-2 gap-1 sm:justify-between sm:max-w-md sm:mx-auto sm:w-full sm:gap-2">
+        <div className="flex items-center justify-between min-w-max w-full px-1.5 gap-0.5 sm:max-w-md sm:mx-auto sm:gap-1.5">
           <NavButton 
             active={activeView === 'dashboard'} 
             onClick={() => setActiveView('dashboard')}
-            icon={<Activity className="w-5 h-5 sm:w-6 sm:h-6" />}
+            icon={<Activity className="w-[17px] h-[17px] sm:w-5 sm:h-5" />}
             label="Home"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -10744,7 +10744,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
           <NavButton 
             active={activeView === 'plan'} 
             onClick={() => setActiveView('plan')}
-            icon={<ListTodo className="w-5 h-5 sm:w-6 sm:h-6" />}
+            icon={<ListTodo className="w-[17px] h-[17px] sm:w-5 sm:h-5" />}
             label="Plan"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -10755,7 +10755,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
               setActiveView('workouts');
               setHistorySubView('articles');
             }}
-            icon={<Dumbbell className="w-5 h-5 sm:w-6 sm:h-6" />}
+            icon={<Dumbbell className="w-[17px] h-[17px] sm:w-5 sm:h-5" />}
             label="Log"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -10763,7 +10763,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
           <NavButton 
             active={activeView === 'yoga'} 
             onClick={() => setActiveView('yoga')}
-            icon={<Wind className="w-5 h-5 sm:w-6 sm:h-6" />}
+            icon={<Wind className="w-[17px] h-[17px] sm:w-5 sm:h-5" />}
             label="Yoga"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -10771,7 +10771,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
           <NavButton 
             active={activeView === 'quiz'} 
             onClick={() => setActiveView('quiz')}
-            icon={<Brain className="w-5 h-5 sm:w-6 sm:h-6" />}
+            icon={<Brain className="w-[17px] h-[17px] sm:w-5 sm:h-5" />}
             label="Quiz"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -10779,7 +10779,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
           <NavButton 
             active={activeView === 'chat'} 
             onClick={() => setActiveView('chat')}
-            icon={<MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />}
+            icon={<MessageSquare className="w-[17px] h-[17px] sm:w-5 sm:h-5" />}
             label="Sage"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -10787,7 +10787,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
           <NavButton 
             active={activeView === 'psychologist'} 
             onClick={() => setActiveView('psychologist')}
-            icon={<Stethoscope className="w-5 h-5 sm:w-6 sm:h-6" />}
+            icon={<Stethoscope className="w-[17px] h-[17px] sm:w-5 sm:h-5" />}
             label="Clinic"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -10795,7 +10795,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
           <NavButton 
             active={activeView === 'library'} 
             onClick={() => setActiveView('library')}
-            icon={<BookOpen className="w-5 h-5 sm:w-6 sm:h-6" />}
+            icon={<BookOpen className="w-[17px] h-[17px] sm:w-5 sm:h-5" />}
             label="Ref"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -10809,7 +10809,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
                 setActiveView('profile'); // Send guests to login first so they don't break database boundaries
               }
             }}
-            icon={<Globe className="w-5 h-5 sm:w-6 sm:h-6" />}
+            icon={<Globe className="w-[17px] h-[17px] sm:w-5 sm:h-5" />}
             label="Swarm"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -10817,7 +10817,7 @@ Keep your response structured, insightful, clear, and grounded in psychological 
           <NavButton 
             active={activeView === 'profile'} 
             onClick={() => setActiveView('profile')}
-            icon={<User className="w-5 h-5 sm:w-6 sm:h-6" />}
+            icon={<User className="w-[17px] h-[17px] sm:w-5 sm:h-5" />}
             label="User"
             isDarkMode={isDarkMode}
             isGirlyMode={isGirlyMode}
@@ -12974,7 +12974,7 @@ function NavButton({ active, onClick, icon, label, isDarkMode, isGirlyMode }: an
     <button 
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-0.5 transition-all duration-300 relative flex-shrink-0 min-w-[38px] sm:min-w-[64px] py-1",
+        "flex flex-col items-center gap-0.5 transition-all duration-300 relative flex-shrink-0 min-w-[32px] sm:min-w-[54px] py-0.5",
         active 
           ? (isGirlyMode ? "text-pink-600 scale-105 font-bold" : "text-emerald-400 scale-110 font-bold") 
           : (isGirlyMode ? "text-pink-450 hover:text-pink-600" : isDarkMode ? "text-zinc-350 hover:text-white" : "text-zinc-600 hover:text-zinc-900")
@@ -12984,19 +12984,19 @@ function NavButton({ active, onClick, icon, label, isDarkMode, isGirlyMode }: an
         <motion.div 
           layoutId="nav-pill"
           className={cn(
-            "absolute -top-1.5 w-1.5 h-1.5 rounded-full",
+            "absolute -top-1 w-1.5 h-1.5 rounded-full",
             isGirlyMode ? "bg-pink-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" : "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
           )}
         />
       )}
       <div className={cn(
         "transition-transform duration-300",
-        active ? "scale-110 opacity-100" : "scale-100 opacity-90"
+        active ? "scale-105 opacity-100" : "scale-100 opacity-90"
       )}>
         {icon}
       </div>
       <span className={cn(
-        "text-[8px] sm:text-[10px] font-extrabold uppercase tracking-tighter sm:tracking-widest transition-all",
+        "text-[7px] sm:text-[8.5px] font-extrabold uppercase tracking-tighter sm:tracking-wider transition-all leading-tight",
         active ? "opacity-100 translate-y-0" : "opacity-80 translate-y-0"
       )}>
         {label}

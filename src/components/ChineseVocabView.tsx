@@ -930,6 +930,8 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   const [aiTranslationError, setAiTranslationError] = useState<string | null>(null);
   const [aiCopiedResult, setAiCopiedResult] = useState(false);
   const [copiedWordIdx, setCopiedWordIdx] = useState<number | null>(null);
+  const [savedWordAnim, setSavedWordAnim] = useState<{ idx: number; status: 'saved' | 'exists'; char: string } | null>(null);
+  const [justSavedAllAi, setJustSavedAllAi] = useState(false);
   const [selectedSolidarityCategory, setSelectedSolidarityCategory] = useState<'all' | 'solidarity' | 'strength' | 'peace' | 'short'>('all');
 
   // Custom User Saved Words from AI Configurator
@@ -1073,6 +1075,8 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     const toAdd = newItems.filter(item => !existingChars.has(item.char));
 
     if (toAdd.length === 0) {
+      setJustSavedAllAi(true);
+      setTimeout(() => setJustSavedAllAi(false), 2000);
       setDictToast('Sve reči iz ove rečenice se već nalaze u vašoj riznici!');
       setTimeout(() => setDictToast(null), 2500);
       return;
@@ -1081,20 +1085,26 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     const updated = [...toAdd, ...savedCustomWords];
     setSavedCustomWords(updated);
     localStorage.setItem('wisefit_chinese_custom_words', JSON.stringify(updated));
+    setJustSavedAllAi(true);
+    setTimeout(() => setJustSavedAllAi(false), 2400);
     setDictToast(`Uspešno dodato ${toAdd.length} novih reči u vaš rečnik i flashcards igru! 🎴✨`);
     setTimeout(() => setDictToast(null), 3000);
   };
 
-  const handleSaveSingleAiWord = (word: AiConfigWordItemChinese) => {
+  const handleSaveSingleAiWord = (word: AiConfigWordItemChinese, idx?: number) => {
     const existingChars = new Set([...VOCAB_DATA.map(v => v.char), ...savedCustomWords.map(v => v.char)]);
     if (existingChars.has(word.chinese)) {
-      setDictToast(`Reč "${word.chinese}" se već nalazi u vašem rečniku!`);
-      setTimeout(() => setDictToast(null), 2500);
+      if (idx !== undefined) {
+        setSavedWordAnim({ idx, status: 'exists', char: word.chinese });
+        setTimeout(() => setSavedWordAnim(prev => (prev?.idx === idx ? null : prev)), 2200);
+      }
+      setDictToast(`Reč "${word.chinese}" (${word.serbian}) je već u vašem rečniku ✓`);
+      setTimeout(() => setDictToast(null), 2600);
       return;
     }
 
     const newItem: VocabItem = {
-      id: `zh-ai-${Date.now()}`,
+      id: `zh-ai-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       char: word.chinese,
       pinyin: word.pinyin,
       vuk: word.vuk,
@@ -1116,6 +1126,10 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     const updated = [newItem, ...savedCustomWords];
     setSavedCustomWords(updated);
     localStorage.setItem('wisefit_chinese_custom_words', JSON.stringify(updated));
+    if (idx !== undefined) {
+      setSavedWordAnim({ idx, status: 'saved', char: word.chinese });
+      setTimeout(() => setSavedWordAnim(prev => (prev?.idx === idx ? null : prev)), 2400);
+    }
     setDictToast(`Reč "${word.chinese}" (${word.serbian}) je sačuvana u rečnik! 🌟`);
     setTimeout(() => setDictToast(null), 3000);
   };
@@ -2572,15 +2586,31 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                             <span className="truncate">{aiCopiedResult ? 'Kopirano' : 'Kopiraj'}</span>
                           </button>
 
-                          <button
+                          <motion.button
                             type="button"
+                            whileTap={{ scale: 0.92 }}
+                            animate={justSavedAllAi ? { scale: [1, 1.08, 1] } : { scale: 1 }}
                             onClick={handleSaveAllAiWords}
-                            className="min-w-0 px-2 sm:px-3 py-2.5 sm:py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/30 transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-center"
+                            className={cn(
+                              "min-w-0 px-2 sm:px-3 py-2.5 sm:py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-center",
+                              justSavedAllAi
+                                ? "bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/30"
+                                : "bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border-amber-500/30"
+                            )}
                             title="Dodaj sve reči iz ovog prevoda u svoj rečnik i flashcards igru"
                           >
-                            <BookmarkPlus className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate">Sačuvaj</span>
-                          </button>
+                            {justSavedAllAi ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 shrink-0 stroke-[3]" />
+                                <span className="truncate">Sačuvano!</span>
+                              </>
+                            ) : (
+                              <>
+                                <BookmarkPlus className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">Sačuvaj</span>
+                              </>
+                            )}
+                          </motion.button>
                         </div>
                       </div>
 
@@ -2664,14 +2694,64 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                                     >
                                       {copiedWordIdx === idx ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
                                     </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleSaveSingleAiWord(w)}
-                                      className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-300 hover:bg-amber-500/20 transition-all"
-                                      title="Dodaj u moj rečnik i flashcards"
-                                    >
-                                      <Plus className="w-3.5 h-3.5" />
-                                    </button>
+                                    <div className="relative">
+                                      <AnimatePresence>
+                                        {savedWordAnim?.idx === idx && (
+                                          <motion.span
+                                            initial={{ opacity: 0, y: 4, scale: 0.7 }}
+                                            animate={{ opacity: 1, y: -26, scale: 1 }}
+                                            exit={{ opacity: 0, y: -34, scale: 0.85 }}
+                                            transition={{ type: 'spring', stiffness: 450, damping: 22 }}
+                                            className={cn(
+                                              "absolute right-0 top-0 px-2 py-0.5 rounded-full text-[10px] font-black font-mono whitespace-nowrap shadow-lg pointer-events-none z-20 border",
+                                              savedWordAnim.status === 'saved'
+                                                ? "bg-emerald-500 text-white border-emerald-300"
+                                                : "bg-amber-500 text-zinc-950 border-amber-300"
+                                            )}
+                                          >
+                                            {savedWordAnim.status === 'saved' ? '+1 Sačuvano ✓' : 'Već u rečniku ✓'}
+                                          </motion.span>
+                                        )}
+                                      </AnimatePresence>
+                                      {savedWordAnim?.idx === idx && (
+                                        <motion.span
+                                          initial={{ scale: 0.8, opacity: 0.85 }}
+                                          animate={{ scale: 2.1, opacity: 0 }}
+                                          transition={{ duration: 0.55 }}
+                                          className="absolute inset-0 rounded-lg bg-emerald-400 pointer-events-none"
+                                        />
+                                      )}
+                                      <motion.button
+                                        type="button"
+                                        whileTap={{ scale: 0.82 }}
+                                        animate={
+                                          savedWordAnim?.idx === idx
+                                            ? { scale: [1, 1.32, 0.96, 1], rotate: [0, 12, -8, 0] }
+                                            : { scale: 1 }
+                                        }
+                                        transition={{ duration: 0.35 }}
+                                        onClick={() => handleSaveSingleAiWord(w, idx)}
+                                        className={cn(
+                                          "relative p-1.5 rounded-lg transition-all cursor-pointer",
+                                          savedWordAnim?.idx === idx
+                                            ? "text-white bg-emerald-500 shadow-md shadow-emerald-500/40"
+                                            : existingCharactersSet.has(w.chinese)
+                                              ? "text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25"
+                                              : "text-zinc-400 hover:text-amber-300 hover:bg-amber-500/20"
+                                        )}
+                                        title={
+                                          existingCharactersSet.has(w.chinese)
+                                            ? "Sačuvano u rečniku i flashcards"
+                                            : "Dodaj u moj rečnik i flashcards"
+                                        }
+                                      >
+                                        {savedWordAnim?.idx === idx || existingCharactersSet.has(w.chinese) ? (
+                                          <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                        ) : (
+                                          <Plus className="w-3.5 h-3.5" />
+                                        )}
+                                      </motion.button>
+                                    </div>
                                   </div>
                                 </div>
 
@@ -4625,13 +4705,22 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
         initialQuery={dictExplorerInitialQuery}
       />
 
-      {/* Non-blocking Toast Notification */}
-      {dictToast && (
-        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-emerald-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 border border-emerald-400 animate-in fade-in slide-in-from-bottom-2">
-          <CheckCircle className="w-4 h-4 text-white shrink-0" />
-          <span>{dictToast}</span>
-        </div>
-      )}
+      {/* Non-blocking Toast Notification - Positioned above bottom nav on mobile so it is always visible */}
+      <AnimatePresence>
+        {dictToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.94 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+            onClick={() => setDictToast(null)}
+            className="fixed bottom-24 sm:bottom-8 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[80] p-3.5 sm:p-4 rounded-2xl bg-emerald-600/95 backdrop-blur-md text-white font-bold text-xs shadow-2xl shadow-emerald-950/60 flex items-center gap-2.5 border border-emerald-400 cursor-pointer"
+          >
+            <CheckCircle className="w-4 h-4 text-white shrink-0" />
+            <span className="leading-snug">{dictToast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

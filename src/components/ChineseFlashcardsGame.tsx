@@ -73,6 +73,15 @@ interface MatchCard {
   isFlipped: boolean;
   isMatched: boolean;
 }
+
+function fisherYatesShuffle<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
  
 const getCategoryCartoonIllustration = (category?: string, size = 46) => {
   switch (category) {
@@ -147,6 +156,8 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
   const [speedComplete, setSpeedComplete] = useState(false);
   const [speedShowHint, setSpeedShowHint] = useState(false);
   const [speedQuestionCount, setSpeedQuestionCount] = useState<number>(30);
+  const [speedBatchNum, setSpeedBatchNum] = useState<number>(0);
+  const usedSpeedIdsRef = useRef<Set<string>>(new Set());
 
   // --- GAME PACING CONTROLS (MAKE WORDS SERENE, SLOW & PLAYABLE) ---
   const [pacingMode, setPacingMode] = useState<PacingMode>('manual');
@@ -299,7 +310,7 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
       pool = pool.filter(item => currentMastered.includes(item.id));
     }
     const finalPool = pool.length > 0 ? pool : vocabList;
-    const deckCards = shouldShuffle ? [...finalPool].sort(() => Math.random() - 0.5) : [...finalPool];
+    const deckCards = shouldShuffle ? fisherYatesShuffle(finalPool) : [...finalPool];
     setDeck(deckCards);
     setCurrentIndex(0);
     setIsFlipped(false);
@@ -671,7 +682,18 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
   // --- MEMORY MATCH GAME LOGIC ---
   const initMatchGame = useCallback(() => {
     clearAllTimers();
-    const pool = [...filteredPool].sort(() => Math.random() - 0.5);
+    let basePool = [...vocabList];
+    if (selectedCategory !== 'all') {
+      basePool = basePool.filter(item => item.category === selectedCategory);
+    }
+    const currentMastered = masteredIdsRef.current;
+    if (filterMode === 'unmastered') {
+      basePool = basePool.filter(item => !currentMastered.includes(item.id));
+    } else if (filterMode === 'mastered') {
+      basePool = basePool.filter(item => currentMastered.includes(item.id));
+    }
+    const activePool = basePool.length > 0 ? basePool : vocabList;
+    const pool = fisherYatesShuffle(activePool);
     const selectedVocabs = pool.slice(0, matchGridSize);
 
     const cards: MatchCard[] = [];
@@ -704,14 +726,14 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
     });
 
     // Shuffle the match board
-    setMatchCards(cards.sort(() => Math.random() - 0.5));
+    setMatchCards(fisherYatesShuffle(cards));
     setSelectedMatchIndices([]);
     setMatchedPairsCount(0);
     setMatchMoves(0);
     setMatchTimer(0);
     setIsMatchTimerRunning(true);
     setMatchGameFinished(false);
-  }, [filteredPool, matchGridSize, clearAllTimers]);
+  }, [vocabList, selectedCategory, filterMode, matchGridSize, clearAllTimers]);
 
   // Match Game Timer
   useEffect(() => {
@@ -789,19 +811,48 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
     }
   };
 
-  // --- MODE 3: SPEED CHALLENGE LOGIC ---
+  // --- MODE 3: SPEED CHALLENGE LOGIC (with Fisher-Yates & unseen batch rotation) ---
   const initSpeedChallenge = useCallback(() => {
     clearAllTimers();
-    const shuffled = [...filteredPool].sort(() => Math.random() - 0.5);
-    const targetCount = Math.min(speedQuestionCount, shuffled.length);
-    const questionsList = shuffled.slice(0, targetCount).map(v => {
-      const distractors = filteredPool
-        .filter(other => other.id !== v.id)
-        .sort(() => Math.random() - 0.5)
+    let pool = [...vocabList];
+    if (selectedCategory !== 'all') {
+      pool = pool.filter(item => item.category === selectedCategory);
+    }
+    const currentMastered = masteredIdsRef.current;
+    if (filterMode === 'unmastered') {
+      pool = pool.filter(item => !currentMastered.includes(item.id));
+    } else if (filterMode === 'mastered') {
+      pool = pool.filter(item => currentMastered.includes(item.id));
+    }
+    const activePool = pool.length > 0 ? pool : vocabList;
+    const targetCount = Math.min(speedQuestionCount, activePool.length);
+
+    // Prioritize unseen words so consecutive 30-word batches rotate through fresh words
+    const unseen = fisherYatesShuffle(activePool.filter(item => !usedSpeedIdsRef.current.has(item.id)));
+    const seen = fisherYatesShuffle(activePool.filter(item => usedSpeedIdsRef.current.has(item.id)));
+
+    let selectedBatch: VocabItem[];
+    if (unseen.length >= targetCount) {
+      selectedBatch = unseen.slice(0, targetCount);
+      selectedBatch.forEach(item => usedSpeedIdsRef.current.add(item.id));
+    } else {
+      const remainingNeeded = targetCount - unseen.length;
+      const recycled = seen.slice(0, remainingNeeded);
+      selectedBatch = fisherYatesShuffle([...unseen, ...recycled]);
+      // Reset tracking for the pool and mark the recycled + remaining fresh ones for next round
+      usedSpeedIdsRef.current.clear();
+      selectedBatch.forEach(item => usedSpeedIdsRef.current.add(item.id));
+    }
+
+    const questionsList = selectedBatch.map(v => {
+      const distractorPool = activePool.length >= 4 ? activePool : vocabList;
+      const distractors = fisherYatesShuffle(
+        distractorPool.filter(other => other.id !== v.id && other.translation !== v.translation)
+      )
         .slice(0, 3)
         .map(other => other.translation);
 
-      const options = [v.translation, ...distractors].sort(() => Math.random() - 0.5);
+      const options = fisherYatesShuffle([v.translation, ...distractors]);
 
       return {
         vocab: v,
@@ -811,6 +862,7 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
     });
 
     setSpeedQuestions(questionsList);
+    setSpeedBatchNum(prev => prev + 1);
     setSpeedQuestionIdx(0);
     setSelectedAnswer(null);
     setSpeedScore(0);
@@ -819,10 +871,19 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
 
     if (questionsList.length > 0 && autoSpeak) {
       setTimeout(() => {
-        speakChinese(questionsList[0].vocab.char, `speed-${questionsList[0].vocab.id}`);
+        speakChineseRef.current(questionsList[0].vocab.char, `speed-${questionsList[0].vocab.id}`);
       }, 350);
     }
-  }, [filteredPool, speedQuestionCount, autoSpeak, speakChinese, clearAllTimers]);
+  }, [vocabList, selectedCategory, filterMode, speedQuestionCount, autoSpeak, clearAllTimers]);
+
+  // Refresh speed quiz / match board automatically when user switches category or filter while inside those modes
+  useEffect(() => {
+    if (gameMode === 'speed') {
+      initSpeedChallenge();
+    } else if (gameMode === 'match') {
+      initMatchGame();
+    }
+  }, [selectedCategory, filterMode, gameMode, initSpeedChallenge, initMatchGame]);
 
   const handleSpeedAnswer = (option: string) => {
     if (selectedAnswer !== null) return;
@@ -1980,13 +2041,27 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
             )}>
               {/* Question Header */}
               <div className="flex items-center justify-between text-xs font-mono text-zinc-400 flex-wrap gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span>Pitanje {speedQuestionIdx + 1} / {speedQuestions.length}</span>
                   <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-bold">
-                    30 Pokušaja
+                    {speedQuestions.length} Pokušaja · Serija #{speedBatchNum || 1}
                   </span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={initSpeedChallenge}
+                    className={cn(
+                      "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer",
+                      isDarkMode
+                        ? "bg-zinc-900 border-amber-500/40 text-amber-300 hover:bg-amber-500/20"
+                        : "bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
+                    )}
+                    title="Izvuci novu nasumičnu seriju od 30 reči"
+                  >
+                    <Shuffle className="w-3.5 h-3.5" />
+                    <span>Promešaj</span>
+                  </button>
                   <span className="font-bold text-amber-400">Bodovi: {speedScore}</span>
                 </div>
               </div>
@@ -2203,14 +2278,14 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
                 Osvojili ste <strong className="text-amber-400 font-bold">{speedScore}</strong> bodova od maksimalnih {speedQuestions.length * 10}!
               </p>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2 w-full max-w-xs mx-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2 w-full max-w-md mx-auto">
                 <button
                   type="button"
                   onClick={initSpeedChallenge}
-                  className="w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-xs sm:text-sm bg-amber-600 hover:bg-amber-500 text-white shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-center"
+                  className="w-full sm:w-auto px-6 py-3 rounded-2xl font-black text-xs sm:text-sm bg-amber-600 hover:bg-amber-500 text-white shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
                 >
-                  <RotateCw className="w-4 h-4 shrink-0" />
-                  <span>Igraj Ponovo</span>
+                  <Shuffle className="w-4 h-4 shrink-0" />
+                  <span>Nova Serija ({Math.min(speedQuestionCount, filteredPool.length)} Reči)</span>
                 </button>
               </div>
             </motion.div>

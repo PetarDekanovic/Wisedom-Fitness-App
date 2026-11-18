@@ -988,6 +988,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
   const [aiTranslationError, setAiTranslationError] = useState<string | null>(null);
   const [aiCopiedResult, setAiCopiedResult] = useState(false);
   const [copiedWordIdx, setCopiedWordIdx] = useState<number | null>(null);
+  const [savedWordAnimIdx, setSavedWordAnimIdx] = useState<number | null>(null);
   const [aiSavedSuccessToast, setAiSavedSuccessToast] = useState<string | null>(null);
   const [savedCustomWords, setSavedCustomWords] = useState<HebrewVocabItem[]>(() => {
     try {
@@ -1113,7 +1114,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     setTimeout(() => setAiSavedSuccessToast(null), 3000);
   };
 
-  const handleSaveSingleAiWord = (w: AiConfigWordItem) => {
+  const handleSaveSingleAiWord = (w: AiConfigWordItem, idx?: number) => {
     const newItem: HebrewVocabItem = {
       id: `he-ai-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       char: w.hebrew,
@@ -1137,8 +1138,12 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       return next;
     });
 
-    setAiSavedSuccessToast(`Reč "${w.hebrew}" sačuvana u rečnik! ✨`);
-    setTimeout(() => setAiSavedSuccessToast(null), 2500);
+    if (idx !== undefined) {
+      setSavedWordAnimIdx(idx);
+      setTimeout(() => setSavedWordAnimIdx(prev => (prev === idx ? null : prev)), 2200);
+    }
+    setAiSavedSuccessToast(`Reč "${w.hebrew}" (${w.serbian}) sačuvana u rečnik! ✨`);
+    setTimeout(() => setAiSavedSuccessToast(null), 2800);
   };
 
   const handleCopyAiResult = (textToCopy: string) => {
@@ -2161,16 +2166,18 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   )}
                 </div>
 
-                {/* Toast notification */}
+                {/* Toast notification - Fixed above bottom nav on mobile so always visible */}
                 <AnimatePresence>
                   {aiSavedSuccessToast && (
                     <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center gap-2"
+                      initial={{ opacity: 0, y: 20, scale: 0.92 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 16, scale: 0.94 }}
+                      transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                      onClick={() => setAiSavedSuccessToast(null)}
+                      className="fixed bottom-24 sm:bottom-8 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[80] p-3.5 rounded-2xl bg-emerald-600/95 backdrop-blur-md border border-emerald-400 text-white text-xs font-bold flex items-center gap-2.5 shadow-2xl cursor-pointer"
                     >
-                      <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle className="w-4 h-4 text-white shrink-0" />
                       <span>{aiSavedSuccessToast}</span>
                     </motion.div>
                   )}
@@ -2506,14 +2513,47 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                                   >
                                     {copiedWordIdx === idx ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
                                   </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSaveSingleAiWord(w)}
-                                    className="p-1.5 rounded-lg text-zinc-400 hover:text-amber-300 hover:bg-amber-500/20 transition-all"
-                                    title="Dodaj u moj rečnik"
-                                  >
-                                    <Plus className="w-3.5 h-3.5" />
-                                  </button>
+                                  <div className="relative">
+                                    <AnimatePresence>
+                                      {savedWordAnimIdx === idx && (
+                                        <motion.span
+                                          initial={{ opacity: 0, y: 4, scale: 0.7 }}
+                                          animate={{ opacity: 1, y: -26, scale: 1 }}
+                                          exit={{ opacity: 0, y: -34, scale: 0.85 }}
+                                          transition={{ type: 'spring', stiffness: 450, damping: 22 }}
+                                          className="absolute right-0 top-0 px-2 py-0.5 rounded-full text-[10px] font-black font-mono whitespace-nowrap shadow-lg pointer-events-none z-20 border bg-emerald-500 text-white border-emerald-300"
+                                        >
+                                          +1 Sačuvano ✓
+                                        </motion.span>
+                                      )}
+                                    </AnimatePresence>
+                                    <motion.button
+                                      type="button"
+                                      whileTap={{ scale: 0.82 }}
+                                      animate={
+                                        savedWordAnimIdx === idx
+                                          ? { scale: [1, 1.32, 0.96, 1], rotate: [0, 12, -8, 0] }
+                                          : { scale: 1 }
+                                      }
+                                      transition={{ duration: 0.35 }}
+                                      onClick={() => handleSaveSingleAiWord(w, idx)}
+                                      className={cn(
+                                        "p-1.5 rounded-lg transition-all cursor-pointer",
+                                        savedWordAnimIdx === idx
+                                          ? "text-white bg-emerald-500 shadow-md shadow-emerald-500/40"
+                                          : savedCustomWords.some(sw => sw.char === w.hebrew)
+                                            ? "text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25"
+                                            : "text-zinc-400 hover:text-amber-300 hover:bg-amber-500/20"
+                                      )}
+                                      title="Dodaj u moj rečnik"
+                                    >
+                                      {savedWordAnimIdx === idx || savedCustomWords.some(sw => sw.char === w.hebrew) ? (
+                                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                      ) : (
+                                        <Plus className="w-3.5 h-3.5" />
+                                      )}
+                                    </motion.button>
+                                  </div>
                                 </div>
                               </div>
 
