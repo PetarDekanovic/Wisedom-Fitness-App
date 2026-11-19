@@ -31,11 +31,23 @@ import {
   Minus,
   Plus,
   Copy,
-  Share2
+  Share2,
+  BookmarkPlus,
+  Upload,
+  Loader2,
+  Film,
+  BookMarked
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { VocabItem } from '../data/chineseVocabData';
 import { getChineseQuoteForItem } from '../data/chineseVocabData';
+import {
+  loadMoviesBooksDataset,
+  MOVIES_BOOKS_TIERS,
+  parseCustomVocabCsv,
+  type MoviesBooksDataset,
+  type MoviesBooksTierId
+} from '../lib/hskMoviesBooksLoader';
 import { 
   PandaScholarAvatar, 
   LittleDragonMascot, 
@@ -55,6 +67,9 @@ export interface ChineseFlashcardsGameProps {
   isDarkMode: boolean;
   isGirlyMode: boolean;
   onSwitchToQuiz?: () => void;
+  onSaveWordToDict?: (item: VocabItem) => void;
+  existingChars?: Set<string>;
+  dictionaryCount?: number;
 }
 
 export type PacingMode = 'manual' | 'relaxed' | 'normal';
@@ -110,7 +125,10 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
   isPronouncing,
   isDarkMode,
   isGirlyMode,
-  onSwitchToQuiz
+  onSwitchToQuiz,
+  onSaveWordToDict,
+  existingChars,
+  dictionaryCount
 }) => {
   // Game Mode: 'cards' (3D flip deck), 'match' (Memory match pairs), 'speed' (Quick multiple choice)
   const [gameMode, setGameMode] = useState<GameMode>('cards');
@@ -118,6 +136,20 @@ export const ChineseFlashcardsGame: React.FC<ChineseFlashcardsGameProps> = ({
   const [filterMode, setFilterMode] = useState<'all' | 'unmastered' | 'mastered'>('all');
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [flipDirection, setFlipDirection] = useState<'chinese-first' | 'meaning-first'>('chinese-first');
+
+  // --- MOVIES & BOOKS HSK 3.0 WORKBOOK & CUSTOM CSV STATE ---
+  const [moviesBooksData, setMoviesBooksData] = useState<MoviesBooksDataset | null>(null);
+  const [isLoadingMoviesBooks, setIsLoadingMoviesBooks] = useState(false);
+  const [moviesBooksError, setMoviesBooksError] = useState<string | null>(null);
+  const [customCsvDeck, setCustomCsvDeck] = useState<{ name: string; items: VocabItem[] } | null>(null);
+  const [csvUploadMessage, setCsvUploadMessage] = useState<{ type: 'success' | 'warning'; text: string } | null>(null);
+  const [savedFlashChar, setSavedFlashChar] = useState<string | null>(null);
+  const csvInputRef = useRef<HTMLInputElement | null>(null);
+  const savedFlashTimeoutRef = useRef<any>(null);
+  const vocabListRef = useRef(vocabList);
+  useEffect(() => {
+    vocabListRef.current = vocabList;
+  }, [vocabList]);
 
   // --- MODE 1: 3D FLASHCARDS DECK STATE ---
   const [deck, setDeck] = useState<VocabItem[]>([]);
@@ -258,22 +290,195 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
     }
   }, []);
 
-  // Filter vocabulary pool based on category and mastery
-  const filteredPool = useMemo(() => {
-    let pool = [...vocabList];
+  // Lazy-load the 5-tier HSK 3.0 Movies & Books workbook dataset
+  const handleSelectMoviesBooksTier = useCallback(async (tierId: MoviesBooksTierId) => {
+    usedSpeedIdsRef.current.clear();
+    setSelectedCategory(tierId);
+    setMoviesBooksError(null);
+    if (!moviesBooksData && !isLoadingMoviesBooks) {
+      setIsLoadingMoviesBooks(true);
+      try {
+        const loaded = await loadMoviesBooksDataset(vocabListRef.current);
+        setMoviesBooksData(loaded);
+      } catch (err: any) {
+        setMoviesBooksError(err?.message || 'Greška pri učitavanju Movies & Books baze.');
+      } finally {
+        setIsLoadingMoviesBooks(false);
+      }
+    }
+  }, [moviesBooksData, isLoadingMoviesBooks]);
 
-    if (selectedCategory !== 'all') {
-      pool = pool.filter(item => item.category === selectedCategory);
+  // Upload any exported CSV vocabulary sheet directly into Flashcards & Izazov Znanja
+  const handleCsvFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = parseCustomVocabCsv(text, file.name, vocabListRef.current);
+      if (parsed.items.length > 0) {
+        usedSpeedIdsRef.current.clear();
+        setCustomCsvDeck({
+          name: file.name.replace(/\.csv$/i, ''),
+          items: parsed.items,
+        });
+        setSelectedCategory('custom_csv');
+        setCsvUploadMessage({
+          type: 'success',
+          text: `Učitano ${parsed.items.length} reči iz fajla "${file.name}". Svaku reč možete sačuvati u glavni Rečnik!`,
+        });
+      } else {
+        setCsvUploadMessage({
+          type: 'warning',
+          text:
+            parsed.warning ||
+            'Ovaj CSV ne sadrži listu reči. Koristite ugrađene Movies & Books tabove iznad.',
+        });
+      }
+    } catch {
+      setCsvUploadMessage({
+        type: 'warning',
+        text: 'Nije moguće pročitati CSV fajl. Proverite format fajla.',
+      });
+    } finally {
+      e.target.value = '';
+    }
+  }, []);
+
+  // Save a word directly to WiseFit's main 640+ Chinese Dictionary with animated feedback
+  const isWordInDict = useCallback(
+    (char: string) => {
+      if (existingChars) return existingChars.has(char);
+      return vocabList.some((v) => v.char === char);
+    },
+    [existingChars, vocabList]
+  );
+
+  const handleSaveWordToDict = useCallback(
+    (item: VocabItem, e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+      if (!onSaveWordToDict) return;
+      try {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(25);
+        }
+      } catch {}
+      setSavedFlashChar(item.char);
+      if (savedFlashTimeoutRef.current) clearTimeout(savedFlashTimeoutRef.current);
+      savedFlashTimeoutRef.current = setTimeout(() => {
+        setSavedFlashChar((prev) => (prev === item.char ? null : prev));
+      }, 1900);
+      onSaveWordToDict(item);
+    },
+    [onSaveWordToDict]
+  );
+
+  // Reusable animated Save-to-Dictionary button for Flashcards, Memory Match, and Izazov Znanja
+  const renderSaveWordButton = useCallback(
+    (item: VocabItem, compact = false) => {
+      if (!onSaveWordToDict) return null;
+      const alreadySaved = isWordInDict(item.char);
+      const isFlashing = savedFlashChar === item.char;
+
+      return (
+        <div className="relative inline-flex items-center">
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.92 }}
+            animate={isFlashing ? { scale: [1, 1.14, 1] } : { scale: 1 }}
+            transition={{ duration: 0.32 }}
+            onClick={(e) => handleSaveWordToDict(item, e)}
+            className={cn(
+              "relative inline-flex items-center justify-center gap-1.5 font-bold transition-all border cursor-pointer shadow-sm",
+              compact
+                ? "px-2.5 py-1.5 rounded-xl text-[11px] min-h-[32px]"
+                : "px-3.5 py-2 rounded-2xl text-xs min-h-[36px]",
+              alreadySaved
+                ? isDarkMode
+                  ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30"
+                  : "bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100"
+                : isDarkMode
+                  ? "bg-emerald-600 hover:bg-emerald-500 border-emerald-400/70 text-white shadow-emerald-600/25"
+                  : "bg-emerald-600 hover:bg-emerald-500 border-emerald-500 text-white shadow-emerald-600/20"
+            )}
+            title={
+              alreadySaved
+                ? `Reč "${item.char}" je već sačuvana u vašem Rečniku`
+                : `Sačuvaj "${item.char}" (${item.translation}) u glavni WiseFit Rečnik`
+            }
+          >
+            {isFlashing && (
+              <motion.span
+                initial={{ opacity: 0.75, scale: 0.95 }}
+                animate={{ opacity: 0, scale: 1.45 }}
+                transition={{ duration: 0.65, ease: 'easeOut' }}
+                className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-emerald-400"
+              />
+            )}
+            {alreadySaved ? (
+              <>
+                <Check className={cn(compact ? "w-3.5 h-3.5" : "w-4 h-4", "shrink-0")} />
+                <span>{compact ? 'U Rečniku' : 'Sačuvano u Rečnik'}</span>
+              </>
+            ) : (
+              <>
+                <BookmarkPlus className={cn(compact ? "w-3.5 h-3.5" : "w-4 h-4", "shrink-0")} />
+                <span>{compact ? 'Sačuvaj' : 'Sačuvaj u Rečnik'}</span>
+              </>
+            )}
+          </motion.button>
+
+          <AnimatePresence>
+            {isFlashing && (
+              <motion.span
+                initial={{ opacity: 0, y: 6, scale: 0.85 }}
+                animate={{ opacity: 1, y: -26, scale: 1 }}
+                exit={{ opacity: 0, y: -38, scale: 0.9 }}
+                transition={{ duration: 0.45, ease: 'easeOut' }}
+                className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-emerald-500 text-white font-mono font-black text-[10px] shadow-lg whitespace-nowrap z-40"
+              >
+                +1 U Rečnik ✓
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+      );
+    },
+    [onSaveWordToDict, isWordInDict, savedFlashChar, handleSaveWordToDict, isDarkMode]
+  );
+
+  // Resolve the active vocabulary pool across built-in decks, HSK 3.0 Movies & Books tiers, and custom CSV imports
+  // Uses vocabListRef so saving a word to the dictionary mid-quiz NEVER resets the active round!
+  const getActivePool = useCallback((): VocabItem[] => {
+    let basePool: VocabItem[] = [];
+
+    if (selectedCategory === 'custom_csv' && customCsvDeck && customCsvDeck.items.length > 0) {
+      basePool = [...customCsvDeck.items];
+    } else if (selectedCategory.startsWith('hsk_')) {
+      if (!moviesBooksData) return [];
+      basePool = [...(moviesBooksData[selectedCategory as MoviesBooksTierId] || [])];
+    } else {
+      basePool = [...vocabListRef.current];
+      if (selectedCategory !== 'all') {
+        basePool = basePool.filter(item => item.category === selectedCategory);
+      }
     }
 
+    let pool = basePool;
+    const currentMastered = masteredIdsRef.current;
     if (filterMode === 'unmastered') {
-      pool = pool.filter(item => !masteredIds.includes(item.id));
+      pool = pool.filter(item => !currentMastered.includes(item.id));
     } else if (filterMode === 'mastered') {
-      pool = pool.filter(item => masteredIds.includes(item.id));
+      pool = pool.filter(item => currentMastered.includes(item.id));
     }
 
-    return pool.length > 0 ? pool : vocabList;
-  }, [vocabList, selectedCategory, filterMode, masteredIds]);
+    if (pool.length > 0) return pool;
+    return basePool.length > 0 ? basePool : vocabListRef.current;
+  }, [selectedCategory, filterMode, moviesBooksData, customCsvDeck]);
+
+  // Filter vocabulary pool based on category and mastery (for display counts & badges)
+  const filteredPool = useMemo(() => {
+    return getActivePool();
+  }, [getActivePool, masteredIds, vocabList.length]);
 
   // Category counts
   const categoryCounts = useMemo(() => {
@@ -297,28 +502,18 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
     ];
   }, [vocabList, categoryCounts]);
 
-  // Initialize or shuffle Deck (stable - does NOT reset when masteredIds changes!)
+  // Initialize or shuffle Deck (stable - does NOT reset when user saves a word or toggles mastered!)
   const initDeck = useCallback((shouldShuffle = false) => {
-    let pool = [...vocabList];
-    if (selectedCategory !== 'all') {
-      pool = pool.filter(item => item.category === selectedCategory);
-    }
-    const currentMastered = masteredIdsRef.current;
-    if (filterMode === 'unmastered') {
-      pool = pool.filter(item => !currentMastered.includes(item.id));
-    } else if (filterMode === 'mastered') {
-      pool = pool.filter(item => currentMastered.includes(item.id));
-    }
-    const finalPool = pool.length > 0 ? pool : vocabList;
+    const finalPool = getActivePool();
     const deckCards = shouldShuffle ? fisherYatesShuffle(finalPool) : [...finalPool];
     setDeck(deckCards);
     setCurrentIndex(0);
     setIsFlipped(false);
     setIsDeckFinished(false);
     setIsSlideshowActive(false);
-  }, [vocabList, selectedCategory, filterMode]);
+  }, [getActivePool]);
 
-  // Only re-initialize deck when category, filter mode, or vocab list changes
+  // Re-initialize deck only when category, filter mode, or loaded external deck changes
   useEffect(() => {
     initDeck(false);
   }, [initDeck]);
@@ -682,17 +877,11 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
   // --- MEMORY MATCH GAME LOGIC ---
   const initMatchGame = useCallback(() => {
     clearAllTimers();
-    let basePool = [...vocabList];
-    if (selectedCategory !== 'all') {
-      basePool = basePool.filter(item => item.category === selectedCategory);
+    const activePool = getActivePool();
+    if (activePool.length === 0) {
+      setMatchCards([]);
+      return;
     }
-    const currentMastered = masteredIdsRef.current;
-    if (filterMode === 'unmastered') {
-      basePool = basePool.filter(item => !currentMastered.includes(item.id));
-    } else if (filterMode === 'mastered') {
-      basePool = basePool.filter(item => currentMastered.includes(item.id));
-    }
-    const activePool = basePool.length > 0 ? basePool : vocabList;
     const pool = fisherYatesShuffle(activePool);
     const selectedVocabs = pool.slice(0, matchGridSize);
 
@@ -733,7 +922,7 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
     setMatchTimer(0);
     setIsMatchTimerRunning(true);
     setMatchGameFinished(false);
-  }, [vocabList, selectedCategory, filterMode, matchGridSize, clearAllTimers]);
+  }, [getActivePool, matchGridSize, clearAllTimers]);
 
   // Match Game Timer
   useEffect(() => {
@@ -814,17 +1003,11 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
   // --- MODE 3: SPEED CHALLENGE LOGIC (with Fisher-Yates & unseen batch rotation) ---
   const initSpeedChallenge = useCallback(() => {
     clearAllTimers();
-    let pool = [...vocabList];
-    if (selectedCategory !== 'all') {
-      pool = pool.filter(item => item.category === selectedCategory);
+    const activePool = getActivePool();
+    if (activePool.length === 0) {
+      setSpeedQuestions([]);
+      return;
     }
-    const currentMastered = masteredIdsRef.current;
-    if (filterMode === 'unmastered') {
-      pool = pool.filter(item => !currentMastered.includes(item.id));
-    } else if (filterMode === 'mastered') {
-      pool = pool.filter(item => currentMastered.includes(item.id));
-    }
-    const activePool = pool.length > 0 ? pool : vocabList;
     const targetCount = Math.min(speedQuestionCount, activePool.length);
 
     // Prioritize unseen words so consecutive 30-word batches rotate through fresh words
@@ -845,12 +1028,25 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
     }
 
     const questionsList = selectedBatch.map(v => {
-      const distractorPool = activePool.length >= 4 ? activePool : vocabList;
-      const distractors = fisherYatesShuffle(
-        distractorPool.filter(other => other.id !== v.id && other.translation !== v.translation)
-      )
-        .slice(0, 3)
-        .map(other => other.translation);
+      const distractorPool = activePool.length >= 4 ? activePool : vocabListRef.current;
+      // Fast random sampling for large 3000+ word decks (avoids full O(N) shuffle per question)
+      const distractors: string[] = [];
+      const usedTrans = new Set<string>([v.translation]);
+      let attempts = 0;
+      while (distractors.length < 3 && attempts < 80) {
+        attempts++;
+        const candidate = distractorPool[Math.floor(Math.random() * distractorPool.length)];
+        if (candidate && candidate.id !== v.id && candidate.translation && !usedTrans.has(candidate.translation)) {
+          usedTrans.add(candidate.translation);
+          distractors.push(candidate.translation);
+        }
+      }
+      if (distractors.length < 3) {
+        const fallback = fisherYatesShuffle(
+          distractorPool.filter(other => other.id !== v.id && !usedTrans.has(other.translation))
+        ).slice(0, 3 - distractors.length);
+        fallback.forEach(o => distractors.push(o.translation));
+      }
 
       const options = fisherYatesShuffle([v.translation, ...distractors]);
 
@@ -874,16 +1070,16 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
         speakChineseRef.current(questionsList[0].vocab.char, `speed-${questionsList[0].vocab.id}`);
       }, 350);
     }
-  }, [vocabList, selectedCategory, filterMode, speedQuestionCount, autoSpeak, clearAllTimers]);
+  }, [getActivePool, speedQuestionCount, autoSpeak, clearAllTimers]);
 
-  // Refresh speed quiz / match board automatically when user switches category or filter while inside those modes
+  // Refresh speed quiz / match board automatically when user switches category, filter, or loads Movies & Books dataset
   useEffect(() => {
     if (gameMode === 'speed') {
       initSpeedChallenge();
     } else if (gameMode === 'match') {
       initMatchGame();
     }
-  }, [selectedCategory, filterMode, gameMode, initSpeedChallenge, initMatchGame]);
+  }, [selectedCategory, filterMode, gameMode, moviesBooksData, customCsvDeck, initSpeedChallenge, initMatchGame]);
 
   const handleSpeedAnswer = (option: string) => {
     if (selectedAnswer !== null) return;
@@ -1082,7 +1278,7 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
             isDarkMode ? "bg-zinc-900 border-zinc-800 text-emerald-400" : "bg-emerald-50 border-emerald-100 text-emerald-700"
           )}>
             <Trophy className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" />
-            <span>{masteredIds.length}/{vocabList.length}</span>
+            <span>{masteredIds.length}/{dictionaryCount ?? vocabList.length}</span>
           </div>
 
           <button
@@ -1248,6 +1444,166 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
             </p>
           </div>
         </button>
+      </div>
+
+      {/* HSK 3.0 MOVIES & BOOKS WORKBOOK DECKS + CUSTOM CSV IMPORT */}
+      <div className={cn(
+        "p-4 rounded-3xl border space-y-3 transition-all shadow-lg",
+        isDarkMode
+          ? "bg-zinc-950/85 border-zinc-800/90"
+          : "bg-white border-zinc-200"
+      )}>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={cn(
+              "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border",
+              isDarkMode ? "bg-amber-500/15 border-amber-500/30 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-600"
+            )}>
+              <Film className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className={cn("text-xs sm:text-sm font-black tracking-tight", isDarkMode ? "text-white" : "text-zinc-900")}>
+                  Movies &amp; Books — HSK 3.0 Radna Sveska
+                </h4>
+                <span className={cn(
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold border",
+                  isDarkMode ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300" : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                )}>
+                  <BookMarked className="w-3 h-3" />
+                  Rečnik: {dictionaryCount ?? vocabList.length} reči
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-400 truncate">
+                Izaberi nivo iz Movies &amp; Books tabele (11.500+ reči) i klikni „Sačuvaj u Rečnik“ za bitne reči
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <input
+              ref={csvInputRef}
+              type="file"
+              accept=".csv,.txt"
+              onChange={handleCsvFileUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => csvInputRef.current?.click()}
+              className={cn(
+                "px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95",
+                isDarkMode
+                  ? "bg-zinc-900 border-zinc-700 text-zinc-200 hover:border-amber-500/50 hover:text-amber-300"
+                  : "bg-zinc-50 border-zinc-300 text-zinc-700 hover:border-amber-500"
+              )}
+              title="Učitaj sopstveni CSV list sa rečima (npr. iz Google Sheets / Excel tabele)"
+            >
+              <Upload className="w-3.5 h-3.5 text-amber-400" />
+              <span>Učitaj CSV</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 5 Workbook Tiers + Optional Imported CSV Chip */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {MOVIES_BOOKS_TIERS.map((tier) => {
+            const isActive = selectedCategory === tier.id;
+            const liveCount = moviesBooksData?.[tier.id]?.length ?? tier.defaultCount;
+            const activeRing =
+              tier.accent === 'emerald'
+                ? 'bg-emerald-950/60 border-emerald-500 ring-1 ring-emerald-500/50 text-emerald-200'
+                : tier.accent === 'blue'
+                  ? 'bg-blue-950/60 border-blue-500 ring-1 ring-blue-500/50 text-blue-200'
+                  : tier.accent === 'purple'
+                    ? 'bg-purple-950/60 border-purple-500 ring-1 ring-purple-500/50 text-purple-200'
+                    : tier.accent === 'amber'
+                      ? 'bg-amber-950/60 border-amber-500 ring-1 ring-amber-500/50 text-amber-200'
+                      : 'bg-rose-950/60 border-rose-500 ring-1 ring-rose-500/50 text-rose-200';
+
+            return (
+              <button
+                key={tier.id}
+                type="button"
+                onClick={() => handleSelectMoviesBooksTier(tier.id)}
+                className={cn(
+                  "p-2.5 rounded-2xl border text-left transition-all cursor-pointer active:scale-98 flex flex-col justify-between gap-1",
+                  isActive
+                    ? activeRing
+                    : isDarkMode
+                      ? "bg-zinc-900/80 border-zinc-800 hover:border-zinc-700 text-zinc-200"
+                      : "bg-zinc-50 border-zinc-200 hover:border-zinc-300 text-zinc-800"
+                )}
+                title={tier.subtitle}
+              >
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-xs font-black truncate">{tier.shortLabel}</span>
+                  <span className={cn(
+                    "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md shrink-0",
+                    isActive ? "bg-black/30 text-white" : isDarkMode ? "bg-zinc-800 text-zinc-400" : "bg-zinc-200 text-zinc-600"
+                  )}>
+                    {liveCount.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-[10px] text-zinc-400 line-clamp-1">{tier.subtitle}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        {customCsvDeck && (
+          <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                usedSpeedIdsRef.current.clear();
+                setSelectedCategory('custom_csv');
+              }}
+              className={cn(
+                "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 cursor-pointer",
+                selectedCategory === 'custom_csv'
+                  ? "bg-emerald-600 border-emerald-400 text-white shadow-md"
+                  : isDarkMode
+                    ? "bg-zinc-900 border-emerald-500/40 text-emerald-300 hover:bg-emerald-950/40"
+                    : "bg-emerald-50 border-emerald-300 text-emerald-800"
+              )}
+            >
+              <span>📄 CSV: {customCsvDeck.name}</span>
+              <span className="text-[10px] font-mono opacity-80">({customCsvDeck.items.length} reči)</span>
+            </button>
+          </div>
+        )}
+
+        {isLoadingMoviesBooks && (
+          <div className="flex items-center gap-2 text-xs text-amber-400 font-mono py-1">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            <span>Učitavanje HSK 3.0 Movies &amp; Books baze (11.500+ reči)...</span>
+          </div>
+        )}
+
+        {moviesBooksError && (
+          <div className="p-2.5 rounded-xl bg-rose-950/50 border border-rose-500/40 text-rose-300 text-xs">
+            {moviesBooksError}
+          </div>
+        )}
+
+        {csvUploadMessage && (
+          <div className={cn(
+            "p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2",
+            csvUploadMessage.type === 'success'
+              ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
+              : "bg-amber-950/40 border-amber-500/40 text-amber-300"
+          )}>
+            <span>{csvUploadMessage.text}</span>
+            <button
+              type="button"
+              onClick={() => setCsvUploadMessage(null)}
+              className="text-xs font-bold opacity-70 hover:opacity-100 px-1.5 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
       </div>
 
       {/* CATEGORY & FILTER TOOLBAR */}
@@ -1626,6 +1982,8 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
                             </>
                           )}
                         </button>
+
+                        {renderSaveWordButton(currentCard)}
                       </div>
                     </div>
 
@@ -1757,6 +2115,8 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
                             </>
                           )}
                         </button>
+
+                        {renderSaveWordButton(currentCard, true)}
 
                         <button
                           type="button"
@@ -2026,6 +2386,46 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
               </div>
             </motion.div>
           )}
+
+          {/* Save-to-Dictionary Strip for Words in This Memory Match Round */}
+          {onSaveWordToDict && matchCards.length > 0 && (
+            <div className={cn(
+              "p-4 rounded-2xl border space-y-2.5",
+              isDarkMode ? "bg-zinc-950/70 border-zinc-800" : "bg-white border-zinc-200"
+            )}>
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-zinc-300 flex items-center gap-1.5">
+                  <BookmarkPlus className="w-3.5 h-3.5 text-emerald-400" />
+                  Sačuvaj reči iz ove partije u glavni Rečnik
+                </span>
+                <span className="text-[11px] font-mono text-emerald-400">
+                  Rečnik: {dictionaryCount ?? vocabList.length} reči
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {matchCards
+                  .filter((c) => c.type === 'chinese' && (c.isMatched || matchGameFinished))
+                  .map((c) => (
+                    <div
+                      key={c.vocabId}
+                      className={cn(
+                        "flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs",
+                        isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-200" : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                      )}
+                    >
+                      <span className="font-black text-base text-white">{c.vocab.char}</span>
+                      <span className="text-[11px] text-zinc-400 max-w-[140px] truncate">{c.vocab.translation}</span>
+                      {renderSaveWordButton(c.vocab, true)}
+                    </div>
+                  ))}
+                {!matchGameFinished && matchCards.filter((c) => c.type === 'chinese' && c.isMatched).length === 0 && (
+                  <p className="text-[11px] text-zinc-500">
+                    Spoji prvi par da otključaš dugme za čuvanje reči u Rečnik.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2099,13 +2499,30 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
                   Pinyin: <span className="text-red-400 font-bold">{speedQuestions[speedQuestionIdx].vocab.pinyin}</span> • Vuk: <span className="text-amber-400 font-bold">/{speedQuestions[speedQuestionIdx].vocab.vuk}/</span>
                 </p>
 
-                <button
-                  type="button"
-                  onClick={() => speakChinese(speedQuestions[speedQuestionIdx].vocab.char, `speed-prompt-${speedQuestionIdx}`)}
-                  className="mx-auto text-xs text-amber-400 font-bold flex items-center gap-1 hover:underline cursor-pointer"
-                >
-                  <Volume2 className="w-3.5 h-3.5" /> Poslušaj Zvuk
-                </button>
+                {speedQuestions[speedQuestionIdx].vocab.categoryLabel && (
+                  <div className="flex items-center justify-center">
+                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400">
+                      {speedQuestions[speedQuestionIdx].vocab.categoryLabel}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center gap-3 flex-wrap pt-1">
+                  <button
+                    type="button"
+                    onClick={() => speakChinese(speedQuestions[speedQuestionIdx].vocab.char, `speed-prompt-${speedQuestionIdx}`)}
+                    className={cn(
+                      "px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer active:scale-95",
+                      isDarkMode
+                        ? "bg-zinc-900 border-zinc-700 text-amber-400 hover:border-amber-500/60"
+                        : "bg-amber-50 border-amber-200 text-amber-700 hover:border-amber-400"
+                    )}
+                  >
+                    <Volume2 className="w-3.5 h-3.5" /> Poslušaj Zvuk
+                  </button>
+
+                  {renderSaveWordButton(speedQuestions[speedQuestionIdx].vocab)}
+                </div>
               </div>
 
               {/* 4 Answer Options */}
@@ -2176,14 +2593,17 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => speakChinese(speedQuestions[speedQuestionIdx].vocab.char, `speed-repeat-${speedQuestionIdx}`)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-all flex items-center gap-1.5"
-                    >
-                      <Volume2 className="w-3.5 h-3.5" />
-                      <span>Ponovi Zvuk</span>
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {renderSaveWordButton(speedQuestions[speedQuestionIdx].vocab, true)}
+                      <button
+                        type="button"
+                        onClick={() => speakChinese(speedQuestions[speedQuestionIdx].vocab.char, `speed-repeat-${speedQuestionIdx}`)}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                        <span>Ponovi Zvuk</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Word Breakdown & Linguistic Details */}
@@ -2288,6 +2708,37 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
                   <span>Nova Serija ({Math.min(speedQuestionCount, filteredPool.length)} Reči)</span>
                 </button>
               </div>
+
+              {/* Round Review & Quick Save Strip */}
+              {onSaveWordToDict && speedQuestions.length > 0 && (
+                <div className="pt-4 border-t border-zinc-800/80 text-left space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-zinc-300">
+                      Pregled reči iz serije — Sačuvaj bitne u Rečnik ({dictionaryCount ?? vocabList.length} ukupno):
+                    </span>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {speedQuestions.map((q) => (
+                      <div
+                        key={q.vocab.id}
+                        className={cn(
+                          "flex items-center justify-between gap-2 p-2.5 rounded-xl border text-xs",
+                          isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                        )}
+                      >
+                        <div className="min-w-0 flex items-center gap-2">
+                          <span className="text-lg font-black text-white shrink-0">{q.vocab.char}</span>
+                          <div className="min-w-0">
+                            <p className="font-mono text-[10px] text-red-400 truncate">{q.vocab.pinyin}</p>
+                            <p className="text-[11px] text-zinc-300 truncate">{q.vocab.translation}</p>
+                          </div>
+                        </div>
+                        {renderSaveWordButton(q.vocab, true)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </div>

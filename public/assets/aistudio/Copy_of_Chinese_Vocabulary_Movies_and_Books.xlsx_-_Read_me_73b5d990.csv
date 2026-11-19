@@ -1,0 +1,29 @@
+Chinese vocabulary for movies and books
+WiseFit study list · built 19 November 2026
+
+What is in this workbook
+"1 Core 2500 — the 2,500 most frequent HSK 3.0 words. Your base for everyday speech and slice-of-life shows."
+"2 Movies & TV — words ranked 2,501 to 6,000. Together with tab 1 this is the ~6,000-word tier for contemporary films and dramas."
+"3 Books — words ranked 6,001 to 9,000. Together with tabs 1–2 this is the ~9,000-word tier for modern novels."
+"4 Idioms & set phrases — all 483 four-character words in HSK 3.0 (chengyu plus fixed phrases such as 不好意思), most frequent first. Essential for books."
+"5 Characters 2500 — the 2,500 most frequent characters, with pinyin, meaning and cumulative text coverage."
+
+How to use it
+"Mark the ""Known"" column with x as you learn words; use Excel filters (row 1) to sort or show only unknown words, one HSK level, or one part of speech."
+"Work top to bottom: rank order = frequency order, so every word you learn covers more real dialogue than the next one."
+
+Fact-check of the tier estimates
+"HSK 3.0 (2021 standard) cumulative word counts: L1 500 · L2 1,272 · L3 2,245 · L4 3,245 · L5 4,316 · L6 5,456 · L7–9 11,092. This dataset holds 11,330 HSK 3.0 words (2021 list plus the 2025 revision)."
+"The ""2,500 characters"" target matches China's official 1988 list of commonly used characters: 2,500 常用字 (about 97.97% of text) plus 1,000 次常用字 (together about 99.48%)."
+"Our own count from the wordfreq corpus mix (subtitles, web, books, social media): the top 2,500 characters cover 99.2% of running text, the top 1,000 cover 91.6%."
+"The word counts per tier (2,500 / 6,000 / 9,000) are widely used estimates, not exact thresholds."
+
+Limitations — please read
+"Tabs 2 and 3 are split by overall frequency rank, not by separate film and novel corpora, so some book words sit in tab 2 and some film words in tab 3."
+"Ranks come from one frequency source; ties share an order and the ranking is approximate below about rank 5,000."
+English meanings are short dictionary glosses (max. three senses) and do not replace example sentences.
+
+Sources and licences
+"Word lists, levels, pinyin and glosses: Complete HSK Vocabulary by Yanis Zafirópulos (MIT licence), github.com/drkameleon/complete-hsk-vocabulary — which draws on the official HSK 3.0 lists, CC-CEDICT (CC BY-SA 4.0) and the frequency ranks of github.com/krmanik/HSK-3.0-words-list."
+"Character meanings: Make Me a Hanzi, github.com/skishore/makemeahanzi (Arphic Public Licence / LGPL)."
+Character frequency and coverage: computed from the wordfreq Python library (Robyn Speer; data CC BY-SA 4.0).

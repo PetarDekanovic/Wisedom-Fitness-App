@@ -958,16 +958,28 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   }, [fullVocabList]);
 
   const handleWordAddedFromDict = (newWord: VocabItem) => {
+    if (existingCharactersSet.has(newWord.char)) {
+      setDictToast(`Reč "${newWord.char}" (${newWord.pinyin}) je već u vašem rečniku (${fullVocabList.length} reči) ✓`);
+      setTimeout(() => setDictToast(null), 2800);
+      return;
+    }
+    const normalizedWord: VocabItem = {
+      ...newWord,
+      id: newWord.id || `zh-saved-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      category: 'custom',
+      categoryLabel: newWord.categoryLabel || 'Sačuvano u Rečnik',
+    };
+    const nextTotal = fullVocabList.length + 1;
     setSavedCustomWords(prev => {
       const existing = new Set(prev.map(p => p.char));
-      if (existing.has(newWord.char)) return prev;
-      const updated = [newWord, ...prev];
+      if (existing.has(normalizedWord.char)) return prev;
+      const updated = [normalizedWord, ...prev];
       try {
         localStorage.setItem('wisefit_chinese_custom_words', JSON.stringify(updated));
       } catch (e) {}
       return updated;
     });
-    setDictToast(`Reč "${newWord.char}" (${newWord.pinyin}) je dodata na vrh rečnika i u Kviz! 🎴✨`);
+    setDictToast(`Reč "${normalizedWord.char}" (${normalizedWord.pinyin}) sačuvana u Rečnik! (Ukupno: ${nextTotal} reči) 🎴✨`);
     setTimeout(() => setDictToast(null), 3500);
   };
 
@@ -1925,7 +1937,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
             isDarkMode ? "bg-zinc-900 border-zinc-800 text-red-400" : "bg-red-50 border-red-100 text-red-700"
           )}>
             <Trophy className="w-4 h-4 text-red-500 fill-red-500 animate-pulse shrink-0" />
-            <span>{masteredIds.length}/{VOCAB_DATA.length}</span>
+            <span>{masteredIds.length}/{fullVocabList.length}</span>
           </div>
         </div>
 
@@ -4193,6 +4205,9 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
               isDarkMode={isDarkMode}
               isGirlyMode={isGirlyMode}
               onSwitchToQuiz={() => { setActiveTab('quiz'); generateQuizRound(); }}
+              onSaveWordToDict={handleWordAddedFromDict}
+              existingChars={existingCharactersSet}
+              dictionaryCount={fullVocabList.length}
             />
           </motion.div>
         )}
