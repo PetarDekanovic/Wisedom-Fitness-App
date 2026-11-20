@@ -257,6 +257,71 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
     return set;
   }, []);
 
+  // Highlight cluster target words directly inside Chinese proverbs/idioms for faster visual scanning
+  const renderHighlightedProverb = (
+    text: string,
+    targetWords: string[] = [],
+    priorityWord?: string | null
+  ) => {
+    const highlightChars = new Set<string>();
+    const priorityChars = new Set<string>();
+    if (priorityWord) {
+      for (const ch of [...priorityWord]) {
+        if (/[\u4e00-\u9fff]/.test(ch)) priorityChars.add(ch);
+      }
+    }
+    for (const tw of targetWords) {
+      for (const ch of [...tw]) {
+        if (/[\u4e00-\u9fff]/.test(ch)) highlightChars.add(ch);
+      }
+    }
+
+    return [...text].map((ch, idx) => {
+      if (priorityChars.has(ch)) {
+        return (
+          <span
+            key={idx}
+            className={cn(
+              "underline decoration-2 underline-offset-4",
+              isDarkMode ? "text-rose-400 decoration-rose-400/70" : "text-rose-600 decoration-rose-500/70"
+            )}
+          >
+            {ch}
+          </span>
+        );
+      }
+      if (highlightChars.has(ch)) {
+        return (
+          <span
+            key={idx}
+            className={cn(
+              isDarkMode ? "text-amber-300" : "text-rose-600"
+            )}
+          >
+            {ch}
+          </span>
+        );
+      }
+      return <React.Fragment key={idx}>{ch}</React.Fragment>;
+    });
+  };
+
+  const getIdiomTypeBadgeStyle = (type: RealLifeIdiomOrProverb['type']) => {
+    if (type === 'chengyu') {
+      return isDarkMode
+        ? 'bg-rose-500/20 text-rose-300 border-rose-400/40'
+        : 'bg-rose-100 text-rose-800 border-rose-300';
+    }
+    if (type === 'proverb') {
+      return isDarkMode
+        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+        : 'bg-emerald-100 text-emerald-800 border-emerald-300';
+    }
+    return isDarkMode
+      ? 'bg-violet-500/20 text-violet-300 border-violet-400/40'
+      : 'bg-violet-100 text-violet-800 border-violet-300';
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
       {/* Top Banner / Hero Card */}
@@ -556,46 +621,59 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                     )}
                   >
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/20">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={cn(
+                          "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border",
+                          getIdiomTypeBadgeStyle(sentence.type)
+                        )}>
                           {sentence.typeLabel}
                         </span>
-                        <span className="text-[10px] text-zinc-500">{cluster.emoji} {cluster.title} • {sentence.context}</span>
+                        <span className={cn(
+                          "text-[10px] font-medium px-2 py-0.5 rounded-md border",
+                          isDarkMode ? "text-teal-300 bg-teal-500/10 border-teal-500/25" : "text-teal-800 bg-teal-50 border-teal-200"
+                        )}>
+                          {cluster.emoji} {cluster.title} • {sentence.context}
+                        </span>
                       </div>
                       <button
                         onClick={() => playAudio(sentence.chinese, `search-audio-${sentence.id}`)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+                        className={cn(
+                          "flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border transition-all",
+                          isDarkMode ? "bg-zinc-800 text-zinc-100 border-zinc-700 hover:bg-zinc-700" : "bg-zinc-100 text-zinc-800 border-zinc-200 hover:bg-zinc-200"
+                        )}
                       >
-                        <Volume2 className="w-3.5 h-3.5" />
+                        <Volume2 className="w-3.5 h-3.5 text-rose-400" />
                         <span>Listen</span>
                       </button>
                     </div>
 
-                    <p className={cn("text-xl sm:text-2xl font-black font-serif", isDarkMode ? "text-white" : "text-zinc-950")}>{sentence.chinese}</p>
-                    <p className={cn("text-xs font-bold font-mono", isDarkMode ? "text-amber-300" : "text-amber-800")}>{sentence.pinyin}</p>
-                    {showVuk && <p className={cn("text-xs font-mono", isDarkMode ? "text-cyan-300" : "text-cyan-800")}>[{sentence.vuk}]</p>}
+                    <p className={cn("text-xl sm:text-2xl font-black font-serif leading-relaxed", isDarkMode ? "text-white" : "text-zinc-950")}>
+                      {renderHighlightedProverb(sentence.chinese, sentence.targetWords, searchQuery)}
+                    </p>
+                    <p className={cn("text-xs font-bold font-mono", isDarkMode ? "text-amber-300" : "text-amber-700")}>{sentence.pinyin}</p>
+                    {showVuk && <p className={cn("text-xs font-mono font-semibold", isDarkMode ? "text-cyan-300" : "text-cyan-700")}>[{sentence.vuk}]</p>}
                     
                     {sentence.serbianEquivalent && (
                       <p className={cn(
-                        "text-xs font-bold px-3 py-2 rounded-xl border",
+                        "text-xs font-bold px-3 py-2 rounded-xl border border-l-2",
                         isDarkMode
-                          ? "text-amber-100 bg-amber-500/20 border-amber-400/40"
-                          : "text-amber-950 bg-amber-100/90 border-amber-300"
+                          ? "text-amber-200 bg-amber-500/15 border-amber-400/35 border-l-amber-400"
+                          : "text-amber-950 bg-amber-100/90 border-amber-300 border-l-amber-500"
                       )}>
                         🇷🇸 Naš ekvivalent: "{sentence.serbianEquivalent}"
                       </p>
                     )}
-                    <p className={cn("text-xs font-medium", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>🇬🇧 {sentence.english}</p>
-                    <p className={cn("text-xs italic", isDarkMode ? "text-zinc-200" : "text-zinc-700")}>🇷🇸 {sentence.serbian}</p>
+                    <p className={cn("text-xs font-semibold", isDarkMode ? "text-emerald-300" : "text-emerald-800")}>🇷🇸 {sentence.serbian}</p>
+                    <p className={cn("text-xs font-medium", isDarkMode ? "text-sky-300" : "text-sky-800")}>🇬🇧 {sentence.english}</p>
 
                     {sentence.philosophicalContext && (
                       <div className={cn(
-                        "p-3 rounded-xl border text-xs leading-relaxed",
+                        "p-3 rounded-xl border border-l-2 text-xs leading-relaxed",
                         isDarkMode
-                          ? "bg-zinc-950/90 border-zinc-700/80 text-zinc-200"
-                          : "bg-amber-50/90 border-amber-200 text-zinc-800"
+                          ? "bg-indigo-950/35 border-indigo-500/30 border-l-indigo-400 text-indigo-100"
+                          : "bg-indigo-50/90 border-indigo-200 border-l-indigo-500 text-indigo-950"
                       )}>
-                        <span className={cn("font-bold", isDarkMode ? "text-amber-300" : "text-amber-800")}>💡 Mudrost & Kontekst: </span>
+                        <span className={cn("font-bold", isDarkMode ? "text-indigo-300" : "text-indigo-700")}>💡 Mudrost & Kontekst: </span>
                         {sentence.philosophicalContext}
                       </div>
                     )}
@@ -887,18 +965,36 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
             {/* CHINESE IDIOMS (CHENGYU) & CLASSICAL PROVERBS (YANYU) SECTION */}
             <div className="space-y-4 pt-4 border-t border-zinc-800/60">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-base sm:text-lg font-black text-zinc-100 flex items-center gap-2">
+                <div className="space-y-1.5">
+                  <h3 className={cn("text-base sm:text-lg font-black flex items-center gap-2", isDarkMode ? "text-white" : "text-zinc-950")}>
                     <Scroll className="w-4 h-4 text-amber-400" />
                     <span>Classical Chinese Idioms & Proverbs (成语与古训 • Čengji i Izreke)</span>
                   </h3>
-                  <p className="text-xs text-zinc-400">
-                    Profound philosophical idioms, Daoist axioms, and ancient proverbs incorporating these cluster characters. Complete with Serbian folk equivalents and Stoic wisdom.
+                  <p className={cn("text-xs", isDarkMode ? "text-zinc-300" : "text-zinc-600")}>
+                    Profound philosophical idioms, Daoist axioms, and ancient proverbs incorporating these cluster characters. Color-coded for rapid visual reading.
                   </p>
+                  {/* Color-coded reading guide */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[10px] font-mono font-bold">
+                    <span className={cn("px-2 py-0.5 rounded-md border", isDarkMode ? "bg-amber-500/15 text-amber-300 border-amber-400/30" : "bg-amber-50 text-amber-800 border-amber-200")}>
+                      ● Ključni znak / Pinyin
+                    </span>
+                    <span className={cn("px-2 py-0.5 rounded-md border", isDarkMode ? "bg-violet-500/15 text-violet-300 border-violet-400/30" : "bg-violet-50 text-violet-800 border-violet-200")}>
+                      ● Bukvalno
+                    </span>
+                    <span className={cn("px-2 py-0.5 rounded-md border", isDarkMode ? "bg-emerald-500/15 text-emerald-300 border-emerald-400/30" : "bg-emerald-50 text-emerald-800 border-emerald-200")}>
+                      ● Srpski
+                    </span>
+                    <span className={cn("px-2 py-0.5 rounded-md border", isDarkMode ? "bg-sky-500/15 text-sky-300 border-sky-400/30" : "bg-sky-50 text-sky-800 border-sky-200")}>
+                      ● English
+                    </span>
+                    <span className={cn("px-2 py-0.5 rounded-md border", isDarkMode ? "bg-indigo-500/15 text-indigo-300 border-indigo-400/30" : "bg-indigo-50 text-indigo-800 border-indigo-200")}>
+                      ● Mudrost
+                    </span>
+                  </div>
                 </div>
 
                 {testYourselfMode && (
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1.5 shrink-0">
                     <EyeOff className="w-3.5 h-3.5" />
                     Practice Mode: Click "Reveal Wisdom" to check yourself!
                   </span>
@@ -920,18 +1016,29 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                       transition={{ delay: sIdx * 0.08 }}
                       className={cn(
                         "p-5 rounded-3xl border transition-all space-y-3 relative overflow-hidden",
-                        isDarkMode ? "bg-zinc-950/70 border-zinc-800 hover:border-zinc-700/80 shadow-lg" : "bg-zinc-50/90 border-zinc-200 hover:border-zinc-300 shadow-md"
+                        isDarkMode ? "bg-zinc-950/80 border-zinc-800 hover:border-zinc-700/80 shadow-lg" : "bg-white border-zinc-200 hover:border-zinc-300 shadow-md"
                       )}
                     >
                       {/* Top Header: Idiom Type, Context & Actions */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/40 pb-2.5">
+                      <div className={cn(
+                        "flex flex-wrap items-center justify-between gap-2 border-b pb-2.5",
+                        isDarkMode ? "border-zinc-800/70" : "border-zinc-200"
+                      )}>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
-                            <Quote className="w-3 h-3 text-amber-400" />
+                          <span className={cn(
+                            "text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border flex items-center gap-1.5",
+                            getIdiomTypeBadgeStyle(sentence.type)
+                          )}>
+                            <Quote className="w-3 h-3" />
                             {sentence.typeLabel}
                           </span>
                           
-                          <span className="text-[10px] text-zinc-400 font-medium px-2 py-0.5 rounded-md bg-zinc-800/60 border border-zinc-700/50">
+                          <span className={cn(
+                            "text-[10px] font-semibold px-2.5 py-0.5 rounded-md border",
+                            isDarkMode
+                              ? "text-teal-300 bg-teal-500/10 border-teal-500/25"
+                              : "text-teal-800 bg-teal-50 border-teal-200"
+                          )}>
                             {sentence.context}
                           </span>
                         </div>
@@ -948,7 +1055,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                                 : (isDarkMode ? "bg-zinc-800 text-zinc-100 border-zinc-700 hover:bg-zinc-700" : "bg-white text-zinc-800 border-zinc-200 hover:bg-zinc-100")
                             )}
                           >
-                            <Volume2 className="w-3.5 h-3.5" />
+                            <Volume2 className="w-3.5 h-3.5 text-rose-400" />
                             <span>{isPlayingSentence ? 'Speaking...' : 'Listen'}</span>
                           </button>
 
@@ -957,7 +1064,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                             onClick={() => playAudio(sentence.chinese, sAudioId, 0.75)}
                             className={cn(
                               "p-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95",
-                              isDarkMode ? "bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700" : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-100"
+                              isDarkMode ? "bg-zinc-800 text-amber-300 border-zinc-700 hover:bg-zinc-700" : "bg-white text-amber-800 border-zinc-200 hover:bg-zinc-100"
                             )}
                             title="Play at 0.75x slow speed"
                           >
@@ -972,7 +1079,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                             )}
                             className={cn(
                               "p-1.5 rounded-xl border transition-all active:scale-95",
-                              isDarkMode ? "bg-zinc-800 text-zinc-400 hover:text-zinc-200 border-zinc-700" : "bg-white text-zinc-500 hover:text-zinc-800 border-zinc-200"
+                              isDarkMode ? "bg-zinc-800 text-zinc-300 hover:text-white border-zinc-700" : "bg-white text-zinc-600 hover:text-zinc-900 border-zinc-200"
                             )}
                             title="Copy full proverb with translation to clipboard"
                           >
@@ -985,48 +1092,50 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                         </div>
                       </div>
 
-                      {/* Main Hanzi Idiom / Proverb Display */}
+                      {/* Main Hanzi Idiom / Proverb Display (with Target Word Color Highlighting) */}
                       <div className="py-1">
                         <p className={cn(
                           "text-2xl sm:text-3xl font-black font-serif leading-relaxed tracking-wide",
                           isDarkMode ? "text-white" : "text-zinc-950"
                         )}>
-                          {sentence.chinese}
+                          {renderHighlightedProverb(sentence.chinese, sentence.targetWords, activeWordFilter)}
                         </p>
                       </div>
 
                       {/* Accented Pinyin & Vuk */}
-                      {showPinyin && (
-                        <p className={cn(
-                          "text-xs sm:text-sm font-bold tracking-wide font-mono",
-                          isDarkMode ? "text-amber-300" : "text-amber-800"
-                        )}>
-                          {sentence.pinyin}
-                        </p>
-                      )}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        {showPinyin && (
+                          <p className={cn(
+                            "text-xs sm:text-sm font-bold tracking-wide font-mono",
+                            isDarkMode ? "text-amber-300" : "text-amber-700"
+                          )}>
+                            {sentence.pinyin}
+                          </p>
+                        )}
 
-                      {showVuk && (
-                        <p className={cn(
-                          "text-xs font-mono tracking-wide font-semibold",
-                          isDarkMode ? "text-cyan-300" : "text-cyan-800"
-                        )}>
-                          [{sentence.vuk}]
-                        </p>
-                      )}
+                        {showVuk && (
+                          <p className={cn(
+                            "text-xs font-mono tracking-wide font-semibold",
+                            isDarkMode ? "text-cyan-300" : "text-cyan-700"
+                          )}>
+                            [{sentence.vuk}]
+                          </p>
+                        )}
+                      </div>
 
-                      {/* Literal Breakdown if provided */}
+                      {/* Literal Breakdown (Distinct Violet/Lavender Tone) */}
                       {sentence.literalEnglish && (
-                        <p className={cn("text-xs italic", isDarkMode ? "text-zinc-200" : "text-zinc-700")}>
-                          <span className={cn("font-semibold not-italic", isDarkMode ? "text-amber-300" : "text-amber-800")}>Bukvalno: </span>
+                        <p className={cn("text-xs italic", isDarkMode ? "text-violet-200" : "text-violet-800")}>
+                          <span className={cn("font-bold not-italic", isDarkMode ? "text-violet-400" : "text-violet-700")}>Bukvalno: </span>
                           "{sentence.literalEnglish}"
                         </p>
                       )}
 
-                      {/* Word Breakdown Tokens (Optional Interactive Mode) */}
+                      {/* Word Breakdown Tokens (Color-coded Interactive Mode) */}
                       {showWordBreakdown && sentence.tokens && sentence.tokens.length > 0 && (
                         <div className={cn(
                           "p-2.5 rounded-xl border flex flex-wrap gap-1.5",
-                          isDarkMode ? "bg-zinc-900/80 border-zinc-700/80" : "bg-white border-zinc-200"
+                          isDarkMode ? "bg-zinc-900/80 border-zinc-700/80" : "bg-zinc-50 border-zinc-200"
                         )}>
                           {sentence.tokens.map((tok, tIdx) => (
                             <div
@@ -1036,22 +1145,22 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                                 "px-2.5 py-1.5 rounded-lg border text-left cursor-pointer transition-all hover:border-amber-400",
                                 tok.isTarget
                                   ? isDarkMode
-                                    ? "bg-amber-500/20 border-amber-400/50 text-amber-100"
-                                    : "bg-amber-100 border-amber-300 text-amber-950"
+                                    ? "bg-rose-500/15 border-rose-400/45 text-rose-200"
+                                    : "bg-rose-50 border-rose-300 text-rose-900"
                                   : isDarkMode
-                                    ? "bg-zinc-800/80 border-zinc-700 text-zinc-100"
-                                    : "bg-zinc-50 border-zinc-200 text-zinc-900"
+                                    ? "bg-zinc-800/85 border-zinc-700 text-white"
+                                    : "bg-white border-zinc-200 text-zinc-900"
                               )}
                             >
                               <p className="text-xs font-black font-serif">{tok.word}</p>
-                              <p className={cn("text-[10px] font-semibold", isDarkMode ? "text-amber-300" : "text-amber-800")}>{tok.pinyin}</p>
-                              <p className={cn("text-[10px] truncate max-w-[100px]", isDarkMode ? "text-zinc-200" : "text-zinc-700")}>{tok.english}</p>
+                              <p className={cn("text-[10px] font-semibold font-mono", isDarkMode ? "text-amber-300" : "text-amber-700")}>{tok.pinyin}</p>
+                              <p className={cn("text-[10px] truncate max-w-[100px]", isDarkMode ? "text-sky-300" : "text-sky-800")}>{tok.english}</p>
                             </div>
                           ))}
                         </div>
                       )}
 
-                      {/* Serbian Folk Equivalent & Wisdom (With Practice Mode Blur/Reveal) */}
+                      {/* Serbian Folk Equivalent, Translations & Wisdom (Color-Coded for Scanning) */}
                       <div className={cn("pt-2.5 border-t space-y-2.5", isDarkMode ? "border-zinc-800/80" : "border-zinc-200")}>
                         {testYourselfMode && !isRevealed ? (
                           <div className={cn(
@@ -1071,7 +1180,7 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                           </div>
                         ) : (
                           <>
-                            {/* Highlighted Serbian Folk Proverb Equivalent */}
+                            {/* Highlighted Serbian Folk Proverb Equivalent (Warm Gold Spotlight) */}
                             {sentence.serbianEquivalent && (
                               <div className={cn(
                                 "p-3 rounded-xl border border-l-2 flex items-center gap-2.5",
@@ -1095,36 +1204,37 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                               </div>
                             )}
 
-                            {showEnglish && (
-                              <p className={cn("text-xs sm:text-sm font-semibold", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
-                                🇬🇧 {sentence.english}
-                              </p>
-                            )}
-
+                            {/* Distinct Emerald for Serbian/Croatian & Sky Blue for English */}
                             {showSerbian && (
-                              <p className={cn("text-xs sm:text-sm font-medium", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
+                              <p className={cn("text-xs sm:text-sm font-semibold leading-snug", isDarkMode ? "text-emerald-300" : "text-emerald-800")}>
                                 🇷🇸 {sentence.serbian}
                               </p>
                             )}
 
-                            {/* Deep Philosophical / Stoic Insight Card */}
+                            {showEnglish && (
+                              <p className={cn("text-xs sm:text-sm font-medium leading-snug", isDarkMode ? "text-sky-300" : "text-sky-800")}>
+                                🇬🇧 {sentence.english}
+                              </p>
+                            )}
+
+                            {/* Deep Philosophical / Stoic Insight Card (Indigo Wisdom Frame) */}
                             {sentence.philosophicalContext && (
                               <div className={cn(
-                                "p-3.5 rounded-2xl border text-xs space-y-1.5",
+                                "p-3.5 rounded-2xl border border-l-2 text-xs space-y-1.5",
                                 isDarkMode
-                                  ? "bg-zinc-900/95 border-zinc-700/80 text-zinc-200"
-                                  : "bg-amber-50/90 border-amber-200 text-zinc-800"
+                                  ? "bg-indigo-950/35 border-indigo-500/30 border-l-indigo-400 text-indigo-100"
+                                  : "bg-indigo-50/90 border-indigo-200 border-l-indigo-500 text-indigo-950"
                               )}>
                                 <div className={cn(
                                   "flex items-center gap-1.5 font-bold text-[11px]",
-                                  isDarkMode ? "text-amber-300" : "text-amber-800"
+                                  isDarkMode ? "text-indigo-300" : "text-indigo-700"
                                 )}>
-                                  <Lightbulb className="w-3.5 h-3.5" />
+                                  <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
                                   <span>Mudrost & Stoički Kontekst:</span>
                                 </div>
                                 <p className={cn(
                                   "leading-relaxed text-xs",
-                                  isDarkMode ? "text-zinc-100" : "text-zinc-800"
+                                  isDarkMode ? "text-indigo-100" : "text-indigo-950"
                                 )}>
                                   {sentence.philosophicalContext}
                                 </p>

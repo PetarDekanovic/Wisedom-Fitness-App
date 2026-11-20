@@ -2228,12 +2228,35 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                           const quoteInfo = getItemQuote(item);
                           const quoteAudioId = `quote-${item.id}`;
                           const isSpeakingQuote = isPronouncing === quoteAudioId;
+                          const itemHanziSet = new Set(
+                            [...(item.char || '')].filter((ch) => /[\u4e00-\u9fff]/.test(ch))
+                          );
+                          const badgeColors =
+                            quoteInfo.kind === '成语'
+                              ? isDarkMode
+                                ? 'bg-rose-500/20 text-rose-300 border-rose-400/40'
+                                : 'bg-rose-100 text-rose-800 border-rose-300'
+                              : quoteInfo.kind === '谚语'
+                                ? isDarkMode
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                                  : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : isDarkMode
+                                  ? 'bg-violet-500/20 text-violet-300 border-violet-400/40'
+                                  : 'bg-violet-100 text-violet-800 border-violet-300';
+                          const accentBorder =
+                            quoteInfo.kind === '成语'
+                              ? isDarkMode ? 'border-l-rose-400 border-rose-400/30' : 'border-l-rose-500 border-rose-200'
+                              : quoteInfo.kind === '谚语'
+                                ? isDarkMode ? 'border-l-emerald-400 border-emerald-400/30' : 'border-l-emerald-500 border-emerald-200'
+                                : isDarkMode ? 'border-l-violet-400 border-violet-400/30' : 'border-l-violet-500 border-violet-200';
+
                           return (
                             <div className={cn(
                               "leading-snug border border-l-2 p-3 rounded-xl flex items-start justify-between gap-2 mt-2.5 transition-all",
                               isDarkMode
-                                ? "bg-zinc-950/90 border-amber-400/35 border-l-amber-400 shadow-inner"
-                                : "bg-amber-50/95 border-amber-300 border-l-amber-500 shadow-sm"
+                                ? "bg-zinc-950/90 shadow-inner"
+                                : "bg-amber-50/70 shadow-sm",
+                              accentBorder
                             )}>
                               <div className="flex items-start gap-2 min-w-0">
                                 <span className="text-sm shrink-0 mt-0.5">💡</span>
@@ -2241,9 +2264,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className={cn(
                                       "text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border",
-                                      isDarkMode
-                                        ? "bg-amber-500/20 text-amber-200 border-amber-400/40"
-                                        : "bg-amber-200/80 text-amber-950 border-amber-300"
+                                      badgeColors
                                     )}>
                                       {quoteInfo.kind === '成语'
                                         ? '成语 Idiom'
@@ -2253,15 +2274,29 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                                     </span>
                                   </div>
                                   <p className={cn(
-                                    "text-[13px] font-bold tracking-wide font-serif leading-relaxed",
-                                    isDarkMode ? "text-amber-100" : "text-zinc-950"
+                                    "text-[13.5px] font-bold tracking-wide font-serif leading-relaxed",
+                                    isDarkMode ? "text-white" : "text-zinc-950"
                                   )}>
-                                    {quoteInfo.quote}
+                                    {[...quoteInfo.quote].map((ch, cIdx) =>
+                                      itemHanziSet.has(ch) ? (
+                                        <span
+                                          key={cIdx}
+                                          className={cn(
+                                            "underline decoration-1 underline-offset-4",
+                                            isDarkMode ? "text-rose-400 decoration-rose-400/70" : "text-rose-600 decoration-rose-500/70"
+                                          )}
+                                        >
+                                          {ch}
+                                        </span>
+                                      ) : (
+                                        <React.Fragment key={cIdx}>{ch}</React.Fragment>
+                                      )
+                                    )}
                                   </p>
                                   {quoteInfo.pinyin && (
                                     <p className={cn(
                                       "text-[11px] font-mono font-semibold leading-snug",
-                                      isDarkMode ? "text-amber-300" : "text-amber-800"
+                                      isDarkMode ? "text-amber-300" : "text-amber-700"
                                     )}>
                                       {quoteInfo.pinyin}
                                     </p>
@@ -2269,14 +2304,14 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                                   {quoteInfo.serbian && (
                                     <p className={cn(
                                       "text-[11px] font-semibold leading-snug",
-                                      isDarkMode ? "text-zinc-100" : "text-zinc-900"
+                                      isDarkMode ? "text-emerald-300" : "text-emerald-800"
                                     )}>
                                       {quoteInfo.serbian}
                                     </p>
                                   )}
                                   <p className={cn(
                                     "text-[11px] italic font-sans leading-snug",
-                                    isDarkMode ? "text-zinc-300" : "text-zinc-700"
+                                    isDarkMode ? "text-sky-300" : "text-sky-800"
                                   )}>
                                     "{quoteInfo.translation}"
                                   </p>

@@ -2082,23 +2082,40 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
                       {(() => {
                         const q = getChineseQuoteForItem(currentCard);
                         if (!q) return null;
+                        const cardHanziSet = new Set(
+                          [...(currentCard.char || '')].filter((ch) => /[\u4e00-\u9fff]/.test(ch))
+                        );
                         return (
                           <div className={cn(
                             "p-3.5 rounded-2xl border border-l-2 text-xs max-w-lg mx-auto text-left space-y-1",
                             isDarkMode
-                              ? "bg-zinc-950/90 border-amber-400/35 border-l-amber-400"
-                              : "bg-amber-50/95 border-amber-300 border-l-amber-500"
+                              ? "bg-zinc-950/90 border-rose-400/30 border-l-rose-400"
+                              : "bg-amber-50/90 border-amber-300 border-l-rose-500"
                           )}>
                             <p className={cn(
                               "font-serif font-bold text-sm leading-snug",
-                              isDarkMode ? "text-amber-100" : "text-zinc-950"
+                              isDarkMode ? "text-white" : "text-zinc-950"
                             )}>
-                              💡 {q.quote}
+                              💡 {[...q.quote].map((ch, idx) =>
+                                cardHanziSet.has(ch) ? (
+                                  <span
+                                    key={idx}
+                                    className={cn(
+                                      "underline decoration-1 underline-offset-4",
+                                      isDarkMode ? "text-rose-400 decoration-rose-400/70" : "text-rose-600 decoration-rose-500/70"
+                                    )}
+                                  >
+                                    {ch}
+                                  </span>
+                                ) : (
+                                  <React.Fragment key={idx}>{ch}</React.Fragment>
+                                )
+                              )}
                             </p>
                             {q.pinyin && (
                               <p className={cn(
                                 "text-[11px] font-mono font-semibold",
-                                isDarkMode ? "text-amber-300" : "text-amber-800"
+                                isDarkMode ? "text-amber-300" : "text-amber-700"
                               )}>
                                 {q.pinyin}
                               </p>
@@ -2106,16 +2123,16 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
                             {q.serbian && (
                               <p className={cn(
                                 "text-[11px] font-semibold",
-                                isDarkMode ? "text-zinc-100" : "text-zinc-900"
+                                isDarkMode ? "text-emerald-300" : "text-emerald-800"
                               )}>
-                                {q.serbian}
+                                🇷🇸 {q.serbian}
                               </p>
                             )}
                             <p className={cn(
                               "text-[11px] italic",
-                              isDarkMode ? "text-zinc-300" : "text-zinc-700"
+                              isDarkMode ? "text-sky-300" : "text-sky-800"
                             )}>
-                              "{q.translation}"
+                              🇬🇧 "{q.translation}"
                             </p>
                           </div>
                         );
