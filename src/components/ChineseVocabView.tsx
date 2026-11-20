@@ -39,7 +39,7 @@ import { cn } from '../lib/utils';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { CHINESE_VOCAB_EXPANDED, VocabItem, getChineseQuoteForItem } from '../data/chineseVocabData';
+import { CHINESE_VOCAB_EXPANDED, VocabItem, getChineseQuoteForItem, type ChineseQuoteResult } from '../data/chineseVocabData';
 import { ChineseFlashcardsGame } from './ChineseFlashcardsGame';
 import { ChineseDictExplorerModal } from './ChineseDictExplorerModal';
 import { buildLinguisticChineseTranslation } from '../lib/chineseTranslatorEngine';
@@ -813,7 +813,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   const isAdmin = user ? (user.email === 'petar.dekanovic@gmail.com' || user.email?.toLowerCase().includes('petar')) : true;
 
   // Custom quote & pronunciation overrides state
-  const [customQuotes, setCustomQuotes] = useState<Record<string, { quote: string; translation: string }>>(() => {
+  const [customQuotes, setCustomQuotes] = useState<Record<string, ChineseQuoteResult>>(() => {
     try {
       const saved = localStorage.getItem('wisefit_chinese_custom_quotes');
       return saved ? JSON.parse(saved) : {};
@@ -840,7 +840,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   const [editTranslation, setEditTranslation] = useState('');
   const [editEnglish, setEditEnglish] = useState('');
 
-  const getItemQuote = (item: VocabItem) => {
+  const getItemQuote = (item: VocabItem): ChineseQuoteResult => {
     if (customQuotes[item.id]) return customQuotes[item.id];
     if (customQuotes[item.char]) return customQuotes[item.char];
     return getChineseQuoteForItem(item);
@@ -2141,7 +2141,12 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                               {item.categoryLabel}
                             </span>
                             {item.radical && (
-                              <span className="text-[10px] font-bold text-red-600 dark:text-red-400 font-mono bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20">
+                              <span className={cn(
+                                "text-[10px] font-bold font-mono px-2 py-0.5 rounded-md border",
+                                isDarkMode
+                                  ? "text-red-300 bg-red-500/15 border-red-500/30"
+                                  : "text-red-700 bg-red-50 border-red-200"
+                              )}>
                                 Radikal: {item.radical}
                               </span>
                             )}
@@ -2164,17 +2169,30 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
 
                       <div className="space-y-1.5 pt-1">
                         <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                          <h3 className="text-4xl font-serif font-black text-red-600 dark:text-red-400 tracking-wide">
+                          <h3 className={cn(
+                            "text-4xl font-serif font-black tracking-wide",
+                            isDarkMode ? "text-red-400" : "text-red-600"
+                          )}>
                             {item.char}
                           </h3>
-                          <span className="text-xs font-mono font-extrabold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                          <span className={cn(
+                            "text-xs font-mono font-extrabold px-2.5 py-1 rounded-lg border",
+                            isDarkMode
+                              ? "text-amber-300 bg-amber-500/15 border-amber-400/35"
+                              : "text-amber-900 bg-amber-100/90 border-amber-300"
+                          )}>
                             Pinyin: {getItemPinyin(item)}
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between gap-1.5 font-mono text-xs pt-0.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Vuk:</span>
+                            <span className={cn(
+                              "font-bold px-1.5 py-0.5 rounded border",
+                              isDarkMode
+                                ? "text-emerald-300 bg-emerald-500/15 border-emerald-400/35"
+                                : "text-emerald-800 bg-emerald-50 border-emerald-200"
+                            )}>Vuk:</span>
                             <span className={cn("font-black text-sm", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
                               "{getItemVuk(item)}"
                             </span>
@@ -2182,7 +2200,12 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                           {isAdmin && (
                             <button
                               onClick={(e) => openEditModal(item, e)}
-                              className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-300 hover:bg-amber-500/20 transition-all flex items-center gap-1 border border-amber-500/20"
+                              className={cn(
+                                "px-2 py-0.5 rounded text-[10px] font-bold transition-all flex items-center gap-1 border",
+                                isDarkMode
+                                  ? "bg-amber-500/15 text-amber-200 hover:bg-amber-500/25 border-amber-400/35"
+                                  : "bg-amber-100 text-amber-900 hover:bg-amber-200 border-amber-300"
+                              )}
                               title="Uredi izgovor / izreku (Petar / Admin)"
                             >
                               <Pencil className="w-3 h-3" /> Uredi
@@ -2191,45 +2214,121 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                         </div>
                       </div>
 
-                      <div className="border-t pt-3 border-zinc-200 dark:border-zinc-800 space-y-1.5">
+                      <div className={cn(
+                        "border-t pt-3 space-y-1.5",
+                        isDarkMode ? "border-zinc-800" : "border-zinc-200"
+                      )}>
                         <p className={cn("text-sm font-bold leading-snug", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
                           🇭🇷 {getItemTranslation(item)}
                         </p>
-                        <p className={cn("text-xs font-medium", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                        <p className={cn("text-xs font-medium", isDarkMode ? "text-zinc-300" : "text-zinc-600")}>
                           🇬🇧 {getItemEnglish(item)}
                         </p>
                         {(() => {
                           const quoteInfo = getItemQuote(item);
+                          const quoteAudioId = `quote-${item.id}`;
+                          const isSpeakingQuote = isPronouncing === quoteAudioId;
                           return (
-                            <div className="text-[11px] leading-snug bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 p-2.5 rounded-xl flex items-start justify-between gap-2 mt-2">
-                              <div className="flex items-start gap-2">
-                                <span className="text-sm shrink-0">💡</span>
-                                <div className="space-y-0.5">
-                                  <p className="font-semibold text-amber-900 dark:text-amber-200 tracking-wide font-serif">
+                            <div className={cn(
+                              "leading-snug border border-l-2 p-3 rounded-xl flex items-start justify-between gap-2 mt-2.5 transition-all",
+                              isDarkMode
+                                ? "bg-zinc-950/90 border-amber-400/35 border-l-amber-400 shadow-inner"
+                                : "bg-amber-50/95 border-amber-300 border-l-amber-500 shadow-sm"
+                            )}>
+                              <div className="flex items-start gap-2 min-w-0">
+                                <span className="text-sm shrink-0 mt-0.5">💡</span>
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={cn(
+                                      "text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border",
+                                      isDarkMode
+                                        ? "bg-amber-500/20 text-amber-200 border-amber-400/40"
+                                        : "bg-amber-200/80 text-amber-950 border-amber-300"
+                                    )}>
+                                      {quoteInfo.kind === '成语'
+                                        ? '成语 Idiom'
+                                        : quoteInfo.kind === '谚语'
+                                          ? '谚语 Poslovica'
+                                          : '古训 Mudrost'}
+                                    </span>
+                                  </div>
+                                  <p className={cn(
+                                    "text-[13px] font-bold tracking-wide font-serif leading-relaxed",
+                                    isDarkMode ? "text-amber-100" : "text-zinc-950"
+                                  )}>
                                     {quoteInfo.quote}
                                   </p>
-                                  <p className="text-[10px] italic text-amber-700/90 dark:text-amber-300/80 font-sans">
+                                  {quoteInfo.pinyin && (
+                                    <p className={cn(
+                                      "text-[11px] font-mono font-semibold leading-snug",
+                                      isDarkMode ? "text-amber-300" : "text-amber-800"
+                                    )}>
+                                      {quoteInfo.pinyin}
+                                    </p>
+                                  )}
+                                  {quoteInfo.serbian && (
+                                    <p className={cn(
+                                      "text-[11px] font-semibold leading-snug",
+                                      isDarkMode ? "text-zinc-100" : "text-zinc-900"
+                                    )}>
+                                      {quoteInfo.serbian}
+                                    </p>
+                                  )}
+                                  <p className={cn(
+                                    "text-[11px] italic font-sans leading-snug",
+                                    isDarkMode ? "text-zinc-300" : "text-zinc-700"
+                                  )}>
                                     "{quoteInfo.translation}"
                                   </p>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1 shrink-0">
+                              <div className="flex flex-col items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    speakChinese(quoteInfo.quote, quoteAudioId);
+                                  }}
+                                  className={cn(
+                                    "p-1.5 rounded-lg transition-all shrink-0 cursor-pointer",
+                                    isSpeakingQuote
+                                      ? "bg-red-600 text-white animate-pulse"
+                                      : isDarkMode
+                                        ? "text-amber-300 hover:text-white hover:bg-amber-500/25"
+                                        : "text-amber-800 hover:bg-amber-200/80"
+                                  )}
+                                  title="Poslušaj izgovor izreke / idioma"
+                                >
+                                  <Volume2 className="w-3.5 h-3.5" />
+                                </button>
                                 {isAdmin && (
                                   <button
+                                    type="button"
                                     onClick={(e) => openEditModal(item, e)}
-                                    className="p-1.5 rounded-lg text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 transition-all shrink-0 flex items-center gap-1"
+                                    className={cn(
+                                      "p-1.5 rounded-lg transition-all shrink-0 cursor-pointer",
+                                      isDarkMode
+                                        ? "text-amber-300 hover:text-white hover:bg-amber-500/25"
+                                        : "text-amber-800 hover:bg-amber-200/80"
+                                    )}
                                     title="Uredi izreku i izgovor"
                                   >
                                     <Pencil className="w-3 h-3" />
                                   </button>
                                 )}
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const qText = `📜 Izreka: ${quoteInfo.quote}\n"${quoteInfo.translation}"\n\n✨ WiseFit Sanctuary #WiseFit #ChineseQuote`;
+                                    const qText = `📜 Izreka: ${quoteInfo.quote}${quoteInfo.pinyin ? `\n${quoteInfo.pinyin}` : ''}${quoteInfo.serbian ? `\n${quoteInfo.serbian}` : ''}\n"${quoteInfo.translation}"\n\n✨ WiseFit Sanctuary #WiseFit #ChineseQuote`;
                                     handleCopyConfigText(qText);
                                   }}
-                                  className="p-1.5 rounded-lg text-amber-600 dark:text-amber-300 hover:bg-amber-500/20 transition-all shrink-0 flex items-center gap-1"
+                                  className={cn(
+                                    "p-1.5 rounded-lg transition-all shrink-0 cursor-pointer",
+                                    isDarkMode
+                                      ? "text-amber-300 hover:text-white hover:bg-amber-500/25"
+                                      : "text-amber-800 hover:bg-amber-200/80"
+                                  )}
                                   title="Kopiraj ovu izreku/mudrost"
                                 >
                                   <Copy className="w-3.5 h-3.5" />
@@ -2241,7 +2340,10 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 mt-5 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+                    <div className={cn(
+                      "flex items-center justify-between gap-2 mt-5 pt-3 border-t",
+                      isDarkMode ? "border-zinc-800" : "border-zinc-200"
+                    )}>
                       <button
                         onClick={() => speakChinese(item.char, item.id)}
                         className={cn(
@@ -2251,7 +2353,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                             : isDarkMode ? "bg-zinc-800/90 hover:bg-zinc-700 text-zinc-100 border-zinc-700" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200"
                         )}
                       >
-                        <Volume2 className="w-4 h-4 text-red-500 dark:text-red-400" />
+                        <Volume2 className={cn("w-4 h-4", isDarkMode ? "text-red-400" : "text-red-500")} />
                         <span>Izgovor</span>
                       </button>
 

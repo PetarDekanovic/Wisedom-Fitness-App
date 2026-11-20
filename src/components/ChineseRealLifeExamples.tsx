@@ -571,21 +571,31 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                       </button>
                     </div>
 
-                    <p className="text-xl sm:text-2xl font-black font-serif text-zinc-100">{sentence.chinese}</p>
-                    <p className="text-xs text-amber-400 font-bold">{sentence.pinyin}</p>
-                    {showVuk && <p className="text-xs text-cyan-400 font-mono">[{sentence.vuk}]</p>}
+                    <p className={cn("text-xl sm:text-2xl font-black font-serif", isDarkMode ? "text-white" : "text-zinc-950")}>{sentence.chinese}</p>
+                    <p className={cn("text-xs font-bold font-mono", isDarkMode ? "text-amber-300" : "text-amber-800")}>{sentence.pinyin}</p>
+                    {showVuk && <p className={cn("text-xs font-mono", isDarkMode ? "text-cyan-300" : "text-cyan-800")}>[{sentence.vuk}]</p>}
                     
                     {sentence.serbianEquivalent && (
-                      <p className="text-xs text-amber-300 font-bold bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20">
+                      <p className={cn(
+                        "text-xs font-bold px-3 py-2 rounded-xl border",
+                        isDarkMode
+                          ? "text-amber-100 bg-amber-500/20 border-amber-400/40"
+                          : "text-amber-950 bg-amber-100/90 border-amber-300"
+                      )}>
                         🇷🇸 Naš ekvivalent: "{sentence.serbianEquivalent}"
                       </p>
                     )}
-                    <p className="text-xs text-zinc-300">🇬🇧 {sentence.english}</p>
-                    <p className="text-xs text-zinc-400 italic">🇷🇸 {sentence.serbian}</p>
+                    <p className={cn("text-xs font-medium", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>🇬🇧 {sentence.english}</p>
+                    <p className={cn("text-xs italic", isDarkMode ? "text-zinc-200" : "text-zinc-700")}>🇷🇸 {sentence.serbian}</p>
 
                     {sentence.philosophicalContext && (
-                      <div className="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 text-xs text-zinc-400">
-                        <span className="font-bold text-amber-400">💡 Mudrost & Kontekst: </span>
+                      <div className={cn(
+                        "p-3 rounded-xl border text-xs leading-relaxed",
+                        isDarkMode
+                          ? "bg-zinc-950/90 border-zinc-700/80 text-zinc-200"
+                          : "bg-amber-50/90 border-amber-200 text-zinc-800"
+                      )}>
+                        <span className={cn("font-bold", isDarkMode ? "text-amber-300" : "text-amber-800")}>💡 Mudrost & Kontekst: </span>
                         {sentence.philosophicalContext}
                       </div>
                     )}
@@ -977,64 +987,83 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
 
                       {/* Main Hanzi Idiom / Proverb Display */}
                       <div className="py-1">
-                        <p className="text-2xl sm:text-3xl font-black font-serif leading-relaxed tracking-wide text-zinc-100">
+                        <p className={cn(
+                          "text-2xl sm:text-3xl font-black font-serif leading-relaxed tracking-wide",
+                          isDarkMode ? "text-white" : "text-zinc-950"
+                        )}>
                           {sentence.chinese}
                         </p>
                       </div>
 
                       {/* Accented Pinyin & Vuk */}
                       {showPinyin && (
-                        <p className="text-xs sm:text-sm font-bold text-amber-400 tracking-wide font-mono">
+                        <p className={cn(
+                          "text-xs sm:text-sm font-bold tracking-wide font-mono",
+                          isDarkMode ? "text-amber-300" : "text-amber-800"
+                        )}>
                           {sentence.pinyin}
                         </p>
                       )}
 
                       {showVuk && (
-                        <p className="text-xs text-cyan-400 font-mono tracking-wide">
+                        <p className={cn(
+                          "text-xs font-mono tracking-wide font-semibold",
+                          isDarkMode ? "text-cyan-300" : "text-cyan-800"
+                        )}>
                           [{sentence.vuk}]
                         </p>
                       )}
 
                       {/* Literal Breakdown if provided */}
                       {sentence.literalEnglish && (
-                        <p className="text-[11px] text-zinc-400 italic">
-                          <span className="font-semibold text-zinc-500">Bukvalno: </span>
+                        <p className={cn("text-xs italic", isDarkMode ? "text-zinc-200" : "text-zinc-700")}>
+                          <span className={cn("font-semibold not-italic", isDarkMode ? "text-amber-300" : "text-amber-800")}>Bukvalno: </span>
                           "{sentence.literalEnglish}"
                         </p>
                       )}
 
                       {/* Word Breakdown Tokens (Optional Interactive Mode) */}
                       {showWordBreakdown && sentence.tokens && sentence.tokens.length > 0 && (
-                        <div className="p-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex flex-wrap gap-1.5">
+                        <div className={cn(
+                          "p-2.5 rounded-xl border flex flex-wrap gap-1.5",
+                          isDarkMode ? "bg-zinc-900/80 border-zinc-700/80" : "bg-white border-zinc-200"
+                        )}>
                           {sentence.tokens.map((tok, tIdx) => (
                             <div
                               key={tIdx}
                               onClick={() => playAudio(tok.word, `tok-${sentence.id}-${tIdx}`)}
                               className={cn(
-                                "px-2 py-1 rounded-lg border text-left cursor-pointer transition-all hover:border-amber-400",
-                                tok.isTarget 
-                                  ? "bg-amber-500/10 border-amber-500/30 text-amber-300" 
-                                  : "bg-zinc-800/50 border-zinc-700/60 text-zinc-300"
+                                "px-2.5 py-1.5 rounded-lg border text-left cursor-pointer transition-all hover:border-amber-400",
+                                tok.isTarget
+                                  ? isDarkMode
+                                    ? "bg-amber-500/20 border-amber-400/50 text-amber-100"
+                                    : "bg-amber-100 border-amber-300 text-amber-950"
+                                  : isDarkMode
+                                    ? "bg-zinc-800/80 border-zinc-700 text-zinc-100"
+                                    : "bg-zinc-50 border-zinc-200 text-zinc-900"
                               )}
                             >
                               <p className="text-xs font-black font-serif">{tok.word}</p>
-                              <p className="text-[9px] text-amber-400 font-semibold">{tok.pinyin}</p>
-                              <p className="text-[9px] text-zinc-400 truncate max-w-[90px]">{tok.english}</p>
+                              <p className={cn("text-[10px] font-semibold", isDarkMode ? "text-amber-300" : "text-amber-800")}>{tok.pinyin}</p>
+                              <p className={cn("text-[10px] truncate max-w-[100px]", isDarkMode ? "text-zinc-200" : "text-zinc-700")}>{tok.english}</p>
                             </div>
                           ))}
                         </div>
                       )}
 
                       {/* Serbian Folk Equivalent & Wisdom (With Practice Mode Blur/Reveal) */}
-                      <div className="pt-2 border-t border-zinc-800/40 space-y-2">
+                      <div className={cn("pt-2.5 border-t space-y-2.5", isDarkMode ? "border-zinc-800/80" : "border-zinc-200")}>
                         {testYourselfMode && !isRevealed ? (
-                          <div className="py-3 flex items-center justify-between bg-zinc-900/50 p-3 rounded-2xl border border-zinc-800">
-                            <span className="text-xs text-zinc-500 italic">
+                          <div className={cn(
+                            "py-3 flex items-center justify-between p-3 rounded-2xl border",
+                            isDarkMode ? "bg-zinc-900/70 border-zinc-800" : "bg-zinc-100 border-zinc-200"
+                          )}>
+                            <span className={cn("text-xs italic", isDarkMode ? "text-zinc-300" : "text-zinc-600")}>
                               Idiom translations and philosophical context hidden for practice. Try to understand the characters first!
                             </span>
                             <button
                               onClick={() => toggleSentenceReveal(sentence.id)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all shadow-sm"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition-all shadow-sm"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>Reveal Wisdom</span>
@@ -1044,11 +1073,22 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                           <>
                             {/* Highlighted Serbian Folk Proverb Equivalent */}
                             {sentence.serbianEquivalent && (
-                              <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-transparent border border-amber-500/30 flex items-center gap-2">
+                              <div className={cn(
+                                "p-3 rounded-xl border border-l-2 flex items-center gap-2.5",
+                                isDarkMode
+                                  ? "bg-amber-500/15 border-amber-400/35 border-l-amber-400"
+                                  : "bg-amber-100/90 border-amber-300 border-l-amber-500"
+                              )}>
                                 <span className="text-base">🇷🇸</span>
                                 <div>
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Naš narodni ekvivalent:</span>
-                                  <p className="text-xs sm:text-sm font-black text-amber-200">
+                                  <span className={cn(
+                                    "text-[10px] font-bold uppercase tracking-wider block",
+                                    isDarkMode ? "text-amber-300" : "text-amber-800"
+                                  )}>Naš narodni ekvivalent:</span>
+                                  <p className={cn(
+                                    "text-xs sm:text-sm font-black",
+                                    isDarkMode ? "text-amber-100" : "text-amber-950"
+                                  )}>
                                     "{sentence.serbianEquivalent}"
                                   </p>
                                 </div>
@@ -1056,25 +1096,36 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                             )}
 
                             {showEnglish && (
-                              <p className="text-xs sm:text-sm font-medium text-zinc-200">
+                              <p className={cn("text-xs sm:text-sm font-semibold", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
                                 🇬🇧 {sentence.english}
                               </p>
                             )}
 
                             {showSerbian && (
-                              <p className="text-xs sm:text-sm text-zinc-300">
+                              <p className={cn("text-xs sm:text-sm font-medium", isDarkMode ? "text-zinc-200" : "text-zinc-800")}>
                                 🇷🇸 {sentence.serbian}
                               </p>
                             )}
 
                             {/* Deep Philosophical / Stoic Insight Card */}
                             {sentence.philosophicalContext && (
-                              <div className="p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 text-xs text-zinc-400 space-y-1">
-                                <div className="flex items-center gap-1.5 text-amber-400 font-bold text-[11px]">
+                              <div className={cn(
+                                "p-3.5 rounded-2xl border text-xs space-y-1.5",
+                                isDarkMode
+                                  ? "bg-zinc-900/95 border-zinc-700/80 text-zinc-200"
+                                  : "bg-amber-50/90 border-amber-200 text-zinc-800"
+                              )}>
+                                <div className={cn(
+                                  "flex items-center gap-1.5 font-bold text-[11px]",
+                                  isDarkMode ? "text-amber-300" : "text-amber-800"
+                                )}>
                                   <Lightbulb className="w-3.5 h-3.5" />
                                   <span>Mudrost & Stoički Kontekst:</span>
                                 </div>
-                                <p className="leading-relaxed text-zinc-300 text-[11px]">
+                                <p className={cn(
+                                  "leading-relaxed text-xs",
+                                  isDarkMode ? "text-zinc-100" : "text-zinc-800"
+                                )}>
                                   {sentence.philosophicalContext}
                                 </p>
                               </div>
@@ -1084,7 +1135,10 @@ export const ChineseRealLifeExamples: React.FC<ChineseRealLifeExamplesProps> = (
                               <div className="pt-1">
                                 <button
                                   onClick={() => toggleSentenceReveal(sentence.id)}
-                                  className="text-[10px] text-zinc-500 hover:text-zinc-300 underline"
+                                  className={cn(
+                                    "text-[11px] underline",
+                                    isDarkMode ? "text-zinc-300 hover:text-white" : "text-zinc-600 hover:text-zinc-900"
+                                  )}
                                 >
                                   Hide again
                                 </button>

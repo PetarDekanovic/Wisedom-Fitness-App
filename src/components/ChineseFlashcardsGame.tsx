@@ -2078,16 +2078,48 @@ ${item.radical ? `• Radikal: ${item.radical}\n` : ''}${quote?.quote ? `• Mud
                         </div>
                       )}
 
-                      {/* Wise Quote Snippet */}
-                      {getChineseQuoteForItem(currentCard) && (
-                        <div className={cn(
-                          "p-3 rounded-2xl border text-xs max-w-lg mx-auto",
-                          isDarkMode ? "bg-blue-950/20 border-blue-800/30 text-blue-200" : "bg-blue-50 border-blue-100 text-blue-900"
-                        )}>
-                          <p className="font-serif font-bold mb-1 text-sm text-amber-300">{getChineseQuoteForItem(currentCard).quote}</p>
-                          <p className="text-[11px] text-zinc-400 italic">"{getChineseQuoteForItem(currentCard).translation}"</p>
-                        </div>
-                      )}
+                      {/* Wise Quote / Idiom Snippet */}
+                      {(() => {
+                        const q = getChineseQuoteForItem(currentCard);
+                        if (!q) return null;
+                        return (
+                          <div className={cn(
+                            "p-3.5 rounded-2xl border border-l-2 text-xs max-w-lg mx-auto text-left space-y-1",
+                            isDarkMode
+                              ? "bg-zinc-950/90 border-amber-400/35 border-l-amber-400"
+                              : "bg-amber-50/95 border-amber-300 border-l-amber-500"
+                          )}>
+                            <p className={cn(
+                              "font-serif font-bold text-sm leading-snug",
+                              isDarkMode ? "text-amber-100" : "text-zinc-950"
+                            )}>
+                              💡 {q.quote}
+                            </p>
+                            {q.pinyin && (
+                              <p className={cn(
+                                "text-[11px] font-mono font-semibold",
+                                isDarkMode ? "text-amber-300" : "text-amber-800"
+                              )}>
+                                {q.pinyin}
+                              </p>
+                            )}
+                            {q.serbian && (
+                              <p className={cn(
+                                "text-[11px] font-semibold",
+                                isDarkMode ? "text-zinc-100" : "text-zinc-900"
+                              )}>
+                                {q.serbian}
+                              </p>
+                            )}
+                            <p className={cn(
+                              "text-[11px] italic",
+                              isDarkMode ? "text-zinc-300" : "text-zinc-700"
+                            )}>
+                              "{q.translation}"
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Bottom Status */}

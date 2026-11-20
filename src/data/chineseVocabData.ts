@@ -1,3 +1,17 @@
+import {
+  CHINESE_PROVERBS_BY_WORD,
+  CLASSICAL_FALLBACK_PROVERBS,
+  type ChineseProverbEntry,
+} from './chineseProverbsByWord';
+
+export type ChineseQuoteResult = {
+  quote: string;
+  translation: string;
+  pinyin?: string;
+  serbian?: string;
+  kind?: ChineseProverbEntry['kind'];
+};
+
 export interface VocabItem {
   id: string;
   char: string;
@@ -739,22 +753,58 @@ export const CHINESE_WISE_QUOTES: Record<string, { quote: string; translation: s
   '正义': { quote: '公生明，廉生威。', translation: 'Justice generates clarity; integrity commands respect.' },
 };
 
-export function getChineseQuoteForItem(item: VocabItem): { quote: string; translation: string } {
-  if (CHINESE_WISE_QUOTES[item.char]) {
-    return CHINESE_WISE_QUOTES[item.char];
+const SKIP_ROOT_CHARS = new Set(['的', '了', '子', '儿', '们', '个', '着', '过', '么', '呢', '吧', '啊']);
+
+export function getChineseQuoteForItem(item: VocabItem): ChineseQuoteResult {
+  const cleanChar = (item.char || '').trim();
+
+  // 1. Exact match in expanded proverbs & idioms library (includes Pinyin + Serbian + English)
+  if (CHINESE_PROVERBS_BY_WORD[cleanChar]) {
+    return CHINESE_PROVERBS_BY_WORD[cleanChar];
   }
-  const defaultQuotes = [
-    { quote: `${item.char} —— 天行健，君子以自强不息。`, translation: 'As Heaven maintains vigor through movement, the noble person unceasingly strengthens themselves.' },
-    { quote: `${item.char} —— 地势坤，君子以厚德载物。`, translation: 'As Earth’s condition is receptive devotion, the noble person holds all with deep virtue.' },
-    { quote: `${item.char} —— 千里之行，始于足下。`, translation: 'A journey of a thousand miles begins with a single step.' },
-    { quote: `${item.char} —— 知人者智，自知者明。`, translation: 'Knowing others is wisdom; knowing yourself is enlightenment.' },
-    { quote: `${item.char} —— 淡泊以明志，宁静以致远。`, translation: 'Keep desires simple to clarify purpose; maintain stillness to reach far.' }
-  ];
+
+  // 2. Exact match in original poetic/philosophical wisdom map
+  if (CHINESE_WISE_QUOTES[cleanChar]) {
+    return {
+      ...CHINESE_WISE_QUOTES[cleanChar],
+      kind: '古训',
+    };
+  }
+
+  // 3. Compound 2-character substring match (e.g., "好朋友" -> "朋友", "笔记本" -> "笔记")
+  const chars = [...cleanChar].filter((ch) => /[\u4e00-\u9fff]/.test(ch));
+  if (chars.length >= 2) {
+    for (let i = 0; i <= chars.length - 2; i++) {
+      const pair = chars[i] + chars[i + 1];
+      if (CHINESE_PROVERBS_BY_WORD[pair]) {
+        return CHINESE_PROVERBS_BY_WORD[pair];
+      }
+      if (CHINESE_WISE_QUOTES[pair]) {
+        return { ...CHINESE_WISE_QUOTES[pair], kind: '古训' };
+      }
+    }
+  }
+
+  // 4. Meaningful constituent character match (e.g., "自行车" -> "车", "牛肉" -> "牛", "鲜鱼" -> "鱼")
+  // Check trailing head noun character first (Chinese compounds are usually head-final!), then leading chars
+  const orderedChars = chars.length > 1 ? [...chars.slice(1).reverse(), chars[0]] : chars;
+  for (const ch of orderedChars) {
+    if (SKIP_ROOT_CHARS.has(ch)) continue;
+    if (CHINESE_PROVERBS_BY_WORD[ch]) {
+      return CHINESE_PROVERBS_BY_WORD[ch];
+    }
+    if (CHINESE_WISE_QUOTES[ch]) {
+      return { ...CHINESE_WISE_QUOTES[ch], kind: '古训' };
+    }
+  }
+
+  // 5. Deterministic selection from rich classical fallback idioms & proverbs
   let hash = 0;
-  for (let i = 0; i < item.char.length; i++) {
-    hash = (hash << 5) - hash + item.char.charCodeAt(i);
+  for (let i = 0; i < cleanChar.length; i++) {
+    hash = (hash << 5) - hash + cleanChar.charCodeAt(i);
   }
-  const idx = Math.abs(hash) % defaultQuotes.length;
-  return defaultQuotes[idx];
+  const idx = Math.abs(hash) % CLASSICAL_FALLBACK_PROVERBS.length;
+  return CLASSICAL_FALLBACK_PROVERBS[idx];
 }
+
 
