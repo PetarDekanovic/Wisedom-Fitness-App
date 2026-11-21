@@ -1060,37 +1060,127 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
   };
 
   const handleSaveAllAiWords = () => {
-    if (!aiTranslationResult || !aiTranslationResult.words || aiTranslationResult.words.length === 0) return;
-    
-    const newItems: VocabItem[] = aiTranslationResult.words.map((w, idx) => ({
-      id: `zh-ai-${Date.now()}-${idx}`,
-      char: w.chinese,
-      pinyin: w.pinyin,
-      vuk: w.vuk,
-      english: w.english,
-      translation: w.serbian,
-      emoji: w.emoji || '✨',
-      category: 'custom',
-      categoryLabel: 'AI Sklop & Generisano',
-      tags: ['ai-configurator', 'custom-word', w.category || 'expression'],
-      level: 1,
-      quote: {
-        text: aiTranslationResult.chinese,
-        pinyin: aiTranslationResult.pinyin,
-        translation: aiTranslationResult.serbian,
-        author: 'WiseFit AI Configurator'
-      }
-    }));
+    if (!aiTranslationResult || (!aiTranslationResult.chinese && (!aiTranslationResult.words || aiTranslationResult.words.length === 0))) return;
 
-    // Filter out duplicates by character
+    const stripEdgePunct = (str: string) =>
+      str
+        .replace(/^[\s.,!?;:，。！？；：、"'“”‘’()（）【】\[\]-]+|[\s.,!?;:，。！？；：、"'“”‘’()（）【】\[\]-]+$/g, '')
+        .trim();
+
+    const stripAllPunct = (str: string) =>
+      str.replace(/[\s.,!?;:，。！？；：、"'“”‘’()（）【】\[\]-]/g, '');
+
+    const combinedChar = stripEdgePunct(aiTranslationResult.chinese || '');
+    const combinedClean = stripAllPunct(combinedChar);
+    const primaryEmoji =
+      (Array.isArray(aiTranslationResult.emojis) && aiTranslationResult.emojis[0]) ||
+      aiTranslationResult.words?.find(w => w.emoji)?.emoji ||
+      '✨';
+
+    const nowTs = Date.now();
+    const combinedItem: VocabItem | null = combinedChar
+      ? {
+          id: `zh-ai-full-${nowTs}`,
+          char: combinedChar,
+          pinyin: aiTranslationResult.pinyin || '',
+          vuk: aiTranslationResult.vukPhonetic || '',
+          english: aiTranslationResult.english || combinedChar,
+          translation: aiTranslationResult.serbian || aiTranslationResult.english || combinedChar,
+          emoji: primaryEmoji,
+          category: 'custom',
+          categoryLabel: 'AI Sklop & Generisano',
+          tags: ['ai-configurator', 'custom-word', 'combined'],
+          level: 1,
+          quote: {
+            text: aiTranslationResult.chinese,
+            pinyin: aiTranslationResult.pinyin,
+            translation: aiTranslationResult.serbian,
+            author: 'WiseFit AI Configurator'
+          }
+        }
+      : null;
+
+    // Filter meaningful word breakdown tokens
+    const rawWords = (aiTranslationResult.words || []).filter(w => {
+      const clean = stripEdgePunct(w.chinese || '');
+      return clean.length > 0 && /[\u4e00-\u9fffA-Za-z0-9]/.test(clean);
+    });
+
+    const englishTokens = (aiTranslationResult.english || '')
+      .trim()
+      .split(/\s+/)
+      .filter(t => /[A-Za-z0-9\u00C0-\u024F\u0400-\u04FF\u4e00-\u9fff]/.test(t));
+    const serbianTokens = (aiTranslationResult.serbian || '')
+      .trim()
+      .split(/\s+/)
+      .filter(t => /[A-Za-z0-9\u00C0-\u024F\u0400-\u04FF\u4e00-\u9fff]/.test(t));
+
+    const hasSentencePunctuation = /[，。！？；、,!?;]/.test(aiTranslationResult.chinese || '');
+    const allBreakdownAreSingleChars =
+      rawWords.length > 1 && rawWords.every(w => [...stripAllPunct(w.chinese || '')].length === 1);
+
+    // Single word / single concept (e.g., "pineapple" -> 菠萝, "envy" -> 嫉妒, "ice cream" -> 冰淇淋):
+    // save ONLY the combined word as ONE entry instead of splitting it into separate characters.
+    const isSingleWordBreakdown =
+      !hasSentencePunctuation &&
+      (
+        englishTokens.length <= 1 ||
+        (serbianTokens.length <= 1 && allBreakdownAreSingleChars && [...combinedClean].length <= 4)
+      );
+
+    // Multi-word phrase / sentence (e.g., "I love eating pineapple" -> 我喜欢吃菠萝):
+    // save the combined phrase PLUS divide and save its separate constituent words.
+    const isMultiWordPhrase = !isSingleWordBreakdown && rawWords.length > 1;
+
+    const candidateItems: VocabItem[] = [];
+    if (combinedItem) {
+      candidateItems.push(combinedItem);
+    }
+
+    if (isMultiWordPhrase) {
+      rawWords.forEach((w, idx) => {
+        const cleanWordChar = stripEdgePunct(w.chinese || '');
+        if (!cleanWordChar || cleanWordChar === combinedChar) return;
+        candidateItems.push({
+          id: `zh-ai-${nowTs}-${idx}`,
+          char: cleanWordChar,
+          pinyin: w.pinyin,
+          vuk: w.vuk,
+          english: w.english,
+          translation: w.serbian,
+          emoji: w.emoji || '✨',
+          category: 'custom',
+          categoryLabel: 'AI Sklop & Generisano',
+          tags: ['ai-configurator', 'custom-word', w.category || 'expression'],
+          level: 1,
+          quote: {
+            text: aiTranslationResult.chinese,
+            pinyin: aiTranslationResult.pinyin,
+            translation: aiTranslationResult.serbian,
+            author: 'WiseFit AI Configurator'
+          }
+        });
+      });
+    }
+
+    // Filter out duplicates against existing dictionary AND within the same batch
     const existingChars = new Set([...VOCAB_DATA.map(v => v.char), ...savedCustomWords.map(v => v.char)]);
-    const toAdd = newItems.filter(item => !existingChars.has(item.char));
+    const seenInBatch = new Set<string>();
+    const toAdd = candidateItems.filter(item => {
+      if (existingChars.has(item.char) || seenInBatch.has(item.char)) return false;
+      seenInBatch.add(item.char);
+      return true;
+    });
 
     if (toAdd.length === 0) {
       setJustSavedAllAi(true);
       setTimeout(() => setJustSavedAllAi(false), 2000);
-      setDictToast('Sve reči iz ove rečenice se već nalaze u vašoj riznici!');
-      setTimeout(() => setDictToast(null), 2500);
+      setDictToast(
+        isMultiWordPhrase
+          ? 'Ova fraza i sve njene reči se već nalaze u vašem rečniku ✓'
+          : `Reč "${combinedChar}" se već nalazi u vašem rečniku ✓`
+      );
+      setTimeout(() => setDictToast(null), 2600);
       return;
     }
 
@@ -1099,8 +1189,22 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
     localStorage.setItem('wisefit_chinese_custom_words', JSON.stringify(updated));
     setJustSavedAllAi(true);
     setTimeout(() => setJustSavedAllAi(false), 2400);
-    setDictToast(`Uspešno dodato ${toAdd.length} novih reči u vaš rečnik i flashcards igru! 🎴✨`);
-    setTimeout(() => setDictToast(null), 3000);
+
+    const combinedWasAdded = combinedItem ? toAdd.some(item => item.char === combinedItem.char) : false;
+    const extraWordsCount = combinedWasAdded ? toAdd.length - 1 : toAdd.length;
+
+    if (combinedItem && combinedWasAdded && extraWordsCount > 0) {
+      setDictToast(
+        `Sačuvana fraza "${combinedItem.char}" + ${extraWordsCount} ${extraWordsCount === 1 ? 'pojedinačna reč' : 'pojedinačnih reči'} u rečnik! 🎴✨`
+      );
+    } else if (combinedItem && combinedWasAdded) {
+      setDictToast(
+        `Sačuvana reč "${combinedItem.char}" (${combinedItem.translation}) u vaš rečnik i flashcards! 🎴✨`
+      );
+    } else {
+      setDictToast(`Uspešno dodato ${toAdd.length} novih reči u vaš rečnik i flashcards igru! 🎴✨`);
+    }
+    setTimeout(() => setDictToast(null), 3400);
   };
 
   const handleSaveSingleAiWord = (word: AiConfigWordItemChinese, idx?: number) => {
@@ -2746,7 +2850,7 @@ export const ChineseVocabView: React.FC<ChineseVocabViewProps> = ({ isDarkMode, 
                                 ? "bg-emerald-500 text-white border-emerald-400 shadow-lg shadow-emerald-500/30"
                                 : "bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border-amber-500/30"
                             )}
-                            title="Dodaj sve reči iz ovog prevoda u svoj rečnik i flashcards igru"
+                            title="Sačuvaj kombinovanu reč/frazu (i pojedinačne reči ako fraza ima više reči) u rečnik i flashcards"
                           >
                             {justSavedAllAi ? (
                               <>

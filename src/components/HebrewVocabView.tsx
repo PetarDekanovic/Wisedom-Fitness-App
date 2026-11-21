@@ -1085,33 +1085,88 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
   };
 
   const handleSaveAllAiWords = () => {
-    if (!aiTranslationResult || !aiTranslationResult.words) return;
-    const newItems: HebrewVocabItem[] = aiTranslationResult.words.map((w, idx) => ({
-      id: `he-ai-${Date.now()}-${idx}`,
-      char: w.hebrew,
-      transliteration: w.transliteration,
-      vuk: w.vuk,
-      translation: w.serbian,
-      english: w.english,
-      category: 'mudrost',
-      categoryLabel: 'AI Mudrost',
-      emoji: w.emoji || '✨',
-      root: w.hebrewClean || w.hebrew,
-      visualTip: `Kreirano kroz AI Prevodilac za rečenicu: "${aiTranslationResult.english}"`
-    }));
+    if (!aiTranslationResult || (!aiTranslationResult.hebrew && (!aiTranslationResult.words || aiTranslationResult.words.length === 0))) return;
 
-    setSavedCustomWords(prev => {
-      const existingChars = new Set(prev.map(p => p.char));
-      const toAdd = newItems.filter(item => !existingChars.has(item.char));
-      const next = [...toAdd, ...prev];
+    const stripEdgePunct = (str: string) =>
+      str.replace(/^[\s.,!?;:،؛"'“”‘’()\[\]-]+|[\s.,!?;:،؛"'“”‘’()\[\]-]+$/g, '').trim();
+
+    const combinedChar = stripEdgePunct(aiTranslationResult.hebrew || '');
+    const primaryEmoji =
+      (Array.isArray(aiTranslationResult.emojis) && aiTranslationResult.emojis[0]) ||
+      aiTranslationResult.words?.find(w => w.emoji)?.emoji ||
+      '✨';
+
+    const nowTs = Date.now();
+    const combinedItem: HebrewVocabItem | null = combinedChar
+      ? {
+          id: `he-ai-full-${nowTs}`,
+          char: combinedChar,
+          transliteration: aiTranslationResult.transliteration || '',
+          vuk: aiTranslationResult.vukPhonetic || aiTranslationResult.transliteration || '',
+          translation: aiTranslationResult.serbian || aiTranslationResult.english || combinedChar,
+          english: aiTranslationResult.english || combinedChar,
+          category: 'mudrost',
+          categoryLabel: 'AI Mudrost',
+          emoji: primaryEmoji,
+          root: combinedChar,
+          visualTip: `Kreirano kroz AI Prevodilac: "${aiTranslationResult.english}"`
+        }
+      : null;
+
+    const rawWords = (aiTranslationResult.words || []).filter(w => stripEdgePunct(w.hebrew || '').length > 0);
+    const englishTokens = (aiTranslationResult.english || '').trim().split(/\s+/).filter(Boolean);
+    const isMultiWordPhrase = englishTokens.length > 1 && rawWords.length > 1;
+
+    const candidateItems: HebrewVocabItem[] = [];
+    if (combinedItem) candidateItems.push(combinedItem);
+    if (isMultiWordPhrase) {
+      rawWords.forEach((w, idx) => {
+        const cleanWord = stripEdgePunct(w.hebrew || '');
+        if (!cleanWord || cleanWord === combinedChar) return;
+        candidateItems.push({
+          id: `he-ai-${nowTs}-${idx}`,
+          char: cleanWord,
+          transliteration: w.transliteration,
+          vuk: w.vuk,
+          translation: w.serbian,
+          english: w.english,
+          category: 'mudrost',
+          categoryLabel: 'AI Mudrost',
+          emoji: w.emoji || '✨',
+          root: w.hebrewClean || cleanWord,
+          visualTip: `Kreirano kroz AI Prevodilac za rečenicu: "${aiTranslationResult.english}"`
+        });
+      });
+    }
+
+    const existingChars = new Set(savedCustomWords.map(p => p.char));
+    const seenInBatch = new Set<string>();
+    const toAdd = candidateItems.filter(item => {
+      if (existingChars.has(item.char) || seenInBatch.has(item.char)) return false;
+      seenInBatch.add(item.char);
+      return true;
+    });
+
+    if (toAdd.length > 0) {
+      const next = [...toAdd, ...savedCustomWords];
+      setSavedCustomWords(next);
       try {
         localStorage.setItem('wisefit_hebrew_custom_words', JSON.stringify(next));
       } catch (e) {}
-      return next;
-    });
+    }
 
-    setAiSavedSuccessToast(`Uspešno sačuvano ${newItems.length} reči u Vaš rečnik i Flashcards! 🎴✨`);
-    setTimeout(() => setAiSavedSuccessToast(null), 3000);
+    const combinedWasAdded = combinedItem ? toAdd.some(item => item.char === combinedItem.char) : false;
+    const extraCount = combinedWasAdded ? Math.max(0, toAdd.length - 1) : toAdd.length;
+    if (toAdd.length === 0) {
+      setAiSavedSuccessToast('Ova reč / fraza je već u vašem rečniku ✓');
+    } else if (combinedItem && combinedWasAdded && extraCount > 0) {
+      setAiSavedSuccessToast(`Sačuvana fraza "${combinedItem.char}" + ${extraCount} pojedinačnih reči u rečnik! 🎴✨`);
+    } else if (combinedItem && combinedWasAdded) {
+      setAiSavedSuccessToast(`Sačuvana reč "${combinedItem.char}" (${combinedItem.translation}) u rečnik i Flashcards! 🎴✨`);
+    } else {
+      setAiSavedSuccessToast(`Uspešno sačuvano ${toAdd.length} reči u Vaš rečnik i Flashcards! 🎴✨`);
+    }
+    setTimeout(() => setAiSavedSuccessToast(null), 3200);
   };
 
   const handleSaveSingleAiWord = (w: AiConfigWordItem, idx?: number) => {

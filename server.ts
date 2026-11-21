@@ -1709,12 +1709,17 @@ Requirements:
 4. Provide 'vukPhonetic': phonetic reading tailored for Serbian/Croatian speakers using Vuk Karadžić Cyrillic/Latin conventions (e.g., "Peng-jou bien tjan-sja, ni cong-laj bu-ši gu-dan ji-žen.").
 5. Provide 'serbian': accurate Serbian/Croatian translation of the sentence.
 6. Provide 'emojis': an array of 2 to 4 emojis that best represent the sentence concepts.
-7. CRITICAL REQUIREMENT FOR 'words' ARRAY:
-   Every single meaningful word, verb, pronoun, noun, adjective, and particle in the translated sentence MUST be represented in the 'words' array in exact sequential order. NO words should be left out or skipped.
-   - 'chinese': Chinese character(s) in Simplified
-   - 'chineseTraditional': Chinese character(s) in Traditional
-   - 'pinyin': Pinyin with tones
-   - 'vuk': Serbian Vuk phonetic reading
+7. CRITICAL REQUIREMENT FOR 'words' ARRAY (WORD-LEVEL GROUPING — 词 vs 字):
+   Every meaningful word in the translated text MUST be represented in the 'words' array in exact sequential order.
+   HOWEVER, NEVER split a single compound/multi-character Chinese word (词) into isolated meaningless characters (字)!
+   - Single-word example 1: "pineapple" -> chinese: "菠萝", words MUST contain 1 combined item: [{ chinese: "菠萝", chineseTraditional: "菠蘿", pinyin: "bōluó", vuk: "bo-luo", english: "pineapple", serbian: "ananas", emoji: "🍍", category: "noun" }] (DO NOT split into "菠" and "萝"!).
+   - Single-word example 2: "envy" -> chinese: "嫉妒", words MUST contain 1 combined item: [{ chinese: "嫉妒", ... }] (DO NOT split into "嫉" and "妒"!).
+   - Multi-word sentence example: "I love eating fresh pineapple" -> chinese: "我喜欢吃新鲜的菠萝", words MUST group each whole word: [我, 喜欢, 吃, 新鲜, 的, 菠萝] (6 whole words, keeping 喜欢, 新鲜, 菠萝 intact!).
+   Each item in 'words' must include:
+   - 'chinese': whole Simplified Chinese word (词)
+   - 'chineseTraditional': whole Traditional Chinese word
+   - 'pinyin': Pinyin with tones for the whole word
+   - 'vuk': Serbian Vuk phonetic reading for the whole word
    - 'english': English meaning of the word
    - 'serbian': Serbian meaning of the word
    - 'emoji': 1 single fitting emoji for that specific word
