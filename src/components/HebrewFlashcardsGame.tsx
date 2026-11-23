@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { HebrewVocabItem } from '../data/hebrewVocabData';
-import { getHebrewQuoteForItem, HEBREW_FREQUENT_70_IDS } from '../data/hebrewVocabData';
+import { getHebrewQuoteForItem, HEBREW_FREQUENT_70_IDS, HEBREW_FREQUENT_150_IDS } from '../data/hebrewVocabData';
 
 export interface HebrewFlashcardsGameProps {
   vocabList: HebrewVocabItem[];
@@ -45,13 +45,46 @@ export interface HebrewFlashcardsGameProps {
   isPronouncing: string | null;
   isDarkMode: boolean;
   isGirlyMode: boolean;
+  initialMode?: GameMode;
   onSwitchToQuiz?: () => void;
 }
 
 export type PacingMode = 'manual' | 'relaxed' | 'normal';
 export type LoopSpeed = 'zen' | 'ultra-slow' | 'slow' | 'moderate';
 
-type GameMode = 'cards' | 'match' | 'speed';
+export type GameMode = 'cards' | 'match' | 'speed';
+
+const CATEGORY_TEXT_STYLES: Record<string, { hebrew: string; badge: string; accent: string }> = {
+  mudrost: { hebrew: 'text-amber-300', badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30', accent: 'text-amber-400' },
+  svakodnevno: { hebrew: 'text-sky-300', badge: 'bg-sky-500/15 text-sky-300 border-sky-500/30', accent: 'text-sky-400' },
+  glagoli: { hebrew: 'text-violet-300', badge: 'bg-violet-500/15 text-violet-300 border-violet-500/30', accent: 'text-violet-400' },
+  hrana: { hebrew: 'text-orange-300', badge: 'bg-orange-500/15 text-orange-300 border-orange-500/30', accent: 'text-orange-400' },
+  priroda: { hebrew: 'text-emerald-300', badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30', accent: 'text-emerald-400' },
+  zdravlje: { hebrew: 'text-teal-300', badge: 'bg-teal-500/15 text-teal-300 border-teal-500/30', accent: 'text-teal-400' },
+  emocije: { hebrew: 'text-rose-300', badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30', accent: 'text-rose-400' },
+  posao_tehnologija: { hebrew: 'text-cyan-300', badge: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30', accent: 'text-cyan-400' },
+  vreme_brojevi: { hebrew: 'text-fuchsia-300', badge: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30', accent: 'text-fuchsia-400' },
+  misaoni: { hebrew: 'text-yellow-300', badge: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30', accent: 'text-yellow-400' }
+};
+
+function getCatStyle(category: string, isDark: boolean) {
+  if (!isDark) {
+    const lightMap: Record<string, { hebrew: string; badge: string; accent: string }> = {
+      mudrost: { hebrew: 'text-amber-700', badge: 'bg-amber-100 text-amber-800 border-amber-300', accent: 'text-amber-600' },
+      svakodnevno: { hebrew: 'text-sky-700', badge: 'bg-sky-100 text-sky-800 border-sky-300', accent: 'text-sky-600' },
+      glagoli: { hebrew: 'text-violet-700', badge: 'bg-violet-100 text-violet-800 border-violet-300', accent: 'text-violet-600' },
+      hrana: { hebrew: 'text-orange-700', badge: 'bg-orange-100 text-orange-800 border-orange-300', accent: 'text-orange-600' },
+      priroda: { hebrew: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-800 border-emerald-300', accent: 'text-emerald-600' },
+      zdravlje: { hebrew: 'text-teal-700', badge: 'bg-teal-100 text-teal-800 border-teal-300', accent: 'text-teal-600' },
+      emocije: { hebrew: 'text-rose-700', badge: 'bg-rose-100 text-rose-800 border-rose-300', accent: 'text-rose-600' },
+      posao_tehnologija: { hebrew: 'text-cyan-700', badge: 'bg-cyan-100 text-cyan-800 border-cyan-300', accent: 'text-cyan-600' },
+      vreme_brojevi: { hebrew: 'text-fuchsia-700', badge: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300', accent: 'text-fuchsia-600' },
+      misaoni: { hebrew: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', accent: 'text-yellow-600' }
+    };
+    return lightMap[category] || { hebrew: 'text-blue-700', badge: 'bg-blue-100 text-blue-800 border-blue-300', accent: 'text-blue-600' };
+  }
+  return CATEGORY_TEXT_STYLES[category] || { hebrew: 'text-blue-300', badge: 'bg-blue-500/15 text-blue-300 border-blue-500/30', accent: 'text-blue-400' };
+}
 
 interface MatchCard {
   uniqueId: string;
@@ -82,14 +115,19 @@ export const HebrewFlashcardsGame: React.FC<HebrewFlashcardsGameProps> = ({
   isPronouncing,
   isDarkMode,
   isGirlyMode,
+  initialMode = 'cards',
   onSwitchToQuiz
 }) => {
-  // Game Mode: 'cards' (3D flip deck), 'match' (Memory match pairs), 'speed' (Quick multiple choice)
-  const [gameMode, setGameMode] = useState<GameMode>('cards');
-  const [selectedCategory, setSelectedCategory] = useState<string>('frequent_70');
+  // Game Mode: 'cards' (3D flip deck), 'match' (Memory match pairs), 'speed' (Izazov Znanja)
+  const [gameMode, setGameMode] = useState<GameMode>(initialMode);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [filterMode, setFilterMode] = useState<'all' | 'unmastered' | 'mastered'>('all');
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [flipDirection, setFlipDirection] = useState<'hebrew-first' | 'meaning-first'>('hebrew-first');
+
+  useEffect(() => {
+    setGameMode(initialMode);
+  }, [initialMode]);
 
   // --- MODE 1: 3D FLASHCARDS DECK STATE ---
   const [deck, setDeck] = useState<HebrewVocabItem[]>([]);
@@ -236,6 +274,10 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
       const freqSet = new Set(HEBREW_FREQUENT_70_IDS);
       pool = pool.filter(item => freqSet.has(item.id));
       if (pool.length === 0) pool = vocabList.slice(0, 70);
+    } else if (selectedCategory === 'frequent_150') {
+      const freqSet = new Set(HEBREW_FREQUENT_150_IDS);
+      pool = pool.filter(item => freqSet.has(item.id));
+      if (pool.length === 0) pool = vocabList.slice(0, 150);
     } else if (selectedCategory !== 'all') {
       pool = pool.filter(item => item.category === selectedCategory);
     }
@@ -255,18 +297,25 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
     for (const item of vocabList) {
       counts[item.category] = (counts[item.category] || 0) + 1;
     }
-    const freqSet = new Set(HEBREW_FREQUENT_70_IDS);
-    const freqCount = vocabList.filter(item => freqSet.has(item.id)).length;
+    const freq70Set = new Set(HEBREW_FREQUENT_70_IDS);
+    const freq70Count = vocabList.filter(item => freq70Set.has(item.id)).length;
+    const freq150Set = new Set(HEBREW_FREQUENT_150_IDS);
+    const freq150Count = vocabList.filter(item => freq150Set.has(item.id)).length;
 
     return [
-      { id: 'frequent_70', label: '⭐ 70 Najčešćih Reči (Osnove)', count: freqCount || 70 },
-      { id: 'all', label: '🎴 Celokupna Riznica (Sve Reči)', count: vocabList.length },
+      { id: 'all', label: '🎴 Celokupna Riznica (Sve)', count: vocabList.length },
+      { id: 'frequent_150', label: '🔥 Top 150 Čestih Reči', count: freq150Count || 150 },
+      { id: 'frequent_70', label: '⭐ 70 Osnovnih Reči', count: freq70Count || 70 },
       { id: 'glagoli', label: '⚡ Glagoli & Akcije', count: counts['glagoli'] || 0 },
       { id: 'mudrost', label: '📜 Mudrost & Filozofija', count: counts['mudrost'] || 0 },
-      { id: 'svakodnevno', label: '🗣️ Svakodnevno (Pozdravi)', count: counts['svakodnevno'] || 0 },
+      { id: 'svakodnevno', label: '🗣️ Svakodnevno', count: counts['svakodnevno'] || 0 },
+      { id: 'hrana', label: '🍎 Hrana & Kuhinja', count: counts['hrana'] || 0 },
       { id: 'priroda', label: '🌿 Priroda & Svemir', count: counts['priroda'] || 0 },
-      { id: 'misaoni', label: '💡 Misaoni & Uspeh', count: counts['misaoni'] || 0 },
-      { id: 'emocije', label: '💖 Emocije & Ljubav', count: counts['emocije'] || 0 }
+      { id: 'zdravlje', label: '💚 Telo & Zdravlje', count: counts['zdravlje'] || 0 },
+      { id: 'emocije', label: '💖 Emocije & Ljubav', count: counts['emocije'] || 0 },
+      { id: 'posao_tehnologija', label: '💼 Posao & Tehnologija', count: counts['posao_tehnologija'] || 0 },
+      { id: 'vreme_brojevi', label: '⏳ Vreme & Brojevi', count: counts['vreme_brojevi'] || 0 },
+      { id: 'misaoni', label: '💡 Misaoni & Uspeh', count: counts['misaoni'] || 0 }
     ];
   }, [vocabList]);
 
@@ -277,6 +326,10 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
       const freqSet = new Set(HEBREW_FREQUENT_70_IDS);
       pool = pool.filter(item => freqSet.has(item.id));
       if (pool.length === 0) pool = vocabList.slice(0, 70);
+    } else if (selectedCategory === 'frequent_150') {
+      const freqSet = new Set(HEBREW_FREQUENT_150_IDS);
+      pool = pool.filter(item => freqSet.has(item.id));
+      if (pool.length === 0) pool = vocabList.slice(0, 150);
     } else if (selectedCategory !== 'all') {
       pool = pool.filter(item => item.category === selectedCategory);
     }
@@ -750,6 +803,10 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
       const freqSet = new Set(HEBREW_FREQUENT_70_IDS);
       pool = pool.filter(item => freqSet.has(item.id));
       if (pool.length === 0) pool = vocabList.slice(0, 70);
+    } else if (selectedCategory === 'frequent_150') {
+      const freqSet = new Set(HEBREW_FREQUENT_150_IDS);
+      pool = pool.filter(item => freqSet.has(item.id));
+      if (pool.length === 0) pool = vocabList.slice(0, 150);
     } else if (selectedCategory !== 'all') {
       pool = pool.filter(item => item.category === selectedCategory);
     }
@@ -1009,12 +1066,12 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
         <button
           type="button"
           onClick={() => {
-            setSelectedCategory('frequent_70');
+            setSelectedCategory('frequent_150');
             if (gameMode === 'cards') initDeck();
           }}
           className={cn(
             "p-3 rounded-2xl border text-left transition-all relative overflow-hidden flex items-start gap-3 group",
-            selectedCategory === 'frequent_70'
+            selectedCategory === 'frequent_150'
               ? isGirlyMode
                 ? "bg-pink-950/60 border-pink-500 ring-2 ring-pink-500/50 shadow-lg"
                 : "bg-emerald-950/60 border-emerald-500 ring-2 ring-emerald-500/50 shadow-lg"
@@ -1023,26 +1080,26 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
         >
           <div className={cn(
             "w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 border",
-            selectedCategory === 'frequent_70'
+            selectedCategory === 'frequent_150'
               ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
               : "bg-zinc-800/80 border-zinc-700 text-zinc-300"
           )}>
-            ⭐
+            🔥
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-1">
               <span className="font-bold text-[10px] text-emerald-400 font-mono uppercase tracking-wider">
-                1. Početni Špil
+                1. Svakodnevni Jezgro Špil
               </span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-mono font-bold">
-                70 reči
+                150 reči
               </span>
             </div>
-            <p className="font-serif font-black text-xs sm:text-sm text-zinc-100 group-hover:text-emerald-300 transition-colors">
-              70 Najčešćih Reči
+            <p className={cn("font-serif font-black text-xs sm:text-sm transition-colors", isDarkMode ? "text-zinc-100 group-hover:text-emerald-300" : "text-zinc-900 group-hover:text-emerald-700")}>
+              Top 150 Najčešćih Reči
             </p>
             <p className="text-[10px] sm:text-[11px] text-zinc-400 truncate">
-              Laki start: שלום, תודה, בבקשה, סליחה, בוקר טוב...
+              שָׁלוֹם, תּוֹדָה, בְּבַקָּשָׁה, חַיִּים, מַיִם, אֱמֶת...
             </p>
           </div>
         </button>
@@ -1409,8 +1466,8 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
                     {/* Top Badges */}
                     <div className="w-full flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border", getCatStyle(currentCard.category, isDarkMode).badge)}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                           {currentCard.categoryLabel || currentCard.category.toUpperCase()}
                         </span>
 
@@ -1436,7 +1493,7 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
                       </div>
 
                       {currentCard.root && (
-                        <span className="text-xs font-mono font-bold text-zinc-400 bg-zinc-800/60 px-2.5 py-1 rounded-lg border border-zinc-700/50">
+                        <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/15 px-2.5 py-1 rounded-lg border border-amber-500/30">
                           Koren: {currentCard.root}
                         </span>
                       )}
@@ -1452,14 +1509,16 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
 
                       <h2 
                         dir="rtl" 
-                        className="text-5xl sm:text-6xl font-black tracking-wide font-sans text-white drop-shadow-md select-text"
+                        className={cn("text-5xl sm:text-6xl font-black tracking-wide font-serif drop-shadow-md select-text", getCatStyle(currentCard.category, isDarkMode).hebrew)}
                       >
                         {currentCard.char}
                       </h2>
 
                       {/* Transliteration Hint */}
-                      <p className="text-sm font-mono text-zinc-400">
-                        Izgovor: <span className="text-emerald-400 font-bold">{currentCard.transliteration}</span> ({currentCard.vuk})
+                      <p className="text-sm font-mono text-zinc-400 flex items-center justify-center gap-2 flex-wrap">
+                        <span className="text-violet-400 font-bold">{currentCard.transliteration}</span>
+                        <span className="text-zinc-600">•</span>
+                        <span className="text-emerald-400 font-black bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/25">/{currentCard.vuk}/</span>
                       </p>
 
                       {/* TTS Play Button */}
@@ -1546,19 +1605,19 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
                         </span>
                       </div>
                       
-                      <h3 className="text-2xl sm:text-3xl font-black text-white">
+                      <h3 className={cn("text-2xl sm:text-3xl font-black", isDarkMode ? "text-amber-200" : "text-zinc-900")}>
                         {currentCard.translation}
                       </h3>
 
                       <p className="text-sm font-semibold text-zinc-400">
-                        Engleski: <span className="text-blue-300">{currentCard.english}</span>
+                        Engleski: <span className={isDarkMode ? "text-cyan-300 font-bold" : "text-cyan-700 font-bold"}>{currentCard.english}</span>
                       </p>
 
                       {/* Visual Tip Mnemonic */}
                       {currentCard.visualTip && (
                         <div className={cn(
                           "p-3 rounded-2xl border text-xs text-left flex items-start gap-2.5 max-w-lg mx-auto",
-                          isDarkMode ? "bg-zinc-900/80 border-zinc-800 text-zinc-300" : "bg-blue-50/60 border-blue-100 text-zinc-700"
+                          isDarkMode ? "bg-violet-950/30 border-violet-500/30 text-violet-100" : "bg-violet-50 border-violet-200 text-violet-950"
                         )}>
                           <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                           <div>
@@ -1568,16 +1627,26 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
                         </div>
                       )}
 
-                      {/* Wise Quote Snippet */}
-                      {getHebrewQuoteForItem(currentCard) && (
-                        <div className={cn(
-                          "p-3 rounded-2xl border text-xs max-w-lg mx-auto",
-                          isDarkMode ? "bg-blue-950/20 border-blue-800/30 text-blue-200" : "bg-blue-50 border-blue-100 text-blue-900"
-                        )}>
-                          <p dir="rtl" className="font-bold mb-1 text-sm">{getHebrewQuoteForItem(currentCard).quote}</p>
-                          <p className="text-[11px] text-zinc-400 italic">"{getHebrewQuoteForItem(currentCard).translation}"</p>
-                        </div>
-                      )}
+                      {/* Illuminated Multi-Color Jewish Proverb Snippet */}
+                      {(() => {
+                        const q = getHebrewQuoteForItem(currentCard);
+                        return (
+                          <div className={cn(
+                            "p-3.5 rounded-2xl border text-xs max-w-lg mx-auto space-y-1 text-left",
+                            isDarkMode ? "bg-gradient-to-br from-amber-950/30 via-indigo-950/25 to-zinc-900 border-amber-500/30" : "bg-gradient-to-br from-amber-50 to-indigo-50 border-amber-200"
+                          )}>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[10px] font-mono font-black uppercase tracking-wider text-amber-400">
+                                📜 {q.source || 'Jevrejska Mudrost'}
+                              </span>
+                              <span className="text-[10px] font-mono text-emerald-400">/{q.vuk}/</span>
+                            </div>
+                            <p dir="rtl" className={cn("font-bold text-sm font-serif", isDarkMode ? "text-amber-200" : "text-amber-900")}>{q.quote}</p>
+                            <p className={cn("text-[11px] font-semibold", isDarkMode ? "text-cyan-200" : "text-blue-900")}>„{q.serbian || q.translation}”</p>
+                            {q.english && <p className="text-[10px] italic text-violet-300/90 dark:text-violet-300/80">"{q.english}"</p>}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Bottom Status */}
@@ -1764,17 +1833,17 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
                       
                       {card.type === 'hebrew' ? (
                         <div className="space-y-1">
-                          <p dir="rtl" className="text-2xl sm:text-3xl font-black text-white font-sans">
+                          <p dir="rtl" className={cn("text-2xl sm:text-3xl font-black font-serif", getCatStyle(card.vocab.category, isDarkMode).hebrew)}>
                             {card.content}
                           </p>
-                          <p className="text-[10px] font-mono text-emerald-400">/{card.subContent}/</p>
+                          <p className="text-[10px] font-mono font-bold text-emerald-400">/{card.subContent}/</p>
                         </div>
                       ) : (
                         <div className="space-y-0.5">
-                          <p className="text-base sm:text-lg font-black text-white leading-tight">
+                          <p className={cn("text-base sm:text-lg font-black leading-tight", isDarkMode ? "text-amber-200" : "text-zinc-900")}>
                             {card.content}
                           </p>
-                          <p className="text-[10px] font-mono text-blue-400">({card.subContent})</p>
+                          <p className="text-[10px] font-mono font-bold text-violet-400">({card.subContent})</p>
                         </div>
                       )}
 
@@ -1827,58 +1896,51 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
       {/* ========================================================= */}
       {gameMode === 'speed' && (
         <div className="max-w-2xl mx-auto space-y-6">
-          {/* Quick Category Switcher inside Izazov Znanja */}
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span className="text-xs font-mono font-bold text-zinc-400">Izaberi fond reči za kviz:</span>
+          {/* Quick Category & Batch Length Switcher inside Izazov Znanja */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-xs font-mono font-bold text-zinc-400">
+                Fond reči za Izazov Znanja (<span className="text-amber-400">{filteredPool.length}</span> dostupno):
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono font-bold text-zinc-500">Broj pitanja:</span>
+                {[15, 30, 50, 100].map(cnt => (
+                  <button
+                    key={cnt}
+                    type="button"
+                    onClick={() => setSpeedQuestionCount(cnt)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-lg text-[11px] font-mono font-black transition-all border",
+                      speedQuestionCount === cnt
+                        ? "bg-amber-600 text-white border-amber-500 shadow-sm"
+                        : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 border-zinc-200 text-zinc-700"
+                    )}
+                  >
+                    {cnt}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('frequent_70')}
-                className={cn(
-                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap shadow-sm",
-                  selectedCategory === 'frequent_70'
-                    ? isGirlyMode ? "bg-pink-500 text-white shadow-pink-500/20" : "bg-emerald-600 text-white shadow-emerald-600/20"
-                    : isDarkMode ? "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 border border-zinc-200 text-zinc-700"
-                )}
-              >
-                ⭐ 70 Najčešćih Reči (70)
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('all')}
-                className={cn(
-                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap shadow-sm",
-                  selectedCategory === 'all'
-                    ? isGirlyMode ? "bg-pink-500 text-white shadow-pink-500/20" : "bg-amber-600 text-white shadow-amber-600/20"
-                    : isDarkMode ? "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 border border-zinc-200 text-zinc-700"
-                )}
-              >
-                🎴 Celokupna Riznica ({vocabList.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('glagoli')}
-                className={cn(
-                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap shadow-sm",
-                  selectedCategory === 'glagoli'
-                    ? isGirlyMode ? "bg-pink-500 text-white shadow-pink-500/20" : "bg-blue-600 text-white shadow-blue-600/20"
-                    : isDarkMode ? "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 border border-zinc-200 text-zinc-700"
-                )}
-              >
-                ⚡ Glagoli ({vocabList.filter(v => v.category === 'glagoli').length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedCategory('mudrost')}
-                className={cn(
-                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap shadow-sm",
-                  selectedCategory === 'mudrost'
-                    ? isGirlyMode ? "bg-pink-500 text-white shadow-pink-500/20" : "bg-indigo-600 text-white shadow-indigo-600/20"
-                    : isDarkMode ? "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 border border-zinc-200 text-zinc-700"
-                )}
-              >
-                📜 Mudrost ({vocabList.filter(v => v.category === 'mudrost').length})
-              </button>
+              {categoriesWithCounts.map(cat => (
+                <button
+                  key={`speed-cat-${cat.id}`}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap shadow-sm border",
+                    selectedCategory === cat.id
+                      ? isGirlyMode
+                        ? "bg-pink-500 text-white border-pink-400 shadow-pink-500/20"
+                        : cat.id === 'all'
+                          ? "bg-amber-600 text-white border-amber-500 shadow-amber-600/20"
+                          : "bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/20"
+                      : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" : "bg-zinc-100 border-zinc-200 text-zinc-700"
+                  )}
+                >
+                  {cat.label} ({cat.count})
+                </button>
+              ))}
             </div>
           </div>
 
@@ -1890,9 +1952,12 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
               {/* Question Header */}
               <div className="flex items-center justify-between text-xs font-mono text-zinc-400 flex-wrap gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span>Pitanje {speedQuestionIdx + 1} / {speedQuestions.length}</span>
+                  <span>Pitanje <strong className="text-amber-400">{speedQuestionIdx + 1}</strong> / {speedQuestions.length}</span>
                   <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] font-bold">
                     {speedQuestions.length} Pokušaja · Serija #{speedBatchNum || 1}
+                  </span>
+                  <span className={cn("px-2 py-0.5 rounded-full border text-[10px] font-bold", getCatStyle(speedQuestions[speedQuestionIdx].vocab.category, isDarkMode).badge)}>
+                    {speedQuestions[speedQuestionIdx].vocab.categoryLabel}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1905,7 +1970,7 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
                         ? "bg-zinc-900 border-amber-500/40 text-amber-300 hover:bg-amber-500/20"
                         : "bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100"
                     )}
-                    title="Izvuci novu nasumičnu seriju od 30 reči"
+                    title={`Izvuci novu nasumičnu seriju od ${speedQuestionCount} reči`}
                   >
                     <Shuffle className="w-3.5 h-3.5" />
                     <span>Promešaj</span>
@@ -1923,7 +1988,7 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
                     title="Kopiraj reč i mudrost za društvene mreže"
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    <span>{copiedCardId === speedQuestions[speedQuestionIdx].vocab.id ? "Kopirano! ✨" : "Kopiraj za Social Media 📋"}</span>
+                    <span>{copiedCardId === speedQuestions[speedQuestionIdx].vocab.id ? "Kopirano! ✨" : "Kopiraj 📋"}</span>
                   </button>
                 </div>
               </div>
@@ -1954,11 +2019,25 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
                   )}
                 </div>
 
-                <h2 dir="rtl" className="text-6xl sm:text-7xl font-serif font-black text-white tracking-wide">
+                <h2
+                  dir="rtl"
+                  className={cn(
+                    "text-6xl sm:text-7xl font-serif font-black tracking-wide drop-shadow-sm",
+                    getCatStyle(speedQuestions[speedQuestionIdx].vocab.category, isDarkMode).hebrew
+                  )}
+                >
                   {speedQuestions[speedQuestionIdx].vocab.char}
                 </h2>
-                <p className="text-xs font-mono text-zinc-300">
-                  Vuk: <span className="text-emerald-400 font-bold">/{speedQuestions[speedQuestionIdx].vocab.vuk}/</span> • Transkripcija: <span className="text-indigo-300 font-bold">{speedQuestions[speedQuestionIdx].vocab.transliteration}</span>
+                <p className="text-xs font-mono text-zinc-400 flex items-center justify-center gap-2 flex-wrap">
+                  <span>Vuk: <span className="text-emerald-400 font-black">/{speedQuestions[speedQuestionIdx].vocab.vuk}/</span></span>
+                  <span>•</span>
+                  <span>Transkripcija: <span className="text-violet-400 font-bold">{speedQuestions[speedQuestionIdx].vocab.transliteration}</span></span>
+                  {speedQuestions[speedQuestionIdx].vocab.root && (
+                    <>
+                      <span>•</span>
+                      <span className="text-amber-400 font-bold">Koren: {speedQuestions[speedQuestionIdx].vocab.root}</span>
+                    </>
+                  )}
                 </p>
 
                 <button
@@ -2049,18 +2128,18 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
                   </div>
 
                   {/* Word Breakdown & Linguistic Details */}
-                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2.5">
+                  <div className={cn("p-4 rounded-2xl border space-y-2.5", isDarkMode ? "bg-black/40 border-white/10" : "bg-white/90 border-zinc-200")}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="text-4xl font-sans font-black text-white" dir="rtl">
+                        <span className={cn("text-4xl font-serif font-black", getCatStyle(speedQuestions[speedQuestionIdx].vocab.category, isDarkMode).hebrew)} dir="rtl">
                           {speedQuestions[speedQuestionIdx].vocab.char}
                         </span>
                         <div>
                           <p className="text-xs font-mono font-bold text-emerald-400">
-                            Vuk: /{speedQuestions[speedQuestionIdx].vocab.vuk}/ ({speedQuestions[speedQuestionIdx].vocab.transliteration})
+                            Vuk: /{speedQuestions[speedQuestionIdx].vocab.vuk}/ <span className="text-violet-400">({speedQuestions[speedQuestionIdx].vocab.transliteration})</span>
                           </p>
-                          <p className="text-xs font-semibold text-zinc-200">
-                            {speedQuestions[speedQuestionIdx].vocab.translation} — <span className="text-zinc-400">{speedQuestions[speedQuestionIdx].vocab.english}</span>
+                          <p className={cn("text-xs font-bold", isDarkMode ? "text-amber-200" : "text-zinc-900")}>
+                            {speedQuestions[speedQuestionIdx].vocab.translation} — <span className="text-cyan-400">{speedQuestions[speedQuestionIdx].vocab.english}</span>
                           </p>
                         </div>
                       </div>
@@ -2070,16 +2149,33 @@ ${item.root ? `• Koren (Shoresh): ${item.root}\n` : ''}${quote?.quote ? `• M
                     {speedQuestions[speedQuestionIdx].vocab.root && (
                       <div className="text-[11px] font-mono text-zinc-400 flex items-center gap-2">
                         <span className="text-amber-400 font-bold">Koren (Shoresh):</span>
-                        <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-200">{speedQuestions[speedQuestionIdx].vocab.root}</span>
+                        <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">{speedQuestions[speedQuestionIdx].vocab.root}</span>
                       </div>
                     )}
 
                     {speedQuestions[speedQuestionIdx].vocab.visualTip && (
-                      <div className="text-[11px] text-zinc-300 flex items-start gap-1.5 pt-1.5 border-t border-white/5">
+                      <div className={cn("text-[11px] flex items-start gap-1.5 pt-1.5 border-t", isDarkMode ? "text-zinc-300 border-white/5" : "text-zinc-700 border-zinc-200")}>
                         <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                         <span>{speedQuestions[speedQuestionIdx].vocab.visualTip}</span>
                       </div>
                     )}
+
+                    {(() => {
+                      const q = getHebrewQuoteForItem(speedQuestions[speedQuestionIdx].vocab);
+                      return (
+                        <div className={cn(
+                          "p-3 rounded-xl border text-[11px] space-y-1 mt-1",
+                          isDarkMode ? "bg-amber-950/25 border-amber-500/25" : "bg-amber-50 border-amber-200"
+                        )}>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-mono font-black uppercase text-[10px] text-amber-400">📜 {q.source || 'Jevrejska Poslovica'}</span>
+                            <span className="font-mono text-[10px] text-emerald-400">/{q.vuk}/</span>
+                          </div>
+                          <p dir="rtl" className={cn("font-serif font-bold text-sm", isDarkMode ? "text-amber-200" : "text-amber-900")}>{q.quote}</p>
+                          <p className={cn("font-semibold", isDarkMode ? "text-cyan-200" : "text-blue-900")}>„{q.serbian || q.translation}”</p>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Pacing Info & Action Bar */}

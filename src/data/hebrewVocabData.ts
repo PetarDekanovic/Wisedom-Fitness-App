@@ -1,3 +1,6 @@
+import { HEBREW_FREQUENT_EXPANSION } from './hebrewFrequentExpansion';
+import { findHebrewProverbForWord, type HebrewProverbType } from './hebrewProverbsAndIdioms';
+
 export interface HebrewVocabItem {
   id: string;
   char: string;
@@ -10,6 +13,18 @@ export interface HebrewVocabItem {
   categoryLabel: string;
   root?: string;
   visualTip?: string;
+}
+
+export interface HebrewQuoteResult {
+  quote: string;
+  translation: string;
+  serbian?: string;
+  english?: string;
+  transliteration?: string;
+  vuk?: string;
+  source?: string;
+  type?: HebrewProverbType;
+  literalNote?: string;
 }
 
 export const HEBREW_VOCAB_EXPANDED: HebrewVocabItem[] = [
@@ -196,86 +211,86 @@ const categoriesList: HebrewVocabItem['category'][] = [
 ];
 
 const highUtilityBase: Array<{ char: string; transliteration: string; vuk: string; translation: string; english: string; emoji: string; root: string }> = [
-  { char: 'אדם', transliteration: 'adam', vuk: 'adam', translation: 'man', english: 'man / person', emoji: '📖', root: 'א-ד-ם' },
-  { char: 'אישה', transliteration: 'isha', vuk: 'iša', translation: 'woman', english: 'woman / wife', emoji: '📖', root: 'א-נ-ש' },
-  { char: 'ילדה', transliteration: 'yalda', vuk: 'jalda', translation: 'Devojčica', english: 'girl', emoji: '📖', root: 'י-ל-ד' },
-  { char: 'אבא', transliteration: 'abba', vuk: 'abba', translation: 'Otac / Tata', english: 'father / dad', emoji: '📖', root: 'א-ב-ב' },
-  { char: 'אמא', transliteration: 'imma', vuk: 'imma', translation: 'Majka / Mama', english: 'mother / mom', emoji: '📖', root: 'א-מ-מ' },
-  { char: 'בן', transliteration: 'ben', vuk: 'ben', translation: 'Sin', english: 'son', emoji: '📖', root: 'ב-נ-ה' },
-  { char: 'בת', transliteration: 'bat', vuk: 'bat', translation: 'Ćerka', english: 'daughter', emoji: '📖', root: 'ב-נ-ה' },
-  { char: 'אח', transliteration: 'ach', vuk: 'ah', translation: 'brother', english: 'brother', emoji: '📖', root: 'א-ח-ח' },
-  { char: 'אחות', transliteration: 'achot', vuk: 'ahot', translation: 'sister', english: 'sister / nurse', emoji: '📖', root: 'א-ח-ח' },
-  { char: 'חברה', transliteration: 'chavera', vuk: 'havera', translation: 'friend', english: 'friend (f) / company', emoji: '📖', root: 'ח-ב-ר' },
-  { char: 'ארץ', transliteration: 'eretz', vuk: 'erec', translation: 'land', english: 'land / country', emoji: '📖', root: 'א-ר-צ' },
-  { char: 'דרך', transliteration: 'derech', vuk: 'dereh', translation: 'way', english: 'way / road', emoji: '📖', root: 'ד-ר-ך' },
-  { char: 'יום', transliteration: 'yom', vuk: 'jom', translation: 'day', english: 'day', emoji: '📖', root: 'י-ו-ם' },
-  { char: 'לילה', transliteration: 'layla', vuk: 'lajla', translation: 'night', english: 'night', emoji: '📖', root: 'l-y-l' },
-  { char: 'בוקר', transliteration: 'boker', vuk: 'boker', translation: 'morning', english: 'morning', emoji: '📖', root: 'ב-ק-ר' },
-  { char: 'ערב', transliteration: 'erev', vuk: 'erev', translation: 'evening', english: 'evening', emoji: '📖', root: 'ע-ר-ב' },
-  { char: 'שנה', transliteration: 'shana', vuk: 'šana', translation: 'Godina', english: 'year', emoji: '📖', root: 'ש-נ-ה' },
-  { char: 'חודש', transliteration: 'chodesh', vuk: 'hodeš', translation: 'month', english: 'month', emoji: '📖', root: 'ח-ד-ש' },
-  { char: 'שבוע', transliteration: 'shavua', vuk: 'šavua', translation: 'Nedelja', english: 'week', emoji: '📖', root: 'ש-ב-ע' },
-  { char: 'שעה', transliteration: "sha'a", vuk: "ša'a", translation: 'Sat / Čas', english: 'hour', emoji: '📖', root: 'ש-ע-ה' },
-  { char: 'מילה', transliteration: 'mila', vuk: 'mila', translation: 'word', english: 'word', emoji: '📖', root: 'מ-ל-ל' },
-  { char: 'עבודה', transliteration: 'avoda', vuk: 'avoda', translation: 'Posao / Rad', english: 'work / job', emoji: '📖', root: 'ע-ב-ד' },
-  { char: 'ספורט', transliteration: 'sport', vuk: 'sport', translation: 'sport', english: 'sport', emoji: '📖', root: 's-p-r-t' },
-  { char: 'אוכל', transliteration: 'ochel', vuk: 'ohel', translation: 'food', english: 'food', emoji: '📖', root: 'א-כ-ל' },
-  { char: 'שולחן', transliteration: 'shulchan', vuk: 'šulhan', translation: 'table', english: 'table', emoji: '📖', root: 'ש-ל-ח' },
-  { char: 'כיסא', transliteration: 'kise', vuk: 'kise', translation: 'Stolica', english: 'chair', emoji: '📖', root: 'כ-ס-א' },
-  { char: 'אוטובוס', transliteration: 'otobus', vuk: 'otobus', translation: 'Autobus', english: 'bus', emoji: '📖', root: 'o-t-b-s' },
-  { char: 'רכבת', transliteration: 'rakevet', vuk: 'rakevet', translation: 'Voz', english: 'train', emoji: '📖', root: 'ר-כ-ב' },
-  { char: 'חנות', transliteration: 'chanut', vuk: 'hanut', translation: 'Prodavnica', english: 'shop / store', emoji: '📖', root: 'ח-נ-ה' },
-  { char: 'שוק', transliteration: 'shuk', vuk: 'šuk', translation: 'Tržište', english: 'market', emoji: '📖', root: 'ש-ו-ק' },
-  { char: 'היה', transliteration: 'haya', vuk: 'haja', translation: 'to be', english: 'to be / exist', emoji: '🌱', root: 'ה-י-ה' },
-  { char: 'אמר', transliteration: 'amar', vuk: 'amar', translation: 'to say', english: 'to say / tell', emoji: '🌱', root: 'א-מ-ר' },
-  { char: 'עשה', transliteration: 'asa', vuk: 'asa', translation: 'Raditi / Praviti', english: 'to do / make', emoji: '🌱', root: 'ע-ש-ה' },
-  { char: 'בא', transliteration: 'ba', vuk: 'ba', translation: 'to come', english: 'to come / arrive', emoji: '🌱', root: 'ב-ו-א' },
-  { char: 'הלך', transliteration: 'halach', vuk: 'halah', translation: 'to go', english: 'to go / walk', emoji: '🌱', root: 'ה-ל-ך' },
-  { char: 'נתן', transliteration: 'natan', vuk: 'natan', translation: 'to give', english: 'to give / allow', emoji: '🌱', root: 'נ-ת-ן' },
-  { char: 'ראה', transliteration: "ra'a", vuk: "ra'a", translation: 'to see', english: 'to see / watch', emoji: '🌱', root: 'ר-א-ה' },
-  { char: 'דע', transliteration: 'yada', vuk: 'jada', translation: 'Znati', english: 'to know (a fact)', emoji: '🌱', root: 'י-ד-ע' },
-  { char: 'רצה', transliteration: 'ratza', vuk: 'raca', translation: 'to want', english: 'to want', emoji: '🌱', root: 'ר-צ-ה' },
-  { char: 'יכל', transliteration: 'yachol', vuk: 'jahol', translation: 'to be able', english: 'to be able / can', emoji: '🌱', root: 'י-כ-ל' },
-  { char: 'לקח', transliteration: 'lakach', vuk: 'lakah', translation: 'to take', english: 'to take / get', emoji: '🌱', root: 'ל-ק-ח' },
-  { char: 'ישב', transliteration: 'yashav', vuk: 'jašav', translation: 'to sit', english: 'to sit / reside', emoji: '🌱', root: 'י-ש-ב' },
-  { char: 'עמד', transliteration: 'amad', vuk: 'amad', translation: 'to stand', english: 'to stand / stop', emoji: '🌱', root: 'ע-מ-ד' },
-  { char: 'שמע', transliteration: 'shama', vuk: 'šama', translation: 'to hear', english: 'to hear / listen', emoji: '🌱', root: 'ש-מ-ע' },
-  { char: 'דבר', transliteration: 'diber', vuk: 'diber', translation: 'to speak', english: 'to speak / talk', emoji: '🌱', root: 'ד-ב-ר' },
-  { char: 'חזר', transliteration: 'chazar', vuk: 'hazar', translation: 'to return', english: 'to return / repeat', emoji: '🌱', root: 'ח-ז-ר' },
-  { char: 'שאל', transliteration: "sha'al", vuk: "ša'al", translation: 'to ask', english: 'to ask / borrow', emoji: '🌱', root: 'ש-א-ל' },
-  { char: 'ענה', transliteration: 'ana', vuk: 'ana', translation: 'Odgovoriti', english: 'to answer / reply', emoji: '🌱', root: 'ע-נ-ה' },
-  { char: 'כתב', transliteration: 'katav', vuk: 'katav', translation: 'Pisati', english: 'to write', emoji: '🌱', root: 'כ-ת-ב' },
-  { char: 'קרא', transliteration: 'kara', vuk: 'kara', translation: 'to read', english: 'to read / call', emoji: '🌱', root: 'ק-ר-א' },
-  { char: 'אכל', transliteration: 'achal', vuk: 'ahal', translation: 'Jesti', english: 'to eat', emoji: '🌱', root: 'א-כ-ל' },
-  { char: 'שתה', transliteration: 'shata', vuk: 'šata', translation: 'Piti', english: 'to drink', emoji: '🌱', root: 'ש-ת-ה' },
-  { char: 'קנה', transliteration: 'kana', vuk: 'kana', translation: 'to buy', english: 'to buy / acquire', emoji: '🌱', root: 'ק-נ-ה' },
-  { char: 'מכר', transliteration: 'machar', vuk: 'mahar', translation: 'Prodati', english: 'to sell', emoji: '🌱', root: 'מ-כ-ר' },
-  { char: 'עבד', transliteration: 'avad', vuk: 'avad', translation: 'to work', english: 'to work / serve', emoji: '🌱', root: 'ע-ב-ד' },
-  { char: 'גדול', transliteration: 'gadol', vuk: 'gadol', translation: 'Velik', english: 'big / large', emoji: '⭐', root: 'ג-ד-ל' },
-  { char: 'קטן', transliteration: 'katan', vuk: 'katan', translation: 'small', english: 'small / little', emoji: '⭐', root: 'ק-ט-ן' },
-  { char: 'טוב', transliteration: 'tov', vuk: 'tov', translation: 'good', english: 'good / fine', emoji: '⭐', root: 'ט-ו-ב' },
-  { char: 'רע', transliteration: 'ra', vuk: 'ra', translation: 'bad', english: 'bad / evil', emoji: '⭐', root: 'ר-ע-ע' },
-  { char: 'חדש', transliteration: 'chadash', vuk: 'hadaš', translation: 'new', english: 'new / fresh', emoji: '⭐', root: 'ח-ד-ש' },
-  { char: 'ישן', transliteration: 'yashan', vuk: 'jašan', translation: 'old', english: 'old (not new)', emoji: '⭐', root: 'י-ש-ן' },
-  { char: 'יפה', transliteration: 'yafe', vuk: 'jafe', translation: 'beautiful', english: 'beautiful / pretty', emoji: '⭐', root: 'י-פ-ה' },
-  { char: 'חכם', transliteration: 'chacham', vuk: 'haham', translation: 'smart', english: 'smart / wise', emoji: '⭐', root: 'ח-כ-ם' },
-  { char: 'חם', transliteration: 'cham', vuk: 'ham', translation: 'hot', english: 'hot / warm', emoji: '⭐', root: 'ח-מ-מ' },
-  { char: 'קר', transliteration: 'kar', vuk: 'kar', translation: 'Hladan', english: 'cold', emoji: '⭐', root: 'ק-ר-ר' },
-  { char: 'רחוק', transliteration: 'rachok', vuk: 'rahok', translation: 'far', english: 'far / distant', emoji: '⭐', root: 'ר-ח-ק' },
-  { char: 'קרוב', transliteration: 'karov', vuk: 'karov', translation: 'Blizak / Blizu', english: 'near / close', emoji: '⭐', root: 'ק-ר-ב' },
-  { char: 'גבוה', transliteration: 'gavoha', vuk: 'gavoha', translation: 'Visok', english: 'tall / high', emoji: '⭐', root: 'ג-ב-ה' },
-  { char: 'נמוך', transliteration: 'namuch', vuk: 'namuh', translation: 'short', english: 'short / low', emoji: '⭐', root: 'נ-מ-ך' },
-  { char: 'ארוך', transliteration: 'aroch', vuk: 'aroh', translation: 'Dugačak', english: 'long', emoji: '⭐', root: 'א-ר-ך' },
-  { char: 'קצר', transliteration: 'katzar', vuk: 'kacar', translation: 'Kratak', english: 'short (length)', emoji: '⭐', root: 'ק-צ-ר' },
-  { char: 'קשה', transliteration: 'kashe', vuk: 'kaše', translation: 'hard', english: 'hard / difficult', emoji: '⭐', root: 'ק-ש-ה' },
-  { char: 'קל', transliteration: 'kal', vuk: 'kal', translation: 'easy', english: 'easy / light', emoji: '⭐', root: 'ק-ל-ל' },
-  { char: 'מעניין', transliteration: "me'anyen", vuk: "me'anjen", translation: 'Interesantno', english: 'interesting', emoji: '⭐', root: 'ע-נ-י-ן' },
-  { char: 'חשוב', transliteration: 'chashuv', vuk: 'hašuv', translation: 'Važan / Bitan', english: 'important', emoji: '⭐', root: 'ח-ש-ב' },
-  { char: 'שמח', transliteration: "same'ach", vuk: "same'ah", translation: 'Radosan', english: 'happy / joyful', emoji: '⭐', root: 'ש-מ-ח' },
-  { char: 'עצוב', transliteration: 'atsuv', vuk: 'acuv', translation: 'sad', english: 'sad', emoji: '⭐', root: 'ע-צ-ב' },
-  { char: 'עייף', transliteration: 'ayef', vuk: 'ajef', translation: 'Umoran', english: 'tired', emoji: '⭐', root: 'ע-י-ף' },
-  { char: 'רעב', transliteration: "ra'ev", vuk: "ra'ev", translation: 'Gladan', english: 'hungry', emoji: '⭐', root: 'ר-ע-ב' },
-  { char: 'צמא', transliteration: 'tzame', vuk: 'came', translation: 'Žedan', english: 'thirsty', emoji: '⭐', root: 'צ-מ-א' },
+  { char: 'אָדָם', transliteration: 'Adam', vuk: 'adam', translation: 'Čovek / Osoba', english: 'Man / Person', emoji: '🧑', root: 'א-ד-ם' },
+  { char: 'אִשָּׁה', transliteration: 'Isha', vuk: 'iša', translation: 'Žena / Supruga', english: 'Woman / Wife', emoji: '👩', root: 'א-נ-ש' },
+  { char: 'יַלְדָּה', transliteration: 'Yalda', vuk: 'jalda', translation: 'Devojčica', english: 'Girl', emoji: '👧', root: 'י-ל-ד' },
+  { char: 'אַבָּא', transliteration: 'Abba', vuk: 'aba', translation: 'Otac / Tata', english: 'Father / Dad', emoji: '👨', root: 'א-ב-ב' },
+  { char: 'אִמָּא', transliteration: 'Imma', vuk: 'ima', translation: 'Majka / Mama', english: 'Mother / Mom', emoji: '👩', root: 'א-מ-מ' },
+  { char: 'בֵּן', transliteration: 'Ben', vuk: 'ben', translation: 'Sin', english: 'Son', emoji: '👦', root: 'ב-נ-ה' },
+  { char: 'בַּת', transliteration: 'Bat', vuk: 'bat', translation: 'Ćerka', english: 'Daughter', emoji: '👧', root: 'ב-נ-ה' },
+  { char: 'אָח', transliteration: 'Ach', vuk: 'ah', translation: 'Brat', english: 'Brother', emoji: '🧑', root: 'א-ח-ח' },
+  { char: 'אָחוֹת', transliteration: 'Achot', vuk: 'ahot', translation: 'Sestra / Medicinska sestra', english: 'Sister / Nurse', emoji: '👩', root: 'א-ח-ח' },
+  { char: 'חֲבֵרָה', transliteration: 'Chavera', vuk: 'havera', translation: 'Prijateljica / Kompanija', english: 'Friend (f) / Company', emoji: '🤝', root: 'ח-ב-ר' },
+  { char: 'אֶרֶץ', transliteration: 'Eretz', vuk: 'erec', translation: 'Zemlja / Država', english: 'Land / Country', emoji: '🗺️', root: 'א-ר-צ' },
+  { char: 'דֶּרֶךְ', transliteration: 'Derech', vuk: 'dereh', translation: 'Put / Staza / Način', english: 'Way / Road / Path', emoji: '🛤️', root: 'ד-ר-ך' },
+  { char: 'יוֹם', transliteration: 'Yom', vuk: 'jom', translation: 'Dan', english: 'Day', emoji: '☀️', root: 'י-ו-ם' },
+  { char: 'לַיְלָה', transliteration: 'Layla', vuk: 'lajla', translation: 'Noć', english: 'Night', emoji: '🌙', root: 'ל-י-ל' },
+  { char: 'בֹּקֶר', transliteration: 'Boker', vuk: 'boker', translation: 'Jutro', english: 'Morning', emoji: '🌅', root: 'ב-ק-ר' },
+  { char: 'עֶרֶב', transliteration: 'Erev', vuk: 'erev', translation: 'Veče', english: 'Evening', emoji: '🌆', root: 'ע-ר-ב' },
+  { char: 'שָׁנָה', transliteration: 'Shana', vuk: 'šana', translation: 'Godina', english: 'Year', emoji: '📆', root: 'ש-נ-ה' },
+  { char: 'חֹדֶשׁ', transliteration: 'Chodesh', vuk: 'hodeš', translation: 'Mesec (kalendarski)', english: 'Month', emoji: '🗓️', root: 'ח-ד-ש' },
+  { char: 'שָׁבוּעַ', transliteration: 'Shavua', vuk: 'šavua', translation: 'Nedelja (sedmica)', english: 'Week', emoji: '📅', root: 'ש-ב-ע' },
+  { char: 'שָׁעָה', transliteration: "Sha'a", vuk: "ša'a", translation: 'Sat / Čas', english: 'Hour', emoji: '⏰', root: 'ש-ע-ה' },
+  { char: 'מילה', transliteration: 'Mila', vuk: 'mila', translation: 'Reč', english: 'Word', emoji: '💬', root: 'מ-ל-ל' },
+  { char: 'עֲבוֹדָה', transliteration: 'Avoda', vuk: 'avoda', translation: 'Posao / Rad', english: 'Work / Job', emoji: '💼', root: 'ע-ב-ד' },
+  { char: 'סְפּוֹרְט', transliteration: 'Sport', vuk: 'sport', translation: 'Sport', english: 'Sport', emoji: '🏅', root: 'ס-פ-ר-ט' },
+  { char: 'אֹכֶל', transliteration: 'Ochel', vuk: 'ohel', translation: 'Hrana', english: 'Food', emoji: '🍽️', root: 'א-כ-ל' },
+  { char: 'שולחן', transliteration: 'Shulchan', vuk: 'šulhan', translation: 'Sto', english: 'Table', emoji: '🪵', root: 'ש-ל-ח' },
+  { char: 'כיסא', transliteration: 'Kise', vuk: 'kise', translation: 'Stolica', english: 'Chair', emoji: '🪑', root: 'כ-ס-א' },
+  { char: 'אוֹטוֹבּוּס', transliteration: 'Otobus', vuk: 'otobus', translation: 'Autobus', english: 'Bus', emoji: '🚌', root: 'א-ו-ט' },
+  { char: 'רַכֶּבֶת', transliteration: 'Rakevet', vuk: 'rakevet', translation: 'Voz', english: 'Train', emoji: '🚆', root: 'ר-כ-ב' },
+  { char: 'חֲנוּת', transliteration: 'Chanut', vuk: 'hanut', translation: 'Prodavnica', english: 'Shop / Store', emoji: '🏪', root: 'ח-נ-ה' },
+  { char: 'שׁוּק', transliteration: 'Shuk', vuk: 'šuk', translation: 'Pijaca / Tržište', english: 'Market', emoji: '🧺', root: 'ש-ו-ק' },
+  { char: 'הָיָה', transliteration: 'Haya', vuk: 'haja', translation: 'Bio je / Postojati', english: 'Was / To exist', emoji: '🌱', root: 'ה-י-ה' },
+  { char: 'אָמַר', transliteration: 'Amar', vuk: 'amar', translation: 'Reći / Kazati', english: 'To say / Tell', emoji: '🗣️', root: 'א-מ-ר' },
+  { char: 'עָשָׂה', transliteration: 'Asa', vuk: 'asa', translation: 'Raditi / Praviti', english: 'To do / Make', emoji: '🛠️', root: 'ע-ש-ה' },
+  { char: 'בָּא', transliteration: 'Ba', vuk: 'ba', translation: 'Doći / Dolazi', english: 'To come / Arrive', emoji: '🚶', root: 'ב-ו-א' },
+  { char: 'הָלַךְ', transliteration: 'Halach', vuk: 'halah', translation: 'Ići / Hodati', english: 'To go / Walk', emoji: '🚶‍♂️', root: 'ה-ל-ך' },
+  { char: 'נָתַן', transliteration: 'Natan', vuk: 'natan', translation: 'Dati / Pokloniti', english: 'To give / Allow', emoji: '🎁', root: 'נ-ת-ן' },
+  { char: 'רָאָה', transliteration: "Ra'a", vuk: "ra'a", translation: 'Videti / Gledati', english: 'To see / Watch', emoji: '👁️', root: 'ר-א-ה' },
+  { char: 'יָדַע', transliteration: 'Yada', vuk: 'jada', translation: 'Znati / Poznavati', english: 'To know (a fact)', emoji: '💡', root: 'י-ד-ע' },
+  { char: 'רָצָה', transliteration: 'Ratza', vuk: 'raca', translation: 'Želeti / Hteti', english: 'To want', emoji: '💭', root: 'ר-צ-ה' },
+  { char: 'יָכוֹל', transliteration: 'Yachol', vuk: 'jahol', translation: 'Moći / Biti sposoban', english: 'To be able / Can', emoji: '💪', root: 'י-כ-ל' },
+  { char: 'לָקַח', transliteration: 'Lakach', vuk: 'lakah', translation: 'Uzeti / Dobiti', english: 'To take / Get', emoji: '🤲', root: 'ל-ק-ח' },
+  { char: 'יָשַׁב', transliteration: 'Yashav', vuk: 'jašav', translation: 'Sedeti / Boraviti', english: 'To sit / Reside', emoji: '🪑', root: 'י-ש-ב' },
+  { char: 'עָמַד', transliteration: 'Amad', vuk: 'amad', translation: 'Stajati / Zaustaviti se', english: 'To stand / Stop', emoji: '🧍', root: 'ע-מ-ד' },
+  { char: 'שָׁמַע', transliteration: 'Shama', vuk: 'šama', translation: 'Čuti / Slušati', english: 'To hear / Listen', emoji: '👂', root: 'ש-מ-ע' },
+  { char: 'דִּבֵּר', transliteration: 'Diber', vuk: 'diber', translation: 'Govoriti / Pričati', english: 'To speak / Talk', emoji: '💬', root: 'ד-ב-ר' },
+  { char: 'חָזַר', transliteration: 'Chazar', vuk: 'hazar', translation: 'Vratiti se / Ponoviti', english: 'To return / Repeat', emoji: '🔄', root: 'ח-ז-ר' },
+  { char: 'שָׁאַל', transliteration: "Sha'al", vuk: "ša'al", translation: 'Pitati / Pozajmiti', english: 'To ask / Borrow', emoji: '❓', root: 'ש-א-ל' },
+  { char: 'עָנָה', transliteration: 'Ana', vuk: 'ana', translation: 'Odgovoriti', english: 'To answer / Reply', emoji: '💬', root: 'ע-נ-ה' },
+  { char: 'כָּתַב', transliteration: 'Katav', vuk: 'katav', translation: 'Pisati', english: 'To write', emoji: '✍️', root: 'כ-ת-ב' },
+  { char: 'קָרָא', transliteration: 'Kara', vuk: 'kara', translation: 'Čitati / Pozvati', english: 'To read / Call', emoji: '📖', root: 'ק-ר-א' },
+  { char: 'אָכַל', transliteration: 'Achal', vuk: 'ahal', translation: 'Jesti', english: 'To eat', emoji: '🍽️', root: 'א-כ-ל' },
+  { char: 'שָׁתָה', transliteration: 'Shata', vuk: 'šata', translation: 'Piti', english: 'To drink', emoji: '🥤', root: 'ש-ת-ה' },
+  { char: 'קָנָה', transliteration: 'Kana', vuk: 'kana', translation: 'Kupiti / Steći', english: 'To buy / Acquire', emoji: '🛍️', root: 'ק-נ-ה' },
+  { char: 'מָכַר', transliteration: 'Machar', vuk: 'mahar', translation: 'Prodati', english: 'To sell', emoji: '🏷️', root: 'מ-כ-ר' },
+  { char: 'עָבַד', transliteration: 'Avad', vuk: 'avad', translation: 'Raditi / Služiti', english: 'To work / Serve', emoji: '💼', root: 'ע-ב-ד' },
+  { char: 'גָּדוֹל', transliteration: 'Gadol', vuk: 'gadol', translation: 'Velik / Veliki', english: 'Big / Large / Great', emoji: '⭐', root: 'ג-ד-ל' },
+  { char: 'קָטָן', transliteration: 'Katan', vuk: 'katan', translation: 'Mali / Malen', english: 'Small / Little', emoji: '🔹', root: 'ק-ט-ן' },
+  { char: 'טוֹב', transliteration: 'Tov', vuk: 'tov', translation: 'Dobar / Dobro', english: 'Good / Fine', emoji: '✨', root: 'ט-ו-ב' },
+  { char: 'רַע', transliteration: 'Ra', vuk: 'ra', translation: 'Loš / Zao', english: 'Bad / Evil', emoji: '🌧️', root: 'ר-ע-ע' },
+  { char: 'חָדָשׁ', transliteration: 'Chadash', vuk: 'hadaš', translation: 'Nov / Svež', english: 'New / Fresh', emoji: '🆕', root: 'ח-ד-ש' },
+  { char: 'יָשָׁן', transliteration: 'Yashan', vuk: 'jašan', translation: 'Star (stvar)', english: 'Old (not new)', emoji: '🏺', root: 'י-ש-ן' },
+  { char: 'יָפֶה', transliteration: 'Yafe', vuk: 'jafe', translation: 'Lep / Divan', english: 'Beautiful / Pretty', emoji: '🌺', root: 'י-פ-ה' },
+  { char: 'חָכָם', transliteration: 'Chacham', vuk: 'haham', translation: 'Mudar / Pametan', english: 'Smart / Wise', emoji: '🦉', root: 'ח-כ-ם' },
+  { char: 'חַם', transliteration: 'Cham', vuk: 'ham', translation: 'Vruć / Topao', english: 'Hot / Warm', emoji: '🔥', root: 'ח-מ-מ' },
+  { char: 'קַר', transliteration: 'Kar', vuk: 'kar', translation: 'Hladan', english: 'Cold', emoji: '❄️', root: 'ק-ר-ר' },
+  { char: 'רָחוֹק', transliteration: 'Rachok', vuk: 'rahok', translation: 'Dalek / Daleko', english: 'Far / Distant', emoji: '🧭', root: 'ר-ח-ק' },
+  { char: 'קָרוֹב', transliteration: 'Karov', vuk: 'karov', translation: 'Blizak / Blizu', english: 'Near / Close', emoji: '📍', root: 'ק-ר-ב' },
+  { char: 'גָּבוֹהַּ', transliteration: 'Gavoha', vuk: 'gavoha', translation: 'Visok', english: 'Tall / High', emoji: '⛰️', root: 'ג-ב-ה' },
+  { char: 'נָמוּךְ', transliteration: 'Namuch', vuk: 'namuh', translation: 'Nizak', english: 'Short / Low', emoji: '⬇️', root: 'נ-מ-ך' },
+  { char: 'אָרֹךְ', transliteration: 'Aroch', vuk: 'aroh', translation: 'Dugačak', english: 'Long', emoji: '📏', root: 'א-ר-ך' },
+  { char: 'קָצָר', transliteration: 'Katzar', vuk: 'kacar', translation: 'Kratak', english: 'Short (length)', emoji: '✂️', root: 'ק-צ-ר' },
+  { char: 'קָשֶׁה', transliteration: 'Kashe', vuk: 'kaše', translation: 'Težak / Tvrd', english: 'Hard / Difficult', emoji: '🪨', root: 'ק-ש-ה' },
+  { char: 'קַל', transliteration: 'Kal', vuk: 'kal', translation: 'Lak / Lagan', english: 'Easy / Light', emoji: '🪶', root: 'ק-ל-ל' },
+  { char: 'מְעַנְיֵן', transliteration: "Me'anyen", vuk: "me'anjen", translation: 'Interesantan / Zanimljiv', english: 'Interesting', emoji: '💡', root: 'ע-נ-י-ן' },
+  { char: 'חָשׁוּב', transliteration: 'Chashuv', vuk: 'hašuv', translation: 'Važan / Bitan', english: 'Important', emoji: '⭐', root: 'ח-ש-ב' },
+  { char: 'שָׂמֵחַ', transliteration: "Same'ach", vuk: "same'ah", translation: 'Radosan / Srećan', english: 'Happy / Joyful', emoji: '😄', root: 'ש-מ-ח' },
+  { char: 'עָצוּב', transliteration: 'Atsuv', vuk: 'acuv', translation: 'Tužan', english: 'Sad', emoji: '😔', root: 'ע-צ-ב' },
+  { char: 'עָיֵף', transliteration: 'Ayef', vuk: 'ajef', translation: 'Umoran', english: 'Tired', emoji: '🥱', root: 'ע-י-ף' },
+  { char: 'רָעֵב', transliteration: "Ra'ev", vuk: "ra'ev", translation: 'Gladan', english: 'Hungry', emoji: '🍽️', root: 'ר-ע-ב' },
+  { char: 'צָמֵא', transliteration: 'Tzame', vuk: 'came', translation: 'Žedan', english: 'Thirsty', emoji: '💧', root: 'צ-מ-א' },
   { char: 'לֶחֶם', transliteration: 'Lechem', vuk: 'lehem', translation: 'Hleb', english: 'Bread', emoji: '🍞', root: 'ל-ח-ם' },
   { char: 'מַיִם', transliteration: 'Mayim', vuk: 'majim', translation: 'Voda', english: 'Water', emoji: '💧', root: 'מ-י-ם' },
   { char: 'תֵּה', transliteration: 'Teh', vuk: 'teh', translation: 'Čaj', english: 'Tea', emoji: '🍵', root: 'ת-ה-ה' },
@@ -388,9 +403,17 @@ const highUtilityBase: Array<{ char: string; transliteration: string; vuk: strin
   { char: 'לֵב חָכָם', transliteration: 'Lev Chacham', vuk: 'lev haham', translation: 'Mudro srce', english: 'Wise heart', emoji: '🦉', root: 'ח-כ-ם' }
 ];
 
-// Add unique items from high utility base without duplicates
+// Add unique items from 255-word frequent expansion first (richly categorized & vocalized)
 const existingHebrewChars = new Set(HEBREW_VOCAB_EXPANDED.map(v => v.char.replace(/[\u0591-\u05C7]/g, "").trim()));
 let nextHebrewId = HEBREW_VOCAB_EXPANDED.length + 1;
+
+for (const expItem of HEBREW_FREQUENT_EXPANSION) {
+  const normExp = expItem.char.replace(/[\u0591-\u05C7]/g, "").trim();
+  if (!existingHebrewChars.has(normExp)) {
+    existingHebrewChars.add(normExp);
+    HEBREW_VOCAB_EXPANDED.push(expItem);
+  }
+}
 
 for (const base of highUtilityBase) {
   const normBase = base.char.replace(/[\u0591-\u05C7]/g, "").trim();
@@ -405,7 +428,7 @@ for (const base of highUtilityBase) {
       english: base.english,
       emoji: base.emoji,
       category: 'svakodnevno',
-      categoryLabel: 'SVAKODNEVNO',
+      categoryLabel: 'Svakodnevno',
       root: base.root,
       visualTip: ''
     });
@@ -463,23 +486,39 @@ export const HEBREW_WISE_QUOTES: Record<string, { quote: string; translation: st
   'שַׁלְוָה': { quote: "יְהִי שָׁלוֹם בְּחֵילֵךְ, שַׁלְוָה בְּאַרְמְנוֹתָיִךְ.", translation: "May there be peace within your ramparts, and tranquility in your halls. (Psalms 122:7)" },
 };
 
-export function getHebrewQuoteForItem(item: HebrewVocabItem): { quote: string; translation: string } {
+export function getHebrewQuoteForItem(item: HebrewVocabItem): HebrewQuoteResult {
+  // 1. Check 130+ rich Jewish proverbs, Talmudic maxims & Israeli idioms (smart keyword/root/theme match)
+  const matchedProverb = findHebrewProverbForWord(item.char, item.root, item.category);
+  if (matchedProverb) {
+    return {
+      quote: matchedProverb.hebrew,
+      translation: matchedProverb.serbian,
+      serbian: matchedProverb.serbian,
+      english: matchedProverb.english,
+      transliteration: matchedProverb.transliteration,
+      vuk: matchedProverb.vuk,
+      source: matchedProverb.source,
+      type: matchedProverb.type,
+      literalNote: matchedProverb.literalNote
+    };
+  }
   if (HEBREW_WISE_QUOTES[item.char]) {
-    return HEBREW_WISE_QUOTES[item.char];
+    return {
+      quote: HEBREW_WISE_QUOTES[item.char].quote,
+      translation: HEBREW_WISE_QUOTES[item.char].translation,
+      english: HEBREW_WISE_QUOTES[item.char].translation
+    };
   }
-  const defaultQuotes = [
-    { quote: `${item.char} — דַּע אֶת עַצְמְךָ וֶהֱיֵה יָשָׁר.`, translation: 'Know yourself and walk with unyielding integrity.' },
-    { quote: `${item.char} — אֵיזֶהוּ חָכָם? הַלּוֹמֵד מִכָּל אָדָם.`, translation: 'Who is wise? He who learns from every person.' },
-    { quote: `${item.char} — בַּקֵּשׁ שָׁלוֹם וְרָדְפֵהוּ.`, translation: 'Seek peace and pursue it eagerly.' },
-    { quote: `${item.char} — סוֹף מַעֲשֶׂה בְּמַחֲשָׁבָה תְּחִלָּה.`, translation: 'The end result of action begins in thoughtful intention.' },
-    { quote: `${item.char} — אֵיזֶהוּ גִבּוֹר? הַכּוֹבֵשׁ אֶת יִצְרוֹ.`, translation: 'Who is mighty? He who subdues his own impulses.' }
-  ];
-  let hash = 0;
-  for (let i = 0; i < item.char.length; i++) {
-    hash = (hash << 5) - hash + item.char.charCodeAt(i);
-  }
-  const idx = Math.abs(hash) % defaultQuotes.length;
-  return defaultQuotes[idx];
+  return {
+    quote: 'אֵיזֶהוּ חָכָם? הַלּוֹמֵד מִכָּל אָדָם.',
+    translation: 'Ko je mudar? Onaj ko uči od svakog čoveka.',
+    serbian: 'Ko je mudar? Onaj ko uči od svakog čoveka.',
+    english: 'Who is wise? One who learns from every person.',
+    transliteration: 'Eizehu chacham? Halomed mikol adam.',
+    vuk: 'ejzehu haham? halomed mikol adam.',
+    source: 'Pirkei Avot 4:1',
+    type: 'talmud'
+  };
 }
 
 // 70 Most Frequent / Essential Hebrew Words (Conversational Greetings, Polite Essentials, Core Verbs, Primary Nouns)
@@ -499,5 +538,22 @@ export const HEBREW_FREQUENT_70_IDS: string[] = [
   'h1', 'h2', 'h3', 'h4', 'h5', 'h7', 'h8', 'h10', 'h11', 'h12',
   'h14', 'h21', 'h24', 'h27', 'h91', 'h92', 'h93', 'h94', 'h95', 'h96'
 ];
+
+// 160+ High-Frequency Core Hebrew Words (for extended Izazov Znanja & Flashcards practice)
+export const HEBREW_FREQUENT_150_IDS: string[] = [
+  ...HEBREW_FREQUENT_70_IDS,
+  'hf1', 'hf2', 'hf3', 'hf4', 'hf5', 'hf6', 'hf7', 'hf8', 'hf9', 'hf10',
+  'hf11', 'hf12', 'hf13', 'hf14', 'hf15', 'hf16', 'hf17', 'hf18', 'hf19', 'hf20',
+  'hf21', 'hf22', 'hf23', 'hf24', 'hf25', 'hf26', 'hf27', 'hf28', 'hf29', 'hf31',
+  'hf32', 'hf41', 'hf42', 'hf43', 'hf44', 'hf45', 'hf46', 'hf47', 'hf48', 'hf50',
+  'hf51', 'hf53', 'hf54', 'hf56', 'hf57', 'hf58', 'hf59', 'hf60', 'hf61', 'hf62',
+  'hf63', 'hf64', 'hf65', 'hf66', 'hf69', 'hf70', 'hf71', 'hf72', 'hf73', 'hf74',
+  'hf81', 'hf82', 'hf84', 'hf87', 'hf90', 'hf99', 'hf100', 'hf104', 'hf105', 'hf108',
+  'hf111', 'hf113', 'hf114', 'hf118', 'hf119', 'hf126', 'hf127', 'hf131', 'hf134', 'hf138',
+  'hf140', 'hf144', 'hf145', 'hf149', 'hf151', 'hf152', 'hf157', 'hf159', 'hf163', 'hf170',
+  'hf171', 'hf172', 'hf173', 'hf174', 'hf175', 'hf176', 'hf179', 'hf185', 'hf186', 'hf190',
+  'hf193', 'hf195', 'hf205', 'hf212', 'hf216', 'hf224', 'hf231', 'hf234', 'hf236', 'hf239'
+];
+
 
 

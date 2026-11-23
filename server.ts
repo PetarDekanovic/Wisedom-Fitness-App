@@ -15,6 +15,13 @@ import { getFirestore as getClientFirestore, collection, getDocs, doc, setDoc, a
 import { FALLBACK_QUOTES, FALLBACK_NEWS } from "./src/fallbackQuotes";
 import { buildLinguisticChineseTranslation } from "./src/lib/chineseTranslatorEngine";
 import { queryCcCedict, getDictionarySourcesEvaluation } from "./src/lib/chineseDictionaryService";
+import {
+  queryOnlineHebrewDictionary,
+  getHebrewDictionarySourcesEvaluation,
+  lookupSefariaHebrewWord,
+  hebrewToTransliteration,
+  stripHebrewNikud
+} from "./src/lib/hebrewDictionaryService";
 import { Resvg } from "@resvg/resvg-js";
 
 dotenv.config();
@@ -1667,6 +1674,217 @@ Strictly return valid JSON:
             pinyin: 'Zhě, xué wú zhǐ jìng.',
             translation: 'Učenje je beskrajno putovanje mudrosti.',
             author: 'Kineska mudrost'
+          }
+        }
+      });
+    }
+  });
+
+  // --- HEBREW ONLINE DICTIONARY (SEFARIA LEXICON + WIKTIONARY + AI ENRICHMENT) ---
+  app.get("/api/dictionary/hebrew/sources", (req, res) => {
+    try {
+      const evaluation = getHebrewDictionarySourcesEvaluation();
+      res.json({ success: true, ...evaluation });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.get("/api/dictionary/hebrew/lookup", async (req, res) => {
+    try {
+      const queryStr = String(req.query.q || "").trim();
+      const limit = Math.min(Number(req.query.limit) || 20, 40);
+
+      if (!queryStr) {
+        return res.json({ success: true, count: 0, data: [], query: "" });
+      }
+
+      let { results, usedSources } = await queryOnlineHebrewDictionary(queryStr, limit);
+
+      // If no direct Sefaria/Wiktionary/local match (e.g., Serbian word or nuanced modern expression),
+      // use Gemini AI to resolve 1-3 accurate vocalized Hebrew dictionary entries and verify with Sefaria!
+      if (results.length === 0) {
+        try {
+          const aiPrompt = `You are a master Modern & Classical Hebrew lexicographer fluent in Hebrew (with Nikud), English, and Serbian/Croatian.
+The user searched the Hebrew online dictionary for: "${queryStr}"
+
+Return 1 to 3 most frequent, authentic Modern/Classical Hebrew words or short expressions matching this query.
+For each entry provide:
+- "char": Vocalized Hebrew with accurate Nikud (e.g. "חֹפֶשׁ" or "לֶאֱהוֹב")
+- "transliteration": Clean Latin transliteration (e.g. "Chofesh")
+- "vuk": Natural Serbian/Croatian phonetic Vuk spelling (e.g. "hofeš")
+- "serbian": Natural Serbian/Croatian meaning (1-4 words)
+- "english": Accurate English definitions (semicolon-separated)
+- "root": 3-letter Hebrew Shoresh root if applicable (e.g. "ח-פ-ש") or ""
+- "morphology": "imenica" | "glagol" | "pridev" | "izraz" | "prilog"
+- "category": one of "svakodnevno" | "glagoli" | "mudrost" | "hrana" | "priroda" | "zdravlje" | "emocije" | "posao_tehnologija" | "vreme_brojevi" | "misaoni"
+- "emoji": 1 fitting emoji
+
+Return ONLY valid JSON:
+{ "entries": [ { "char": "...", "transliteration": "...", "vuk": "...", "serbian": "...", "english": "...", "root": "...", "morphology": "...", "category": "...", "emoji": "..." } ] }`;
+
+          const aiResult = await generateWithFallback(aiPrompt, {
+            temperature: 0.2,
+            responseMimeType: "application/json",
+            maxOutputTokens: 1024
+          });
+          let cleaned = aiResult.text().replace(/^```json/i, "").replace(/^```/i, "").replace(/```$/i, "").trim();
+          const match = cleaned.match(/\{[\s\S]*\}/);
+          if (match) cleaned = match[0];
+          const parsed = JSON.parse(cleaned);
+          const aiEntries = Array.isArray(parsed?.entries) ? parsed.entries : [];
+
+          const validCategories = new Set([
+            "mudrost", "svakodnevno", "priroda", "glagoli", "misaoni",
+            "zdravlje", "posao_tehnologija", "hrana", "vreme_brojevi", "emocije"
+          ]);
+
+          const hydrated = await Promise.all(
+            aiEntries.slice(0, 3).map(async (item: any, idx: number) => {
+              const hebChar = String(item.char || "").trim();
+              if (!hebChar) return null;
+              const clean = stripHebrewNikud(hebChar);
+              // Try enriching with Sefaria Lexicon definitions if available
+              let sefariaDef: string[] = [];
+              let sefariaRoot = item.root || "";
+              let lexiconName = "WiseFit AI Lexicon";
+              try {
+                const sefHits = await lookupSefariaHebrewWord(clean);
+                if (sefHits.length > 0) {
+                  sefariaDef = sefHits[0].englishList;
+                  if (!sefariaRoot && sefHits[0].root) sefariaRoot = sefHits[0].root;
+                  lexiconName = `${sefHits[0].lexicon} + AI`;
+                }
+              } catch {
+                // Keep AI result cleanly
+              }
+
+              const defs = sefariaDef.length > 0
+                ? sefariaDef
+                : String(item.english || "").split(/[;,]/).map((s: string) => s.trim()).filter(Boolean);
+
+              const cat = validCategories.has(item.category) ? item.category : "svakodnevno";
+
+              return {
+                id: `he-ai-${idx}-${clean}`,
+                char: hebChar,
+                charPlain: clean,
+                transliteration: item.transliteration || hebrewToTransliteration(hebChar).transliteration,
+                vuk: item.vuk || hebrewToTransliteration(hebChar).vuk,
+                english: defs.join("; ") || item.english || queryStr,
+                englishList: defs.length > 0 ? defs : [item.english || queryStr],
+                serbian: item.serbian || undefined,
+                root: sefariaRoot || undefined,
+                morphology: item.morphology || undefined,
+                lexicon: lexiconName,
+                emoji: item.emoji || "✨",
+                category: cat,
+                sourceUrl: `https://www.sefaria.org/search?q=${encodeURIComponent(clean)}`
+              };
+            })
+          );
+
+          results = hydrated.filter((x): x is NonNullable<typeof x> => x !== null) as typeof results;
+          if (results.length > 0) {
+            usedSources = [...usedSources, "WiseFit AI Lexicon"];
+          }
+        } catch (aiErr: any) {
+          console.warn("[Hebrew Dictionary AI Fallback Warning]", aiErr?.message);
+        }
+      }
+
+      res.json({
+        success: true,
+        source: "sefaria-wiktionary-hebrew",
+        usedSources,
+        totalEntriesInDb: 50000,
+        count: results.length,
+        query: queryStr,
+        data: results
+      });
+    } catch (err: any) {
+      console.error("[Hebrew Online Dictionary Lookup Error]", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post("/api/dictionary/hebrew/enrich", async (req, res) => {
+    try {
+      const { char, english, transliteration, root } = req.body;
+      if (!char) {
+        return res.status(400).json({ error: "Hebrew word is required." });
+      }
+
+      const fallbackTrans = hebrewToTransliteration(String(char));
+
+      const prompt = `You are an expert bilingual linguist for Modern & Classical Hebrew (Ivrit), English, and Serbian/Croatian.
+Given this Hebrew word from an online Hebrew dictionary (Sefaria/Klein/Wiktionary):
+Hebrew: "${char}"
+Transliteration: "${transliteration || fallbackTrans.transliteration}"
+Root (Shoresh): "${root || ''}"
+English Definition: "${english || ''}"
+
+Return a JSON object with:
+1. "charWithNikud": the exact Hebrew word WITH proper Nikud vowel marks (keep original if already vocalized).
+2. "transliteration": clean Latin transliteration (e.g. "Shalom", "Ahavah").
+3. "vuk": natural Serbian/Croatian Vuk Karadžić phonetic pronunciation (e.g. "šalom", "ahava", "hohma").
+4. "serbian": accurate, natural Serbian/Croatian translation (1-4 words max).
+5. "emoji": 1 fitting emoji.
+6. "category": one of "svakodnevno" | "glagoli" | "mudrost" | "hrana" | "priroda" | "zdravlje" | "emocije" | "posao_tehnologija" | "vreme_brojevi" | "misaoni"
+7. "root": 3-letter Hebrew Shoresh root with hyphens (e.g. "ש-ל-ם") or empty string if particle.
+8. "visualTip": 1 short sentence mnemonic tip in Serbian explaining the meaning/root.
+9. "proverb": an authentic Jewish proverb, Talmudic saying, Biblical verse, or Israeli idiom related to this word:
+   - "hebrew": vocalized Hebrew proverb
+   - "serbian": Serbian translation
+   - "source": source name (e.g. "Talmud", "Pirkei Avot", "Mišlej", "Izraelski Idiom")
+
+Return strictly valid JSON:
+{
+  "charWithNikud": "...",
+  "transliteration": "...",
+  "vuk": "...",
+  "serbian": "...",
+  "emoji": "...",
+  "category": "...",
+  "root": "...",
+  "visualTip": "...",
+  "proverb": {
+    "hebrew": "...",
+    "serbian": "...",
+    "source": "..."
+  }
+}`;
+
+      const result = await generateWithFallback(prompt, {
+        temperature: 0.2,
+        responseMimeType: "application/json",
+        maxOutputTokens: 1024
+      });
+      const text = result.text();
+      let cleaned = text.replace(/^```json/i, "").replace(/^```/i, "").replace(/```$/i, "").trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) cleaned = jsonMatch[0];
+      const parsed = JSON.parse(cleaned);
+
+      res.json({ success: true, data: parsed });
+    } catch (err: any) {
+      console.warn("[Hebrew Enrich Word Warning]", err?.message);
+      const fallbackTrans = hebrewToTransliteration(String(req.body.char || ""));
+      res.json({
+        success: true,
+        data: {
+          charWithNikud: req.body.char,
+          transliteration: req.body.transliteration || fallbackTrans.transliteration,
+          vuk: fallbackTrans.vuk,
+          serbian: req.body.english ? String(req.body.english).split(/[;,]/)[0].trim() : "Hebrejska reč",
+          emoji: "✡️",
+          category: "svakodnevno",
+          root: req.body.root || "",
+          visualTip: `Hebrejska reč "${req.body.char}" dodata iz Sefaria/Klein online rečnika.`,
+          proverb: {
+            hebrew: "אֵיזֶהוּ חָכָם? הַלּוֹמֵד מִכָּל אָדָם.",
+            serbian: "Ko je mudar? Onaj ko uči od svakog čoveka.",
+            source: "Pirkei Avot 4:1"
           }
         }
       });

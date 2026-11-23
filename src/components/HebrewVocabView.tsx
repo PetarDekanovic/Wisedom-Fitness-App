@@ -42,8 +42,10 @@ import { cn } from '../lib/utils';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { HEBREW_VOCAB_EXPANDED, HebrewVocabItem, getHebrewQuoteForItem, HEBREW_FREQUENT_70_IDS } from '../data/hebrewVocabData';
-import { HebrewFlashcardsGame } from './HebrewFlashcardsGame';
+import { HEBREW_VOCAB_EXPANDED, HebrewVocabItem, getHebrewQuoteForItem, HEBREW_FREQUENT_70_IDS, HEBREW_FREQUENT_150_IDS } from '../data/hebrewVocabData';
+import { HEBREW_PROVERBS_AND_IDIOMS, stripNikud, type HebrewProverbType } from '../data/hebrewProverbsAndIdioms';
+import { HebrewFlashcardsGame, type GameMode } from './HebrewFlashcardsGame';
+import { HebrewDictExplorerModal } from './HebrewDictExplorerModal';
 
 export type { HebrewVocabItem };
 
@@ -850,11 +852,159 @@ export interface HebrewVocabViewProps {
   user: User | null;
 }
 
+const HEBREW_CATEGORY_PALETTE: Record<string, {
+  hebrewDark: string;
+  hebrewLight: string;
+  badgeDark: string;
+  badgeLight: string;
+  borderHoverDark: string;
+  borderHoverLight: string;
+  glowDark: string;
+}> = {
+  mudrost: {
+    hebrewDark: 'text-amber-300',
+    hebrewLight: 'text-amber-700',
+    badgeDark: 'bg-amber-500/15 text-amber-300 border-amber-500/35',
+    badgeLight: 'bg-amber-100 text-amber-800 border-amber-300',
+    borderHoverDark: 'hover:border-amber-500/60',
+    borderHoverLight: 'hover:border-amber-400',
+    glowDark: 'from-amber-950/20 via-zinc-900/95 to-zinc-950'
+  },
+  svakodnevno: {
+    hebrewDark: 'text-sky-300',
+    hebrewLight: 'text-sky-700',
+    badgeDark: 'bg-sky-500/15 text-sky-300 border-sky-500/35',
+    badgeLight: 'bg-sky-100 text-sky-800 border-sky-300',
+    borderHoverDark: 'hover:border-sky-500/60',
+    borderHoverLight: 'hover:border-sky-400',
+    glowDark: 'from-sky-950/20 via-zinc-900/95 to-zinc-950'
+  },
+  glagoli: {
+    hebrewDark: 'text-violet-300',
+    hebrewLight: 'text-violet-700',
+    badgeDark: 'bg-violet-500/15 text-violet-300 border-violet-500/35',
+    badgeLight: 'bg-violet-100 text-violet-800 border-violet-300',
+    borderHoverDark: 'hover:border-violet-500/60',
+    borderHoverLight: 'hover:border-violet-400',
+    glowDark: 'from-violet-950/20 via-zinc-900/95 to-zinc-950'
+  },
+  hrana: {
+    hebrewDark: 'text-orange-300',
+    hebrewLight: 'text-orange-700',
+    badgeDark: 'bg-orange-500/15 text-orange-300 border-orange-500/35',
+    badgeLight: 'bg-orange-100 text-orange-800 border-orange-300',
+    borderHoverDark: 'hover:border-orange-500/60',
+    borderHoverLight: 'hover:border-orange-400',
+    glowDark: 'from-orange-950/20 via-zinc-900/95 to-zinc-950'
+  },
+  priroda: {
+    hebrewDark: 'text-emerald-300',
+    hebrewLight: 'text-emerald-700',
+    badgeDark: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35',
+    badgeLight: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    borderHoverDark: 'hover:border-emerald-500/60',
+    borderHoverLight: 'hover:border-emerald-400',
+    glowDark: 'from-emerald-950/20 via-zinc-900/95 to-zinc-950'
+  },
+  zdravlje: {
+    hebrewDark: 'text-teal-300',
+    hebrewLight: 'text-teal-700',
+    badgeDark: 'bg-teal-500/15 text-teal-300 border-teal-500/35',
+    badgeLight: 'bg-teal-100 text-teal-800 border-teal-300',
+    borderHoverDark: 'hover:border-teal-500/60',
+    borderHoverLight: 'hover:border-teal-400',
+    glowDark: 'from-teal-950/20 via-zinc-900/95 to-zinc-950'
+  },
+  emocije: {
+    hebrewDark: 'text-rose-300',
+    hebrewLight: 'text-rose-700',
+    badgeDark: 'bg-rose-500/15 text-rose-300 border-rose-500/35',
+    badgeLight: 'bg-rose-100 text-rose-800 border-rose-300',
+    borderHoverDark: 'hover:border-rose-500/60',
+    borderHoverLight: 'hover:border-rose-400',
+    glowDark: 'from-rose-950/20 via-zinc-900/95 to-zinc-950'
+  },
+  posao_tehnologija: {
+    hebrewDark: 'text-cyan-300',
+    hebrewLight: 'text-cyan-700',
+    badgeDark: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/35',
+    badgeLight: 'bg-cyan-100 text-cyan-800 border-cyan-300',
+    borderHoverDark: 'hover:border-cyan-500/60',
+    borderHoverLight: 'hover:border-cyan-400',
+    glowDark: 'from-cyan-950/20 via-zinc-900/95 to-zinc-950'
+  },
+  vreme_brojevi: {
+    hebrewDark: 'text-fuchsia-300',
+    hebrewLight: 'text-fuchsia-700',
+    badgeDark: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/35',
+    badgeLight: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300',
+    borderHoverDark: 'hover:border-fuchsia-500/60',
+    borderHoverLight: 'hover:border-fuchsia-400',
+    glowDark: 'from-fuchsia-950/20 via-zinc-900/95 to-zinc-950'
+  },
+  misaoni: {
+    hebrewDark: 'text-yellow-300',
+    hebrewLight: 'text-yellow-700',
+    badgeDark: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/35',
+    badgeLight: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+    borderHoverDark: 'hover:border-yellow-500/60',
+    borderHoverLight: 'hover:border-yellow-400',
+    glowDark: 'from-yellow-950/20 via-zinc-900/95 to-zinc-950'
+  }
+};
+
+function getHebrewCatPalette(category: string) {
+  return HEBREW_CATEGORY_PALETTE[category] || HEBREW_CATEGORY_PALETTE.svakodnevno;
+}
+
+const PROVERB_TYPE_STYLES: Record<HebrewProverbType, { label: string; emoji: string; dark: string; light: string }> = {
+  talmud: { label: 'Talmud & Pirkei Avot', emoji: '📜', dark: 'bg-amber-500/15 text-amber-300 border-amber-500/35', light: 'bg-amber-100 text-amber-800 border-amber-300' },
+  biblical: { label: 'Biblijska Mudrost', emoji: '📖', dark: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/35', light: 'bg-indigo-100 text-indigo-800 border-indigo-300' },
+  idiom: { label: 'Izraelski Idiom (Niv)', emoji: '🗣️', dark: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/35', light: 'bg-cyan-100 text-cyan-800 border-cyan-300' },
+  hasidic: { label: 'Hasidska Mudrost', emoji: '🕯️', dark: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/35', light: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300' },
+  proverb: { label: 'Jevrejska Poslovica', emoji: '✨', dark: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35', light: 'bg-emerald-100 text-emerald-800 border-emerald-300' }
+};
+
+function renderHighlightedHebrewProverb(proverbText: string, targetHebrew: string, isDark: boolean) {
+  const cleanTarget = stripNikud(targetHebrew).trim();
+  if (!cleanTarget || cleanTarget.length < 2) return proverbText;
+
+  const tokens = proverbText.split(/(\s+)/);
+  return tokens.map((token, idx) => {
+    const cleanToken = stripNikud(token).replace(/[^\u05D0-\u05EA]/g, '');
+    if (cleanToken.length >= 2 && (cleanToken === cleanTarget || cleanToken.includes(cleanTarget) || (cleanTarget.length >= 3 && cleanTarget.includes(cleanToken)))) {
+      return (
+        <span
+          key={idx}
+          className={cn(
+            'px-1 py-0.5 rounded-md font-black underline decoration-2 underline-offset-2',
+            isDark ? 'bg-amber-400/20 text-amber-200 decoration-amber-400' : 'bg-amber-200/80 text-amber-950 decoration-amber-600'
+          )}
+        >
+          {token}
+        </span>
+      );
+    }
+    return <React.Fragment key={idx}>{token}</React.Fragment>;
+  });
+}
+
 export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, isGirlyMode, user }) => {
-  // Navigation: Dictionary, Emoji Canvas, AI Weaver, Quiz, Flashcards or Alphabet
-  const [activeTab, setActiveTab] = useState<'learn' | 'canvas' | 'weaver' | 'quiz' | 'flashcards' | 'alphabet'>('learn');
+  // Navigation: Dictionary, Proverbs & Idioms, Emoji Canvas, AI Weaver, Quiz, Flashcards or Alphabet
+  const [activeTab, setActiveTab] = useState<'learn' | 'proverbs' | 'canvas' | 'weaver' | 'quiz' | 'flashcards' | 'alphabet'>('learn');
+  const [flashcardsInitialMode, setFlashcardsInitialMode] = useState<GameMode>('cards');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Online Hebrew Dictionary Explorer Modal State (Sefaria + Wiktionary + AI)
+  const [isDictExplorerOpen, setIsDictExplorerOpen] = useState(false);
+  const [dictExplorerInitialQuery, setDictExplorerInitialQuery] = useState('');
+  const [heDictToast, setHeDictToast] = useState<string | null>(null);
+
+  // Proverbs & Idioms Tab State
+  const [proverbFilter, setProverbFilter] = useState<'all' | HebrewProverbType>('all');
+  const [proverbSearch, setProverbSearch] = useState('');
+  const [copiedProverbId, setCopiedProverbId] = useState<string | null>(null);
   
   // Hebrew Alphabet View State
   const [alphabetFilter, setAlphabetFilter] = useState<'all' | 'standard' | 'sofit'>('all');
@@ -1500,7 +1650,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     const seen = new Set<string>();
     const list: HebrewVocabItem[] = [];
     for (const item of [...savedCustomWords, ...HEBREW_VOCAB_DATA]) {
-      const k = item.char.trim();
+      const k = stripNikud(item.char.trim());
       if (!seen.has(k)) {
         seen.add(k);
         list.push(item);
@@ -1509,12 +1659,43 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
     return list;
   }, [savedCustomWords]);
 
+  const existingHebrewCharsSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const item of fullVocabList) {
+      s.add(item.char.trim());
+      s.add(stripNikud(item.char.trim()));
+    }
+    return s;
+  }, [fullVocabList]);
+
+  const handleWordAddedFromOnlineDict = (newWord: HebrewVocabItem) => {
+    const cleanNew = stripNikud(newWord.char.trim());
+    const alreadyExists = savedCustomWords.some(w => stripNikud(w.char.trim()) === cleanNew);
+    if (!alreadyExists) {
+      const updated = [newWord, ...savedCustomWords];
+      setSavedCustomWords(updated);
+      try {
+        localStorage.setItem('wisefit_hebrew_custom_words', JSON.stringify(updated));
+      } catch {}
+    }
+    setHeDictToast(`✅ Dodato u Hebrejski Rečnik: ${newWord.char} — "${newWord.translation}"`);
+    setTimeout(() => setHeDictToast(null), 3500);
+  };
+
   const filteredVocab = useMemo(() => {
+    const freq70Set = new Set(HEBREW_FREQUENT_70_IDS);
+    const freq150Set = new Set(HEBREW_FREQUENT_150_IDS);
     return fullVocabList.filter(item => {
-      const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = searchQuery === '' || 
+      const matchesCategory =
+        selectedCategory === 'all' ||
+        (selectedCategory === 'frequent_70' && freq70Set.has(item.id)) ||
+        (selectedCategory === 'frequent_150' && freq150Set.has(item.id)) ||
+        item.category === selectedCategory;
+      const q = searchQuery.toLowerCase().trim();
+      const qClean = stripNikud(q);
+      const matchesSearch = q === '' ||
         item.char.toLowerCase().includes(q) ||
+        stripNikud(item.char).includes(qClean) ||
         item.transliteration.toLowerCase().includes(q) ||
         item.vuk.toLowerCase().includes(q) ||
         item.translation.toLowerCase().includes(q) ||
@@ -1523,6 +1704,24 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       return matchesCategory && matchesSearch;
     });
   }, [fullVocabList, selectedCategory, searchQuery]);
+
+  const filteredProverbs = useMemo(() => {
+    const q = proverbSearch.toLowerCase().trim();
+    const qClean = stripNikud(q);
+    return HEBREW_PROVERBS_AND_IDIOMS.filter(p => {
+      const matchesType = proverbFilter === 'all' || p.type === proverbFilter;
+      const matchesQuery = !q ||
+        p.hebrew.includes(q) ||
+        stripNikud(p.hebrew).includes(qClean) ||
+        p.transliteration.toLowerCase().includes(q) ||
+        p.vuk.toLowerCase().includes(q) ||
+        p.serbian.toLowerCase().includes(q) ||
+        p.english.toLowerCase().includes(q) ||
+        p.source.toLowerCase().includes(q) ||
+        (p.literalNote && p.literalNote.toLowerCase().includes(q));
+      return matchesType && matchesQuery;
+    });
+  }, [proverbFilter, proverbSearch]);
 
   const toggleMastered = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -1735,11 +1934,14 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6 border-zinc-200/80 dark:border-zinc-800">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-500 border border-blue-500/20">
-              🇮🇱 125 Odabranih Reči i Korena
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30">
+              🇮🇱 {fullVocabList.length} Reči + Sefaria 50k+
             </span>
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+              📜 {HEBREW_PROVERBS_AND_IDIOMS.length} Poslovica & Idioma
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
               Vuk Transliteracija
             </span>
           </div>
@@ -1750,7 +1952,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
             Hebrejska Riznica & Koreni (עִבְרִית)
           </h2>
           <p className="text-xs md:text-sm font-medium text-zinc-400 mt-1">
-            Učite visokonaponske imenice, glagole i stoik mudrosti uz vizuelne emodžije i fonetsku Vuk Karadžić transliteraciju.
+            {fullVocabList.length} čestih reči sa vokalima, Sefaria/Klein online rečnik, {HEBREW_PROVERBS_AND_IDIOMS.length} jevrejskih poslovica i Izazov Znanja.
           </p>
         </div>
 
@@ -1765,11 +1967,50 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
               className={cn(
                 "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
                 activeTab === 'learn'
-                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-blue-600 text-white"
+                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-blue-600 text-white shadow-md shadow-blue-600/20"
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
               <BookOpen className="w-3.5 h-3.5 shrink-0" /> Rečnik
+            </button>
+            <button
+              onClick={() => setActiveTab('proverbs')}
+              className={cn(
+                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
+                activeTab === 'proverbs'
+                  ? isGirlyMode ? "bg-pink-500 text-white" : "bg-amber-600 text-white shadow-md shadow-amber-600/25"
+                  : isDarkMode ? "text-amber-300/90 hover:text-amber-200" : "text-amber-700 hover:text-amber-900"
+              )}
+            >
+              <span>📜</span> Poslovice ({HEBREW_PROVERBS_AND_IDIOMS.length})
+            </button>
+            <button
+              onClick={() => {
+                setFlashcardsInitialMode('speed');
+                setActiveTab('flashcards');
+              }}
+              className={cn(
+                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
+                activeTab === 'flashcards' && flashcardsInitialMode === 'speed'
+                  ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-600/25"
+                  : isDarkMode ? "text-amber-400 hover:text-amber-200" : "text-amber-700"
+              )}
+            >
+              <Zap className="w-3.5 h-3.5 shrink-0" /> Izazov Znanja
+            </button>
+            <button
+              onClick={() => {
+                setFlashcardsInitialMode('cards');
+                setActiveTab('flashcards');
+              }}
+              className={cn(
+                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
+                activeTab === 'flashcards' && flashcardsInitialMode !== 'speed'
+                  ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" /> Flashcards 🎴
             </button>
             <button
               onClick={() => setActiveTab('canvas')}
@@ -1791,7 +2032,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
               )}
             >
-              <Bot className="w-3.5 h-3.5 text-cyan-400 animate-pulse shrink-0" /> 🤖 AI Prevod & Sklop
+              <Bot className="w-3.5 h-3.5 text-cyan-400 animate-pulse shrink-0" /> 🤖 AI Prevod
             </button>
             <button
               onClick={() => { setActiveTab('quiz'); generateQuizRound(); }}
@@ -1803,17 +2044,6 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
               )}
             >
               <Gamepad2 className="w-3.5 h-3.5 shrink-0" /> Kviz
-            </button>
-            <button
-              onClick={() => setActiveTab('flashcards')}
-              className={cn(
-                "px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 grow sm:grow-0 shrink-0",
-                activeTab === 'flashcards'
-                  ? isGirlyMode ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
-                  : isDarkMode ? "text-zinc-400 hover:text-zinc-200" : "text-zinc-600"
-              )}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse shrink-0" /> Flashcards 🎴
             </button>
             <button
               onClick={() => setActiveTab('alphabet')}
@@ -1833,31 +2063,40 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
             isDarkMode ? "bg-zinc-900 border-zinc-800 text-blue-400" : "bg-blue-50 border-blue-100 text-blue-700"
           )}>
             <Trophy className="w-4 h-4 text-blue-500 fill-blue-500 animate-pulse shrink-0" />
-            <span>{masteredIds.length}/{HEBREW_VOCAB_DATA.length}</span>
+            <span>{masteredIds.length}/{fullVocabList.length}</span>
           </div>
         </div>
 
-        {/* QUICK AI TRANSLATOR FEATURE BANNER */}
+        {/* QUICK ONLINE DICTIONARY & AI TRANSLATOR BANNER */}
         <div className={cn(
-          "p-3.5 rounded-2xl border flex items-center justify-between gap-3 flex-wrap shadow-md",
-          isDarkMode ? "bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-zinc-900 border-blue-500/40" : "bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border-blue-200"
+          "p-3.5 rounded-2xl border flex items-center justify-between gap-3 flex-wrap shadow-md w-full",
+          isDarkMode ? "bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-amber-950/25 border-blue-500/40" : "bg-gradient-to-r from-blue-50 via-indigo-50 to-amber-50 border-blue-200"
         )}>
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">🤖✨</span>
+            <span className="text-xl">📖✨</span>
             <div className="text-xs">
-              <span className="font-black text-blue-400 dark:text-blue-300">Novo: AI Konfigurator & Prevodilac sa Emodžijima!</span>
+              <span className="font-black text-blue-500 dark:text-sky-300">Novo: Sefaria Online Rečnik (50.000+ reči) & {HEBREW_PROVERBS_AND_IDIOMS.length} Jevrejskih Poslovica!</span>
               <p className="text-[11px] text-zinc-400">
-                Upišite englesku rečenicu i pritisnite prevod — dobijate hebrejski sa vokalima i prigodnim emodžijima.
+                Pretražite Klein Dictionary, BDB & Wiktionary uživo i dodajte svaku reč 1 klikom u svoj rečnik i Izazov Znanja.
               </p>
             </div>
           </div>
-          <button
-            onClick={() => { setActiveTab('weaver'); setHeConfigTabMode('ai'); }}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0"
-          >
-            <Bot className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
-            <span>Otvori AI Prevodilac ⚡</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+            <button
+              onClick={() => { setDictExplorerInitialQuery(''); setIsDictExplorerOpen(true); }}
+              className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0"
+            >
+              <Globe className="w-3.5 h-3.5 shrink-0" />
+              <span>Online Rečnik (50k+)</span>
+            </button>
+            <button
+              onClick={() => { setActiveTab('weaver'); setHeConfigTabMode('ai'); }}
+              className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0"
+            >
+              <Bot className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
+              <span>AI Prevodilac ⚡</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1880,60 +2119,87 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                   <p className="text-xs text-zinc-400">{getRankInfo(masteredIds.length).desc}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right font-mono text-xs font-bold text-blue-500">
-                  Savladano {Math.round((masteredIds.length / HEBREW_VOCAB_DATA.length) * 100)}% rečnika
+              <div className="flex items-center gap-2.5 flex-wrap justify-center md:justify-end">
+                <div className="text-right font-mono text-xs font-bold text-blue-400">
+                  Savladano {fullVocabList.length > 0 ? Math.round((masteredIds.length / fullVocabList.length) * 100) : 0}% ({fullVocabList.length} reči)
                 </div>
                 <button
-                  onClick={() => setActiveTab('flashcards')}
+                  onClick={() => {
+                    setFlashcardsInitialMode('speed');
+                    setActiveTab('flashcards');
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md transition-all active:scale-95 text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500"
+                >
+                  <Zap className="w-3.5 h-3.5" /> Izazov Znanja ⚡
+                </button>
+                <button
+                  onClick={() => {
+                    setFlashcardsInitialMode('cards');
+                    setActiveTab('flashcards');
+                  }}
                   className={cn(
                     "px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md transition-all active:scale-95 text-white",
                     isGirlyMode ? "bg-pink-500 hover:bg-pink-400" : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20"
                   )}
                 >
-                  <Layers className="w-3.5 h-3.5" /> Flashcards Igra 🎴
+                  <Layers className="w-3.5 h-3.5" /> Flashcards 🎴
                 </button>
               </div>
             </div>
 
-            {/* Filter controls */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="relative w-full md:w-72">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-                <input
-                  type="text"
-                  placeholder="Pretraži reči, koren ili prevod..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={cn(
-                    "w-full pl-10 pr-4 py-2 rounded-xl text-xs font-medium border outline-none transition-all",
-                    isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-100 focus:border-blue-500" : "bg-white border-zinc-200 text-zinc-900 focus:border-blue-500"
-                  )}
-                />
+            {/* Search + Online Dictionary Button + Category Pills */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                  <input
+                    type="text"
+                    placeholder="Pretraži hebrejski (sa ili bez Nikuda), Vuk, srpski, engleski ili koren..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={cn(
+                      "w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-medium border outline-none transition-all",
+                      isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-100 focus:border-blue-500" : "bg-white border-zinc-200 text-zinc-900 focus:border-blue-500"
+                    )}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDictExplorerInitialQuery(searchQuery.trim());
+                    setIsDictExplorerOpen(true);
+                  }}
+                  className="px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg shadow-blue-600/25 flex items-center justify-center gap-1.5 shrink-0 transition-all active:scale-95"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>+ Sefaria Online Rečnik (50k+)</span>
+                </button>
               </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1">
+              <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-1 no-scrollbar">
                 {[
-                  { id: 'all', label: `Sve (${HEBREW_VOCAB_DATA.length})` },
-                  { id: 'mudrost', label: ' Mudrost' },
-                  { id: 'svakodnevno', label: ' Svakodnevno' },
-                  { id: 'glagoli', label: ' Glagoli' },
-                  { id: 'priroda', label: ' Priroda' },
-                  { id: 'zdravlje', label: ' Zdravlje' },
-                  { id: 'posao_tehnologija', label: ' Posao & Tehnologija' },
-                  { id: 'hrana', label: ' Hrana' },
-                  { id: 'vreme_brojevi', label: ' Vreme & Brojevi' },
-                  { id: 'emocije', label: ' Emocije' },
-                  { id: 'misaoni', label: ' Misaoni Stoik' }
+                  { id: 'all', label: `Sve (${fullVocabList.length})`, activeClass: 'bg-blue-600 text-white border-blue-500' },
+                  { id: 'frequent_150', label: '🔥 150 Najčešćih', activeClass: 'bg-emerald-600 text-white border-emerald-500' },
+                  { id: 'frequent_70', label: '⭐ 70 Osnovnih', activeClass: 'bg-teal-600 text-white border-teal-500' },
+                  { id: 'glagoli', label: '⚡ Glagoli', activeClass: 'bg-violet-600 text-white border-violet-500' },
+                  { id: 'mudrost', label: '📜 Mudrost', activeClass: 'bg-amber-600 text-white border-amber-500' },
+                  { id: 'svakodnevno', label: '🗣️ Svakodnevno', activeClass: 'bg-sky-600 text-white border-sky-500' },
+                  { id: 'hrana', label: '🍎 Hrana', activeClass: 'bg-orange-600 text-white border-orange-500' },
+                  { id: 'priroda', label: '🌿 Priroda', activeClass: 'bg-emerald-600 text-white border-emerald-500' },
+                  { id: 'zdravlje', label: '💚 Zdravlje', activeClass: 'bg-teal-600 text-white border-teal-500' },
+                  { id: 'emocije', label: '💖 Emocije', activeClass: 'bg-rose-600 text-white border-rose-500' },
+                  { id: 'posao_tehnologija', label: '💼 Posao & Tech', activeClass: 'bg-cyan-600 text-white border-cyan-500' },
+                  { id: 'vreme_brojevi', label: '⏳ Vreme & Brojevi', activeClass: 'bg-fuchsia-600 text-white border-fuchsia-500' },
+                  { id: 'misaoni', label: '💡 Misaoni Stoik', activeClass: 'bg-yellow-600 text-white border-yellow-500' }
                 ].map(cat => (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
                     className={cn(
-                      "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
+                      "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0",
                       selectedCategory === cat.id
-                        ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                        : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200" : "bg-white border-zinc-200 text-zinc-600"
+                        ? `${cat.activeClass} shadow-sm`
+                        : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200" : "bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900"
                     )}
                   >
                     {cat.label}
@@ -1942,11 +2208,35 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
               </div>
             </div>
 
-            {/* Grid of Cards */}
+            {/* Empty local search -> instant button to query Sefaria Online Dictionary */}
+            {filteredVocab.length === 0 && searchQuery.trim() && (
+              <div className={cn(
+                "p-8 rounded-3xl border text-center space-y-3",
+                isDarkMode ? "bg-zinc-900/70 border-zinc-800" : "bg-white border-zinc-200"
+              )}>
+                <p className="text-sm font-bold text-zinc-300">
+                  Nema lokalnog rezultata za <span className="text-amber-400">"{searchQuery}"</span> u {fullVocabList.length} reči.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDictExplorerInitialQuery(searchQuery.trim());
+                    setIsDictExplorerOpen(true);
+                  }}
+                  className="px-5 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-500 hover:to-cyan-500 shadow-lg inline-flex items-center gap-2"
+                >
+                  <Globe className="w-4 h-4" />
+                  <span>Pretraži "{searchQuery}" u Sefaria Online Rečniku (50k+)</span>
+                </button>
+              </div>
+            )}
+
+            {/* Grid of Multi-Colored Word Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
               {filteredVocab.map(item => {
                 const isMastered = masteredIds.includes(item.id);
                 const isSpeaking = isPronouncing === item.id;
+                const catPal = getHebrewCatPalette(item.category);
 
                 return (
                   <div
@@ -1955,7 +2245,9 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                       "p-5 rounded-3xl border transition-all duration-200 flex flex-col justify-between relative overflow-hidden group hover:scale-[1.01] shadow-sm",
                       isMastered 
                         ? (isDarkMode ? "bg-emerald-950/30 border-emerald-500/40" : "bg-emerald-50/90 border-emerald-200")
-                        : (isDarkMode ? "bg-zinc-900/90 border-zinc-800/90 hover:border-blue-500/50 shadow-md" : "bg-white border-zinc-200/90 hover:border-blue-300 hover:shadow-md")
+                        : (isDarkMode
+                            ? `bg-gradient-to-br ${catPal.glowDark} border-zinc-800/90 ${catPal.borderHoverDark} shadow-md`
+                            : `bg-white border-zinc-200/90 ${catPal.borderHoverLight} hover:shadow-md`)
                     )}
                   >
                     <div className="space-y-3.5">
@@ -1965,12 +2257,15 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={cn(
                               "text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md font-mono border",
-                              isDarkMode ? "bg-zinc-800/90 text-zinc-300 border-zinc-700" : "bg-zinc-100 text-zinc-700 border-zinc-200"
+                              isDarkMode ? catPal.badgeDark : catPal.badgeLight
                             )}>
                               {item.categoryLabel}
                             </span>
                             {item.root && (
-                              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 font-mono bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
+                              <span className={cn(
+                                "text-[10px] font-bold font-mono px-2 py-0.5 rounded-md border",
+                                isDarkMode ? "text-amber-300 bg-amber-500/15 border-amber-500/30" : "text-amber-800 bg-amber-100 border-amber-300"
+                              )}>
                                 Koren: {item.root}
                               </span>
                             )}
@@ -1993,18 +2288,27 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
 
                       <div className="space-y-1.5 pt-1">
                         <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                          <h3 className="text-3xl font-serif font-black text-blue-600 dark:text-blue-400 tracking-wide">
+                          <h3
+                            dir="rtl"
+                            className={cn(
+                              "text-3xl font-serif font-black tracking-wide",
+                              isDarkMode ? catPal.hebrewDark : catPal.hebrewLight
+                            )}
+                          >
                             {item.char}
                           </h3>
-                          <span className="text-xs font-mono font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
+                          <span className={cn(
+                            "text-xs font-mono font-extrabold px-2.5 py-1 rounded-lg border",
+                            isDarkMode ? "text-violet-300 bg-violet-500/15 border-violet-500/30" : "text-violet-800 bg-violet-100 border-violet-300"
+                          )}>
                             {getItemTransliteration(item)}
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between gap-1.5 font-mono text-xs pt-0.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">Vuk:</span>
-                            <span className={cn("font-black text-sm", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/30">Vuk:</span>
+                            <span className={cn("font-black text-sm", isDarkMode ? "text-emerald-200" : "text-emerald-900")}>
                               "{getItemVuk(item)}"
                             </span>
                           </div>
@@ -2021,49 +2325,88 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                       </div>
 
                       <div className="border-t pt-3 border-zinc-200 dark:border-zinc-800 space-y-1.5">
-                        <p className={cn("text-sm font-bold leading-snug", isDarkMode ? "text-zinc-100" : "text-zinc-900")}>
+                        <p className={cn("text-sm font-black leading-snug", isDarkMode ? "text-zinc-50" : "text-zinc-900")}>
                           🇭🇷 {getItemTranslation(item)}
                         </p>
-                        <p className={cn("text-xs font-medium", isDarkMode ? "text-zinc-400" : "text-zinc-600")}>
+                        <p className={cn("text-xs font-semibold", isDarkMode ? "text-cyan-300/90" : "text-cyan-800")}>
                           🇬🇧 {getItemEnglish(item)}
                         </p>
+
+                        {/* Illuminated Multi-Color Jewish Proverb / Idiom Box */}
                         {(() => {
-                          const quoteInfo = getItemQuote(item);
+                          const quoteInfo = getItemQuote(item) as any;
+                          const pType: HebrewProverbType = quoteInfo.type || 'proverb';
+                          const pStyle = PROVERB_TYPE_STYLES[pType] || PROVERB_TYPE_STYLES.proverb;
                           return (
-                            <div className="text-[11px] leading-snug bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 p-2.5 rounded-xl flex items-start justify-between gap-2 mt-2">
-                              <div className="flex items-start gap-2">
-                                <span className="text-sm shrink-0">💡</span>
-                                <div className="space-y-0.5">
-                                  <p className="font-semibold text-blue-900 dark:text-blue-200 tracking-wide font-serif" dir="rtl">
-                                    {quoteInfo.quote}
-                                  </p>
-                                  <p className="text-[10px] italic text-blue-700/90 dark:text-blue-300/80 font-sans">
-                                    "{quoteInfo.translation}"
-                                  </p>
+                            <div className={cn(
+                              "text-[11px] leading-snug border p-3 rounded-2xl space-y-1.5 mt-2.5 shadow-inner",
+                              isDarkMode
+                                ? "bg-gradient-to-br from-amber-950/30 via-indigo-950/25 to-zinc-950/80 border-amber-500/30"
+                                : "bg-gradient-to-br from-amber-50/90 via-indigo-50/60 to-white border-amber-200"
+                            )}>
+                              <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                <span className={cn(
+                                  "text-[9px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full border",
+                                  isDarkMode ? pStyle.dark : pStyle.light
+                                )}>
+                                  {pStyle.emoji} {quoteInfo.source || pStyle.label}
+                                </span>
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      speakHebrew(quoteInfo.quote, `proverb-${item.id}`);
+                                    }}
+                                    className="p-1 rounded-lg text-amber-500 dark:text-amber-300 hover:bg-amber-500/20 transition-all"
+                                    title="Slušaj izgovor poslovice"
+                                  >
+                                    <Volume2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  {isAdmin && (
+                                    <button
+                                      onClick={(e) => openEditModal(item, e)}
+                                      className="p-1 rounded-lg text-blue-600 dark:text-blue-300 hover:bg-blue-500/25 transition-all"
+                                      title="Uredi izreku i izgovor"
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const qText = `📜 ${quoteInfo.source || 'Jevrejska mudrost'}:\n${quoteInfo.quote}\n${quoteInfo.vuk ? `/${quoteInfo.vuk}/\n` : ''}„${quoteInfo.serbian || quoteInfo.translation}”\n${quoteInfo.english ? `"${quoteInfo.english}"\n` : ''}\n✨ WiseFit Sanctuary #WiseFit #HebrewProverb`;
+                                      handleCopyConfigText(qText);
+                                    }}
+                                    className="p-1 rounded-lg text-cyan-600 dark:text-cyan-300 hover:bg-cyan-500/20 transition-all"
+                                    title="Kopiraj ovu poslovicu/idiom"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </button>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                {isAdmin && (
-                                  <button
-                                    onClick={(e) => openEditModal(item, e)}
-                                    className="p-1.5 rounded-lg text-blue-700 dark:text-blue-300 hover:bg-blue-500/30 transition-all shrink-0 flex items-center gap-1"
-                                    title="Uredi izreku i izgovor"
-                                  >
-                                    <Pencil className="w-3 h-3" />
-                                  </button>
-                                )}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const qText = `📜 Izreka: ${quoteInfo.quote}\n"${quoteInfo.translation}"\n\n✨ WiseFit Sanctuary #WiseFit #HebrewQuote`;
-                                    handleCopyConfigText(qText);
-                                  }}
-                                  className="p-1.5 rounded-lg text-blue-600 dark:text-blue-300 hover:bg-blue-500/20 transition-all shrink-0 flex items-center gap-1"
-                                  title="Kopiraj ovu izreku/mudrost"
-                                >
-                                  <Copy className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
+
+                              <p
+                                className={cn("font-bold text-[13px] tracking-wide font-serif leading-relaxed", isDarkMode ? "text-amber-200" : "text-amber-950")}
+                                dir="rtl"
+                              >
+                                {renderHighlightedHebrewProverb(quoteInfo.quote, item.char, isDarkMode)}
+                              </p>
+
+                              {quoteInfo.vuk && (
+                                <p className={cn("text-[10px] font-mono font-bold", isDarkMode ? "text-emerald-400" : "text-emerald-700")}>
+                                  /{quoteInfo.vuk}/
+                                </p>
+                              )}
+
+                              <p className={cn("text-[11px] font-semibold font-sans", isDarkMode ? "text-cyan-200" : "text-blue-900")}>
+                                „{quoteInfo.serbian || quoteInfo.translation}”
+                              </p>
+
+                              {quoteInfo.english && (
+                                <p className={cn("text-[10px] italic font-sans", isDarkMode ? "text-violet-300/90" : "text-violet-700")}>
+                                  "{quoteInfo.english}"
+                                </p>
+                              )}
                             </div>
                           );
                         })()}
@@ -2080,7 +2423,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
                             : isDarkMode ? "bg-zinc-800/90 hover:bg-zinc-700 text-zinc-100 border-zinc-700" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200"
                         )}
                       >
-                        <Volume2 className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                        <Volume2 className="w-4 h-4 text-blue-500 dark:text-sky-400" />
                         <span>Izgovor</span>
                       </button>
 
@@ -2101,31 +2444,205 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
           </motion.div>
         )}
 
+        {/* JEWISH PROVERBS & IDIOMS VIEW (130+ ENTRIES) */}
+        {activeTab === 'proverbs' && (
+          <motion.div key="proverbs-view" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+            {/* Hero Banner */}
+            <div className={cn(
+              "p-6 rounded-3xl border space-y-3 shadow-lg",
+              isDarkMode
+                ? "bg-gradient-to-r from-amber-950/45 via-indigo-950/35 to-zinc-950 border-amber-500/35"
+                : "bg-gradient-to-r from-amber-50 via-indigo-50 to-white border-amber-200"
+            )}>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/35">
+                      📜 {HEBREW_PROVERBS_AND_IDIOMS.length} Autentičnih Izreka
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                      Talmud • Pirkei Avot • Mišlej • Izraelski Idiomi
+                    </span>
+                  </div>
+                  <h3 className={cn("text-2xl md:text-3xl font-serif font-black", isDarkMode ? "text-amber-200" : "text-amber-900")}>
+                    Riznica Jevrejskih Poslovica i Idioma (פִּתְגָּמִים וְנִיבִים)
+                  </h3>
+                  <p className="text-xs md:text-sm text-zinc-400 max-w-2xl">
+                    Učite hebrejski kroz milenijumsku mudrost Talmuda, biblijske poslovice kralja Solomona, hasidske pouke i žive izraelske idiome — svaka izreka u boji sa Nikudom, Vuk izgovorom i zvukom.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Search & Type Filter Pills */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400" />
+                <input
+                  type="text"
+                  placeholder="Pretraži poslovice, idiome, izvor (Talmud, Mišlej, ljubav, mir)..."
+                  value={proverbSearch}
+                  onChange={(e) => setProverbSearch(e.target.value)}
+                  className={cn(
+                    "w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-medium border outline-none transition-all",
+                    isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-100 focus:border-amber-500" : "bg-white border-zinc-200 text-zinc-900 focus:border-amber-500"
+                  )}
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                {[
+                  { id: 'all' as const, label: `✨ Sve (${HEBREW_PROVERBS_AND_IDIOMS.length})`, active: 'bg-amber-600 text-white border-amber-500' },
+                  { id: 'talmud' as const, label: `📜 Talmud & Pirkei Avot (${HEBREW_PROVERBS_AND_IDIOMS.filter(p => p.type === 'talmud').length})`, active: 'bg-amber-600 text-white border-amber-500' },
+                  { id: 'biblical' as const, label: `📖 Biblijske (${HEBREW_PROVERBS_AND_IDIOMS.filter(p => p.type === 'biblical').length})`, active: 'bg-indigo-600 text-white border-indigo-500' },
+                  { id: 'idiom' as const, label: `🗣️ Izraelski Idiomi (${HEBREW_PROVERBS_AND_IDIOMS.filter(p => p.type === 'idiom').length})`, active: 'bg-cyan-600 text-white border-cyan-500' },
+                  { id: 'hasidic' as const, label: `🕯️ Hasidske (${HEBREW_PROVERBS_AND_IDIOMS.filter(p => p.type === 'hasidic').length})`, active: 'bg-fuchsia-600 text-white border-fuchsia-500' },
+                  { id: 'proverb' as const, label: `🌿 Narodne (${HEBREW_PROVERBS_AND_IDIOMS.filter(p => p.type === 'proverb').length})`, active: 'bg-emerald-600 text-white border-emerald-500' }
+                ].map(pill => (
+                  <button
+                    key={pill.id}
+                    type="button"
+                    onClick={() => setProverbFilter(pill.id)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap border transition-all shrink-0",
+                      proverbFilter === pill.id
+                        ? `${pill.active} shadow-sm`
+                        : isDarkMode ? "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white" : "bg-white border-zinc-200 text-zinc-600"
+                    )}
+                  >
+                    {pill.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Proverbs Illuminated Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredProverbs.map(p => {
+                const st = PROVERB_TYPE_STYLES[p.type];
+                const isSpeakingThis = isPronouncing === `prov-tab-${p.id}`;
+                return (
+                  <div
+                    key={p.id}
+                    className={cn(
+                      "p-5 rounded-3xl border space-y-3 flex flex-col justify-between transition-all hover:scale-[1.005] shadow-sm",
+                      isDarkMode
+                        ? "bg-gradient-to-br from-zinc-900 via-indigo-950/20 to-zinc-950 border-zinc-800 hover:border-amber-500/45"
+                        : "bg-gradient-to-br from-white via-amber-50/35 to-indigo-50/30 border-zinc-200 hover:border-amber-400"
+                    )}
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className={cn("text-[10px] font-mono font-black uppercase px-2.5 py-1 rounded-full border", isDarkMode ? st.dark : st.light)}>
+                          {st.emoji} {st.label}
+                        </span>
+                        <span className={cn("text-[10px] font-mono font-bold", isDarkMode ? "text-amber-400/90" : "text-amber-700")}>
+                          {p.source}
+                        </span>
+                      </div>
+
+                      <p
+                        dir="rtl"
+                        className={cn("text-xl md:text-2xl font-serif font-black leading-relaxed tracking-wide", isDarkMode ? "text-amber-200" : "text-amber-950")}
+                      >
+                        {p.hebrew}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                        <span className={cn("px-2 py-0.5 rounded-md border font-bold", isDarkMode ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300" : "bg-emerald-100 border-emerald-300 text-emerald-800")}>
+                          Vuk: /{p.vuk}/
+                        </span>
+                        <span className={cn("font-semibold", isDarkMode ? "text-violet-300" : "text-violet-700")}>
+                          {p.transliteration}
+                        </span>
+                      </div>
+
+                      <div className="pt-2 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1">
+                        <p className={cn("text-sm font-bold leading-snug", isDarkMode ? "text-cyan-200" : "text-blue-950")}>
+                          🇭🇷 „{p.serbian}”
+                        </p>
+                        <p className={cn("text-xs italic font-medium", isDarkMode ? "text-violet-300/90" : "text-violet-800")}>
+                          🇬🇧 "{p.english}"
+                        </p>
+                        {p.literalNote && (
+                          <p className={cn("text-[11px] font-medium pt-1", isDarkMode ? "text-rose-300/90" : "text-rose-700")}>
+                            💡 {p.literalNote}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-3 border-t border-zinc-200/70 dark:border-zinc-800">
+                      <button
+                        type="button"
+                        onClick={() => speakHebrew(p.hebrew, `prov-tab-${p.id}`)}
+                        className={cn(
+                          "px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all",
+                          isSpeakingThis
+                            ? "bg-amber-600 text-white border-amber-500 animate-pulse"
+                            : isDarkMode ? "bg-zinc-800 hover:bg-zinc-700 text-amber-200 border-zinc-700" : "bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300"
+                        )}
+                      >
+                        <Volume2 className="w-4 h-4" />
+                        <span>Poslušaj Izreku</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const txt = `📜 ${p.source}\n${p.hebrew}\nVuk: /${p.vuk}/\n„${p.serbian}”\n"${p.english}"\n\n✨ WiseFit Hebrew Sanctuary`;
+                          handleCopyConfigText(txt);
+                          setCopiedProverbId(p.id);
+                          setTimeout(() => setCopiedProverbId(null), 2000);
+                        }}
+                        className={cn(
+                          "px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all",
+                          copiedProverbId === p.id
+                            ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                            : isDarkMode ? "bg-zinc-900 border-zinc-700 text-zinc-300 hover:text-white" : "bg-zinc-100 border-zinc-200 text-zinc-700"
+                        )}
+                      >
+                        {copiedProverbId === p.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedProverbId === p.id ? 'Kopirano!' : 'Kopiraj'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
         {/* EMOJI VISUAL CANVAS VIEW */}
         {activeTab === 'canvas' && (
           <motion.div key="canvas-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
             <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 text-xs text-blue-400 font-medium">
-              🎨 <strong>Vizuelni Emodži Sklop:</strong> Učite asocijacijom! Velike vizuelne kartice sa uočljivim emodžijima i korenom za brzo pamćenje.
+              🎨 <strong>Vizuelni Emodži Sklop ({filteredVocab.length} reči):</strong> Učite asocijacijom u boji! Dodirnite svaku karticu za izgovor.
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {filteredVocab.map(item => (
-                <div
-                  key={`canvas-${item.id}`}
-                  onClick={() => speakHebrew(item.char, item.id)}
-                  className={cn(
-                    "p-4 rounded-2xl border text-center flex flex-col items-center justify-between cursor-pointer hover:scale-105 transition-all",
-                    isDarkMode ? "bg-zinc-900/60 border-zinc-800 hover:border-blue-500/50" : "bg-white border-zinc-200 shadow-sm hover:border-blue-300"
-                  )}
-                >
-                  <span className="text-4xl my-2 filter drop-shadow-sm select-none">{item.emoji || '✨'}</span>
-                  <div className="space-y-0.5 w-full">
-                    <p className="text-lg font-bold text-blue-500">{item.char}</p>
-                    <p className="text-[10px] font-mono font-bold text-emerald-500">"{item.vuk}"</p>
-                    <p className="text-[10px] font-medium text-zinc-400 truncate w-full">{item.translation}</p>
+              {filteredVocab.map(item => {
+                const catPal = getHebrewCatPalette(item.category);
+                return (
+                  <div
+                    key={`canvas-${item.id}`}
+                    onClick={() => speakHebrew(item.char, item.id)}
+                    className={cn(
+                      "p-4 rounded-2xl border text-center flex flex-col items-center justify-between cursor-pointer hover:scale-105 transition-all",
+                      isDarkMode
+                        ? `bg-gradient-to-br ${catPal.glowDark} border-zinc-800 ${catPal.borderHoverDark}`
+                        : `bg-white border-zinc-200 shadow-sm ${catPal.borderHoverLight}`
+                    )}
+                  >
+                    <span className="text-4xl my-2 filter drop-shadow-sm select-none">{item.emoji || '✨'}</span>
+                    <div className="space-y-0.5 w-full">
+                      <p dir="rtl" className={cn("text-lg font-serif font-black", isDarkMode ? catPal.hebrewDark : catPal.hebrewLight)}>{item.char}</p>
+                      <p className="text-[10px] font-mono font-bold text-emerald-500">"{item.vuk}"</p>
+                      <p className={cn("text-[10px] font-semibold truncate w-full", isDarkMode ? "text-zinc-200" : "text-zinc-700")}>{item.translation}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
         )}
@@ -3686,7 +4203,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
           </motion.div>
         )}
 
-        {/* VISUAL FLASHCARDS GAME VIEW */}
+        {/* VISUAL FLASHCARDS & IZAZOV ZNANJA VIEW */}
         {activeTab === 'flashcards' && (
           <motion.div
             key="flashcards-view"
@@ -3703,6 +4220,7 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
               isPronouncing={isPronouncing}
               isDarkMode={isDarkMode}
               isGirlyMode={isGirlyMode}
+              initialMode={flashcardsInitialMode}
               onSwitchToQuiz={() => { setActiveTab('quiz'); generateQuizRound(); }}
             />
           </motion.div>
@@ -4044,6 +4562,33 @@ export const HebrewVocabView: React.FC<HebrewVocabViewProps> = ({ isDarkMode, is
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* ONLINE HEBREW DICTIONARY EXPLORER MODAL (SEFARIA + WIKTIONARY + AI) */}
+      <HebrewDictExplorerModal
+        isOpen={isDictExplorerOpen}
+        onClose={() => setIsDictExplorerOpen(false)}
+        isDarkMode={isDarkMode}
+        isGirlyMode={isGirlyMode}
+        existingChars={existingHebrewCharsSet}
+        onWordAdded={handleWordAddedFromOnlineDict}
+        speakHebrew={speakHebrew}
+        initialQuery={dictExplorerInitialQuery}
+      />
+
+      {/* FLOATING MOBILE-VISIBLE TOAST FOR SAVED DICTIONARY WORDS */}
+      <AnimatePresence>
+        {heDictToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[120] px-4 py-2.5 rounded-2xl bg-emerald-600 text-white text-xs font-black shadow-2xl border border-emerald-400/50 flex items-center gap-2 max-w-[92vw]"
+          >
+            <CheckCircle className="w-4 h-4 shrink-0 text-amber-200" />
+            <span className="truncate">{heDictToast}</span>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
